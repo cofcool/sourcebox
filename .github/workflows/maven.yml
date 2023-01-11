@@ -1,0 +1,28 @@
+name: Java CI
+
+on: [push]
+
+jobs:
+  deployment:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: 17
+          architecture: x64
+      - name: Cache Maven packages
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+      - name: package
+        run: mvn clean package
+      - run: mkdir staging && cp target/*.zip staging
+      - uses: actions/upload-artifact@v3
+        with:
+          name: Package
+          path: staging

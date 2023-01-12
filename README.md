@@ -11,6 +11,7 @@
 - [3. MenuGenerator](#3-menugenerator)
 - [4. LinkCovertTool](#4-linkcoverttool)
 - [5. Trello 导出的 JSON 文件导入到 Logseq](#5-trello-导出的-json-文件导入到-logseq)
+- [6. 常用字符串转换工具](#6-常用字符串转换工具)
 
 <!-- /code_chunk_output -->
 
@@ -56,7 +57,18 @@ Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到
 
 支持把从 Trello 看板导出的 JSON 文件导入到 Logseq
 
-## 致谢
+## 6. 常用字符串转换工具
 
-* SimpleHTTPServerWithUpload 来自 https://gist.github.com/UniIsland/3346170 和其他参与修改的人们
+使用: `./my-tools.sh --name=converts --cmd="upper test"`
 
+功能：
+
+* md5，生成指定字符串的 md5 值
+* kindle，Kindle 笔记内容转换为 Markdown 文档
+* upper/lower，字符串大小写转换
+* hdate，时间戳转换为易于阅读的时间格式
+* timesp，把时间转换为时间戳
+
+# 致谢
+
+* SimpleHTTPServerWithUpload 来自 https://gist.github.com/UniIsland/3346170

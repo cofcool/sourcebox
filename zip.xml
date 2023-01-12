@@ -24,5 +24,11 @@
                 <include>**/*</include>
             </includes>
         </fileSet>
+        <fileSet>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>README.md</include>
+            </includes>
+        </fileSet>
     </fileSets>
 </assembly>  

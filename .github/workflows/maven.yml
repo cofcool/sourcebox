@@ -24,10 +24,18 @@ jobs:
           restore-keys: ${{ runner.os }}-m2
       - name: Build Zip Package
         run: mvn clean package
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        id: create_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ github.ref }}
+        with:
+          allowUpdates: true
+          draft: false
+          prerelease: false
       - name: Release Zip
         uses: softprops/action-gh-release@v1
-        env:
-          token: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ steps.ref.outputs.version }}
           name: My Toolbox zip file

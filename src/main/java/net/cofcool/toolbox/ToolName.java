@@ -1,5 +1,5 @@
 package net.cofcool.toolbox;
 
 public enum ToolName {
-    trelloLogseqImporter, shell, link2Tool
+    trelloLogseqImporter, shell, link2Tool, converts
 }

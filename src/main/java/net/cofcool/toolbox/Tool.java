@@ -22,6 +22,21 @@ public interface Tool {
             super(initialCapacity);
         }
 
+        public Args() {
+            super(4);
+        }
+
+        public Args(String[] args) {
+            this();
+            for (String s : String.join(" ", args).split("--")) {
+                if (s.isEmpty()) {
+                    continue;
+                }
+                String[] strings = s.split("=");
+                arg(strings[0], strings[1].trim());
+            }
+        }
+
         public Args arg(String key, String val) {
             add(new Arg(key, val));
             return this;

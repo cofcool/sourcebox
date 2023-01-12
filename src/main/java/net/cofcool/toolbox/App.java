@@ -67,12 +67,8 @@ public class App {
     }
 
     public static void main(String[] args) {
-        System.out.println("Example: name=demo path=tmp");
-        var pArgs = new Tool.Args(args.length);
-        for (String arg : args) {
-            String[] split = arg.split("=");
-            pArgs.arg(split[0], split[1]);
-        }
+        System.out.println("Example: --name=demo --path=tmp");
+        var pArgs = new Tool.Args(args);
         System.out.println("Tools: " + ALL_TOOLS.stream().map(Tool::name).toList());
         System.out.println("Args: ");
         System.out.println(pArgs);

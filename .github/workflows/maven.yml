@@ -27,18 +27,10 @@ jobs:
       - name: Create Release
         uses: ncipollo/release-action@v1
         id: create_release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ github.ref }}
+        permissions:
+          contents: write
         with:
           allowUpdates: true
           draft: false
           prerelease: false
-      - name: Release Zip
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ steps.ref.outputs.version }}
-          name: My Toolbox zip file
-          body: ""
-          files: |
-            ./target/*.zip
+          artifacts: "./target/*.zip"

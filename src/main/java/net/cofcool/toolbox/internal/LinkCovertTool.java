@@ -90,6 +90,6 @@ public class LinkCovertTool implements Tool {
 
     @Override
     public String help() {
-        return "input=demo output=test";
+        return "--input=demo --output=test";
     }
 }

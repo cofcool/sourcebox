@@ -105,7 +105,7 @@ public class TrelloToLogseqImporter implements Tool {
 
     @Override
     public String help() {
-        return "path=demo outPath=test";
+        return "--path=demo --outPath=test";
     }
 
     private List<ActionsItem> actionList(Trello trello, String id) {

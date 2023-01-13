@@ -36,6 +36,6 @@ public class ShellStarter implements Tool {
 
     @Override
     public String help() {
-        return "shell command: name=shell cmd='demo.sh test'";
+        return "shell command: --name=shell --cmd='demo.sh test'";
     }
 }

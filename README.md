@@ -1,6 +1,6 @@
 # 常用小工具
 
-使用 Java, Python 等语言实现
+使用 Java(最低要求 JDK 17), Python 等语言实现
 
 <!-- @import "[TOC]" {cmd="toc" depthFrom=2 depthTo=2 orderedList=false} -->
 

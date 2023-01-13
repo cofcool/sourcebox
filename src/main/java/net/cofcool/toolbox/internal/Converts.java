@@ -89,6 +89,6 @@ public class Converts implements Tool {
 
     @Override
     public String help() {
-        return "md5 xxx;kindle xxxx.txt;upper/lower xxx;hdate 1231312321;timesp 2011-11-11 11:11:11.123";
+        return "--cmd=xxx. PS: md5 xxx; kindle xxxx.txt; upper/lower xxx; hdate 1231312321; timesp 2011-11-11 11:11:11.123";
     }
 }

@@ -15,6 +15,8 @@ import org.apache.commons.io.IOUtils;
 @SuppressWarnings("unchecked")
 public class App {
 
+    private static final boolean isWindows = System.getProperty("os.name").contains("Windows");
+
     private static final Set<Tool> ALL_TOOLS = new HashSet<>();
 
     static {
@@ -32,7 +34,7 @@ public class App {
                     File file = new File(root + dir);
                     if (file.isDirectory()) {
                         for (File subFile : FileUtils.listFiles(file, new String[] {"class"}, true)) {
-                            cacheClass(subFile.getPath().substring(root.length()).replace(File.separator, "."));
+                            cacheClass(subFile.getPath().substring(root.length() - (isWindows ? 1: 0)).replace(File.separator, "."));
                         }
                     }
                 }
@@ -80,7 +82,11 @@ public class App {
                     try {
                         tool.run(pArgs);
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        if (pArgs.readArg("debug").filter(d -> "true".equalsIgnoreCase(d.val())).isPresent()) {
+                            e.printStackTrace();
+                        } else {
+                            System.err.println(e.getMessage());
+                        }
                         System.out.println("Help:");
                         System.out.println(tool.help());
                     }

@@ -19,15 +19,18 @@ public class Converts implements Tool {
         return ToolName.converts;
     }
 
+    @SuppressWarnings({"ConstantConditions", "OptionalGetWithoutIsPresent"})
     @Override
     public void run(Args args) throws Exception {
-        Arg arg = args.readArg("cmd").get();
-        String[] split = arg.val().split(" ");
-        String cmd = split[0];
-        String val = split[1];
-        if (split.length > 2) {
-            val = String.join(" ", Arrays.copyOfRange(split, 1, split.length));
+        var arg = args.readArg("cmd").get();
+        var split = arg.val().split(" ");
+        var cmd = split[0];
+
+        String val = null;
+        if (split.length > 1) {
+            val = String.join(" ", Arrays.copyOfRange(split, 1, split.length)).trim();
         }
+
         var ret = switch (cmd) {
             case "md5" -> md5(val);
             case "kindle" -> splitKindleClippings(val);
@@ -35,6 +38,8 @@ public class Converts implements Tool {
             case "lower" -> val.toLowerCase();
             case "hdate" -> hdate(val);
             case "timesp" -> timesp(val);
+            case "now" -> System.currentTimeMillis() + "";
+            case "replace" -> replace(val);
             default -> throw new IllegalArgumentException("do not support " + val);
         };
         System.out.println(ret);
@@ -42,6 +47,11 @@ public class Converts implements Tool {
 
     private String timesp(String val) {
         return DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS").parse(val, LocalDateTime::from).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() + "";
+    }
+
+    private String replace(String val) {
+        String[] split = val.split(" ");
+        return split[0].replace(split[1], split[2]);
     }
 
     private String hdate(String val) {
@@ -89,6 +99,16 @@ public class Converts implements Tool {
 
     @Override
     public String help() {
-        return "--cmd=xxx. PS: md5 xxx; kindle xxxx.txt; upper/lower xxx; hdate 1231312321; timesp 2011-11-11 11:11:11.123";
+        return """
+               --cmd=xxx
+               commands:
+               * md5 xxx
+               * kindle xxxx.txt
+               * upper/lower xxx
+               * hdate 1231312321
+               * timesp 2011-11-11 11:11:11.123
+               * now
+               * replace test . _
+               """;
     }
 }

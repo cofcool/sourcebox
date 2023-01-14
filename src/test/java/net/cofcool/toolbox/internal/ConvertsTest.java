@@ -10,10 +10,12 @@ class ConvertsTest {
     @Test
     void run() throws Exception {
         System.out.println(converts.help());
-        converts.run(new Args(4).arg("cmd", "md5 xxxxx"));
-        converts.run(new Args(4).arg("cmd", "hdate " + System.currentTimeMillis()));
-        converts.run(new Args(4).arg("cmd", "timesp 2023-01-12 11:54:45.256"));
-        converts.run(new Args(4).arg("cmd", "upper asdasd"));
-        converts.run(new Args(4).arg("cmd", "lower ASSS"));
+        converts.run(new Args().arg("cmd", "md5 xxxxx"));
+        converts.run(new Args().arg("cmd", "hdate " + System.currentTimeMillis()));
+        converts.run(new Args().arg("cmd", "timesp 2023-01-12 11:54:45.256"));
+        converts.run(new Args().arg("cmd", "upper asdasd"));
+        converts.run(new Args().arg("cmd", "lower ASSS"));
+        converts.run(new Args().arg("cmd", "now"));
+        converts.run(new Args().arg("cmd", "replace asd.asda.asda . _"));
     }
 }

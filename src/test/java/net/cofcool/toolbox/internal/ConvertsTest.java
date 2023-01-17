@@ -8,6 +8,11 @@ class ConvertsTest {
     final Converts converts = new Converts();
 
     @Test
+    void runPipeline() throws Exception {
+        converts.run(new Args().arg("cmd", "md5 xxxxx | upper | replace B a | lower"));
+    }
+
+    @Test
     void run() throws Exception {
         System.out.println(converts.help());
         converts.run(new Args().arg("cmd", "md5 xxxxx"));

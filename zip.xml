@@ -31,6 +31,13 @@
             </includes>
         </fileSet>
         <fileSet>
+            <directory>target</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>changelog.md</include>
+            </includes>
+        </fileSet>
+        <fileSet>
             <directory>imgs</directory>
             <outputDirectory>/imgs</outputDirectory>
             <includes>

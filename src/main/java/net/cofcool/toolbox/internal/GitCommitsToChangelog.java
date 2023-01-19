@@ -1,15 +1,16 @@
 package net.cofcool.toolbox.internal;
 
+import net.cofcool.toolbox.Tool;
+import net.cofcool.toolbox.ToolName;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
-import net.cofcool.toolbox.Tool;
-import net.cofcool.toolbox.ToolName;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 
 /**
  * git-log PRETTY FORMATS
@@ -51,13 +52,15 @@ public class GitCommitsToChangelog implements Tool {
                             new File(path)
                     );
 
-            Process exec = process.onExit().get();
-            String error = IOUtils.toString(exec.getErrorStream(), StandardCharsets.UTF_8);
-            if (error != null && !error.isEmpty()) {
-                System.err.println(error);
-                return;
+            commitLog = IOUtils.toString(process.getInputStream(), StandardCharsets.UTF_8);
+
+            if (command.isBlank()) {
+                String error = IOUtils.toString(process.getErrorStream(), StandardCharsets.UTF_8);
+                if (error != null && !error.isEmpty()) {
+                    System.err.println(error);
+                    return;
+                }
             }
-            commitLog = IOUtils.toString(exec.getInputStream(), StandardCharsets.UTF_8);
         }
 
         if (commitLog != null && !commitLog.isEmpty()) {

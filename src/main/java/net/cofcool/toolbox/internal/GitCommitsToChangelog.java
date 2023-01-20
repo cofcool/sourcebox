@@ -43,7 +43,7 @@ public class GitCommitsToChangelog implements Tool {
             String path = args.readArg("path").get().val();
 
             String command = "git log --format=%d;%h;%s";
-            System.out.println("Run command: " + command);
+            getLogger().info("Run command: " + command);
             Process process = Runtime
                     .getRuntime()
                     .exec(
@@ -54,10 +54,10 @@ public class GitCommitsToChangelog implements Tool {
 
             commitLog = IOUtils.toString(process.getInputStream(), StandardCharsets.UTF_8);
 
-            if (command.isBlank()) {
+            if (commitLog.isBlank()) {
                 String error = IOUtils.toString(process.getErrorStream(), StandardCharsets.UTF_8);
                 if (error != null && !error.isEmpty()) {
-                    System.err.println(error);
+                    getLogger().error(error);
                     return;
                 }
             }
@@ -77,7 +77,7 @@ public class GitCommitsToChangelog implements Tool {
                                     return;
                                 }
                                 tag.set(1);
-                                commits.addFirst("## v" + t.trim() + "\n");
+                                commits.addFirst("## " + (t.startsWith("v") || t.startsWith("V") ? "" : "v") + t + "\n");
                                 commits.add(c.toString());
                             });
                         } else if (tag.get() == 1) {
@@ -89,7 +89,7 @@ public class GitCommitsToChangelog implements Tool {
                         }
                     });
             FileUtils.writeStringToFile(new File(out), String.join("\n", commits), StandardCharsets.UTF_8);
-            System.out.println("Generate " + out + " ok");
+            getLogger().info("Generate " + out + " ok");
         }
     }
 

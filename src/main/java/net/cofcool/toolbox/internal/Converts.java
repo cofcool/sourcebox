@@ -1,5 +1,8 @@
 package net.cofcool.toolbox.internal;
 
+import net.cofcool.toolbox.Tool;
+import net.cofcool.toolbox.ToolName;
+
 import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -12,8 +15,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
-import net.cofcool.toolbox.Tool;
-import net.cofcool.toolbox.ToolName;
 
 @SuppressWarnings("ALL")
 public class Converts implements Tool {
@@ -52,7 +53,7 @@ public class Converts implements Tool {
            ret = runCommand(pipelineArgs.next(), ret);
         }
 
-        System.out.println(ret);
+        getLogger().info(ret);
     }
 
     private String runCommand(String arg, String ret) throws Exception {

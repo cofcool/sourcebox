@@ -1,5 +1,8 @@
 package net.cofcool.toolbox;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -8,16 +11,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.jar.JarFile;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 
 
 @SuppressWarnings("unchecked")
 public class App {
 
-    private static final boolean isWindows = System.getProperty("os.name").contains("Windows");
+    public static final boolean isWindows = System.getProperty("os.name").contains("Windows");
 
     private static final Set<Tool> ALL_TOOLS = new HashSet<>();
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(App.class);
 
     static {
         try {
@@ -45,10 +48,10 @@ public class App {
                         .forEach(j -> cacheClass(j.getRealName().replace("/", ".")));
                 }
             } else {
-                System.err.println("Do not support file type " + path);
+                throw new IllegalStateException("Do not support file type " + path);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new IllegalStateException(e);
         }
     }
 
@@ -64,31 +67,29 @@ public class App {
                 ALL_TOOLS.add(constructor.newInstance());
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new IllegalStateException(e);
         }
     }
 
     public static void main(String[] args) {
-        System.out.println("Example: --name=demo --path=tmp");
         var pArgs = new Tool.Args(args);
-        System.out.println("Tools: " + ALL_TOOLS.stream().map(Tool::name).toList());
-        System.out.println("Args: ");
-        System.out.println(pArgs);
-        System.out.println("----------");
+        LoggerFactory.setDebug(pArgs.readArg("debug").filter(d -> "true".equalsIgnoreCase(d.val())).isPresent());
+
+        LOGGER.info("Example: --name=demo --path=tmp");
+        LOGGER.info("Tools: " + ALL_TOOLS.stream().map(Tool::name).toList());
+        LOGGER.info("Args: ");
+        LOGGER.info(pArgs);
+        LOGGER.info("----------");
         pArgs.readArg("name").ifPresent(a -> {
             for (Tool tool : ALL_TOOLS) {
                 if (tool.name() == ToolName.valueOf(a.val())) {
-                    System.out.println("Start run " + tool.name());
+                    LOGGER.info("Start run " + tool.name());
                     try {
                         tool.run(pArgs);
                     } catch (Exception e) {
-                        if (pArgs.readArg("debug").filter(d -> "true".equalsIgnoreCase(d.val())).isPresent()) {
-                            e.printStackTrace();
-                        } else {
-                            System.err.println(e.getMessage());
-                        }
-                        System.out.println("Help:");
-                        System.out.println(tool.help());
+                        LOGGER.error(e);
+                        LOGGER.info("Help:");
+                        LOGGER.info(tool.help());
                     }
                 }
             }

@@ -1,9 +1,10 @@
 package net.cofcool.toolbox.internal;
 
-import java.nio.charset.StandardCharsets;
 import net.cofcool.toolbox.Tool;
 import net.cofcool.toolbox.ToolName;
 import org.apache.commons.io.IOUtils;
+
+import java.nio.charset.StandardCharsets;
 
 public class ShellStarter implements Tool {
 
@@ -15,7 +16,7 @@ public class ShellStarter implements Tool {
     @Override
     public void run(Args args) throws Exception {
         String cmd = args.readArg("cmd").get().val().replace("'", "");
-        System.out.println("shell command: " + cmd);
+        getLogger().info("shell command: " + cmd);
         Process process = Runtime
             .getRuntime()
             .exec(
@@ -26,11 +27,11 @@ public class ShellStarter implements Tool {
         Process exec = process.onExit().get();
         String output = IOUtils.toString(exec.getInputStream(), StandardCharsets.UTF_8);
         if (output != null && !output.isEmpty()) {
-            System.out.println(output);
+            getLogger().info(output);
         }
         String error = IOUtils.toString(exec.getErrorStream(), StandardCharsets.UTF_8);
         if (error != null && !error.isEmpty()) {
-            System.err.println(error);
+            getLogger().error(error);
         }
     }
 

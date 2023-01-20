@@ -12,6 +12,10 @@ public interface Tool {
 
     String help();
 
+    default Logger getLogger() {
+        return LoggerFactory.getLogger(getClass());
+    }
+
     record Arg(String key, String val) {
 
     }

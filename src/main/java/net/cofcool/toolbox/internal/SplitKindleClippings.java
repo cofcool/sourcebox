@@ -1,13 +1,14 @@
 package net.cofcool.toolbox.internal;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.stream.Collectors;
 import net.cofcool.toolbox.Tool;
 import net.cofcool.toolbox.ToolName;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 public class SplitKindleClippings implements Tool {
     @Override
@@ -36,7 +37,7 @@ public class SplitKindleClippings implements Tool {
                     return String.format("### %s\n\n%s\n\n", bookName, content);
                 })
                 .collect(Collectors.joining());
-        System.out.println("Write file to " + out);
+        getLogger().info("Write file to " + out);
         FileUtils.writeStringToFile(new File(out), strs, StandardCharsets.UTF_8);
     }
 

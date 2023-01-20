@@ -1,40 +1,23 @@
 package net.cofcool.toolbox.internal;
 
-import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
-import static java.time.temporal.ChronoField.DAY_OF_MONTH;
-import static java.time.temporal.ChronoField.HOUR_OF_DAY;
-import static java.time.temporal.ChronoField.MILLI_OF_SECOND;
-import static java.time.temporal.ChronoField.MINUTE_OF_HOUR;
-import static java.time.temporal.ChronoField.MONTH_OF_YEAR;
-import static java.time.temporal.ChronoField.NANO_OF_SECOND;
-import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
-import static java.time.temporal.ChronoField.YEAR;
-
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
+import net.cofcool.toolbox.Tool;
+import net.cofcool.toolbox.ToolName;
+import net.cofcool.toolbox.internal.trello.*;
+import org.apache.commons.io.IOUtils;
+
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.SignStyle;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
-import net.cofcool.toolbox.Tool;
-import net.cofcool.toolbox.ToolName;
-import net.cofcool.toolbox.internal.trello.ActionsItem;
-import net.cofcool.toolbox.internal.trello.CardsItem;
-import net.cofcool.toolbox.internal.trello.CheckItemsItem;
-import net.cofcool.toolbox.internal.trello.ChecklistsItem;
-import net.cofcool.toolbox.internal.trello.LabelsItem;
-import net.cofcool.toolbox.internal.trello.ListsItem;
-import net.cofcool.toolbox.internal.trello.Trello;
-import org.apache.commons.io.IOUtils;
+
+import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
+import static java.time.temporal.ChronoField.*;
 
 public class TrelloToLogseqImporter implements Tool {
 
@@ -95,8 +78,10 @@ public class TrelloToLogseqImporter implements Tool {
                         }
                     }
                 }
-                try (var writer = new FileWriter(outPath.val() + "/" + "trello" + name + "-" + entry.getKey() + ".md")) {
+                String output = outPath.val() + "/" + "trello" + name + "-" + entry.getKey() + ".md";
+                try (var writer = new FileWriter(output)) {
                     IOUtils.write(out.toString(), writer);
+                    getLogger().info("Generate " + output + " ok");
                 }
             }
         }

@@ -1,8 +1,5 @@
 package net.cofcool.toolbox;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -11,6 +8,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.jar.JarFile;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 
 
 @SuppressWarnings("unchecked")
@@ -82,7 +81,7 @@ public class App {
         LOGGER.info("----------");
         pArgs.readArg("name").ifPresent(a -> {
             for (Tool tool : ALL_TOOLS) {
-                if (tool.name() == ToolName.valueOf(a.val())) {
+                if (tool.name().name().equals(a.val())) {
                     LOGGER.info("Start run " + tool.name());
                     try {
                         tool.run(pArgs);

@@ -19,8 +19,6 @@ public class App {
 
     private static final Set<Tool> ALL_TOOLS = new HashSet<>();
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(App.class);
-
     static {
         try {
             var resource = App.class.getResource("/version");
@@ -74,21 +72,22 @@ public class App {
         var pArgs = new Tool.Args(args);
         LoggerFactory.setDebug(pArgs.readArg("debug").filter(d -> "true".equalsIgnoreCase(d.val())).isPresent());
 
-        LOGGER.info("Example: --name=demo --path=tmp");
-        LOGGER.info("Tools: " + ALL_TOOLS.stream().map(Tool::name).toList());
-        LOGGER.info("Args: ");
-        LOGGER.info(pArgs);
-        LOGGER.info("----------");
+        Logger logger = LoggerFactory.getLogger(App.class);
+        logger.info("Example: --name=demo --path=tmp");
+        logger.info("Tools: " + ALL_TOOLS.stream().map(Tool::name).toList());
+        logger.info("Args: ");
+        logger.info(pArgs);
+        logger.info("----------");
         pArgs.readArg("name").ifPresent(a -> {
             for (Tool tool : ALL_TOOLS) {
                 if (tool.name().name().equals(a.val())) {
-                    LOGGER.info("Start run " + tool.name());
+                    logger.info("Start run " + tool.name());
                     try {
                         tool.run(pArgs);
                     } catch (Exception e) {
-                        LOGGER.error(e);
-                        LOGGER.info("Help:");
-                        LOGGER.info(tool.help());
+                        logger.error(e);
+                        logger.info("Help:");
+                        logger.info(tool.help());
                     }
                 }
             }

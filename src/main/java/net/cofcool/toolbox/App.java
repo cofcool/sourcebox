@@ -22,10 +22,10 @@ public class App {
     static {
         try {
             var resource = App.class.getResource("/version");
-            String versionPath = resource.getPath();
+            var versionPath = resource.getPath();
             var path  = new URL(resource.getProtocol() + (resource.getProtocol().equals("jar") ? ":" : "://") + versionPath.substring(0, versionPath.length() - 7));
             var type = path.getProtocol();
-            String root = path.getFile();
+            var root = path.getFile();
             if (type.equals("file")) {
                 var connection = path.openConnection();
                 connection.connect();
@@ -72,15 +72,17 @@ public class App {
         var pArgs = new Tool.Args(args);
         LoggerFactory.setDebug(pArgs.readArg("debug").filter(d -> "true".equalsIgnoreCase(d.val())).isPresent());
 
-        Logger logger = LoggerFactory.getLogger(App.class);
+        var logger = LoggerFactory.getLogger(App.class);
         logger.info("Example: --name=demo --path=tmp");
         logger.info("Tools: " + ALL_TOOLS.stream().map(Tool::name).toList());
         logger.info("Args: ");
         logger.info(pArgs);
         logger.info("----------");
         pArgs.readArg("name").ifPresent(a -> {
+            var notRun = true;
             for (Tool tool : ALL_TOOLS) {
                 if (tool.name().name().equals(a.val())) {
+                    notRun = false;
                     logger.info("Start run " + tool.name());
                     try {
                         tool.run(pArgs);
@@ -90,6 +92,9 @@ public class App {
                         logger.info(tool.help());
                     }
                 }
+            }
+            if (notRun) {
+                logger.error("Do not support " + a.val());
             }
         });
     }

@@ -9,6 +9,13 @@ public final class LoggerFactory {
 
     private static boolean debug;
 
+    static {
+        String property = System.getProperty("logging.debug");
+        if (property != null) {
+            debug = Boolean.parseBoolean(property);
+        }
+    }
+
     private LoggerFactory() {
     }
 
@@ -42,6 +49,13 @@ public final class LoggerFactory {
         @Override
         public void info(Object val) {
             System.out.println(val);
+        }
+
+        @Override
+        public void debug(Object val) {
+            if (debug) {
+                System.out.println(val);
+            }
         }
     }
 }

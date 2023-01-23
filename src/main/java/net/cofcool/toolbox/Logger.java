@@ -7,4 +7,6 @@ public interface Logger {
 
     void info(Object val);
 
+    void debug(Object val);
+
 }

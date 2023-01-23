@@ -39,15 +39,17 @@ public class JsonToPojo implements Tool {
         var lang = Lang.parse(langStr, verStr);
 
         writeClass(root, result, pkg, out, lang, Boolean.parseBoolean(clean));
+        getLogger().debug(result);
     }
 
+    @SuppressWarnings("unchecked")
     private void writeClass(String root, Map<String, Object> result, String pkg, String out, Lang lang, boolean clean) {
         String pathname = out + File.separator + pkg.replace(".", File.separator);
         if (clean) {
             try {
                 FileUtils.deleteDirectory(new File(pathname));
             } catch (IOException e) {
-                e.printStackTrace();
+                throw new IllegalStateException("Delete " + pathname + " error", e);
             }
         }
         var contents = new HashSet<String>();
@@ -67,11 +69,15 @@ public class JsonToPojo implements Tool {
                         type = "List<" + className + ">";
                     } else if (String.class.isAssignableFrom(aClass)) {
                         type = "List<String>";
+                    } else if (Number.class.isAssignableFrom(aClass)) {
+                        type = "List<Integer>";
                     }
                 }
 
             }  else if (String.class.isAssignableFrom(v.getClass())) {
                 type = "String";
+            }  else if (Number.class.isAssignableFrom(v.getClass())) {
+                type = "Integer";
             }
             contents.add(type + " " + k);
         });
@@ -87,8 +93,9 @@ public class JsonToPojo implements Tool {
                     StandardCharsets.UTF_8,
                     false
             );
+            getLogger().info("Generate class " + className + " ok");
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Write " + className + " file error", e);
         }
     }
 
@@ -112,15 +119,20 @@ public class JsonToPojo implements Tool {
                     eleType = Type.STRING;
                 } else if (eleType == Type.INIT && Token.NUMBER.match(token)) {
                     eleType = Type.NUMBER;
+                    val.append(token);
                 } else if (eleType == Type.NUMBER && Token.COMMON.match(token)) {
-                    result.add(val.toString());
+                    result.add(Integer.parseInt(val.toString()));
                     val = new StringBuilder();
+                    eleType = Type.NEXT;
                 } else if (eleType == Type.STRING && Token.STRING_END.match(token)) {
                     result.add(val.toString());
                     val = new StringBuilder();
                     eleType = Type.NEXT;
                 } else if (Token.STRING_END.match(token) && eleType == Type.NEXT) {
                     eleType = Type.STRING;
+                } else if (Token.NUMBER.match(token) && eleType == Type.NEXT) {
+                    eleType = Type.NUMBER;
+                    val.append(token);
                 } else if (!(Token.COMMON.match(token))) {
                     val.append(token);
                 }
@@ -129,12 +141,13 @@ public class JsonToPojo implements Tool {
 
             if (Token.OBJ_START.match(token)) {
                 var map = new LinkedHashMap<String, Object>();
-                result.add(map);
                 curIdx = parse(map, Type.OBJ, json, curIdx);
+                result.add(map);
             } else if (Token.STRING_START.match(token) || Token.NUMBER.match(token)) {
                 var list = new ArrayList<>();
                 curIdx = parse(list, Type.VALUE, json, --curIdx);
                 result.addAll(list);
+                return curIdx;
             }
         }
         return curIdx;
@@ -154,6 +167,9 @@ public class JsonToPojo implements Tool {
                 continue;
             }
             if (Token.OBJ_END.match(token)) {
+                if (curType == Type.VALUE) {
+                    result.put(key.toString(), Integer.parseInt(val.toString()));
+                }
                 return curIdx;
             }
             if (curType != Type.BEFORE_VALUE && Token.ARRAY_START.match(token)) {
@@ -188,6 +204,11 @@ public class JsonToPojo implements Tool {
                     curType = Type.VALUE;
                     continue;
                 }
+                if (Token.NUMBER.match(token)) {
+                    val.append(token);
+                    curType = Type.VALUE;
+                    continue;
+                }
                 if (Token.OBJ_START.match(token)) {
                     var map = new LinkedHashMap<String, Object>();
                     result.put(key.toString(), map);
@@ -211,6 +232,14 @@ public class JsonToPojo implements Tool {
             if (curType == Type.VALUE && Token.STRING_END.match(token)) {
                 curType = Type.INIT;
                 result.put(key.toString(), val.toString());
+                key = new StringBuilder();
+                val = new StringBuilder();
+                continue;
+            }
+
+            if (curType == Type.VALUE && (Token.COMMON.match(token) || Token.OBJ_END.match(token))) {
+                curType = Token.OBJ_END.match(token) ? Type.INIT : Type.NEXT;
+                result.put(key.toString(), Integer.parseInt(val.toString()));
                 key = new StringBuilder();
                 val = new StringBuilder();
                 continue;
@@ -260,7 +289,7 @@ public class JsonToPojo implements Tool {
         }
 
         public boolean match(char val) {
-            return id != null && (id.contains(String.valueOf(val)) || id.isEmpty());
+            return id.contains(String.valueOf(val));
         }
     }
 

@@ -1,5 +1,6 @@
 package net.cofcool.toolbox;
 
 public enum ToolName {
-    trelloLogseqImporter, shell, link2Tool, kindle, gitCommits2Log, converts
+    trelloLogseqImporter, shell, link2Tool, kindle, gitCommits2Log, converts,
+    json2POJO
 }

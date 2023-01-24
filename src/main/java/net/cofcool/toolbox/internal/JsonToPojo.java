@@ -106,7 +106,7 @@ public class JsonToPojo implements Tool {
         while (curIdx < json.length()){
             var token = json.charAt(curIdx);
             curIdx++;
-            if (Token.WHITE.match(token)) {
+            if ((eleType == Type.NEXT || eleType == Type.INIT) && Token.WHITE.match(token)) {
                 continue;
             }
             if (Token.ARRAY_END.match(token)) {
@@ -163,22 +163,26 @@ public class JsonToPojo implements Tool {
             if (Token.WHITE.match(token)) {
                 continue;
             }
-            if (curType != Type.BEFORE_VALUE && Token.OBJ_START.match(token)) {
+            if (curType != Type.BEFORE_VALUE && curType != Type.VALUE && Token.OBJ_START.match(token)) {
                 curType = Type.OBJ;
                 continue;
             }
             if (Token.OBJ_END.match(token)) {
                 if (curType == Type.VALUE) {
-                    String string = val.toString();
-                    result.put(key.toString(), Token.BOOLEAN.match(string) ? Boolean.parseBoolean(string) : Integer.parseInt(string));
+                    try {
+                        String string = val.toString().trim();
+                        result.put(key.toString(), Token.BOOLEAN.match(string) ? Boolean.parseBoolean(string) : (Token.NULL.match(string) ? "null" : Integer.parseInt(string)));
+                    } catch (NumberFormatException e) {
+                        continue;
+                    }
                 }
                 return curIdx;
             }
-            if (curType != Type.BEFORE_VALUE && Token.ARRAY_START.match(token)) {
+            if (curType != Type.BEFORE_VALUE && curType != Type.VALUE && Token.ARRAY_START.match(token)) {
                 curType = Type.ARRAY;
                 continue;
             }
-            if (Token.ARRAY_END.match(token)) {
+            if (curType != Type.VALUE && Token.ARRAY_END.match(token)) {
                 return curIdx;
             }
 
@@ -206,7 +210,7 @@ public class JsonToPojo implements Tool {
                     curType = Type.VALUE;
                     continue;
                 }
-                if (Token.NUMBER.match(token) || Token.BOOLEAN.match(token)) {
+                if (Token.NUMBER.match(token) || Token.BOOLEAN.match(token) || Token.NULL.match(token)) {
                     val.append(token);
                     curType = Type.VALUE;
                     continue;
@@ -240,11 +244,15 @@ public class JsonToPojo implements Tool {
             }
 
             if (curType == Type.VALUE && (Token.COMMON.match(token) || Token.OBJ_END.match(token))) {
-                curType = Token.OBJ_END.match(token) ? Type.INIT : Type.NEXT;
-                String string = val.toString();
-                result.put(key.toString(), Token.BOOLEAN.match(string) ? Boolean.parseBoolean(string) : Integer.parseInt(string));
-                key = new StringBuilder();
-                val = new StringBuilder();
+                try {
+                    curType = Token.OBJ_END.match(token) ? Type.INIT : Type.NEXT;
+                    String string = val.toString();
+                    result.put(key.toString(), Token.BOOLEAN.match(string) ? Boolean.parseBoolean(string) : (Token.NULL.match(string) ? "null" : Integer.parseInt(string)));
+                    key = new StringBuilder();
+                    val = new StringBuilder();
+                } catch (NumberFormatException e) {
+                    continue;
+                }
                 continue;
             }
 
@@ -276,9 +284,10 @@ public class JsonToPojo implements Tool {
         ARRAY_END("]"),
         COLON(":"),
         COMMON(","),
-        WHITE(" \n"),
+        WHITE(" \n\t"),
         STRING_START("\""),
         STRING_END("\""),
+        NULL("null"),
         NUMBER("0123456789"),
         BOOLEAN("truefalse");
 

@@ -31,7 +31,7 @@ class JsonToPojoTest {
                                     "arrNum": [123, 321, 111]
                                 }
                                 """)
-                        .arg("out", "./target/pojo")
+                        .arg("out", "./target/pojo/run")
                         .arg("pkg", "json.demo")
         );
     }

@@ -52,7 +52,7 @@ public class JsonToPojo implements Tool {
                 throw new IllegalStateException("Delete " + pathname + " error", e);
             }
         }
-        var contents = new HashSet<String>();
+        var contents = new LinkedHashSet<String>();
         result.forEach((k, v) -> {
             var className = String.valueOf(k.charAt(0)).toUpperCase() + k.substring(1);
             var type = "Object";
@@ -73,11 +73,12 @@ public class JsonToPojo implements Tool {
                         type = "List<Integer>";
                     }
                 }
-
-            }  else if (String.class.isAssignableFrom(v.getClass())) {
+            } else if (String.class.isAssignableFrom(v.getClass())) {
                 type = "String";
-            }  else if (Number.class.isAssignableFrom(v.getClass())) {
+            } else if (Number.class.isAssignableFrom(v.getClass())) {
                 type = "Integer";
+            } else if (Boolean.class.isAssignableFrom(v.getClass())) {
+                type = "Boolean";
             }
             contents.add(type + " " + k);
         });
@@ -168,7 +169,8 @@ public class JsonToPojo implements Tool {
             }
             if (Token.OBJ_END.match(token)) {
                 if (curType == Type.VALUE) {
-                    result.put(key.toString(), Integer.parseInt(val.toString()));
+                    String string = val.toString();
+                    result.put(key.toString(), Token.BOOLEAN.match(string) ? Boolean.parseBoolean(string) : Integer.parseInt(string));
                 }
                 return curIdx;
             }
@@ -204,7 +206,7 @@ public class JsonToPojo implements Tool {
                     curType = Type.VALUE;
                     continue;
                 }
-                if (Token.NUMBER.match(token)) {
+                if (Token.NUMBER.match(token) || Token.BOOLEAN.match(token)) {
                     val.append(token);
                     curType = Type.VALUE;
                     continue;
@@ -239,7 +241,8 @@ public class JsonToPojo implements Tool {
 
             if (curType == Type.VALUE && (Token.COMMON.match(token) || Token.OBJ_END.match(token))) {
                 curType = Token.OBJ_END.match(token) ? Type.INIT : Type.NEXT;
-                result.put(key.toString(), Integer.parseInt(val.toString()));
+                String string = val.toString();
+                result.put(key.toString(), Token.BOOLEAN.match(string) ? Boolean.parseBoolean(string) : Integer.parseInt(string));
                 key = new StringBuilder();
                 val = new StringBuilder();
                 continue;
@@ -276,7 +279,8 @@ public class JsonToPojo implements Tool {
         WHITE(" \n"),
         STRING_START("\""),
         STRING_END("\""),
-        NUMBER("0123456789");
+        NUMBER("0123456789"),
+        BOOLEAN("truefalse");
 
         private final String id;
 
@@ -290,6 +294,10 @@ public class JsonToPojo implements Tool {
 
         public boolean match(char val) {
             return id.contains(String.valueOf(val));
+        }
+
+        public boolean match(String val) {
+            return id.contains(val);
         }
     }
 

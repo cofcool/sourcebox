@@ -23,11 +23,11 @@ class JsonToPojoTest {
                                         "objKey1": "objVal1"
                                     },
                                     "arrObj": [
-                                        {"arrObjKey0": "arrObjVal0", "arrObjKey01": 573, "arrObjKey02": false},
+                                        {"arrObjKey0": "arrObjVal0", "arrObjKey01": 573, "arrObjKey02": false, "arrObjKey03": "asadasd"},
                                         {"arrObjKey1": "arrObjVal1", "arrObjKey11": 141, "arrObjKey12": true}
                                     ],
                                     "boolStr": true,
-                                    "arrStr": ["arrStr1", "arrStr2", "arrStr3"],
+                                    "arrStr": ["arrStr1", "arrStr2", "arrStr3", ""],
                                     "arrNum": [123, 321, 111]
                                 }
                                 """)

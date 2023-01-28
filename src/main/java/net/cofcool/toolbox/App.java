@@ -86,7 +86,7 @@ public class App {
                     logger.info("Start run " + tool.name());
                     try {
                         tool.run(pArgs);
-                    } catch (Exception e) {
+                    } catch (Throwable e) {
                         logger.error(e);
                         logger.info("Help:");
                         logger.info(tool.help());

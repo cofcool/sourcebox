@@ -1,14 +1,20 @@
 package net.cofcool.toolbox.internal;
 
-import net.cofcool.toolbox.Tool;
-import net.cofcool.toolbox.ToolName;
-import org.apache.commons.io.FileUtils;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
+import net.cofcool.toolbox.Tool;
+import net.cofcool.toolbox.ToolName;
+import org.apache.commons.io.FileUtils;
 
 public class JsonToPojo implements Tool {
 
@@ -413,10 +419,10 @@ public class JsonToPojo implements Tool {
                 // Generate by CofCool@ToolBox %s
                 public record %s (
                     %s
-                ) {
-                }
+                ) {}
                 """);
 
+        private static final String VERSION = JsonToPojo.class.getPackage().getImplementationVersion();
         private final String lang;
         private final String ver;
         private final String template;
@@ -428,7 +434,7 @@ public class JsonToPojo implements Tool {
         }
 
         public String render(String pkg, String className, Set<String> fields) {
-            return String.format(template, pkg, JsonToPojo.class.getPackage().getImplementationVersion(), className, fields.stream().map(a -> {
+            return String.format(template, pkg, VERSION == null ? "" : VERSION, className, fields.stream().map(a -> {
                 if (this == JAVA_CLASS) {
                      return "private " + a + ";";
                 } else {

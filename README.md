@@ -1,6 +1,6 @@
 # 常用小工具
 
-使用 Java(最低要求 JDK 17), Python 等语言实现
+使用 Java(最低要求 JDK 17), Python 等语言实现, 运行 `./my-tools.sh` 查看帮助信息, `--debug=true` 打开调试模式
 
 ## dhtml2text
 
@@ -46,7 +46,7 @@ Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到
 
 使用: `./my-tools.sh --name=converts --cmd="upper test"`
 
-支持功能（可通过 `|` 连接多个命令）：
+支持功能（可通过 `|` 连接多个命令）:
 
 * md5，生成指定字符串的 md5 值
 * kindle，Kindle 笔记内容转换为 Markdown 文档
@@ -57,9 +57,18 @@ Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到
 * replace，字符串替换
 * ...
 
-## 根据 Git 提交记录生成更新日志
+## Git 提交记录生成更新日志
 
 使用: `./my-tools.sh --name=gitCommits2Log --path=./`
+
+## JSON 生成对象
+
+使用: `./my-tools.sh --name=json2POJO --path=./`
+
+支持:
+
+* Java class/record
+
 
 # 致谢
 

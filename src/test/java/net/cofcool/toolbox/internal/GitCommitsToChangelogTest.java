@@ -19,4 +19,12 @@ class GitCommitsToChangelogTest {
     void runWithLogPath() throws Exception {
         new GitCommitsToChangelog().run(new Tool.Args().arg("log", Utils.getTestResourcePath("/gitCommitsToChangelogTest.txt")).arg("out", "./target/changelog-runWithLogPath.md"));
     }
+
+    @Test
+    void runWithNoTag() throws Exception {
+        new GitCommitsToChangelog().run(new Tool.Args().arg("path", Utils.getTestResourcePath("/"))
+                .arg("out", "./target/changelog-runWithNoTag.md")
+                .arg("no-tag", "true")
+        );
+    }
 }

@@ -35,6 +35,7 @@ public class GitCommitsToChangelog implements Tool {
         String out = args.readArg("out").orElse(new Arg("", "./target/changelog.md")).val();
         var logFile = args.readArg("log");
         var requiredTag = args.readArg("tag");
+        var noTag = args.readArg("no-tag").filter(a -> a.val().equalsIgnoreCase("true"));
 
         String commitLog;
         if (logFile.isPresent()) {
@@ -71,6 +72,11 @@ public class GitCommitsToChangelog implements Tool {
                     .filter(a -> a.length > 2)
                     .map(a -> new Commit(a[0], a[1], String.join(";", Arrays.copyOfRange(a, 2, a.length))))
                     .forEach(c -> {
+                        getLogger().debug(c);
+                        if (noTag.isPresent()) {
+                            commits.add(c.toString());
+                            return;
+                        }
                         if (tag.get() == 0) {
                             c.tag().ifPresent(t -> {
                                 if (requiredTag.isPresent() && !requiredTag.get().val().equals(t)) {
@@ -95,7 +101,7 @@ public class GitCommitsToChangelog implements Tool {
 
     @Override
     public String help() {
-        return "[--path=./demo] [--out=demo-changelog.md] [--log=log.txt] [--tag=1.0.1]";
+        return "[--path=./demo] [--out=demo-changelog.md] [--log=log.txt] [--tag=1.0.1] [--no-tag=false]";
     }
 
     private record Commit(

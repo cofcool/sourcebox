@@ -45,12 +45,13 @@ public class JsonToPojo implements Tool {
         var langStr = args.readArg("lang").orElse(new Arg("", Lang.JAVA_RECORD.lang)).val();
         var verStr = args.readArg("ver").orElse(new Arg("", Lang.JAVA_RECORD.ver)).val();
         var lang = Lang.parse(langStr, verStr);
+        getLogger().info("Write file to " + out);
 
-        writeClass(root, result, null, pkg, out, lang, Boolean.parseBoolean(clean));
+        writeClass(root, result, pkg, out, lang, Boolean.parseBoolean(clean));
     }
 
     @SuppressWarnings("unchecked")
-    private void writeClass(String root, Map<Object, Object> result, String key, String pkg, String out, Lang lang, boolean clean) {
+    private void writeClass(String root, Map<Object, Object> result, String pkg, String out, Lang lang, boolean clean) {
         String pathname = out + File.separator + pkg.replace(".", File.separator);
         if (clean) {
             try {
@@ -63,35 +64,37 @@ public class JsonToPojo implements Tool {
         result.forEach((k1, v1) -> {
             Object v = v1;
             String k;
-            if (key != null && k1 instanceof ListMap) {
-                ListMap listMap = (ListMap) result;
+            if (v1 instanceof ListMap listMap) {
                 v = listMap.getData();
                 k = listMap.getKey();
             } else {
-                k = key != null ? key : (String) k1;
+                k = (String) k1;
             }
             var className = String.valueOf(k.charAt(0)).toUpperCase() + k.substring(1);
-            var type = "Object";
+            var type = className;
             if (Map.class.isAssignableFrom(v.getClass())) {
-                type = className;
-                writeClass(className, (Map<Object, Object>) v, k, pkg, out, lang, false);
+                writeClass(className, (Map<Object, Object>) v, pkg, out, lang, false);
             } else if (List.class.isAssignableFrom(v.getClass())) {
                 type = "List<Object>";
                 List<?> list = (List<?>) v;
                 if (!list.isEmpty()) {
                     Class<?> aClass = list.get(0).getClass();
                     if (Map.class.isAssignableFrom(aClass)) {
-                        writeClass(className, (Map<Object, Object>) list.get(0), k, pkg, out, lang, false);
+                        writeClass(className, (Map<Object, Object>) list.get(0), pkg, out, lang, false);
                         type = "List<" + className + ">";
                     } else if (String.class.isAssignableFrom(aClass)) {
                         type = "List<String>";
-                    } else if (Number.class.isAssignableFrom(aClass)) {
+                    } else if (Long.class.isAssignableFrom(aClass)) {
+                        type = "List<Long>";
+                    } else if (Integer.class.isAssignableFrom(aClass)) {
                         type = "List<Integer>";
                     }
                 }
             } else if (String.class.isAssignableFrom(v.getClass())) {
                 type = "String";
-            } else if (Number.class.isAssignableFrom(v.getClass())) {
+            } else if (Long.class.isAssignableFrom(v.getClass())) {
+                type = "Long";
+            }  else if (Integer.class.isAssignableFrom(v.getClass())) {
                 type = "Integer";
             } else if (Boolean.class.isAssignableFrom(v.getClass())) {
                 type = "Boolean";
@@ -117,8 +120,6 @@ public class JsonToPojo implements Tool {
     }
 
     private Node parse(Node cur, Map<Object, Object> result) {
-        getLogger().debug(cur);
-
         var key = new StringBuilder();
         var val = new StringBuilder();
         var curType = Type.INIT;
@@ -159,37 +160,40 @@ public class JsonToPojo implements Tool {
             }
             if (curType == Type.ARRAY) {
                 if (token == Token.OBJ_START) {
-                    var map = new ListMap(key.toString());
-                    result.put(map, key.toString());
+                    var map = new LinkedHashMap<>();
+                    result.put(key.toString(), map);
                     cur = parse(cur.prev, map);
                     key = new StringBuilder();
                     val = new StringBuilder();
+                    eleType = Type.OBJ;
                     continue;
                 }
                 if (token == Token.DOUBLE_QUOTES) {
+                    if (eleType == Type.INIT) eleType = Type.STRING;
                     continue;
                 }
                 if (token == Token.COMMON) {
                     if (cur.prev.token == Token.OBJ_END) {
                         continue;
                     }
-                    result.put(key.toString(), key.toString());
+                    result.put(key.toString(), toValue(key, eleType));
                     key = new StringBuilder();
                     val = new StringBuilder();
+                    eleType = Type.INIT;
                     continue;
                 }
                 if (token == Token.ARRAY_END) {
-                    if (eleType == Type.VALUE) {
-                        result.put(key.toString(), key.toString());
+                    if (eleType != Type.INIT) {
+                        result.put(key.toString(), toValue(key, eleType));
                     }
                     return cur;
                 }
                 key.append(cur.data());
-                eleType = Type.VALUE;
                 continue;
             }
             if (curType == Type.BEFORE_VALUE) {
                 if (token == Token.DOUBLE_QUOTES) {
+                    eleType = Type.STRING;
                     continue;
                 }
                 if (token == Token.OBJ_START || token == Token.ARRAY_START) {
@@ -199,6 +203,7 @@ public class JsonToPojo implements Tool {
                     key = new StringBuilder();
                     val = new StringBuilder();
                     curType = Type.NEXT;
+                    eleType = token == Token.OBJ_START ? Type.OBJ : Type.ARRAY;
                     continue;
                 }
 
@@ -213,7 +218,8 @@ public class JsonToPojo implements Tool {
                 }
                 if (token == Token.COMMON || token == Token.OBJ_END) {
                     curType = Type.NEXT;
-                    result.put(key.toString(), val.toString());
+                    Object v = toValue(val, eleType);
+                    result.put(key.toString(), v);
                     key = new StringBuilder();
                     val = new StringBuilder();
                     if (token == Token.OBJ_END) {
@@ -221,12 +227,28 @@ public class JsonToPojo implements Tool {
                     }
                     continue;
                 }
+                eleType = Type.INIT;
                 val.append(cur.data());
             }
 
         }
 
         return cur;
+    }
+
+    private static Object toValue(StringBuilder val, Type eleType) {
+        Object v = val.toString();
+        if (eleType != Type.STRING && eleType != Type.OBJ && eleType != Type.ARRAY) {
+            try {
+                v = Long.parseLong(val.toString());
+                if ((Long) v < Integer.MAX_VALUE) {
+                    v = ((Long) v).intValue();
+                }
+            } catch (NumberFormatException e) {
+                v = "true".equalsIgnoreCase(val.toString()) || "false".equalsIgnoreCase(val.toString()) ? Boolean.parseBoolean(val.toString()) : val.toString();
+            }
+        }
+        return v;
     }
 
     private Node parse(String json) {
@@ -273,7 +295,7 @@ public class JsonToPojo implements Tool {
 
         @Override
         public Object put(Object key, Object value) {
-            data.add(key);
+            data.add(value);
             return super.put(key, value);
         }
 
@@ -283,6 +305,11 @@ public class JsonToPojo implements Tool {
 
         public String getKey() {
             return key;
+        }
+
+        @Override
+        public String toString() {
+            return data.toString();
         }
     }
 
@@ -298,7 +325,7 @@ public class JsonToPojo implements Tool {
             return "Node{" +
                     "data=" + data +
                     ", token=" + token +
-                    ", next=" + next +
+                    ", next=" + next.token +
                     '}';
         }
 
@@ -362,7 +389,7 @@ public class JsonToPojo implements Tool {
 
 
     enum Type {
-        INIT, NEXT, OBJ, ARRAY, KEY, KEY_NEXT, VALUE, END, BEFORE_VALUE
+        INIT, NEXT, OBJ, ARRAY, STRING, NUMBER, BOOLEAN, KEY, KEY_NEXT, VALUE, END, BEFORE_VALUE
     }
 
     enum Token {
@@ -410,7 +437,7 @@ public class JsonToPojo implements Tool {
                 
                 // Generate by CofCool@ToolBox %s
                 public class %s {
-                    %s
+                %s
                 }
                 """),
         JAVA_RECORD("java", "17", """
@@ -418,7 +445,7 @@ public class JsonToPojo implements Tool {
                 
                 // Generate by CofCool@ToolBox %s
                 public record %s (
-                    %s
+                %s
                 ) {}
                 """);
 
@@ -434,13 +461,18 @@ public class JsonToPojo implements Tool {
         }
 
         public String render(String pkg, String className, Set<String> fields) {
-            return String.format(template, pkg, VERSION == null ? "" : VERSION, className, fields.stream().map(a -> {
-                if (this == JAVA_CLASS) {
-                     return "private " + a + ";";
-                } else {
-                    return a + ",";
-                }
-            }).collect(Collectors.joining("\n    ")));
+            return String.format(template, pkg, VERSION == null ? "" : VERSION, className,
+                fields.stream()
+                    .map(a -> {
+                        if (this == JAVA_CLASS) {
+                            return "private " + a + ";";
+                        } else {
+                            return a;
+                        }
+                    })
+                    .map(a -> "    " + a)
+                    .collect(Collectors.joining(this == JAVA_CLASS ? "\n" : ",\n"))
+            );
         }
 
         public String fileName(String className) {

@@ -12,7 +12,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
 
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"unchecked", "ConstantConditions"})
 public class App {
 
     public static String ABOUT;
@@ -24,7 +24,7 @@ public class App {
         try {
             var resource = App.class.getResource("/version");
             var versionPath = resource.getPath();
-            ABOUT = "CofCool@ToolBox " + FileUtils.readFileToString(new File(resource.getFile()), StandardCharsets.UTF_8);
+            ABOUT = "CofCool@ToolBox " + IOUtils.toString(App.class.getResourceAsStream("/version"), StandardCharsets.UTF_8);
             var path  = new URL(resource.getProtocol() + (resource.getProtocol().equals("jar") ? ":" : "://") + versionPath.substring(0, versionPath.length() - 7));
             var type = path.getProtocol();
             var root = path.getFile();

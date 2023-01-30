@@ -15,6 +15,7 @@ import org.apache.commons.io.IOUtils;
 @SuppressWarnings("unchecked")
 public class App {
 
+    public static String ABOUT;
     public static final boolean isWindows = System.getProperty("os.name").contains("Windows");
 
     private static final Set<Tool> ALL_TOOLS = new HashSet<>();
@@ -23,6 +24,7 @@ public class App {
         try {
             var resource = App.class.getResource("/version");
             var versionPath = resource.getPath();
+            ABOUT = "CofCool@ToolBox " + FileUtils.readFileToString(new File(resource.getFile()), StandardCharsets.UTF_8);
             var path  = new URL(resource.getProtocol() + (resource.getProtocol().equals("jar") ? ":" : "://") + versionPath.substring(0, versionPath.length() - 7));
             var type = path.getProtocol();
             var root = path.getFile();
@@ -73,6 +75,7 @@ public class App {
         LoggerFactory.setDebug(pArgs.readArg("debug").filter(d -> "true".equalsIgnoreCase(d.val())).isPresent());
 
         var logger = LoggerFactory.getLogger(App.class);
+        logger.info("About: " + ABOUT);
         logger.info("Example: --name=demo --path=tmp");
         logger.info("Tools: " + ALL_TOOLS.stream().map(Tool::name).toList());
         logger.info("Args: ");

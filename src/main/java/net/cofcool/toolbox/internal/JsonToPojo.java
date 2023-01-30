@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import net.cofcool.toolbox.App;
 import net.cofcool.toolbox.Tool;
 import net.cofcool.toolbox.ToolName;
 import org.apache.commons.io.FileUtils;
@@ -377,7 +378,7 @@ public class JsonToPojo implements Tool {
 
     @Override
     public String help() {
-        return "[--path=demo.json] [--root=Root] [--json=\"{}\"] --out=./pojo [--lang=java] [--ver=17] [--pkg=json.demo] [--clean=true]";
+        return "[--path=demo.json] [--root=Root] [--json=\"{}\"] [--out=./pojo] [--lang=java] [--ver=17] [--pkg=json.demo] [--clean=true]";
     }
 
 
@@ -428,7 +429,7 @@ public class JsonToPojo implements Tool {
         JAVA_CLASS("java", "", """
                 package %s;
                 
-                // Generate by CofCool@ToolBox %s
+                // Generate by %s
                 public class %s {
                 %s
                 }
@@ -436,13 +437,12 @@ public class JsonToPojo implements Tool {
         JAVA_RECORD("java", "17", """
                 package %s;
                 
-                // Generate by CofCool@ToolBox %s
+                // Generate by %s
                 public record %s (
                 %s
                 ) {}
                 """);
 
-        private static final String VERSION = JsonToPojo.class.getPackage().getImplementationVersion();
         private final String lang;
         private final String ver;
         private final String template;
@@ -454,7 +454,7 @@ public class JsonToPojo implements Tool {
         }
 
         public String render(String pkg, String className, Set<String> fields) {
-            return String.format(template, pkg, VERSION == null ? "" : VERSION, className,
+            return String.format(template, pkg, App.ABOUT, className,
                 fields.stream()
                     .map(a -> {
                         if (this == JAVA_CLASS) {

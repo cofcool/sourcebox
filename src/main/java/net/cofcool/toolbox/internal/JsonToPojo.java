@@ -1,5 +1,6 @@
 package net.cofcool.toolbox.internal;
 
+import com.google.gson.Gson;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -23,6 +24,7 @@ public class JsonToPojo implements Tool {
         return ToolName.json2POJO;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void run(Args args) throws Exception {
         String json;
@@ -33,11 +35,6 @@ public class JsonToPojo implements Tool {
             json = args.readArg("json").get().val();
         }
 
-        var result = new LinkedHashMap<>();
-        Node tokens = parse(json);
-        parse(tokens, result);
-        getLogger().debug(result);
-
         var pkg = args.readArg("pkg").orElse(new Arg("", "demo")).val();
         var clean = args.readArg("clean").orElse(new Arg("", "true")).val();
         var root = args.readArg("root").orElse(new Arg("", "Root")).val();
@@ -45,9 +42,9 @@ public class JsonToPojo implements Tool {
         var langStr = args.readArg("lang").orElse(new Arg("", Lang.JAVA_RECORD.lang)).val();
         var verStr = args.readArg("ver").orElse(new Arg("", Lang.JAVA_RECORD.ver)).val();
         var lang = Lang.parse(langStr, verStr);
-        getLogger().info("Write file to " + out);
+        getLogger().info("Write files to " + out);
 
-        writeClass(root, result, pkg, out, lang, Boolean.parseBoolean(clean));
+        writeClass(root, new Gson().fromJson(json, LinkedHashMap.class), pkg, out, lang, Boolean.parseBoolean(clean));
     }
 
     @SuppressWarnings("unchecked")
@@ -62,7 +59,7 @@ public class JsonToPojo implements Tool {
         }
         var contents = new LinkedHashSet<String>();
         result.forEach((k1, v1) -> {
-            Object v = v1;
+            var v = v1;
             String k;
             if (v1 instanceof ListMap listMap) {
                 v = listMap.getData();
@@ -72,7 +69,9 @@ public class JsonToPojo implements Tool {
             }
             var className = String.valueOf(k.charAt(0)).toUpperCase() + k.substring(1);
             var type = className;
-            if (Map.class.isAssignableFrom(v.getClass())) {
+            if (v == null) {
+                type = "Object";
+            } else if (Map.class.isAssignableFrom(v.getClass())  && !((Map<?, ?>) v).isEmpty()) {
                 writeClass(className, (Map<Object, Object>) v, pkg, out, lang, false);
             } else if (List.class.isAssignableFrom(v.getClass())) {
                 type = "List<Object>";
@@ -90,14 +89,8 @@ public class JsonToPojo implements Tool {
                         type = "List<Integer>";
                     }
                 }
-            } else if (String.class.isAssignableFrom(v.getClass())) {
-                type = "String";
-            } else if (Long.class.isAssignableFrom(v.getClass())) {
-                type = "Long";
-            }  else if (Integer.class.isAssignableFrom(v.getClass())) {
-                type = "Integer";
-            } else if (Boolean.class.isAssignableFrom(v.getClass())) {
-                type = "Boolean";
+            } else {
+                type = v.getClass().getSimpleName();
             }
             contents.add(type + " " + k);
         });

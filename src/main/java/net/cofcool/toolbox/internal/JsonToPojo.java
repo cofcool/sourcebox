@@ -1,8 +1,10 @@
 package net.cofcool.toolbox.internal;
 
 import com.google.gson.Gson;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,8 +34,10 @@ public class JsonToPojo implements Tool {
         var path = args.readArg("path");
         if (path.isPresent()) {
             json = FileUtils.readFileToString(new File(path.get().val()), StandardCharsets.UTF_8);
-        } else {
+        } else if (args.readArg("json").isPresent()) {
             json = args.readArg("json").get().val();
+        } else {
+            json = new BufferedReader(new InputStreamReader(System.in)).lines().collect(Collectors.joining());
         }
 
         var pkg = args.readArg("pkg").orElse(new Arg("", "demo")).val();
@@ -75,25 +79,23 @@ public class JsonToPojo implements Tool {
             } else if (Map.class.isAssignableFrom(v.getClass())  && !((Map<?, ?>) v).isEmpty()) {
                 writeClass(className, (Map<Object, Object>) v, pkg, out, lang, false);
             } else if (List.class.isAssignableFrom(v.getClass())) {
-                type = "List<Object>";
+                type = "Object";
                 List<?> list = (List<?>) v;
                 if (!list.isEmpty()) {
                     Class<?> aClass = list.get(0).getClass();
                     if (Map.class.isAssignableFrom(aClass)) {
                         writeClass(className, (Map<Object, Object>) list.get(0), pkg, out, lang, false);
-                        type = "List<" + className + ">";
-                    } else if (String.class.isAssignableFrom(aClass)) {
-                        type = "List<String>";
-                    } else if (Long.class.isAssignableFrom(aClass)) {
-                        type = "List<Long>";
-                    } else if (Integer.class.isAssignableFrom(aClass)) {
-                        type = "List<Integer>";
+                        type = className;
+                    } else {
+                        type = aClass.getName();
                     }
                 }
+                type = "java.util.List<" + type + ">";
             } else {
-                type = v.getClass().getSimpleName();
+                type = v.getClass().getName();
             }
-            contents.add(type + " " + k);
+
+            contents.add(type.replace("java.lang.", "") + " " + k);
         });
         writeFile(pkg, lang, pathname, root, contents);
     }

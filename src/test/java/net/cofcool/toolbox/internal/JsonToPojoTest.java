@@ -1,5 +1,6 @@
 package net.cofcool.toolbox.internal;
 
+import java.io.ByteArrayInputStream;
 import net.cofcool.toolbox.Tool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,16 @@ class JsonToPojoTest {
                 new Tool.Args()
                         .arg("json", JSON_STR)
                         .arg("out", "./target/pojo/run")
+                        .arg("pkg", "json.demo")
+        );
+    }
+
+    @Test
+    void runWithInput() throws Exception {
+        System.setIn(new ByteArrayInputStream(JSON_STR.getBytes()));
+        new JsonToPojo().run(
+                new Tool.Args()
+                        .arg("out", "./target/pojo/runWithInput")
                         .arg("pkg", "json.demo")
         );
     }

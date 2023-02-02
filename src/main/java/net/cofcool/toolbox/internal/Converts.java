@@ -1,8 +1,5 @@
 package net.cofcool.toolbox.internal;
 
-import net.cofcool.toolbox.Tool;
-import net.cofcool.toolbox.ToolName;
-
 import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -15,6 +12,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
+import net.cofcool.toolbox.Tool;
+import net.cofcool.toolbox.ToolName;
 
 @SuppressWarnings("ALL")
 public class Converts implements Tool {
@@ -41,7 +40,7 @@ public class Converts implements Tool {
     @SuppressWarnings({"ConstantConditions", "OptionalGetWithoutIsPresent"})
     @Override
     public void run(Args args) throws Exception {
-        var arg = args.readArg("cmd").get();
+        var arg = args.readArg("cmd");
 
         var pipelineArgs = Arrays.asList(arg.val().split("\\|")).iterator();
         if (!pipelineArgs.hasNext()) {
@@ -77,7 +76,7 @@ public class Converts implements Tool {
 
         String run(String args) throws Exception;
 
-        String demo();
+        Arg demo();
 
     }
 
@@ -91,8 +90,8 @@ public class Converts implements Tool {
         }
 
         @Override
-        public String demo() {
-            return "2011-11-11 11:11:11.123";
+        public Arg demo() {
+            return new Arg(getClass().getSimpleName().toLowerCase(), null, "covert date to timestamp", false, "2011-11-11 11:11:11.123");
         }
     }
 
@@ -105,8 +104,8 @@ public class Converts implements Tool {
         }
 
         @Override
-        public String demo() {
-            return "test . _";
+        public Arg demo() {
+            return new Arg(getClass().getSimpleName().toLowerCase(), null, "replace string", false, "test . _");
         }
     }
 
@@ -118,8 +117,8 @@ public class Converts implements Tool {
         }
 
         @Override
-        public String demo() {
-            return "";
+        public Arg demo() {
+            return new Arg(getClass().getSimpleName().toLowerCase(), null, "current timestamp", false, "");
         }
     }
 
@@ -131,8 +130,8 @@ public class Converts implements Tool {
         }
 
         @Override
-        public String demo() {
-            return "test";
+        public Arg demo() {
+            return new Arg(getClass().getSimpleName().toLowerCase(), null, "convert string to upper case", false, "test");
         }
     }
 
@@ -144,8 +143,8 @@ public class Converts implements Tool {
         }
 
         @Override
-        public String demo() {
-            return "test";
+        public Arg demo() {
+            return new Arg(getClass().getSimpleName().toLowerCase(), null, "convert string to lower case", false, "test");
         }
     }
 
@@ -158,8 +157,8 @@ public class Converts implements Tool {
         }
 
         @Override
-        public String demo() {
-            return "1231312321";
+        public Arg demo() {
+            return new Arg(getClass().getSimpleName().toLowerCase(), null, "format timestamp", false, "1231312321");
         }
     }
 
@@ -187,24 +186,21 @@ public class Converts implements Tool {
         }
 
         @Override
-        public String demo() {
-            return "demo";
+        public Arg demo() {
+            return new Arg(getClass().getSimpleName().toLowerCase(), null, "calculate string md5", false, "demo");
         }
     }
 
-
     @Override
-    public String help() {
-        return String.format(
-                """
-                --cmd=xxx
-                commands:
-                %s
-                """,
-                pipelineMap.entrySet().stream()
-                        .map(a -> "* " + a.getKey() + " " + a.getValue().demo())
-                        .collect(Collectors.joining("\n"))
-        );
+    public Args config() {
+        return new Args()
+            .arg(new Arg(
+                "cmd",
+                null,
+                "\n" + pipelineMap.values().stream().map(Pipeline::demo).map(a -> "        " + a.key() + ": " + a.desc() + ". Example: " + a.key() + " " + a.demo()).collect(Collectors.joining("\n")),
+                true,
+                ""
+            ));
     }
 
 }

@@ -1,62 +1,66 @@
 package net.cofcool.toolbox.internal;
 
 import java.io.ByteArrayInputStream;
+import net.cofcool.toolbox.BaseTest;
 import net.cofcool.toolbox.Tool;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class JsonToPojoTest {
+class JsonToPojoTest extends BaseTest {
 
     static final String JSON_STR = """
-            {
-                "str": "strVal",
-                "obj": {
-                    "objKey0": 12313,
-                    "objKey1": "objVal1"
-                },
-                "arrObj": [
-                    {"arrObjKey0": "arrObjVal0", "arrObjKey01": 573, "arrObjKey02": false, "arrObjKey03": "asadasd"},
-                    {"arrObjKey1": "arrObjVal1", "arrObjKey11": 141, "arrObjKey12": true}
-                ],
-                "boolStr": true,
-                "arrStr": ["arrStr1", "arrStr2", "arrStr3", ""],
-                "arrNum": [123, 321, 111]
-            }
-            """;
+        {
+            "str": "strVal",
+            "obj": {
+                "objKey0": 12313,
+                "objKey1": "objVal1"
+            },
+            "arrObj": [
+                {"arrObjKey0": "arrObjVal0", "arrObjKey01": 573, "arrObjKey02": false, "arrObjKey03": "asadasd"},
+                {"arrObjKey1": "arrObjVal1", "arrObjKey11": 141, "arrObjKey12": true}
+            ],
+            "boolStr": true,
+            "arrStr": ["arrStr1", "arrStr2", "arrStr3", ""],
+            "arrNum": [123, 321, 111]
+        }
+        """;
 
-    @BeforeEach
-    void setup() {
+    protected void init() {
         System.setProperty("logging.debug", "true");
+    }
+
+    @Override
+    protected Tool instance() {
+        return new JsonToPojo();
     }
 
     @Test
     void run() throws Exception {
-        new JsonToPojo().run(
-                new Tool.Args()
-                        .arg("json", JSON_STR)
-                        .arg("out", "./target/pojo/run")
-                        .arg("pkg", "json.demo")
+        instance().run(
+            args
+                .arg("json", JSON_STR)
+                .arg("out", "./target/pojo/run")
+                .arg("pkg", "json.demo")
         );
     }
 
     @Test
     void runWithInput() throws Exception {
         System.setIn(new ByteArrayInputStream(JSON_STR.getBytes()));
-        new JsonToPojo().run(
-                new Tool.Args()
-                        .arg("out", "./target/pojo/runWithInput")
-                        .arg("pkg", "json.demo")
+        instance().run(
+            args
+                .arg("out", "./target/pojo/runWithInput")
+                .arg("pkg", "json.demo")
         );
     }
 
     @Test
     void runToClass() throws Exception {
-        new JsonToPojo().run(
-                new Tool.Args()
-                        .arg("json", JSON_STR)
-                        .arg("ver", JsonToPojo.Lang.JAVA_CLASS.getVer())
-                        .arg("out", "./target/pojo/runToClass")
-                        .arg("pkg", "json.demo")
+        instance().run(
+            args
+                .arg("json", JSON_STR)
+                .arg("ver", JsonToPojo.Lang.JAVA_CLASS.getVer())
+                .arg("out", "./target/pojo/runToClass")
+                .arg("pkg", "json.demo")
         );
     }
 }

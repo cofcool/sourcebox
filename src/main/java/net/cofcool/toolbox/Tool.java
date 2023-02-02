@@ -1,8 +1,10 @@
 package net.cofcool.toolbox;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public interface Tool {
 
@@ -10,24 +12,38 @@ public interface Tool {
 
     void run(Args args) throws Exception;
 
-    String help();
+    Args config();
 
     default Logger getLogger() {
         return LoggerFactory.getLogger(getClass());
     }
 
-    record Arg(String key, String val) {
+    record Arg(String key, String val, String desc, boolean required, String demo) {
+
+        public boolean isPresent() {
+            return val != null;
+        }
+
+        public void ifPresent(Consumer<Arg> consumer) {
+            if (val != null) {
+                consumer.accept(this);
+            }
+        }
+
+        public static Arg of(String key, String val) {
+            return new Arg(key, val, null, false, null);
+        }
 
     }
 
-    class Args extends HashSet<Arg> {
+    class Args extends LinkedHashMap<String, Arg> {
 
         public Args(int initialCapacity) {
             super(initialCapacity);
         }
 
         public Args() {
-            super(4);
+            this(4);
         }
 
         public Args(String[] args) {
@@ -41,23 +57,72 @@ public interface Tool {
             }
         }
 
-        public Args arg(String key, String val) {
-            add(new Arg(key, val));
+        Args setupConfig(Args config) throws IllegalArgumentException {
+            var error = new ArrayList<Arg>();
+            for (Arg arg : config.values()) {
+                if (get(arg.key()) == null) {
+                    if (arg.required()) {
+                        error.add(arg);
+                    } else {
+                        arg(arg);
+                    }
+                }
+            }
+            if (!error.isEmpty()) {
+                throw new IllegalArgumentException(error.stream().map(a -> String.format("%s must be specified, like: %s=%s", a.key(), a.key(), a.demo())).collect(Collectors.joining("; ")));
+            }
+
             return this;
         }
 
-        public Optional<Arg> readArg(String key) {
-            for (Arg arg : this) {
-                if (arg.key.equals(key)) {
-                    return Optional.of(arg);
-                }
+        public Args args(Collection<Arg> args) {
+            for (Arg arg : args) {
+                arg(arg);
             }
-            return Optional.empty();
+            return this;
+        }
+
+        public Args arg(Arg arg) {
+            put(arg.key(), arg);
+            return this;
+        }
+
+        public Args arg(String key, String val) {
+            return arg(Arg.of(key, val));
+        }
+
+        public Arg readArg(String key) {
+            var arg = get(key);
+            if (arg == null) {
+                throw new IllegalStateException("Do not support argument " + key + ", please see the help");
+            }
+
+            return arg;
         }
 
         @Override
-        public String[] toArray() {
-            return Arrays.stream(super.toArray()).map(a -> ((Arg)a).key).toArray(String[]::new);
+        public String toString() {
+            var synopsis = values()
+                .stream()
+                .map(a ->
+                    String.join(
+                        "",
+                        a.required() ? "" : "[",
+                        "--", a.key(),
+                        "=",
+                        a.isPresent() ? a.val() : a.demo(),
+                        a.required() ? "" : "]"
+                    )
+                )
+                .collect(Collectors.joining(" "));
+            var description = values()
+                .stream()
+                .map(a -> "    --" + a.key() + "    " + a.desc() + (a.isPresent() ? ". Default: " + a.val() : ". Example: " + a.demo()))
+                .collect(Collectors.joining("\n"));
+            return "Synopsis\n    "
+                + synopsis
+                + "\nDescription\n"
+                + description;
         }
     }
 }

@@ -5,7 +5,7 @@ import com.google.gson.annotations.SerializedName;
 public record ListsItem(
 
     @SerializedName("subscribed")
-    boolean subscribed,
+    Boolean subscribed,
 
     @SerializedName("idBoard")
     String idBoard,

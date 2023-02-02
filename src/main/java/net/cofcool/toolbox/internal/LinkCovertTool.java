@@ -85,11 +85,13 @@ public class LinkCovertTool implements Tool {
 
     @Override
     public void run(Args args) throws Exception {
-        covert(args.readArg("input").get().val(), args.readArg("output").get().val());
+        covert(args.readArg("input").val(), args.readArg("output").val());
     }
 
     @Override
-    public String help() {
-        return "--input=demo --output=test";
+    public Args config() {
+        return new Args()
+            .arg(new Arg("input", null, "link file path", true, "demo.desktop"))
+            .arg(new Arg("output", null, "out file path", true, "demo.md"));
     }
 }

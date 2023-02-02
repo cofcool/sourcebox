@@ -33,19 +33,24 @@ public class JsonToPojo implements Tool {
         String json;
         var path = args.readArg("path");
         if (path.isPresent()) {
-            json = FileUtils.readFileToString(new File(path.get().val()), StandardCharsets.UTF_8);
+            json = FileUtils.readFileToString(new File(path.val()), StandardCharsets.UTF_8);
         } else if (args.readArg("json").isPresent()) {
-            json = args.readArg("json").get().val();
+            json = args.readArg("json").val();
         } else {
-            json = new BufferedReader(new InputStreamReader(System.in)).lines().collect(Collectors.joining());
+            InputStreamReader in = new InputStreamReader(System.in);
+            if (in.ready()) {
+                json = new BufferedReader(in).lines().collect(Collectors.joining());
+            } else {
+                throw new IllegalArgumentException("Can not read json from stdin");
+            }
         }
 
-        var pkg = args.readArg("pkg").orElse(new Arg("", "demo")).val();
-        var clean = args.readArg("clean").orElse(new Arg("", "true")).val();
-        var root = args.readArg("root").orElse(new Arg("", "Root")).val();
-        var out = args.readArg("out").orElse(new Arg("", "./pojo")).val();
-        var langStr = args.readArg("lang").orElse(new Arg("", Lang.JAVA_RECORD.lang)).val();
-        var verStr = args.readArg("ver").orElse(new Arg("", Lang.JAVA_RECORD.ver)).val();
+        var pkg = args.readArg("pkg").val();
+        var clean = args.readArg("clean").val();
+        var root = args.readArg("root").val();
+        var out = args.readArg("out").val();
+        var langStr = args.readArg("lang").val();
+        var verStr = args.readArg("ver").val();
         var lang = Lang.parse(langStr, verStr);
         getLogger().info("Write files to " + out);
 
@@ -379,8 +384,17 @@ public class JsonToPojo implements Tool {
 
 
     @Override
-    public String help() {
-        return "[--path=demo.json] [--root=Root] [--json=\"{}\"] [--out=./pojo] [--lang=java] [--ver=17] [--pkg=json.demo] [--clean=true]";
+    public Args config() {
+        return new Args()
+            .arg(new Arg("path", null, "json file path, if not set path or json, will read from stdin", false, "demo.json"))
+            .arg(new Arg("json", null, "json content", false, "{}"))
+            .arg(new Arg("out", "./pojo", "output path", false, null))
+            .arg(new Arg("root", "Root", "root class name", false, null))
+            .arg(new Arg("lang", Lang.JAVA_RECORD.getLang(), "language: " + Arrays.stream(Lang.values()).map(l -> l.getLang() + "-" + l.getVer()).collect(Collectors.joining(",")), false, null))
+            .arg(new Arg("ver", Lang.JAVA_RECORD.getVer(), "language version", false, null))
+            .arg(new Arg("pkg", "demo.json", "generated class package", false, null))
+            .arg(new Arg("clean", "true", "delete output directory", false, null))
+            ;
     }
 
 
@@ -428,7 +442,7 @@ public class JsonToPojo implements Tool {
     }
 
     enum Lang {
-        JAVA_CLASS("java", "", """
+        JAVA_CLASS("java", "legacy", """
                 package %s;
                 
                 // Generate by %s

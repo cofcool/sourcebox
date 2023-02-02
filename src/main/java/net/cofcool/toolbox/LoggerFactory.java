@@ -43,7 +43,7 @@ public final class LoggerFactory {
                     val = ((Throwable) val).getMessage();
                 }
             }
-            System.err.println(val);
+            System.err.println("ERROR: " + val);
         }
 
         @Override

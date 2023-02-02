@@ -1,7 +1,6 @@
 package net.cofcool.toolbox.internal.trello;
 
 import com.google.gson.annotations.SerializedName;
-
 import java.util.List;
 
 public record CardsItem(
@@ -43,10 +42,10 @@ public record CardsItem(
     Object dueReminder,
 
     @SerializedName("subscribed")
-    boolean subscribed,
+    Boolean subscribed,
 
     @SerializedName("pos")
-    double pos,
+    Double pos,
 
     @SerializedName("staticMapUrl")
     Object staticMapUrl,

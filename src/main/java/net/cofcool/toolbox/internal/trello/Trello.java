@@ -1,7 +1,6 @@
 package net.cofcool.toolbox.internal.trello;
 
 import com.google.gson.annotations.SerializedName;
-
 import java.util.List;
 
 public record Trello(
@@ -16,7 +15,7 @@ public record Trello(
     List<Object> idTags,
 
     @SerializedName("pinned")
-    boolean pinned,
+    Boolean pinned,
 
     @SerializedName("labelNames")
     LabelNames labelNames,
@@ -52,10 +51,10 @@ public record Trello(
     Object creationMethod,
 
     @SerializedName("subscribed")
-    boolean subscribed,
+    Boolean subscribed,
 
     @SerializedName("starred")
-    boolean starred,
+    Boolean starred,
 
     @SerializedName("members")
     List<MembersItem> members,
@@ -94,7 +93,7 @@ public record Trello(
     List<LabelsItem> labels,
 
     @SerializedName("enterpriseOwned")
-    boolean enterpriseOwned,
+    Boolean enterpriseOwned,
 
     @SerializedName("ixUpdate")
     String ixUpdate,
@@ -109,7 +108,7 @@ public record Trello(
     String name,
 
     @SerializedName("closed")
-    boolean closed,
+    Boolean closed,
 
     @SerializedName("nodeId")
     String nodeId,

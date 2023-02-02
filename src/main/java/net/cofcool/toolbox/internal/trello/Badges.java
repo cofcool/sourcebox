@@ -26,7 +26,7 @@ public record Badges(
     Object checkItemsEarliestDue,
 
     @SerializedName("subscribed")
-    boolean subscribed,
+    Boolean subscribed,
 
     @SerializedName("due")
     Object due,

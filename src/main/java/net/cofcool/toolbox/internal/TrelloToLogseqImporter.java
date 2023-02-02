@@ -1,23 +1,42 @@
 package net.cofcool.toolbox.internal;
 
+import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
+import static java.time.temporal.ChronoField.DAY_OF_MONTH;
+import static java.time.temporal.ChronoField.HOUR_OF_DAY;
+import static java.time.temporal.ChronoField.MILLI_OF_SECOND;
+import static java.time.temporal.ChronoField.MINUTE_OF_HOUR;
+import static java.time.temporal.ChronoField.MONTH_OF_YEAR;
+import static java.time.temporal.ChronoField.NANO_OF_SECOND;
+import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
+import static java.time.temporal.ChronoField.YEAR;
+
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
-import net.cofcool.toolbox.Tool;
-import net.cofcool.toolbox.ToolName;
-import net.cofcool.toolbox.internal.trello.*;
-import org.apache.commons.io.IOUtils;
-
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.SignStyle;
-import java.util.*;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
-
-import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
-import static java.time.temporal.ChronoField.*;
+import net.cofcool.toolbox.Tool;
+import net.cofcool.toolbox.ToolName;
+import net.cofcool.toolbox.internal.trello.ActionsItem;
+import net.cofcool.toolbox.internal.trello.CardsItem;
+import net.cofcool.toolbox.internal.trello.CheckItemsItem;
+import net.cofcool.toolbox.internal.trello.ChecklistsItem;
+import net.cofcool.toolbox.internal.trello.LabelsItem;
+import net.cofcool.toolbox.internal.trello.ListsItem;
+import net.cofcool.toolbox.internal.trello.Trello;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 
 public class TrelloToLogseqImporter implements Tool {
 
@@ -29,8 +48,8 @@ public class TrelloToLogseqImporter implements Tool {
 
     @Override
     public void run(Args args) throws Exception {
-        var path = args.readArg("path").get().val();
-        var outPath = args.readArg("outPath").orElse(new Arg("", "."));
+        var path = args.readArg("path").val();
+        var outPath = args.readArg("out");
         try (var reader = new JsonReader(new FileReader(path))) {
             Trello trello = new Gson().fromJson(reader, Trello.class);
             var name = trello.name();
@@ -79,6 +98,7 @@ public class TrelloToLogseqImporter implements Tool {
                     }
                 }
                 String output = outPath.val() + "/" + "trello" + name + "-" + entry.getKey() + ".md";
+                FileUtils.forceMkdirParent(new File(output));
                 try (var writer = new FileWriter(output)) {
                     IOUtils.write(out.toString(), writer);
                     getLogger().info("Generate " + output + " ok");
@@ -89,8 +109,10 @@ public class TrelloToLogseqImporter implements Tool {
     }
 
     @Override
-    public String help() {
-        return "--path=demo --outPath=test";
+    public Args config() {
+        return new Args()
+            .arg(new Arg("path", null, "trello json file path", true, "./demo.json"))
+            .arg(new Arg("out", "./trello", "output directory", false, null));
     }
 
     private List<ActionsItem> actionList(Trello trello, String id) {

@@ -1,14 +1,12 @@
 package net.cofcool.toolbox.internal;
 
-import net.cofcool.toolbox.Tool;
-import net.cofcool.toolbox.ToolName;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
-
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.stream.Collectors;
+import net.cofcool.toolbox.Tool;
+import net.cofcool.toolbox.ToolName;
+import org.apache.commons.io.FileUtils;
 
 public class SplitKindleClippings implements Tool {
     @Override
@@ -18,8 +16,8 @@ public class SplitKindleClippings implements Tool {
 
     @Override
     public void run(Args args) throws Exception {
-        var path = args.readArg("path").get().val();
-        var out = args.readArg("out").orElse(new Arg("", FilenameUtils.getBaseName(path) + ".md")).val();
+        var path = args.readArg("path").val();
+        var out = args.readArg("out").val();
         var fileContent = FileUtils.readFileToString(new File(path), StandardCharsets.UTF_8);
         String strs = Arrays
                 .stream(fileContent.split("=========="))
@@ -42,7 +40,9 @@ public class SplitKindleClippings implements Tool {
     }
 
     @Override
-    public String help() {
-        return "--path=kindle.txt --out=kindle.md";
+    public Args config() {
+        return new Args()
+            .arg(new Arg("path", null, "clipboard file path", true, "./kindle.txt"))
+            .arg(new Arg("out", "./kindle.md", "output path", false, null));
     }
 }

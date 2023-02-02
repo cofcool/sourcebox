@@ -2,6 +2,10 @@
 
 使用 Java(最低要求 JDK 17), Python 等语言实现, 运行 `./my-tools.sh` 查看帮助信息, `--debug=true` 打开调试模式
 
+**TODO**
+
+- [ ] 使用 GraalVM 编译为本地代码 
+
 ## dhtml2text
 
 该脚本可以下载指定页面下的所有a标签对应的链接，也可把下载下来的html页面合并为纯文本文件。
@@ -44,7 +48,7 @@ Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到
 
 ## 常用字符串转换工具
 
-使用: `./my-tools.sh --name=converts --cmd="upper test"`
+使用: `./my-tools.sh --tool=converts --cmd="upper test"`
 
 支持功能（可通过 `|` 连接多个命令）:
 
@@ -59,11 +63,11 @@ Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到
 
 ## Git 提交记录生成更新日志
 
-使用: `./my-tools.sh --name=gitCommits2Log --path=./`
+使用: `./my-tools.sh --tool=gitCommits2Log --path=./`
 
 ## JSON 生成对象
 
-使用: `./my-tools.sh --name=json2POJO --path=./`
+使用: `./my-tools.sh --tool=json2POJO --path=./`
 
 支持:
 

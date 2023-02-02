@@ -1,16 +1,15 @@
 package net.cofcool.toolbox.internal;
 
-import net.cofcool.toolbox.Tool;
-import net.cofcool.toolbox.ToolName;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import net.cofcool.toolbox.Tool;
+import net.cofcool.toolbox.ToolName;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 
 /**
  * git-log PRETTY FORMATS
@@ -32,16 +31,16 @@ public class GitCommitsToChangelog implements Tool {
     // (tag: 1.0.1);a9d3e04;add Converts
     @Override
     public void run(Args args) throws Exception {
-        String out = args.readArg("out").orElse(new Arg("", "./target/changelog.md")).val();
+        String out = args.readArg("out").val();
         var logFile = args.readArg("log");
         var requiredTag = args.readArg("tag");
-        var noTag = args.readArg("no-tag").filter(a -> a.val().equalsIgnoreCase("true"));
+        var noTag = args.readArg("no-tag").val().equalsIgnoreCase("true");
 
         String commitLog;
         if (logFile.isPresent()) {
-            commitLog = FileUtils.readFileToString(new File(logFile.get().val()), StandardCharsets.UTF_8);
+            commitLog = FileUtils.readFileToString(new File(logFile.val()), StandardCharsets.UTF_8);
         } else {
-            String path = args.readArg("path").get().val();
+            String path = args.readArg("path").val();
 
             String command = "git log --format=%d;%h;%s";
             getLogger().info("Run command: " + command);
@@ -73,13 +72,13 @@ public class GitCommitsToChangelog implements Tool {
                     .map(a -> new Commit(a[0], a[1], String.join(";", Arrays.copyOfRange(a, 2, a.length))))
                     .forEach(c -> {
                         getLogger().debug(c);
-                        if (noTag.isPresent()) {
+                        if (noTag) {
                             commits.add(c.toString());
                             return;
                         }
                         if (tag.get() == 0) {
                             c.tag().ifPresent(t -> {
-                                if (requiredTag.isPresent() && !requiredTag.get().val().equals(t)) {
+                                if (!t.equals(requiredTag.val())) {
                                     return;
                                 }
                                 tag.set(1);
@@ -100,8 +99,13 @@ public class GitCommitsToChangelog implements Tool {
     }
 
     @Override
-    public String help() {
-        return "[--path=./demo] [--out=demo-changelog.md] [--log=log.txt] [--tag=1.0.1] [--no-tag=false]";
+    public Args config() {
+        return new Args()
+            .arg(new Arg("path", null, "project directory, must set this or log", false, "./demo/"))
+            .arg(new Arg("log", null, "Git commit log fil", false, "./git-commit-log.txt"))
+            .arg(new Arg("out", "./target/changelog.md", "generate file output path", false, null))
+            .arg(new Arg("tag", null, "read commit log to the tag", false, "1.0.0"))
+            .arg(new Arg("no-tag", "false", "if true, read all commit log and write into file", false, null));
     }
 
     private record Commit(

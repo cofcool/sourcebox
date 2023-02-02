@@ -7,7 +7,10 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.jar.JarFile;
+import net.cofcool.toolbox.Tool.Arg;
+import net.cofcool.toolbox.Tool.Args;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -18,7 +21,7 @@ public class App {
     public static String ABOUT;
     public static final boolean isWindows = System.getProperty("os.name").contains("Windows");
 
-    private static final Set<Tool> ALL_TOOLS = new HashSet<>();
+    static final Set<Tool> ALL_TOOLS = new HashSet<>();
 
     static {
         try {
@@ -71,34 +74,43 @@ public class App {
     }
 
     public static void main(String[] args) {
-        var pArgs = new Tool.Args(args);
-        LoggerFactory.setDebug(pArgs.readArg("debug").filter(d -> "true".equalsIgnoreCase(d.val())).isPresent());
+        var pArgs = new Tool.Args(args).setupConfig(
+            new Args()
+                .arg(new Arg("debug", "false", "", false, null))
+                .arg(new Arg("tool", null, "", false, "converts"))
+        );
+        LoggerFactory.setDebug("true".equalsIgnoreCase(pArgs.readArg("debug").val()));
 
         var logger = LoggerFactory.getLogger(App.class);
-        logger.info("About: " + ABOUT);
-        logger.info("Example: --name=demo --path=tmp");
-        logger.info("Tools: " + ALL_TOOLS.stream().map(Tool::name).toList());
-        logger.info("Args: ");
-        logger.info(pArgs);
-        logger.info("----------");
-        pArgs.readArg("name").ifPresent(a -> {
-            var notRun = true;
+        var notRun = new AtomicBoolean(true);
+        pArgs.readArg("tool").ifPresent(a -> {
             for (Tool tool : ALL_TOOLS) {
                 if (tool.name().name().equals(a.val())) {
-                    notRun = false;
+                    notRun.set(false);
                     logger.info("Start run " + tool.name());
                     try {
-                        tool.run(pArgs);
+                        tool.run(pArgs.setupConfig(tool.config()));
                     } catch (Throwable e) {
                         logger.error(e);
-                        logger.info("Help:");
-                        logger.info(tool.help());
+                        logger.info("Help");
+                        logger.info(tool.config());
                     }
                 }
             }
-            if (notRun) {
-                logger.error("Do not support " + a.val());
-            }
         });
+        if (notRun.get()) {
+            logger.error("Please check tool argument");
+            logAbout(pArgs, logger);
+        }
+    }
+
+    private static void logAbout(Args pArgs, Logger logger) {
+        logger.info("About: " + ABOUT);
+        logger.info("Example: --tool=demo --path=tmp");
+        logger.info("Tools: " + ALL_TOOLS.stream().map(Tool::name).toList());
+        if (LoggerFactory.isDebug()) {
+            logger.info("Args: ");
+            logger.info(pArgs);
+        }
     }
 }

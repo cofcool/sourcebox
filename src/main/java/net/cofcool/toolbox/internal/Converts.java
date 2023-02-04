@@ -191,6 +191,31 @@ public class Converts implements Tool {
         }
     }
 
+    private class Base64 implements Pipeline {
+
+        @Override
+        public String run(String args) throws Exception{
+            String[] split = args.split(" ");
+            if (split.length != 2) {
+                throw new IllegalArgumentException("Base64 arguments size must be 2");
+            }
+            var type = split[0];
+            var val = split[1];
+            if (type.equalsIgnoreCase("en")) {
+                return new String(java.util.Base64.getEncoder().encode(val.getBytes(StandardCharsets.UTF_8)));
+            } else if (type.equalsIgnoreCase("de"))  {
+                return new String(java.util.Base64.getDecoder().decode(val));
+            } else {
+                throw new IllegalArgumentException("Base64 first argument must be en or de");
+            }
+        }
+
+        @Override
+        public Arg demo() {
+            return new Arg(getClass().getSimpleName().toLowerCase(), null, "base64 encoder(en) or decoder(de)", false, "en/de demo");
+        }
+    }
+
     @Override
     public Args config() {
         return new Args()

@@ -2,6 +2,7 @@ package net.cofcool.toolbox.internal;
 
 import net.cofcool.toolbox.BaseTest;
 import net.cofcool.toolbox.Tool;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class ConvertsTest extends BaseTest {
@@ -21,6 +22,9 @@ class ConvertsTest extends BaseTest {
         instance().run(args.arg("cmd", "lower ASSS"));
         instance().run(args.arg("cmd", "now"));
         instance().run(args.arg("cmd", "replace asd.asda.asda . _"));
+        instance().run(args.arg("cmd", "base64 en demo"));
+        instance().run(args.arg("cmd", "base64 de ZGVtbw=="));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> instance().run(args.arg("cmd", "base64 urlen adasd.com/%4asd;")));
     }
 
     @Override

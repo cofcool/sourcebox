@@ -1,5 +1,10 @@
 package net.cofcool.toolbox;
 
+import net.cofcool.toolbox.Tool.Arg;
+import net.cofcool.toolbox.Tool.Args;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -9,10 +14,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.jar.JarFile;
-import net.cofcool.toolbox.Tool.Arg;
-import net.cofcool.toolbox.Tool.Args;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
+import java.util.stream.Collectors;
 
 
 @SuppressWarnings({"unchecked", "ConstantConditions"})
@@ -107,7 +109,7 @@ public class App {
     private static void logAbout(Args pArgs, Logger logger) {
         logger.info("About: " + ABOUT);
         logger.info("Example: --tool=demo --path=tmp");
-        logger.info("Tools: " + ALL_TOOLS.stream().map(Tool::name).toList());
+        logger.info("Tools:\n    " + ALL_TOOLS.stream().map(Tool::name).map(ToolName::toString).collect(Collectors.joining("\n    ")));
         if (LoggerFactory.isDebug()) {
             logger.info("Args: ");
             logger.info(pArgs);

@@ -1,78 +1,39 @@
 package net.cofcool.toolbox;
 
-import net.cofcool.toolbox.Tool.Arg;
-import net.cofcool.toolbox.Tool.Args;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-
-import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.jar.JarFile;
 import java.util.stream.Collectors;
+import net.cofcool.toolbox.Tool.Arg;
+import net.cofcool.toolbox.Tool.Args;
+import org.apache.commons.io.IOUtils;
 
 
 @SuppressWarnings({"unchecked", "ConstantConditions"})
 public class App {
 
     public static String ABOUT;
-    public static final boolean isWindows = System.getProperty("os.name").contains("Windows");
 
     static final Set<Tool> ALL_TOOLS = new HashSet<>();
 
+    private static final String VERSION_TXT = "/version.txt";
+
     static {
         try {
-            var resource = App.class.getResource("/version");
-            var versionPath = resource.getPath();
-            ABOUT = "CofCool@ToolBox " + IOUtils.toString(App.class.getResourceAsStream("/version"), StandardCharsets.UTF_8);
-            var path  = new URL(resource.getProtocol() + (resource.getProtocol().equals("jar") ? ":" : "://") + versionPath.substring(0, versionPath.length() - 7));
-            var type = path.getProtocol();
-            var root = path.getFile();
-            if (type.equals("file")) {
-                var connection = path.openConnection();
-                connection.connect();
-                var dirs = IOUtils.toString(connection.getInputStream(), StandardCharsets.UTF_8);
-                for (String dir : dirs.split("\n")) {
-                    File file = new File(root + dir);
-                    if (file.isDirectory()) {
-                        for (File subFile : FileUtils.listFiles(file, new String[] {"class"}, true)) {
-                            cacheClass(subFile.getPath().substring(root.length() - (isWindows ? 1: 0)).replace(File.separator, "."));
-                        }
-                    }
-                }
-            } else if (type.equals("jar")) {
-                try (var file = new JarFile(new File(root.substring(5, root.length() - 2)))) {
-                    file.stream()
-                        .filter(a -> a.getRealName().endsWith(".class"))
-                        .forEach(j -> cacheClass(j.getRealName().replace("/", ".")));
-                }
-            } else {
-                throw new IllegalStateException("Do not support file type " + path);
+            ABOUT = IOUtils.toString(App.class.getResourceAsStream(VERSION_TXT), StandardCharsets.UTF_8);
+            for (ToolName tool : ToolName.values()) {
+                cacheClass(tool.getTool());
             }
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
-    private static void cacheClass(String name) {
-        if (name.contains("module-info")) {
-            return;
-        }
-        try {
-            Class<?> aClass = App.class.getClassLoader().loadClass(name.substring(0, name.length() - 6));
-            if (aClass != Tool.class && Tool.class.isAssignableFrom(aClass)) {
-                Class<Tool>  type = (Class<Tool>) aClass;
-                Constructor<Tool> constructor = type.getConstructor();
-                ALL_TOOLS.add(constructor.newInstance());
-            }
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
+    private static void cacheClass(Class<? extends Tool> type) throws Exception {
+        Constructor<Tool> constructor = (Constructor<Tool>) type.getConstructor();
+        ALL_TOOLS.add(constructor.newInstance());
     }
 
     public static void main(String[] args) {

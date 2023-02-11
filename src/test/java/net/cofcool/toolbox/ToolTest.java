@@ -9,13 +9,13 @@ import org.junit.jupiter.api.function.Executable;
 class ToolTest {
 
     @Test
-    void args() {
-        System.out.println(new Args(new String[]{"--tool=test", "--cmd=md5", "sas"}));
+    void toHelpString() {
+        System.out.println(new Args(new String[]{"--tool=test", "--cmd=md5 = dd", "sas"}).toHelpString());
     }
 
     @Test
-    void toSimpleString() {
-        System.out.println(new Args(new String[]{"--tool=test", "--cmd=md5", "sas"}).toSimpleString());
+    void args() {
+        System.out.println(new Args(new String[]{"--tool=test", "--cmd=md5", "sas"}));
     }
 
     @Test

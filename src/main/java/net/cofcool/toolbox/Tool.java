@@ -1,6 +1,7 @@
 package net.cofcool.toolbox;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.function.Consumer;
@@ -53,6 +54,9 @@ public interface Tool {
                     continue;
                 }
                 String[] strings = s.split("=");
+                if (strings.length > 2) {
+                    strings[1] = String.join("=", Arrays.copyOfRange(strings, 1, strings.length)).trim();
+                }
                 arg(strings[0], strings[1].trim());
             }
         }
@@ -100,12 +104,12 @@ public interface Tool {
             return arg;
         }
 
-        public String toSimpleString() {
+        @Override
+        public String toString() {
             return super.toString();
         }
 
-        @Override
-        public String toString() {
+        public String toHelpString() {
             var synopsis = values()
                 .stream()
                 .map(a ->

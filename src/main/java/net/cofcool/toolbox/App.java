@@ -30,7 +30,7 @@ public class App {
 
         var logger = LoggerFactory.getLogger(App.class);
         logger.debug("Args:");
-        logger.debug(pArgs.toSimpleString());
+        logger.debug(pArgs);
 
         var notRun = new AtomicBoolean(true);
         pArgs.readArg("tool").ifPresent(a -> {
@@ -43,14 +43,14 @@ public class App {
                     } catch (Throwable e) {
                         logger.error(e);
                         logger.info("Help");
-                        logger.info(tool.config());
+                        logger.info(tool.config().toHelpString());
                     }
                 }
             }
         });
         if (notRun.get()) {
             logger.error("Please check tool argument");
-            logAbout(pArgs, logger);
+            logAbout(logger);
         }
     }
 
@@ -70,7 +70,7 @@ public class App {
         ALL_TOOLS.add(constructor.newInstance());
     }
 
-    private static void logAbout(Args pArgs, Logger logger) {
+    private static void logAbout(Logger logger) {
         logger.info("About: " + ABOUT);
         logger.info("Example: --tool=demo --path=tmp");
         logger.info("Tools:\n    " + ALL_TOOLS.stream().map(Tool::name).map(ToolName::toString).collect(Collectors.joining("\n    ")));

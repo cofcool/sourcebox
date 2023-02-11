@@ -29,6 +29,9 @@ public class App {
         LoggerFactory.setDebug("true".equalsIgnoreCase(pArgs.readArg("debug").val()));
 
         var logger = LoggerFactory.getLogger(App.class);
+        logger.debug("Args:");
+        logger.debug(pArgs.toSimpleString());
+
         var notRun = new AtomicBoolean(true);
         pArgs.readArg("tool").ifPresent(a -> {
             for (Tool tool : ALL_TOOLS) {
@@ -71,9 +74,5 @@ public class App {
         logger.info("About: " + ABOUT);
         logger.info("Example: --tool=demo --path=tmp");
         logger.info("Tools:\n    " + ALL_TOOLS.stream().map(Tool::name).map(ToolName::toString).collect(Collectors.joining("\n    ")));
-        if (LoggerFactory.isDebug()) {
-            logger.info("Args: ");
-            logger.info(pArgs);
-        }
     }
 }

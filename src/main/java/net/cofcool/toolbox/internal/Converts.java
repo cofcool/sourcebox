@@ -70,7 +70,9 @@ public class Converts implements Tool {
             throw new IllegalArgumentException("Do not support " + cmd);
         }
 
-        return pipelineCmd.run(ret == null ? val : ret + (val == null ? "" : " " + val));
+        String args = ret == null ? val : (val == null ? "" : val + " ") + ret;
+        getLogger().debug(cmd + " args: " + args);
+        return pipelineCmd.run(args);
     }
 
     private interface Pipeline {
@@ -101,12 +103,12 @@ public class Converts implements Tool {
         @Override
         public String run(String args) {
             String[] split = args.split(" ");
-            return split[0].replace(split[1], split[2]);
+            return split[2].replace(split[0], split[1]);
         }
 
         @Override
         public Arg demo() {
-            return new Arg(getClass().getSimpleName().toLowerCase(), null, "replace string", false, "test . _");
+            return new Arg(getClass().getSimpleName().toLowerCase(), null, "replace string", false, ". _ test");
         }
     }
 

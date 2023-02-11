@@ -14,6 +14,11 @@ class ToolTest {
     }
 
     @Test
+    void toSimpleString() {
+        System.out.println(new Args(new String[]{"--tool=test", "--cmd=md5", "sas"}).toSimpleString());
+    }
+
+    @Test
     void argsWithConfig() {
         Args args = new Args()
             .arg(new Arg("name", "required", "test command", true, "demo"))

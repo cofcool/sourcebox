@@ -9,7 +9,7 @@ class ConvertsTest extends BaseTest {
     
     @Test
     void runPipeline() throws Exception {
-        instance().run(args.arg("cmd", "md5 xxxxx | upper | replace B a | lower"));
+        instance().run(args.arg("cmd", "random 10 | md5 | lower | base64 en | replace = ."));
     }
 
     @Test

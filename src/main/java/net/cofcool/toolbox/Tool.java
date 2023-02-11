@@ -100,6 +100,10 @@ public interface Tool {
             return arg;
         }
 
+        public String toSimpleString() {
+            return super.toString();
+        }
+
         @Override
         public String toString() {
             var synopsis = values()

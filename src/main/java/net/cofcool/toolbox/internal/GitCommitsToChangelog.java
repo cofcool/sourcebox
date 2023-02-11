@@ -78,7 +78,7 @@ public class GitCommitsToChangelog implements Tool {
                         }
                         if (tag.get() == 0) {
                             c.tag().ifPresent(t -> {
-                                if (!t.equals(requiredTag.val())) {
+                                if (requiredTag.isPresent() && !requiredTag.val().equals(t)) {
                                     return;
                                 }
                                 tag.set(1);

@@ -10,6 +10,7 @@ public abstract class BaseTest {
     @BeforeEach
     public void setup() {
         args = instance().config();
+        LoggerFactory.setDebug(true);
         init();
     }
 

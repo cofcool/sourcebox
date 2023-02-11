@@ -35,6 +35,14 @@
             <outputDirectory>/</outputDirectory>
             <includes>
                 <include>changelog.md</include>
+                <include>my-toolbox</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>target/classes</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>*.txt</include>
             </includes>
         </fileSet>
         <fileSet>

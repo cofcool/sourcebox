@@ -27,7 +27,7 @@ public class App {
                 cacheClass(tool.getTool());
             }
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Init tools error", e);
         }
     }
 

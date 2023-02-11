@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.random.RandomGenerator;
 import java.util.stream.Collectors;
 import net.cofcool.toolbox.Tool;
 import net.cofcool.toolbox.ToolName;
@@ -213,6 +214,24 @@ public class Converts implements Tool {
         @Override
         public Arg demo() {
             return new Arg(getClass().getSimpleName().toLowerCase(), null, "base64 encoder(en) or decoder(de)", false, "en/de demo");
+        }
+    }
+
+    private class Random implements Pipeline {
+
+        @Override
+        public String run(String args) throws Exception {
+            var chars = "abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+";
+            return RandomGenerator
+                .getDefault()
+                .ints(Integer.parseInt(args), 0, chars.length())
+                .mapToObj(i -> String.valueOf(chars.charAt(i)))
+                .collect(Collectors.joining(""));
+        }
+
+        @Override
+        public Arg demo() {
+            return new Arg(getClass().getSimpleName().toLowerCase(), null, "random string with giving length", false, "10");
         }
     }
 

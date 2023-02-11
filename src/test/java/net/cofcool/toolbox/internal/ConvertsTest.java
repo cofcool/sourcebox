@@ -24,6 +24,7 @@ class ConvertsTest extends BaseTest {
         instance().run(args.arg("cmd", "replace asd.asda.asda . _"));
         instance().run(args.arg("cmd", "base64 en demo"));
         instance().run(args.arg("cmd", "base64 de ZGVtbw=="));
+        instance().run(args.arg("cmd", "random 10"));
         Assertions.assertThrows(IllegalArgumentException.class, () -> instance().run(args.arg("cmd", "base64 urlen adasd.com/%4asd;")));
     }
 

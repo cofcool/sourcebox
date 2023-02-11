@@ -20,22 +20,6 @@ public class App {
 
     private static final String VERSION_TXT = "/version.txt";
 
-    static {
-        try {
-            ABOUT = IOUtils.toString(App.class.getResourceAsStream(VERSION_TXT), StandardCharsets.UTF_8);
-            for (ToolName tool : ToolName.values()) {
-                cacheClass(tool.getTool());
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Init tools error", e);
-        }
-    }
-
-    private static void cacheClass(Class<? extends Tool> type) throws Exception {
-        Constructor<Tool> constructor = (Constructor<Tool>) type.getConstructor();
-        ALL_TOOLS.add(constructor.newInstance());
-    }
-
     public static void main(String[] args) {
         var pArgs = new Tool.Args(args).setupConfig(
             new Args()
@@ -65,6 +49,22 @@ public class App {
             logger.error("Please check tool argument");
             logAbout(pArgs, logger);
         }
+    }
+
+    static {
+        try {
+            ABOUT = IOUtils.toString(App.class.getResource(VERSION_TXT), StandardCharsets.UTF_8);
+            for (ToolName tool : ToolName.values()) {
+                cacheClass(tool.getTool());
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Init tools error", e);
+        }
+    }
+
+    private static void cacheClass(Class<? extends Tool> type) throws Exception {
+        Constructor<Tool> constructor = (Constructor<Tool>) type.getConstructor();
+        ALL_TOOLS.add(constructor.newInstance());
     }
 
     private static void logAbout(Args pArgs, Logger logger) {

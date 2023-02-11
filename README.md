@@ -4,7 +4,33 @@
 
 **TODO**
 
-- [ ] 使用 GraalVM 编译为本地代码 
+## 常用字符串转换工具
+
+使用: `./my-tools.sh --tool=converts --cmd="upper test"`
+
+支持功能（可通过 `|` 连接多个命令）:
+
+* md5，生成指定字符串的 md5 值
+* kindle，Kindle 笔记内容转换为 Markdown 文档
+* upper/lower，字符串大小写转换
+* hdate，时间戳转换为易于阅读的时间格式
+* timesp，把时间转换为时间戳
+* now，当前时间戳
+* replace，字符串替换
+* base64, 编码和解码
+* ...
+
+## Git 提交记录生成更新日志
+
+使用: `./my-tools.sh --tool=gitCommits2Log --path=./`
+
+## JSON 生成对象
+
+使用: `./my-tools.sh --tool=json2POJO --path=./`
+
+支持:
+
+* Java class/record
 
 ## dhtml2text
 
@@ -45,34 +71,6 @@ Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到
 ## Trello 导出的 JSON 文件导入到 Logseq
 
 支持把从 Trello 看板导出的 JSON 文件导入到 Logseq
-
-## 常用字符串转换工具
-
-使用: `./my-tools.sh --tool=converts --cmd="upper test"`
-
-支持功能（可通过 `|` 连接多个命令）:
-
-* md5，生成指定字符串的 md5 值
-* kindle，Kindle 笔记内容转换为 Markdown 文档
-* upper/lower，字符串大小写转换
-* hdate，时间戳转换为易于阅读的时间格式
-* timesp，把时间转换为时间戳
-* now，当前时间戳
-* replace，字符串替换
-* ...
-
-## Git 提交记录生成更新日志
-
-使用: `./my-tools.sh --tool=gitCommits2Log --path=./`
-
-## JSON 生成对象
-
-使用: `./my-tools.sh --tool=json2POJO --path=./`
-
-支持:
-
-* Java class/record
-
 
 # 致谢
 

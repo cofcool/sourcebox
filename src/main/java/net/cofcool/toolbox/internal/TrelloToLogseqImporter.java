@@ -53,7 +53,7 @@ public class TrelloToLogseqImporter implements Tool {
         try (var reader = new JsonReader(new FileReader(path))) {
             Trello trello = new Gson().fromJson(reader, Trello.class);
             var name = trello.name();
-            for (Map.Entry<String, List<CardsItem>> entry : trello.cards()
+            for (Map.Entry<CreateTime, List<CardsItem>> entry : trello.cards()
                     .stream()
                     .collect(Collectors.groupingBy(a -> {
                         Optional<ActionsItem> cardDate = cardDate(trello, a.id());
@@ -63,14 +63,15 @@ public class TrelloToLogseqImporter implements Tool {
                         } else {
                             date = a.dateLastActivity();
                         }
-                        return LocalDateTime.parse(date, OutStr.FORMATTER).getYear() + "";
+                        LocalDateTime time = LocalDateTime.parse(date, OutStr.FORMATTER);
+                        return new CreateTime(time.getYear(), time);
                     }))
                     .entrySet()) {
                 var out = new OutStr();
                 for (CardsItem card : entry.getValue()) {
                     var cardBoard = cardList(trello, card.idList());
                     out.block(OutStr.cardTask(cardBoard.name()) + card.name(), 0)
-                            .blockRef(OutStr.date(card.dateLastActivity()))
+                            .blockRef(OutStr.DATE_FORMATTER.format(entry.getKey().time()))
                             .tag(card.badges().votes() > 0 ? "recommend" : "")
                             .tag(cardBoard.name().replace(" ", "-"))
                             .tag(name);
@@ -97,7 +98,7 @@ public class TrelloToLogseqImporter implements Tool {
                         }
                     }
                 }
-                String output = outPath.val() + "/" + "trello" + name + "-" + entry.getKey() + ".md";
+                String output = outPath.val() + "/" + "trello" + name + "-" + entry.getKey().year() + ".md";
                 FileUtils.forceMkdirParent(new File(output));
                 try (var writer = new FileWriter(output)) {
                     IOUtils.write(out.toString(), writer);
@@ -132,6 +133,26 @@ public class TrelloToLogseqImporter implements Tool {
 
     private ChecklistsItem checkItemsList(Trello trello, String id) {
         return trello.checklists().stream().filter(a -> a.id().equals(id)).findAny().get();
+    }
+
+    record CreateTime(long year, LocalDateTime time) {
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            CreateTime that = (CreateTime) o;
+            return year == that.year;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(year);
+        }
     }
 
     private static class OutStr {

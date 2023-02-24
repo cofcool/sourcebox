@@ -47,6 +47,12 @@ public final class LoggerFactory {
         }
 
         @Override
+        public void error(String msg,Throwable throwable) {
+            error(msg);
+            error(throwable);
+        }
+
+        @Override
         public void info(Object val) {
             System.out.println(val);
         }

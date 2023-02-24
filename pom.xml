@@ -13,9 +13,9 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
-    <graalvm.version>20.3.9</graalvm.version>
+    <maven.compiler.source>19</maven.compiler.source>
+    <maven.compiler.target>19</maven.compiler.target>
+    <graalvm-native.version>0.9.20</graalvm-native.version>
   </properties>
 
   <dependencies>
@@ -147,13 +147,14 @@
       <build>
         <plugins>
           <plugin>
-            <groupId>org.graalvm.nativeimage</groupId>
-            <artifactId>native-image-maven-plugin</artifactId>
-            <version>${graalvm.version}</version>
+            <groupId>org.graalvm.buildtools</groupId>
+            <artifactId>native-maven-plugin</artifactId>
+            <version>${graalvm-native.version}</version>
             <executions>
               <execution>
+                <id>build-native</id>
                 <goals>
-                  <goal>native-image</goal>
+                  <goal>compile-no-fork</goal>
                 </goals>
                 <phase>package</phase>
               </execution>
@@ -164,6 +165,8 @@
               <buildArgs>
                 --no-fallback
                 -H:ReflectionConfigurationResources=META-INF/native-image/reflect-config.json
+                -H:JNIConfigurationResources=META-INF/native-image/jni-config.json
+                -H:ResourceConfigurationResources=META-INF/native-image/resource-config.json
               </buildArgs>
             </configuration>
           </plugin>

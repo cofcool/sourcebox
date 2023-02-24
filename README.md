@@ -1,6 +1,11 @@
 # 常用小工具
 
-使用 Java(最低要求 JDK 17), Python 等语言实现, 运行 `./my-tools.sh` 查看帮助信息, `--debug=true` 打开调试模式
+使用 Java(最低要求 JDK 19, 推荐使用 `GraalVM`), Python 等语言实现, 运行 `./my-tools.sh` 查看帮助信息, `--debug=true` 打开调试模式
+
+项目构建:
+
+* `mvn package` 构建 jar 包
+* `mvn package -Pnative` 构建本地代码
 
 **TODO**
 

@@ -37,7 +37,7 @@ public class App {
             for (Tool tool : ALL_TOOLS) {
                 if (tool.name().name().equals(a.val())) {
                     notRun.set(false);
-                    logger.info("Start run " + tool.name());
+                    logger.info("Start run " + tool.name().name());
                     try {
                         tool.run(pArgs.setupConfig(tool.config()));
                     } catch (Throwable e) {

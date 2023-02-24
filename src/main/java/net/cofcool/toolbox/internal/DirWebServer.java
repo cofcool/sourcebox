@@ -194,6 +194,8 @@ public class DirWebServer implements Tool {
                         }
                     }
                     stream.readBodyData(output);
+                    IOUtils.closeQuietly(output);
+                    output = null;
                     nextPart = stream.readBoundary();
                 }
             } catch (Exception e) {

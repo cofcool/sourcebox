@@ -29,6 +29,10 @@
 
 使用: `./my-tools.sh --tool=gitCommits2Log --path=./`
 
+## 基于 Web 的文件服务器
+
+使用 `./my-tools.sh --tool=dirWebServer`
+
 ## JSON 生成对象
 
 使用: `./my-tools.sh --tool=json2POJO --path=./`

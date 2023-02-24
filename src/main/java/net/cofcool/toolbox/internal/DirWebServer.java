@@ -178,34 +178,33 @@ public class DirWebServer implements Tool {
             try(var body = exchange.getRequestBody()) {
                 var stream = new MultipartStream(body, boundary.getBytes(ISO_8859_1));
                 boolean nextPart = stream.skipPreamble();
-                OutputStream output = null;
                 while(nextPart) {
-                    String header = stream.readHeaders();
-                    for (String line : header.split("\r\n")) {
-                        if (line.startsWith("Content-Disposition")) {
-                            for (String s1 : line.split(";")) {
-                                var trim = s1.trim();
-                                if (trim.startsWith("filename")) {
-                                    var file = trim.split("=")[1].replace("\"", "");
-                                    files.add(file);
-                                    output = new FileOutputStream(FileSystems.getDefault().getPath(root.toString(), file).toFile());
-                                }
-                            }
-                        }
+                    var file = readFileName(stream.readHeaders());
+                    files.add(file);
+                    try (var output = new FileOutputStream(FileSystems.getDefault().getPath(root.toString(), file).toFile())) {
+                        stream.readBodyData(output);
                     }
-                    stream.readBodyData(output);
-                    IOUtils.closeQuietly(output);
-                    output = null;
                     nextPart = stream.readBoundary();
                 }
-            } catch (Exception e) {
-                logger.error("Write file error", e);
-                throw e;
             }
 
             exchange.setAttribute(UPLOAD_FILES, files);
             exchange.getResponseHeaders().set("Location", "/upload");
             exchange.sendResponseHeaders(302, -1);
+        }
+
+        private String readFileName(String headers) {
+            for (String line : headers.split("\r\n")) {
+                if (line.startsWith("Content-Disposition")) {
+                    for (String s1 : line.split(";")) {
+                        var trim = s1.trim();
+                        if (trim.startsWith("filename")) {
+                            return trim.split("=")[1].replace("\"", "");
+                        }
+                    }
+                }
+            }
+            throw new IllegalArgumentException("File name must not be null");
         }
     }
 

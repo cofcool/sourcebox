@@ -23,7 +23,7 @@ class AppTest {
     void printAllHelp() {
         for (Tool tool : App.ALL_TOOLS) {
             System.out.println(tool.name());
-            System.out.println(tool.config());
+            System.out.println(tool.config().toHelpString());
             System.out.println("-------");
         }
     }

@@ -4,8 +4,13 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import net.cofcool.toolbox.Tool;
 import net.cofcool.toolbox.ToolName;
 import org.apache.commons.io.FileUtils;
@@ -17,7 +22,8 @@ import org.apache.commons.io.IOUtils;
  */
 public class GitCommitsToChangelog implements Tool {
 
-    private final Tool delegate = new ShellStarter();
+    private static final String LATEST = "latest";
+    private static final int MAX_TAG_SIZE = 100;
 
     @Override
     public ToolName name() {
@@ -35,6 +41,8 @@ public class GitCommitsToChangelog implements Tool {
         var logFile = args.readArg("log");
         var requiredTag = args.readArg("tag");
         var noTag = args.readArg("no-tag").val().equalsIgnoreCase("true");
+        var full = requiredTag.isPresent() || noTag || args.readArg("full").val().equalsIgnoreCase("true");
+        var style = Style.valueOf(args.readArg("style").val());
 
         String commitLog;
         if (logFile.isPresent()) {
@@ -65,34 +73,39 @@ public class GitCommitsToChangelog implements Tool {
 
         if (commitLog != null && !commitLog.isEmpty()) {
             var commits = new ArrayDeque<String>();
-            AtomicInteger tag = new AtomicInteger(0);
+            var currentTag = new AtomicReference<>(LATEST);
             Arrays.stream(commitLog.split("\n"))
-                    .map(a -> a.split(";"))
-                    .filter(a -> a.length > 2)
-                    .map(a -> new Commit(a[0], a[1], String.join(";", Arrays.copyOfRange(a, 2, a.length))))
-                    .forEach(c -> {
-                        getLogger().debug(c);
-                        if (noTag) {
-                            commits.add(c.toString());
-                            return;
-                        }
-                        if (tag.get() == 0) {
-                            c.tag().ifPresent(t -> {
-                                if (requiredTag.isPresent() && !requiredTag.val().equals(t)) {
-                                    return;
-                                }
-                                tag.set(1);
-                                commits.addFirst("## " + (t.startsWith("v") || t.startsWith("V") ? "" : "v") + t + "\n");
-                                commits.add(c.toString());
-                            });
-                        } else if (tag.get() == 1) {
-                            if (c.tag().isPresent()) {
-                                tag.set(2);
-                            } else {
-                                commits.add(c.toString());
-                            }
-                        }
-                    });
+                .map(a -> a.split(";"))
+                .filter(a -> a.length > 2)
+                .map(a -> new Commit(a[0], a[1], String.join(";", Arrays.copyOfRange(a, 2, a.length))))
+                .map(c -> {
+                    c.tag().filter(t -> !noTag).ifPresent(currentTag::set);
+                    return new Commit(currentTag.get(), c.hash, c.message);
+                })
+                .sorted(Comparator.comparing(Commit::ref).reversed())
+                .filter(c -> full || !c.ref.equalsIgnoreCase(LATEST))
+                .collect(Collectors.groupingBy(Commit::ref, LinkedHashMap::new, Collectors.toList()))
+                .entrySet()
+                .stream()
+                .limit(full ? MAX_TAG_SIZE :  1)
+                .forEach(e -> {
+                    var t = e.getKey();
+                    var c = e.getValue();
+                    getLogger().debug(t);
+                    if (requiredTag.isPresent() && !requiredTag.val().equals(t)) {
+                        return;
+                    }
+                    if (!t.isBlank()) {
+                        commits.add("## " + (t.equalsIgnoreCase(LATEST) || t.startsWith("v") || t.startsWith("V") ? "" : "v") + t + "\n");
+                    }
+                    c
+                        .stream()
+                        .collect(Collectors.groupingBy(cm -> cm.styleId(style)))
+                        .forEach((k, v) -> {
+                            k.ifPresent(kt -> commits.add("### " + kt + "\n"));
+                            commits.add(v.stream().map(Commit::toString).collect(Collectors.joining("\n", "", "\n")));
+                        });
+                });
             FileUtils.writeStringToFile(new File(out), String.join("\n", commits), StandardCharsets.UTF_8);
             getLogger().info("Generate " + out + " ok");
         }
@@ -105,7 +118,29 @@ public class GitCommitsToChangelog implements Tool {
             .arg(new Arg("log", null, "Git commit log fil", false, "./git-commit-log.txt"))
             .arg(new Arg("out", "./target/changelog.md", "generate file output path", false, null))
             .arg(new Arg("tag", null, "read commit log to the tag", false, "1.0.0"))
-            .arg(new Arg("no-tag", "false", "if true, read all commit log and write into file", false, null));
+            .arg(new Arg("no-tag", "false", "if true, read all commit log and write into file", false, null))
+            .arg(new Arg("full", "false", "if true, read all tags and commit log, then write into file", false, null))
+            .arg(new Arg("style", Style.simple.name(), "changelog file format, like " + Arrays.toString(Style.values()), false, null));
+    }
+
+    enum Style {
+        simple(""), angular("^(fix|feat|docs|style|refactor|pref|test|chore)\\(.+\\):\s.+");
+
+        private final Pattern pattern;
+
+        Style(String pattern) {
+            this.pattern = Pattern.compile(pattern, Pattern.DOTALL);
+        }
+
+        public Optional<String> find(String val) {
+            Matcher matcher = pattern.matcher(val);
+            if (matcher.find()) {
+                try {
+                    return Optional.of(matcher.group(1));
+                } catch (IndexOutOfBoundsException ignore) {}
+            }
+            return Optional.empty();
+        }
     }
 
     private record Commit(
@@ -120,6 +155,10 @@ public class GitCommitsToChangelog implements Tool {
                         .map(a -> a.split(":")[1].trim()).findAny();
             }
             return Optional.empty();
+        }
+
+        public Optional<String> styleId(Style style) {
+            return style.find(message);
         }
 
         @Override

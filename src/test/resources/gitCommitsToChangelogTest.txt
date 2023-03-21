@@ -1,16 +1,16 @@
- (HEAD -> master, tag: 1.0.4, origin/master, origin/HEAD);117826a;Converts: now, replace
-;1788569;add debug mode
-;1ee4312;update doc
-;b676feb;update doc
- (tag: 1.0.1);a9d3e04;add Converts
- (tag: 1.0.0);1b67da0;Update maven.yml
-;6474b63;Update maven.yml
-;97a383e;Update maven.yml
-;52ba1b8;Update maven.yml
-;2e71e27;Update maven.yml
-;61bfdff;Update maven.yml
-;6e26d48;github action
-;c92e596;fix action
-;24f7178;github action
-;8f989ce;fix readme
-;dc723bc;init
+; (HEAD -> master, tag: 1.0.4, origin/master, origin/HEAD);117826a;Converts: now, replace
+;;1788569;add debug mode
+;;1ee4312;update doc
+;;b676feb;update doc
+; (tag: 1.0.1);a9d3e04;add Converts
+; (tag: 1.0.0);1b67da0;Update maven.yml
+;;6474b63;Update maven.yml
+;;97a383e;Update maven.yml
+;;52ba1b8;Update maven.yml
+;;2e71e27;Update maven.yml
+;;61bfdff;Update maven.yml
+;;6e26d48;github action
+;;c92e596;fix action
+;;24f7178;github action
+;;8f989ce;fix readme
+;;dc723bc;init

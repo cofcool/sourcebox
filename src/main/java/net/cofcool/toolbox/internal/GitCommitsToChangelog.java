@@ -18,7 +18,7 @@ import org.apache.commons.io.IOUtils;
 
 /**
  * git-log PRETTY FORMATS
- * <code>git log --format="%d;%h;%s"</code>
+ * <code>git log --format="%an;%d;%h;%s"</code>
  */
 public class GitCommitsToChangelog implements Tool {
 
@@ -30,7 +30,7 @@ public class GitCommitsToChangelog implements Tool {
         return ToolName.gitCommits2Log;
     }
 
-    // (HEAD -> master, origin/master, origin/HEAD);117826a;Converts: now, replace
+    // (HEAD -> master, origin/master, origin/HEAD);117826a;Converts: now, replace;CofCool
     //;1788569;add debug mode
     //;1ee4312;update doc
     //;b676feb;update doc
@@ -50,7 +50,7 @@ public class GitCommitsToChangelog implements Tool {
         } else {
             String path = args.readArg("path").val();
 
-            String command = "git log --format=%d;%h;%s";
+            String command = "git log --format=%an;%d;%h;%s";
             getLogger().info("Run command: " + command);
             Process process = Runtime
                     .getRuntime()
@@ -76,14 +76,15 @@ public class GitCommitsToChangelog implements Tool {
             var currentTag = new AtomicReference<>(LATEST);
             Arrays.stream(commitLog.split("\n"))
                 .map(a -> a.split(";"))
-                .filter(a -> a.length > 2)
-                .map(a -> new Commit(a[0], a[1], String.join(";", Arrays.copyOfRange(a, 2, a.length))))
+                .filter(a -> a.length > 3)
+                .map(a -> new Commit(a[0], a[1], a[2], String.join(";", Arrays.copyOfRange(a, 3, a.length))))
                 .map(c -> {
                     c.tag().filter(t -> !noTag).ifPresent(currentTag::set);
-                    return new Commit(currentTag.get(), c.hash, c.message);
+                    return new Commit(c.username, currentTag.get(), c.hash, c.message);
                 })
                 .sorted(Comparator.comparing(Commit::ref).reversed())
                 .filter(c -> full || !c.ref.equalsIgnoreCase(LATEST))
+                .filter(c -> args.readArg("user").test(u -> u.equalsIgnoreCase(c.username())))
                 .collect(Collectors.groupingBy(Commit::ref, LinkedHashMap::new, Collectors.toList()))
                 .entrySet()
                 .stream()
@@ -117,6 +118,7 @@ public class GitCommitsToChangelog implements Tool {
             .arg(new Arg("path", null, "project directory, must set this or log", false, "./demo/"))
             .arg(new Arg("log", null, "Git commit log fil", false, "./git-commit-log.txt"))
             .arg(new Arg("out", "./target/changelog.md", "generate file output path", false, null))
+            .arg(new Arg("user", null, "username filter", false, "cofcool"))
             .arg(new Arg("tag", null, "read commit log to the tag", false, "1.0.0"))
             .arg(new Arg("no-tag", "false", "if true, read all commit log and write into file", false, null))
             .arg(new Arg("full", "false", "if true, read all tags and commit log, then write into file", false, null))
@@ -144,9 +146,10 @@ public class GitCommitsToChangelog implements Tool {
     }
 
     private record Commit(
-             String ref,
-             String hash,
-             String message
+        String username,
+        String ref,
+        String hash,
+        String message
     ) {
         public Optional<String> tag() {
             if (ref.contains("tag")) {

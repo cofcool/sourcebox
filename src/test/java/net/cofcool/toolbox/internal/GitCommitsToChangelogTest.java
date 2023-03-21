@@ -47,6 +47,15 @@ class GitCommitsToChangelogTest extends BaseTest {
     }
 
     @Test
+    void runWithUser() throws Exception {
+        new GitCommitsToChangelog().run(args.arg("log", Utils.getTestResourcePath("/gitCommitsToChangelogStyleTest.txt"))
+                .arg("out", "./target/changelog-runWithUser.md")
+                .arg("full", "true")
+                .arg("user", "ZhangSan")
+        );
+    }
+
+    @Test
     void style() {
         Assertions.assertTrue(Style.angular.find("fix(git): test").isPresent());
         Assertions.assertFalse(Style.angular.find("test").isPresent());

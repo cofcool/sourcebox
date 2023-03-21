@@ -1,4 +1,4 @@
- (HEAD -> master, tag: 1.0.4, origin/master, origin/HEAD);117826a;feat(core): Converts: now, replace
-;1788569;feat(core): add debug mode
-;1ee4312;docs(common): update doc
-;b676feb;fix(core): print error
+zhangsan; (HEAD -> master, tag: 1.0.4, origin/master, origin/HEAD);117826a;feat(core): Converts: now, replace
+cofcool;1788569;feat(core): add debug mode
+lisi;1ee4312;docs(common): update doc
+lisa;b676feb;fix(core): print error

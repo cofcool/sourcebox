@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public interface Tool {
@@ -29,6 +30,14 @@ public interface Tool {
             if (val != null) {
                 consumer.accept(this);
             }
+        }
+
+        public boolean test(Predicate<String> predicate) {
+            if (val != null) {
+                return predicate.test(val);
+            }
+
+            return true;
         }
 
         public static Arg of(String key, String val) {

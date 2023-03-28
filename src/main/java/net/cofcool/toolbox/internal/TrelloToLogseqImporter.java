@@ -260,7 +260,7 @@ public class TrelloToLogseqImporter implements Tool {
 
         public OutStr block(String val, int tab) {
             if (!val.isBlank()) {
-                builder.append(tab == 0 ? "" : ("    ".repeat(Math.max(0, tab)))).append("- ").append(val);
+                builder.append(tab == 0 ? "" : ("\t".repeat(Math.max(0, tab)))).append("- ").append(val);
             }
             return this;
         }

@@ -19,7 +19,7 @@ public enum ToolName {
     converts("some simple utilities about string, like base64 encode", Converts.class),
     json2POJO("convert json structure to POJO class", JsonToPojo.class),
     dirWebServer("start a simple web directory server", DirWebServer.class),
-    rename("start a simple web directory server", FileNameFormatter.class);
+    rename("rename file conveniently", FileNameFormatter.class);
 
     private final String desc;
     private final Class<? extends Tool> tool;

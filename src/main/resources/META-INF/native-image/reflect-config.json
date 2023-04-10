@@ -65,6 +65,10 @@
   "name":"net.cofcool.toolbox.internal.DirWebServer",
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
+  {
+    "name":"net.cofcool.toolbox.internal.FileNameFormatter",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
 {
   "name":"net.cofcool.toolbox.internal.GitCommitsToChangelog",
   "methods":[{"name":"<init>","parameterTypes":[] }]

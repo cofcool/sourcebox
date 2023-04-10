@@ -81,6 +81,17 @@ Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到
 
 支持把从 Trello 看板导出的 JSON 文件导入到 Logseq
 
+##  文件重命名
+
+使用: `./my-tools.sh --tool=rename --path=./`
+
+支持:
+
+* order, 文件序号
+* date, 日期
+* datetime, 时间
+* urlencoded, 解码 URL 编码
+
 # 致谢
 
 * SimpleHTTPServerWithUpload 来自 https://gist.github.com/UniIsland/3346170

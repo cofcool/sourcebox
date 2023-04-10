@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -30,6 +31,10 @@ public interface Tool {
             if (val != null) {
                 consumer.accept(this);
             }
+        }
+
+        public Optional<String> getVal() {
+            return Optional.ofNullable(val);
         }
 
         public boolean test(Predicate<String> predicate) {

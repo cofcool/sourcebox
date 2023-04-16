@@ -62,6 +62,10 @@
   "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.Converts"] }]
 },
 {
+  "name":"net.cofcool.toolbox.internal.Converts$Url",
+  "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.Converts"] }]
+},
+{
   "name":"net.cofcool.toolbox.internal.DirWebServer",
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },

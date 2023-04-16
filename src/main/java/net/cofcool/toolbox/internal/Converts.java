@@ -1,6 +1,8 @@
 package net.cofcool.toolbox.internal;
 
 import java.lang.reflect.Modifier;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
@@ -16,7 +18,7 @@ import java.util.stream.Collectors;
 import net.cofcool.toolbox.Tool;
 import net.cofcool.toolbox.ToolName;
 
-@SuppressWarnings("ALL")
+@SuppressWarnings({"InnerClassMayBeStatic", "unused"})
 public class Converts implements Tool {
 
     private final Map<String, Pipeline> pipelineMap = new LinkedHashMap<>();
@@ -38,7 +40,6 @@ public class Converts implements Tool {
         return ToolName.converts;
     }
 
-    @SuppressWarnings({"ConstantConditions", "OptionalGetWithoutIsPresent"})
     @Override
     public void run(Args args) throws Exception {
         var arg = args.readArg("cmd");
@@ -216,6 +217,31 @@ public class Converts implements Tool {
         @Override
         public Arg demo() {
             return new Arg(getClass().getSimpleName().toLowerCase(), null, "base64 encoder(en) or decoder(de)", false, "en/de demo");
+        }
+    }
+
+    private class Url implements Pipeline {
+
+        @Override
+        public String run(String args) throws Exception{
+            String[] split = args.split(" ");
+            if (split.length != 2) {
+                throw new IllegalArgumentException("Url arguments size must be 2");
+            }
+            var type = split[0];
+            var val = split[1];
+            if (type.equalsIgnoreCase("en")) {
+                return URLEncoder.encode(val, StandardCharsets.UTF_8);
+            } else if (type.equalsIgnoreCase("de"))  {
+                return URLDecoder.decode(val, StandardCharsets.UTF_8);
+            } else {
+                throw new IllegalArgumentException("Url first argument must be en or de");
+            }
+        }
+
+        @Override
+        public Arg demo() {
+            return new Arg(getClass().getSimpleName().toLowerCase(), null, "url encoder(en) or decoder(de)", false, "en/de demo");
         }
     }
 

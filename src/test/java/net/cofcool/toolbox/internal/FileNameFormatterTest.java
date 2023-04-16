@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import net.cofcool.toolbox.BaseTest;
 import net.cofcool.toolbox.Tool;
+import net.cofcool.toolbox.internal.FileNameFormatter.Formatter;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -90,5 +91,11 @@ class FileNameFormatterTest extends BaseTest {
     @Override
     protected Tool instance() {
         return new FileNameFormatter();
+    }
+
+    @Override
+    protected void init() {
+        super.init();
+        args.arg("formatter", Formatter.order.name());
     }
 }

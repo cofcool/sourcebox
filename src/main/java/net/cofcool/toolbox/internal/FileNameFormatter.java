@@ -85,7 +85,7 @@ public class FileNameFormatter implements Tool {
                 .arg(new Arg("dest", null, "dest path", false, "/tmp/"))
                 .arg(new Arg("base", null, "file base name, default is old name", false, "demo"))
                 .arg(new Arg("ignore", "^\\..*", "ignore files with regular expression", false, null))
-                .arg(new Arg("formatter", Formatter.order.name(), "new name formatter, like " + Arrays.toString(Formatter.values()), false, null));
+                .arg(new Arg("formatter", null, "new name formatter, like " + Arrays.toString(Formatter.values()), true, Formatter.order.name()));
     }
 
     private static class DirEnterVisitor extends SimpleFileVisitor<Path> {

@@ -70,7 +70,7 @@ public class FileNameFormatter implements Tool {
                 new File(dest.get()).mkdirs();
                 ret = Files.move(file.toPath(), target);
             } catch (IOException e) {
-                throw new IllegalStateException("Move to " + target +  " error", e);
+                throw new IllegalStateException("Move " + file + " to " + target +  " error", e);
             }
         } else {
             ret = file.renameTo(newName);
@@ -158,7 +158,11 @@ public class FileNameFormatter implements Tool {
 
         @Override
         public String name(String old) {
-           return URLDecoder.decode(old, StandardCharsets.UTF_8);
+            try {
+                return URLDecoder.decode(old, StandardCharsets.UTF_8);
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Decode " + old + " error: " + e.getMessage());
+            }
         }
     }
 

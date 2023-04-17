@@ -4,6 +4,7 @@ import java.io.File;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.Arrays;
 import net.cofcool.toolbox.BaseTest;
 import net.cofcool.toolbox.Tool;
 import net.cofcool.toolbox.internal.FileNameFormatter.Formatter;
@@ -64,6 +65,20 @@ class FileNameFormatterTest extends BaseTest {
     }
 
     @Test
+    void runWithReplace() throws Exception {
+        var path = file.getPath();
+        System.out.println(path);
+        FileUtils.writeStringToFile(new File(path + File.separator + URLEncoder.encode("demo....txt", StandardCharsets.UTF_8)), "test", StandardCharsets.UTF_8);
+        instance().run(args
+            .arg("path", path)
+            .arg("formatter", Formatter.replace.name())
+            .arg("new", "")
+            .arg("old", "...")
+        );
+        Assertions.assertTrue(new File(path + File.separator + "demo.txt").exists());
+    }
+
+    @Test
     void runWithIgnore() throws Exception {
         var path = file.getPath();
         System.out.println(path);
@@ -86,6 +101,12 @@ class FileNameFormatterTest extends BaseTest {
                 .arg("dest", dest)
         );
         Assertions.assertTrue(new File(dest +  "demo-001.txt").exists());
+    }
+
+    @Test
+    void printInnerHelp() {
+        System.out.println(
+            Arrays.toString(Formatter.values()));
     }
 
     @Override

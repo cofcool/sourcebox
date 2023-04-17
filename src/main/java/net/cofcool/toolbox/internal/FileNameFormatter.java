@@ -59,7 +59,7 @@ public class FileNameFormatter implements Tool {
         }
 
         var ext = FilenameUtils.getExtension(file.getName());
-        var newFileName = nameGenerator.name(baseName) + "." + ext;
+        var newFileName = nameGenerator.name(baseName, args) + (ext.length() > 0 ? "." + ext : "");
         var newName = new File(fullPath + newFileName);
 
         Object ret;
@@ -116,7 +116,8 @@ public class FileNameFormatter implements Tool {
         order(OrderGenerator::new),
         date(() -> new DateGenerator(DATE_FORMATTER)),
         datetime(() -> new DateGenerator(DATE_TIME_FORMATTER)),
-        urlencoded(UrlNameDecoder::new);
+        urlencoded(UrlNameDecoder::new),
+        replace(ReplaceDecoder::new);
 
         private final Supplier<NameGenerator> supplier;
 
@@ -127,11 +128,21 @@ public class FileNameFormatter implements Tool {
         NameGenerator getGenerator() {
             return supplier.get();
         }
+
+        @Override
+        public String toString() {
+            var help = supplier.get().help();
+            return super.toString() + (help.length() == 0 ? "" : "(required args: " + help + ")");
+        }
     }
 
     private interface NameGenerator {
 
-        String name(String old);
+        String name(String old, Args args);
+
+        default String help() {
+            return "";
+        }
 
         default void enterDir() {
 
@@ -143,7 +154,7 @@ public class FileNameFormatter implements Tool {
         private int i = 0;
 
         @Override
-        public String name(String old) {
+        public String name(String old, Args args) {
             i++;
             return String.format("%s-%03d", old, i);
         }
@@ -157,12 +168,25 @@ public class FileNameFormatter implements Tool {
     private static class UrlNameDecoder implements NameGenerator {
 
         @Override
-        public String name(String old) {
+        public String name(String old, Args args) {
             try {
                 return URLDecoder.decode(old, StandardCharsets.UTF_8);
             } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("Decode " + old + " error: " + e.getMessage());
             }
+        }
+    }
+
+    private static class ReplaceDecoder implements NameGenerator {
+
+        @Override
+        public String name(String old, Args args) {
+            return old.replace(args.readArg("old").val(), args.readArg("new").val());
+        }
+
+        @Override
+        public String help() {
+            return "--old=demo --new=test";
         }
     }
 
@@ -175,8 +199,8 @@ public class FileNameFormatter implements Tool {
         }
 
         @Override
-        public String name(String old) {
-            return super.name(old + "-" + dateTimeFormatter.format(LocalDate.now()));
+        public String name(String old, Args args) {
+            return super.name(old + "-" + dateTimeFormatter.format(LocalDate.now()), args);
         }
     }
 }

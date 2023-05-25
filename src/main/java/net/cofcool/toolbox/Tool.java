@@ -3,7 +3,9 @@ package net.cofcool.toolbox;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -52,6 +54,8 @@ public interface Tool {
     }
 
     class Args extends LinkedHashMap<String, Arg> {
+
+        private final Map<String, Arg> aliases = new HashMap<>();
 
         public Args(int initialCapacity) {
             super(initialCapacity);
@@ -118,6 +122,25 @@ public interface Tool {
             return arg;
         }
 
+        public Args alias(String alias, ToolName name, String val) {
+            aliases.put(alias, new Arg(name.name(), val, null, false, null));
+            return this;
+        }
+
+        public Args copyAliasFrom(Args args) {
+            aliases.putAll(args.aliases);
+            var cmds = new HashMap<String, Arg>();
+            for (Arg arg : values()) {
+                if (aliases.containsKey(arg.key)) {
+                    var alias = aliases.get(arg.key);
+                    cmds.put("tool", Arg.of("tool", alias.key));
+                    cmds.put(alias.val, Arg.of(alias.val, arg.val));
+                }
+            }
+            putAll(cmds);
+            return this;
+        }
+
         @Override
         public String toString() {
             return super.toString();
@@ -141,10 +164,13 @@ public interface Tool {
                 .stream()
                 .map(a -> "    --" + a.key() + "    " + a.desc() + (a.isPresent() ? ". Default: " + a.val() : ". Example: " + a.demo()))
                 .collect(Collectors.joining("\n"));
+            var alias = aliases.entrySet().stream().map(e -> "    --" + e.getKey() + "    " + "--tool=" + e.getValue().key + " --" + e.getValue().val).collect(Collectors.joining("\n"));
             return "Synopsis\n    "
                 + synopsis
                 + "\nDescription\n"
-                + description;
+                + description
+                + "\nAlias\n"
+                + alias;
         }
     }
 }

@@ -10,12 +10,37 @@ class ToolTest {
 
     @Test
     void toHelpString() {
-        System.out.println(new Args(new String[]{"--tool=test", "--cmd=md5 = dd", "sas"}).toHelpString());
+        System.out.println(new Args(new String[]{"--tool=test", "--cmd=md5 = dd", "sas"}).alias("md5", ToolName.converts, "cmd").toHelpString());
     }
 
     @Test
     void args() {
-        System.out.println(new Args(new String[]{"--tool=test", "--cmd=md5", "sas"}));
+        Args args = new Args(new String[]{"--tool=test", "--cmd=md5", "sas"});
+        Assertions.assertEquals("test", args.readArg("tool").val());
+        Assertions.assertEquals("md5 sas", args.readArg("cmd").val());
+    }
+
+    @Test
+    void argsAlias() {
+        var args = new Args(new String[]{"--md5=sas"});
+        var tool = new Tool() {
+            @Override
+            public ToolName name() {
+                return ToolName.converts;
+            }
+
+            @Override
+            public void run(Args args) throws Exception {
+            }
+
+            @Override
+            public Args config() {
+                return new Args().arg("cmd", "md5").alias("md5", name(), "cmd");
+            }
+        };
+        args.copyAliasFrom(tool.config()).setupConfig(tool.config());
+        Assertions.assertEquals(ToolName.converts.name(), args.readArg("tool").val());
+        Assertions.assertEquals("sas", args.readArg("cmd").val());
     }
 
     @Test

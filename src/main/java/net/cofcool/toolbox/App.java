@@ -18,14 +18,18 @@ public class App {
 
     static final Set<Tool> ALL_TOOLS = new HashSet<>();
 
+    static final Args ALIAS = new Args();
+
     private static final String VERSION_TXT = "/version.txt";
 
     public static void main(String[] args) {
-        var pArgs = new Tool.Args(args).setupConfig(
-            new Args()
-                .arg(new Arg("debug", "false", "", false, null))
-                .arg(new Arg("tool", null, "", false, "converts"))
-        );
+        var pArgs = new Tool.Args(args)
+            .copyAliasFrom(ALIAS)
+            .setupConfig(
+                new Args()
+                    .arg(new Arg("debug", "false", "", false, null))
+                    .arg(new Arg("tool", null, "", false, "converts"))
+            );
         LoggerFactory.setDebug("true".equalsIgnoreCase(pArgs.readArg("debug").val()));
 
         var logger = LoggerFactory.getLogger(App.class);
@@ -58,16 +62,17 @@ public class App {
         try {
             ABOUT = IOUtils.toString(App.class.getResource(VERSION_TXT), StandardCharsets.UTF_8);
             for (ToolName tool : ToolName.values()) {
-                cacheClass(tool.getTool());
+                ALIAS.copyAliasFrom(cacheClass(tool.getTool()).config());
             }
         } catch (Exception e) {
             throw new RuntimeException("Init tools error", e);
         }
     }
 
-    private static void cacheClass(Class<? extends Tool> type) throws Exception {
-        Constructor<Tool> constructor = (Constructor<Tool>) type.getConstructor();
-        ALL_TOOLS.add(constructor.newInstance());
+    private static Tool cacheClass(Class<? extends Tool> type) throws Exception {
+        var tool = ((Constructor<Tool>) type.getConstructor()).newInstance();
+        ALL_TOOLS.add(tool);
+        return tool;
     }
 
     private static void logAbout(Logger logger) {

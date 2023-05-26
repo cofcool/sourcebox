@@ -75,7 +75,7 @@ public interface Tool {
                 if (strings.length > 2) {
                     strings[1] = String.join("=", Arrays.copyOfRange(strings, 1, strings.length)).trim();
                 }
-                arg(strings[0], strings[1].trim());
+                arg(strings[0], strings.length == 1 ? null :strings[1].trim());
             }
         }
 

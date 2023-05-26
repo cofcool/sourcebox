@@ -22,7 +22,7 @@ class ToolTest {
 
     @Test
     void argsAlias() {
-        var args = new Args(new String[]{"--md5=sas"});
+        var args = new Args(new String[]{"--md5=sas", "--md6=111"});
         var tool = new Tool() {
             @Override
             public ToolName name() {
@@ -35,12 +35,22 @@ class ToolTest {
 
             @Override
             public Args config() {
-                return new Args().arg("cmd", "md5").alias("md5", name(), "cmd");
+                return new Args()
+                    .arg("cmd", "md5")
+                    .arg("cmd1", "md6")
+                    .arg("in", "sas")
+                    .alias("md5", name(), "cmd", (before, arg, alias) -> {
+                        before.put(alias.val(), Arg.of(alias.val(), arg.key()));
+                        before.put("in", Arg.of("in", arg.val()));
+                    })
+                    .alias("md6", name(), "cmd1");
             }
         };
         args.copyAliasFrom(tool.config()).setupConfig(tool.config());
         Assertions.assertEquals(ToolName.converts.name(), args.readArg("tool").val());
-        Assertions.assertEquals("sas", args.readArg("cmd").val());
+        Assertions.assertEquals("md5", args.readArg("cmd").val());
+        Assertions.assertEquals("sas", args.readArg("in").val());
+        Assertions.assertEquals("111", args.readArg("cmd1").val());
     }
 
     @Test

@@ -56,6 +56,7 @@ public interface Tool {
     class Args extends LinkedHashMap<String, Arg> {
 
         private final Map<String, Arg> aliases = new HashMap<>();
+        private final Map<String, AliasInterceptor> aliasInterceptors = new HashMap<>();
 
         public Args(int initialCapacity) {
             super(initialCapacity);
@@ -122,19 +123,32 @@ public interface Tool {
             return arg;
         }
 
-        public Args alias(String alias, ToolName name, String val) {
-            aliases.put(alias, new Arg(name.name(), val, null, false, null));
+        public Args alias(String alias, ToolName name, String arg) {
+            return alias(alias, name, arg, null);
+        }
+
+        public Args alias(String alias, ToolName name, String arg, AliasInterceptor argInterceptor) {
+            aliases.put(alias, new Arg(name.name(), arg, null, false, null));
+            if (argInterceptor != null) {
+                aliasInterceptors.put(alias, argInterceptor);
+            }
             return this;
         }
 
         public Args copyAliasFrom(Args args) {
             aliases.putAll(args.aliases);
+            aliasInterceptors.putAll(args.aliasInterceptors);
             var cmds = new HashMap<String, Arg>();
             for (Arg arg : values()) {
                 if (aliases.containsKey(arg.key)) {
                     var alias = aliases.get(arg.key);
                     cmds.put("tool", Arg.of("tool", alias.key));
                     cmds.put(alias.val, Arg.of(alias.val, arg.val));
+
+                    var consumer = aliasInterceptors.get(arg.key);
+                    if (consumer != null) {
+                        consumer.post(cmds, arg, alias);
+                    }
                 }
             }
             putAll(cmds);
@@ -172,5 +186,17 @@ public interface Tool {
                 + "\nAlias\n"
                 + alias;
         }
+    }
+
+    @FunctionalInterface
+    interface AliasInterceptor {
+
+        /**
+         * invoke when inject alias arguments
+         * @param before current argument holder
+         * @param arg current argument
+         * @param alias alias argument
+         */
+        void post(Map<String, Arg> before, Arg arg, Arg alias);
     }
 }

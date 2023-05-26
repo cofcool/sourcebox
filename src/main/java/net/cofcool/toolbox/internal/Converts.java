@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -20,6 +21,8 @@ import net.cofcool.toolbox.ToolName;
 
 @SuppressWarnings({"InnerClassMayBeStatic", "unused"})
 public class Converts implements Tool {
+
+    public static final String INPUT = "in";
 
     private final Map<String, Pipeline> pipelineMap = new LinkedHashMap<>();
 
@@ -42,43 +45,42 @@ public class Converts implements Tool {
 
     @Override
     public void run(Args args) throws Exception {
-        var arg = args.readArg("cmd");
-
-        var pipelineArgs = Arrays.asList(arg.val().split("\\|")).iterator();
-        if (!pipelineArgs.hasNext()) {
-            throw new IllegalArgumentException("Command args not be found");
-        }
-
-        String ret = runCommand(pipelineArgs.next(), null);
-        while (pipelineArgs.hasNext()) {
-           ret = runCommand(pipelineArgs.next(), ret);
-        }
-
-        getLogger().info(ret);
+        getLogger().info(runCommand(args));
     }
 
-    private String runCommand(String arg, String ret) throws Exception {
-        var split = arg.trim().split(" ");
-        var cmd = split[0];
+    protected String runCommand(Args args) throws Exception {
+        var pipelines = new ArrayList<String>();
+        pipelines.add(args.readArg("cmd").val());
 
-        String val = null;
-        if (split.length > 1) {
-            val = String.join(" ", Arrays.copyOfRange(split, 1, split.length)).trim();
+        args.readArg("pipeline").ifPresent(a -> {
+            pipelines.addAll(Arrays.stream(a.val().split("\\|")).map(String::trim).toList());
+        });
+
+        var cmds = pipelines.iterator();
+        var ret = runCommand(cmds.next(), args, null);
+        while (cmds.hasNext()) {
+            ret = runCommand(cmds.next(), args, ret);
         }
 
-        Pipeline pipelineCmd = pipelineMap.get(cmd);
+        return ret;
+    }
+
+    private String runCommand(String cmd, Args args, String ret) throws Exception {
+        var pipelineCmd = pipelineMap.get(cmd);
         if (pipelineCmd == null) {
             throw new IllegalArgumentException("Do not support " + cmd);
         }
-
-        String args = ret == null ? val : (val == null ? "" : val + " ") + ret;
-        getLogger().debug(cmd + " args: " + args);
-        return pipelineCmd.run(args);
+        if (ret != null) {
+            args.arg(INPUT, ret);
+        }
+        ret = pipelineCmd.run(args);
+        getLogger().debug(cmd + " args: " + args + "; ret: " + ret);
+        return ret;
     }
 
     private interface Pipeline {
 
-        String run(String args) throws Exception;
+        String run(Args args) throws Exception;
 
         Arg demo();
 
@@ -87,10 +89,14 @@ public class Converts implements Tool {
     private class Timesp implements Pipeline {
 
         @Override
-        public String run(String args) {
-            return DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
-                    .parse(args, LocalDateTime::from).atZone(ZoneId.systemDefault()).toInstant()
-                    .toEpochMilli() + "";
+        public String run(Args args) {
+            return String.valueOf(
+                DateTimeFormatter
+                    .ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
+                    .parse(args.readArg(INPUT).val(), LocalDateTime::from)
+                    .atZone(ZoneId.systemDefault()).toInstant()
+                    .toEpochMilli()
+            );
         }
 
         @Override
@@ -102,22 +108,21 @@ public class Converts implements Tool {
     private class Replace implements Pipeline {
 
         @Override
-        public String run(String args) {
-            String[] split = args.split(" ");
-            return split[2].replace(split[0], split[1]);
+        public String run(Args args) {
+            return args.readArg(INPUT).val().replace(args.readArg("old").val(), args.readArg("new").val());
         }
 
         @Override
         public Arg demo() {
-            return new Arg(getClass().getSimpleName().toLowerCase(), null, "replace string", false, ". _ test");
+            return new Arg(getClass().getSimpleName().toLowerCase(), null, "replace string", false, "test -old=t --new=e");
         }
     }
 
     private class Now implements Pipeline {
 
         @Override
-        public String run(String args) throws Exception {
-            return System.currentTimeMillis() + "";
+        public String run(Args args) throws Exception {
+            return String.valueOf(System.currentTimeMillis());
         }
 
         @Override
@@ -129,8 +134,8 @@ public class Converts implements Tool {
     private class Upper implements Pipeline {
 
         @Override
-        public String run(String args) throws Exception {
-            return args.toUpperCase();
+        public String run(Args args) throws Exception {
+            return args.readArg(INPUT).val().toUpperCase();
         }
 
         @Override
@@ -142,8 +147,8 @@ public class Converts implements Tool {
     private class Lower implements Pipeline {
 
         @Override
-        public String run(String args) throws Exception {
-            return args.toLowerCase();
+        public String run(Args args) throws Exception {
+            return args.readArg(INPUT).val().toLowerCase();
         }
 
         @Override
@@ -155,9 +160,9 @@ public class Converts implements Tool {
     private class Hdate implements Pipeline {
 
         @Override
-        public String run(String args) {
+        public String run(Args args) {
             return DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
-                    .format(LocalDateTime.ofInstant(Instant.ofEpochMilli(Long.parseLong(args)), TimeZone.getDefault().toZoneId()));
+                    .format(LocalDateTime.ofInstant(Instant.ofEpochMilli(Long.parseLong(args.readArg(INPUT).val())), TimeZone.getDefault().toZoneId()));
         }
 
         @Override
@@ -169,10 +174,10 @@ public class Converts implements Tool {
     private class Md5 implements Pipeline {
 
         @Override
-        public String run(String args) throws Exception{
+        public String run(Args args) throws Exception{
             MessageDigest messageDigest = MessageDigest.getInstance("MD5");
             messageDigest.reset();
-            messageDigest.update(args.getBytes(StandardCharsets.UTF_8));
+            messageDigest.update(args.readArg(INPUT).val().getBytes(StandardCharsets.UTF_8));
 
             byte[] byteArray = messageDigest.digest();
 
@@ -198,13 +203,9 @@ public class Converts implements Tool {
     private class Base64 implements Pipeline {
 
         @Override
-        public String run(String args) throws Exception{
-            String[] split = args.split(" ");
-            if (split.length != 2) {
-                throw new IllegalArgumentException("Base64 arguments size must be 2");
-            }
-            var type = split[0];
-            var val = split[1];
+        public String run(Args args) throws Exception{
+            var type = args.readArg("btype").val();
+            var val = args.readArg(INPUT).val();
             if (type.equalsIgnoreCase("en")) {
                 return new String(java.util.Base64.getEncoder().encode(val.getBytes(StandardCharsets.UTF_8)));
             } else if (type.equalsIgnoreCase("de"))  {
@@ -216,20 +217,16 @@ public class Converts implements Tool {
 
         @Override
         public Arg demo() {
-            return new Arg(getClass().getSimpleName().toLowerCase(), null, "base64 encoder(en) or decoder(de)", false, "en/de demo");
+            return new Arg(getClass().getSimpleName().toLowerCase(), null, "base64 encoder(en) or decoder(de)", false, "demo --btype=en/de");
         }
     }
 
     private class Url implements Pipeline {
 
         @Override
-        public String run(String args) throws Exception{
-            String[] split = args.split(" ");
-            if (split.length != 2) {
-                throw new IllegalArgumentException("Url arguments size must be 2");
-            }
-            var type = split[0];
-            var val = split[1];
+        public String run(Args args) throws Exception{
+            var type = args.readArg("utype").val();;
+            var val = args.readArg(INPUT).val();;
             if (type.equalsIgnoreCase("en")) {
                 return URLEncoder.encode(val, StandardCharsets.UTF_8);
             } else if (type.equalsIgnoreCase("de"))  {
@@ -241,18 +238,18 @@ public class Converts implements Tool {
 
         @Override
         public Arg demo() {
-            return new Arg(getClass().getSimpleName().toLowerCase(), null, "url encoder(en) or decoder(de)", false, "en/de demo");
+            return new Arg(getClass().getSimpleName().toLowerCase(), null, "url encoder(en) or decoder(de)", false, "demo --utype=en/de");
         }
     }
 
     private class Random implements Pipeline {
 
         @Override
-        public String run(String args) throws Exception {
+        public String run(Args args) throws Exception {
             var chars = "abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+";
             return RandomGenerator
                 .getDefault()
-                .ints(Integer.parseInt(args), 0, chars.length())
+                .ints(Integer.parseInt(args.readArg(INPUT).getVal().orElse("10")), 0, chars.length())
                 .mapToObj(i -> String.valueOf(chars.charAt(i)))
                 .collect(Collectors.joining(""));
         }
@@ -265,14 +262,21 @@ public class Converts implements Tool {
 
     @Override
     public Args config() {
-        return new Args()
+        var args = new Args()
             .arg(new Arg(
                 "cmd",
                 null,
-                "\n" + pipelineMap.values().stream().map(Pipeline::demo).map(a -> "        " + a.key() + ": " + a.desc() + ". Example: " + a.key() + " " + a.demo()).collect(Collectors.joining("\n")),
+                "\n" + pipelineMap.values().stream().map(Pipeline::demo).map(a -> "        " + a.key() + ": " + a.desc() + ". Example: --" + INPUT + "=" + a.demo()).collect(Collectors.joining("\n")),
                 true,
                 ""
-            ));
+            ))
+            .arg(new Arg("pipeline", null, "next commands, like: md5 | replace", false, ""))
+            .arg(new Arg(INPUT, null, "input string", false, ""));
+        pipelineMap.keySet().forEach(s -> args.alias(s, name(), "cmd", (before, arg, alias) -> {
+            before.put(alias.val(), Arg.of(alias.val(), arg.key()));
+            before.put(INPUT, Arg.of(INPUT, arg.val()));
+        }));
+        return args;
     }
 
 }

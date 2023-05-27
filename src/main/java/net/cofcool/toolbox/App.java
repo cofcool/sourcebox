@@ -28,6 +28,7 @@ public class App {
             .setupConfig(
                 new Args()
                     .arg(new Arg("debug", "false", "", false, null))
+                    .arg(new Arg("help", null, "", false, null))
                     .arg(new Arg("tool", null, "", false, "converts"))
             );
         LoggerFactory.setDebug("true".equalsIgnoreCase(pArgs.readArg("debug").val()));
@@ -37,6 +38,16 @@ public class App {
         logger.debug(pArgs);
 
         var notRun = new AtomicBoolean(true);
+
+        pArgs.readArg("help").ifPresent(a -> {
+            for (Tool tool : ALL_TOOLS) {
+                if (tool.name().name().equals(a.val())) {
+                    notRun.set(false);
+                    logger.info(tool.config().toHelpString());
+                }
+            }
+        });
+
         pArgs.readArg("tool").ifPresent(a -> {
             for (Tool tool : ALL_TOOLS) {
                 if (tool.name().name().equals(a.val())) {
@@ -53,7 +64,7 @@ public class App {
             }
         });
         if (notRun.get()) {
-            logger.error("Please check tool argument");
+            logger.error("Please check tool name");
             logAbout(logger);
         }
     }
@@ -78,6 +89,7 @@ public class App {
     private static void logAbout(Logger logger) {
         logger.info("About: " + ABOUT);
         logger.info("Example: --tool=demo --path=tmp");
+        logger.info("Help: --help={COMMAND}, like: --help=rename");
         logger.info("Tools:\n    " + ALL_TOOLS.stream().map(Tool::name).map(ToolName::toString).collect(Collectors.joining("\n    ")));
     }
 }

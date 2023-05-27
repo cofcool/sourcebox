@@ -123,12 +123,12 @@ public interface Tool {
             return arg;
         }
 
-        public Args alias(String alias, ToolName name, String arg) {
-            return alias(alias, name, arg, null);
+        public Args alias(String alias, ToolName name, String arg, String desc) {
+            return alias(alias, name, arg, desc, null);
         }
 
-        public Args alias(String alias, ToolName name, String arg, AliasInterceptor argInterceptor) {
-            aliases.put(alias, new Arg(name.name(), arg, null, false, null));
+        public Args alias(String alias, ToolName name, String arg, String desc, AliasInterceptor argInterceptor) {
+            aliases.put(alias, new Arg(name.name(), arg, desc, false, null));
             if (argInterceptor != null) {
                 aliasInterceptors.put(alias, argInterceptor);
             }
@@ -178,7 +178,7 @@ public interface Tool {
                 .stream()
                 .map(a -> "    --" + a.key() + "    " + a.desc() + (a.isPresent() ? ". Default: " + a.val() : ". Example: " + a.demo()))
                 .collect(Collectors.joining("\n"));
-            var alias = aliases.entrySet().stream().map(e -> "    --" + e.getKey() + "    " + "--tool=" + e.getValue().key + " --" + e.getValue().val).collect(Collectors.joining("\n"));
+            var alias = aliases.entrySet().stream().map(e -> "    --" + e.getKey() + "    " + "--tool=" + e.getValue().key + " --" + (e.getValue().desc == null ? e.getValue().val : e.getValue().desc)).collect(Collectors.joining("\n"));
             return "Synopsis\n    "
                 + synopsis
                 + "\nDescription\n"

@@ -272,7 +272,7 @@ public class Converts implements Tool {
             ))
             .arg(new Arg("pipeline", null, "next commands, like: md5 | replace", false, ""))
             .arg(new Arg(INPUT, null, "input string", false, ""));
-        pipelineMap.keySet().forEach(s -> args.alias(s, name(), "cmd", (before, arg, alias) -> {
+        pipelineMap.keySet().forEach(s -> args.alias(s, name(), "cmd", "cmd="+ s + " --in", (before, arg, alias) -> {
             before.put(alias.val(), Arg.of(alias.val(), arg.key()));
             before.put(INPUT, Arg.of(INPUT, arg.val()));
         }));

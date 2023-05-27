@@ -10,7 +10,7 @@ class ToolTest {
 
     @Test
     void toHelpString() {
-        System.out.println(new Args(new String[]{"--tool=test", "--cmd=md5 = dd", "sas"}).alias("md5", ToolName.converts, "cmd").toHelpString());
+        System.out.println(new Args(new String[]{"--tool=test", "--cmd=md5", "--in=asc"}).alias("md5", ToolName.converts, "cmd", "cmd=md5 --in").alias("rename", ToolName.rename, "path", null).toHelpString());
     }
 
     @Test
@@ -39,11 +39,11 @@ class ToolTest {
                     .arg("cmd", "md5")
                     .arg("cmd1", "md6")
                     .arg("in", "sas")
-                    .alias("md5", name(), "cmd", (before, arg, alias) -> {
+                    .alias("md5", name(), "cmd", "arg", (before, arg, alias) -> {
                         before.put(alias.val(), Arg.of(alias.val(), arg.key()));
                         before.put("in", Arg.of("in", arg.val()));
                     })
-                    .alias("md6", name(), "cmd1");
+                    .alias("md6", name(), "cmd1",  "arg1");
             }
         };
         args.copyAliasFrom(tool.config()).setupConfig(tool.config());

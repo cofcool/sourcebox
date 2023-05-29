@@ -50,6 +50,7 @@ public class TrelloToLogseqImporter implements Tool {
     public void run(Args args) throws Exception {
         var path = args.readArg("path").val();
         var outPath = args.readArg("out");
+        var titleToPage = args.readArg("titleToPage").getVal().orElse("false").equalsIgnoreCase("true");
         try (var reader = new JsonReader(new FileReader(path))) {
             Trello trello = new Gson().fromJson(reader, Trello.class);
             var name = trello.name();
@@ -70,11 +71,13 @@ public class TrelloToLogseqImporter implements Tool {
                 var out = new OutStr();
                 for (CardsItem card : entry.getValue()) {
                     var cardBoard = cardList(trello, card.idList());
-                    out.block(OutStr.cardTask(cardBoard.name()) + card.name(), 0)
-                            .blockRef(OutStr.DATE_FORMATTER.format(entry.getKey().time()))
-                            .tag(card.badges().votes() > 0 ? "recommend" : "")
-                            .tag(cardBoard.name().replace(" ", "-"))
-                            .tag(name);
+                    out.block(OutStr.cardTask(cardBoard.name()), 0)
+                        .blockRef(titleToPage ? card.name() : null)
+                        .append(titleToPage ? null : card.name())
+                        .blockRef(OutStr.DATE_FORMATTER.format(entry.getKey().time()))
+                        .tag(card.badges().votes() > 0 ? "recommend" : "")
+                        .tag(cardBoard.name().replace(" ", "-"))
+                        .tag(name);
                     for (LabelsItem label : card.labels()) {
                         out.tag(label.name().replace(" ", "-"));
                     }
@@ -113,7 +116,9 @@ public class TrelloToLogseqImporter implements Tool {
     public Args config() {
         return new Args()
             .arg(new Arg("path", null, "trello json file path", true, "./demo.json"))
-            .arg(new Arg("out", "./trello", "output directory", false, null));
+            .arg(new Arg("out", "./trello", "output directory", false, null))
+            .arg(new Arg("titleToPage", "false", "make card title to page", false, null))
+            .alias("trello", name(), "path", null);
     }
 
     private List<ActionsItem> actionList(Trello trello, String id) {
@@ -215,19 +220,24 @@ public class TrelloToLogseqImporter implements Tool {
         private final StringBuilder builder = new StringBuilder();
 
         public OutStr append(String val) {
-            builder.append(val);
+            if (val != null) {
+                builder.append(val);
+            }
             return this;
         }
 
         public OutStr blockRef(String val) {
-            if (!val.isEmpty()) {
-                builder.append(" [[").append(val).append("]]");
+            if (val != null && !val.isEmpty()) {
+                if (builder.lastIndexOf(" ") != (builder.length() - 1)) {
+                    builder.append(" ");
+                }
+                builder.append("[[").append(val).append("]]");
             }
             return this;
         }
 
         public OutStr tag(String val) {
-            if (!val.isEmpty()) {
+            if (val != null && !val.isEmpty()) {
                 builder.append(" #").append(val);
             }
             return this;

@@ -30,7 +30,7 @@ hs_err_pid*
 .idea/dictionaries
 
 # Sensitive or high-churn files:
-.idea/**
+**/.idea/**
 
 # CMake
 cmake-build-debug/

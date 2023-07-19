@@ -1,0 +1,51 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="./3.3.2.js"></script>
+  <script src="./jquery-3.7.0.min.js"></script>
+  <title>Simple Note</title>
+</head>
+<body>
+<form id="form" method="post" onsubmit="return false" action="/note">
+  <label>
+    <textarea placeholder="请输入内容" name="note"></textarea>
+  </label>
+  <button type="button" onclick="submit()">保存</button>
+</form>
+
+<script>
+$.getJSON( "/list", function( data ) {
+  var items = [];
+  $.each( data, function( key, val ) {
+    items.push( "<li id='" + key + "'>" + val.content + ' - ' + val.date + "</li>" );
+  });
+
+  $( "<ul/>", {
+    "class": "w-96",
+    html: items.join( "" )
+  }).appendTo( "body" );
+});
+
+function submit(ele) {
+$("#form").ajaxSubmit(function(msg){
+console.log(msg)
+})
+return false;
+<!--$.ajax({-->
+<!--                type: "POST",-->
+<!--                url: "/note" ,-->
+<!--                data: $('#form').serialize(),-->
+<!--                success: function () {-->
+<!--                  console.log("ok")-->
+<!--                },-->
+<!--                error : function() {-->
+<!--                  console.log("fail")-->
+<!--                }-->
+<!--            });-->
+}
+
+</script>
+</body>
+</html>

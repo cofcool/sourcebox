@@ -30,7 +30,10 @@ class Index {
 
         router.post("/note").handler(BodyHandler.create()).handler { context ->
             noteService.save(context.body().asPojo(Note::class.java)).andThen {
-                context.request().response().end(Json.encodeToBuffer(it.result()))
+                context.request()
+                    .response()
+                    .putHeader("Content-Type", "application/json")
+                    .end(Json.encodeToBuffer(it.result()))
             }
         }
 

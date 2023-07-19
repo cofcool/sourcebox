@@ -8,13 +8,12 @@
   <title>Simple Note</title>
 </head>
 <body>
-<form id="form" method="post" onsubmit="return false" action="/note">
+<form action="" id="saveForm">
   <label>
     <textarea placeholder="请输入内容" name="note"></textarea>
   </label>
-  <button type="button" onclick="submit()">保存</button>
+  <button type="submit" >保存</button>
 </form>
-
 <script>
 $.getJSON( "/list", function( data ) {
   var items = [];
@@ -23,28 +22,28 @@ $.getJSON( "/list", function( data ) {
   });
 
   $( "<ul/>", {
-    "class": "w-96",
+    "class": "w-full",
     html: items.join( "" )
   }).appendTo( "body" );
 });
 
-function submit(ele) {
-$("#form").ajaxSubmit(function(msg){
-console.log(msg)
-})
-return false;
-<!--$.ajax({-->
-<!--                type: "POST",-->
-<!--                url: "/note" ,-->
-<!--                data: $('#form').serialize(),-->
-<!--                success: function () {-->
-<!--                  console.log("ok")-->
-<!--                },-->
-<!--                error : function() {-->
-<!--                  console.log("fail")-->
-<!--                }-->
-<!--            });-->
-}
+saveForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+var data = {};
+data.content = e.target[0].value;
+
+
+$.ajax({
+  type: "POST",
+  url: "/note",
+  data: JSON.stringify(data),
+  success: function() {
+    e.target.reset();
+    location.reload();
+  },
+  dataType: "json"
+});
+});
 
 </script>
 </body>

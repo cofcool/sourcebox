@@ -79,6 +79,20 @@ class FileNameFormatterTest extends BaseTest {
     }
 
     @Test
+    void runWithReplaceExt() throws Exception {
+        var path = file.getPath();
+        System.out.println(path);
+        FileUtils.writeStringToFile(new File(path + File.separator + "demo.txt"), "test", StandardCharsets.UTF_8);
+        instance().run(args
+            .arg("path", path)
+            .arg("formatter", Formatter.replace.name())
+            .arg("new", "-xx")
+            .arg("old", ".txt")
+        );
+        Assertions.assertTrue(new File(path + File.separator + "demo-xx").exists());
+    }
+
+    @Test
     void runWithIgnore() throws Exception {
         var path = file.getPath();
         System.out.println(path);

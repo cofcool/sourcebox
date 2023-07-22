@@ -20,6 +20,7 @@ import net.cofcool.toolbox.Tool;
 import net.cofcool.toolbox.ToolName;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 
 public class FileNameFormatter implements Tool {
 
@@ -59,7 +60,7 @@ public class FileNameFormatter implements Tool {
         }
 
         var ext = FilenameUtils.getExtension(file.getName());
-        var newFileName = nameGenerator.name(baseName, args) + (ext.length() > 0 ? "." + ext : "");
+        var newFileName = nameGenerator.name(baseName, StringUtils.isEmpty(ext) ? "" : "." + ext, args);
         var newName = new File(fullPath + newFileName);
 
         Object ret;
@@ -139,7 +140,7 @@ public class FileNameFormatter implements Tool {
 
     private interface NameGenerator {
 
-        String name(String old, Args args);
+        String name(String old, String ext, Args args);
 
         default String help() {
             return "";
@@ -155,9 +156,9 @@ public class FileNameFormatter implements Tool {
         private int i = 0;
 
         @Override
-        public String name(String old, Args args) {
+        public String name(String old, String ext, Args args) {
             i++;
-            return String.format("%s-%03d", old, i);
+            return String.format("%s-%03d%s", old, i, ext);
         }
 
         @Override
@@ -169,9 +170,9 @@ public class FileNameFormatter implements Tool {
     private static class UrlNameDecoder implements NameGenerator {
 
         @Override
-        public String name(String old, Args args) {
+        public String name(String old, String ext, Args args) {
             try {
-                return URLDecoder.decode(old, StandardCharsets.UTF_8);
+                return URLDecoder.decode(old, StandardCharsets.UTF_8) + ext;
             } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("Decode " + old + " error: " + e.getMessage());
             }
@@ -181,8 +182,8 @@ public class FileNameFormatter implements Tool {
     private static class ReplaceDecoder implements NameGenerator {
 
         @Override
-        public String name(String old, Args args) {
-            return old.replace(args.readArg("old").val(), args.readArg("new").val());
+        public String name(String old, String ext, Args args) {
+            return (old + ext).replace(args.readArg("old").val(), args.readArg("new").val());
         }
 
         @Override
@@ -200,8 +201,8 @@ public class FileNameFormatter implements Tool {
         }
 
         @Override
-        public String name(String old, Args args) {
-            return super.name(old + "-" + dateTimeFormatter.format(LocalDate.now()), args);
+        public String name(String old, String ext, Args args) {
+            return super.name(old + "-" + dateTimeFormatter.format(LocalDate.now()), ext, args);
         }
     }
 }

@@ -91,6 +91,11 @@ Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到
 * date, 日期
 * datetime, 时间
 * urlencoded, 解码 URL 编码
+* replace, 字符串替换
+
+## 简单笔记
+
+[Simple Note](./simple-note)
 
 # 致谢
 

@@ -29,7 +29,7 @@
 
 使用: `./my-tools.sh --tool=gitCommits2Log --path=./`
 
-## 基于 Web 的文件服务器
+## 简单 Web 文件服务器
 
 使用 `./my-tools.sh --tool=dirWebServer`
 

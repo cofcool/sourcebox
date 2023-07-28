@@ -134,7 +134,7 @@ public class FileNameFormatter implements Tool {
         @Override
         public String toString() {
             var help = supplier.get().help();
-            return super.toString() + (help.length() == 0 ? "" : "(required args: " + help + ")");
+            return super.toString() + (help.length() == 0 ? "" : "(support args: " + help + ")");
         }
     }
 
@@ -153,17 +153,28 @@ public class FileNameFormatter implements Tool {
 
     private static class OrderGenerator implements NameGenerator {
 
-        private int i = 0;
+        static final int DEFAULT = 1;
+
+        private int i = DEFAULT;
+        private Integer start;
 
         @Override
         public String name(String old, String ext, Args args) {
-            i++;
-            return String.format("%s-%03d%s", old, i, ext);
+            if (start == null) {
+                start = Integer.valueOf(args.getArgVal("start").orElse(DEFAULT + ""));
+                i = start;
+            }
+            return String.format("%s-%03d%s", old, i++, ext);
         }
 
         @Override
         public void enterDir() {
-            i = 0;
+            i = DEFAULT;
+        }
+
+        @Override
+        public String help() {
+            return "--start=" + DEFAULT;
         }
     }
 

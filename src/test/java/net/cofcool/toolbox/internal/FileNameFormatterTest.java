@@ -28,6 +28,15 @@ class FileNameFormatterTest extends BaseTest {
         Assertions.assertTrue(new File(path + File.separator + "demo-001.txt").exists());
     }
 
+    @Test
+    void runWithStart() throws Exception {
+        var path = file.getPath();
+        System.out.println(path);
+        FileUtils.writeStringToFile(new File(path + File.separator + "demo.txt"), "test", StandardCharsets.UTF_8);
+        instance().run(args.arg("path", path).arg("formatter", FileNameFormatter.Formatter.order.name()).arg("start",  "2"));
+        Assertions.assertTrue(new File(path + File.separator + "demo-002.txt").exists());
+    }
+
     /** @noinspection ResultOfMethodCallIgnored*/
     @Test
     void runWithDeepDirectories() throws Exception {
@@ -119,8 +128,7 @@ class FileNameFormatterTest extends BaseTest {
 
     @Test
     void printInnerHelp() {
-        System.out.println(
-            Arrays.toString(Formatter.values()));
+        System.out.println(Arrays.toString(Formatter.values()));
     }
 
     @Override

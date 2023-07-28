@@ -123,6 +123,14 @@ public interface Tool {
             return arg;
         }
 
+        public Optional<String> getArgVal(String key) {
+            var arg = get(key);
+            if (arg == null) {
+                return Optional.empty();
+            }
+            return Optional.of(arg.val);
+        }
+
         public Args alias(String alias, ToolName name, String arg, String desc) {
             return alias(alias, name, arg, desc, null);
         }

@@ -134,7 +134,7 @@ public class FileNameFormatter implements Tool {
         @Override
         public String toString() {
             var help = supplier.get().help();
-            return super.toString() + (help.length() == 0 ? "" : "(support args: " + help + ")");
+            return super.toString() + (help.isEmpty() ? "" : "(support args: " + help + ")");
         }
     }
 

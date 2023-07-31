@@ -43,12 +43,13 @@ public class GitCommitsToChangelog implements Tool {
         var noTag = args.readArg("no-tag").val().equalsIgnoreCase("true");
         var full = requiredTag.isPresent() || noTag || args.readArg("full").val().equalsIgnoreCase("true");
         var style = Style.valueOf(args.readArg("style").val());
+        var logId = args.readArg("logId");
 
         String commitLog;
         if (logFile.isPresent()) {
             commitLog = FileUtils.readFileToString(new File(logFile.val()), StandardCharsets.UTF_8);
         } else {
-            String path = args.readArg("path").val();
+            String path = args.readArg("path").getRequiredVal("path must not be null");
 
             String command = "git log --format=%an;%d;%h;%s";
             getLogger().info("Run command: " + command);
@@ -101,10 +102,15 @@ public class GitCommitsToChangelog implements Tool {
                     }
                     c
                         .stream()
+                        .filter(cf -> logId.test(cf.message::contains))
                         .collect(Collectors.groupingBy(cm -> cm.styleId(style)))
                         .forEach((k, v) -> {
                             k.ifPresent(kt -> commits.add("### " + kt + "\n"));
-                            commits.add(v.stream().map(Commit::toString).collect(Collectors.joining("\n", "", "\n")));
+                            commits.add(v.stream()
+                                .map(Commit::toString)
+                                .map(cm -> logId.isPresent() ? cm.replace(logId.val(), "") : cm)
+                                .collect(Collectors.joining("\n", "", "\n"))
+                            );
                         });
                 });
             FileUtils.writeStringToFile(new File(out), String.join("\n", commits), StandardCharsets.UTF_8);
@@ -121,12 +127,13 @@ public class GitCommitsToChangelog implements Tool {
             .arg(new Arg("user", null, "username filter", false, "cofcool"))
             .arg(new Arg("tag", null, "read commit log to the tag", false, "1.0.0"))
             .arg(new Arg("no-tag", "false", "if true, read all commit log and write into file", false, null))
+            .arg(new Arg("logId", null, "mark the commit history as the changelog", false, "#log"))
             .arg(new Arg("full", "false", "if true, read all tags and commit log, then write into file", false, null))
             .arg(new Arg("style", Style.simple.name(), "changelog file format, like " + Arrays.toString(Style.values()), false, null));
     }
 
     enum Style {
-        simple(""), angular("^(fix|feat|docs|style|refactor|pref|test|chore)\\(.+\\):\s.+");
+        simple(""), angular("^(fix|feat|docs|style|refactor|pref|test|chore)\\(.+\\): .+");
 
         private final Pattern pattern;
 

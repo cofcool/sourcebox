@@ -35,6 +35,14 @@ public interface Tool {
             }
         }
 
+        public String getRequiredVal(String message) {
+            if (val == null) {
+                throw new IllegalArgumentException(message);
+            }
+
+            return val;
+        }
+
         public Optional<String> getVal() {
             return Optional.ofNullable(val);
         }

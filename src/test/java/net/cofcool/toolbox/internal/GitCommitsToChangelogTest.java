@@ -20,7 +20,7 @@ class GitCommitsToChangelogTest extends BaseTest {
 
     @Test
     void run() throws Exception {
-        new GitCommitsToChangelog().run(args.arg("path", Utils.getTestResourcePath("/")));
+        new GitCommitsToChangelog().run(args.arg("path", Utils.getTestResourcePath("/")).arg("logId", "#log"));
     }
 
     @Test
@@ -52,6 +52,14 @@ class GitCommitsToChangelogTest extends BaseTest {
                 .arg("out", "./target/changelog-runWithUser.md")
                 .arg("full", "true")
                 .arg("user", "ZhangSan")
+        );
+    }
+
+    @Test
+    void runWithLogId() throws Exception {
+        new GitCommitsToChangelog().run(args.arg("log", Utils.getTestResourcePath("/gitCommitsToChangelogTest.txt"))
+                .arg("out", "./target/changelog-runWithLogId.md")
+                .arg("logId", "update")
         );
     }
 

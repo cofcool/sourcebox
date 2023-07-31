@@ -129,7 +129,8 @@ public class GitCommitsToChangelog implements Tool {
             .arg(new Arg("no-tag", "false", "if true, read all commit log and write into file", false, null))
             .arg(new Arg("logId", null, "mark the commit history as the changelog", false, "#log"))
             .arg(new Arg("full", "false", "if true, read all tags and commit log, then write into file", false, null))
-            .arg(new Arg("style", Style.simple.name(), "changelog file format, like " + Arrays.toString(Style.values()), false, null));
+            .arg(new Arg("style", Style.simple.name(), "changelog file format, like " + Arrays.toString(Style.values()), false, null))
+            .alias("gitLog", name(), "path", null);
     }
 
     enum Style {

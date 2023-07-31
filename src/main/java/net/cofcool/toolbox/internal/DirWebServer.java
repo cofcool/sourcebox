@@ -76,7 +76,8 @@ public class DirWebServer implements Tool {
     public Args config() {
         return new Args()
             .arg(new Arg("port", "8080", "web server listen port", false, null))
-            .arg(new Arg("root", System.getProperty("user.dir"), "web server root directory", false, null));
+            .arg(new Arg("root", System.getProperty("user.dir"), "web server root directory", false, null))
+            .alias("dir", name(), "root", null);
     }
 
     private record DelegateHttpHandler(HttpHandler delegate) implements HttpHandler {

@@ -1,52 +1,52 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record Badges(
 
-    @SerializedName("comments")
+    @JsonProperty("comments")
     int comments,
 
-    @SerializedName("attachments")
+    @JsonProperty("attachments")
     int attachments,
 
-    @SerializedName("attachmentsByType")
+    @JsonProperty("attachmentsByType")
     AttachmentsByType attachmentsByType,
 
-    @SerializedName("dueComplete")
+    @JsonProperty("dueComplete")
     boolean dueComplete,
 
-    @SerializedName("start")
+    @JsonProperty("start")
     Object start,
 
-    @SerializedName("description")
+    @JsonProperty("description")
     boolean description,
 
-    @SerializedName("checkItemsEarliestDue")
+    @JsonProperty("checkItemsEarliestDue")
     Object checkItemsEarliestDue,
 
-    @SerializedName("subscribed")
+    @JsonProperty("subscribed")
     Boolean subscribed,
 
-    @SerializedName("due")
+    @JsonProperty("due")
     Object due,
 
-    @SerializedName("viewingMemberVoted")
+    @JsonProperty("viewingMemberVoted")
     boolean viewingMemberVoted,
 
-    @SerializedName("location")
+    @JsonProperty("location")
     boolean location,
 
-    @SerializedName("votes")
+    @JsonProperty("votes")
     int votes,
 
-    @SerializedName("fogbugz")
+    @JsonProperty("fogbugz")
     String fogbugz,
 
-    @SerializedName("checkItems")
+    @JsonProperty("checkItems")
     int checkItems,
 
-    @SerializedName("checkItemsChecked")
+    @JsonProperty("checkItemsChecked")
     int checkItemsChecked
 ) {
 }

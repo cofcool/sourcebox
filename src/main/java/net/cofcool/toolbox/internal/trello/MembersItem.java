@@ -1,72 +1,71 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
-
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 public record MembersItem(
 
-    @SerializedName("idEnterprisesDeactivated")
+    @JsonProperty("idEnterprisesDeactivated")
     List<Object> idEnterprisesDeactivated,
 
-    @SerializedName("avatarUrl")
+    @JsonProperty("avatarUrl")
     String avatarUrl,
 
-    @SerializedName("initials")
+    @JsonProperty("initials")
     String initials,
 
-    @SerializedName("nonPublicAvailable")
+    @JsonProperty("nonPublicAvailable")
     boolean nonPublicAvailable,
 
-    @SerializedName("idMemberReferrer")
+    @JsonProperty("idMemberReferrer")
     Object idMemberReferrer,
 
-    @SerializedName("bio")
+    @JsonProperty("bio")
     String bio,
 
-    @SerializedName("fullName")
+    @JsonProperty("fullName")
     String fullName,
 
-    @SerializedName("nonPublic")
+    @JsonProperty("nonPublic")
     NonPublic nonPublic,
 
-    @SerializedName("confirmed")
+    @JsonProperty("confirmed")
     boolean confirmed,
 
-    @SerializedName("idPremOrgsAdmin")
+    @JsonProperty("idPremOrgsAdmin")
     List<Object> idPremOrgsAdmin,
 
-    @SerializedName("url")
+    @JsonProperty("url")
     String url,
 
-    @SerializedName("products")
+    @JsonProperty("products")
     List<Object> products,
 
-    @SerializedName("activityBlocked")
+    @JsonProperty("activityBlocked")
     boolean activityBlocked,
 
-    @SerializedName("avatarHash")
+    @JsonProperty("avatarHash")
     String avatarHash,
 
-    @SerializedName("aaId")
+    @JsonProperty("aaId")
     String aaId,
 
-    @SerializedName("idEnterprise")
+    @JsonProperty("idEnterprise")
     Object idEnterprise,
 
-    @SerializedName("id")
+    @JsonProperty("id")
     String id,
 
-    @SerializedName("memberType")
+    @JsonProperty("memberType")
     String memberType,
 
-    @SerializedName("bioData")
+    @JsonProperty("bioData")
     Object bioData,
 
-    @SerializedName("username")
+    @JsonProperty("username")
     String username,
 
-    @SerializedName("status")
+    @JsonProperty("status")
     String status
 ) {
 }

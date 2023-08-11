@@ -1,22 +1,22 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record MembershipsItem(
 
-    @SerializedName("unconfirmed")
+    @JsonProperty("unconfirmed")
     boolean unconfirmed,
 
-    @SerializedName("idMember")
+    @JsonProperty("idMember")
     String idMember,
 
-    @SerializedName("memberType")
+    @JsonProperty("memberType")
     String memberType,
 
-    @SerializedName("id")
+    @JsonProperty("id")
     String id,
 
-    @SerializedName("deactivated")
+    @JsonProperty("deactivated")
     boolean deactivated
 ) {
 }

@@ -1,128 +1,128 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 public record CardsItem(
 
-    @SerializedName("descData")
+    @JsonProperty("descData")
     Object descData,
 
-    @SerializedName("attachments")
+    @JsonProperty("attachments")
     List<Object> attachments,
 
-    @SerializedName("idLabels")
+    @JsonProperty("idLabels")
     List<String> idLabels,
 
-    @SerializedName("shortUrl")
+    @JsonProperty("shortUrl")
     String shortUrl,
 
-    @SerializedName("dueComplete")
+    @JsonProperty("dueComplete")
     boolean dueComplete,
 
-    @SerializedName("dateLastActivity")
+    @JsonProperty("dateLastActivity")
     String dateLastActivity,
 
-    @SerializedName("idList")
+    @JsonProperty("idList")
     String idList,
 
-    @SerializedName("idMembersVoted")
+    @JsonProperty("idMembersVoted")
     List<Object> idMembersVoted,
 
-    @SerializedName("shortLink")
+    @JsonProperty("shortLink")
     String shortLink,
 
-    @SerializedName("creationMethod")
+    @JsonProperty("creationMethod")
     Object creationMethod,
 
-    @SerializedName("cover")
+    @JsonProperty("cover")
     Cover cover,
 
-    @SerializedName("dueReminder")
+    @JsonProperty("dueReminder")
     Object dueReminder,
 
-    @SerializedName("subscribed")
+    @JsonProperty("subscribed")
     Boolean subscribed,
 
-    @SerializedName("pos")
+    @JsonProperty("pos")
     Double pos,
 
-    @SerializedName("staticMapUrl")
+    @JsonProperty("staticMapUrl")
     Object staticMapUrl,
 
-    @SerializedName("idChecklists")
+    @JsonProperty("idChecklists")
     List<String> idChecklists,
 
-    @SerializedName("pluginData")
+    @JsonProperty("pluginData")
     List<Object> pluginData,
 
-    @SerializedName("id")
+    @JsonProperty("id")
     String id,
 
-    @SerializedName("email")
+    @JsonProperty("email")
     String email,
 
-    @SerializedName("limits")
+    @JsonProperty("limits")
     Limits limits,
 
-    @SerializedName("customFieldItems")
+    @JsonProperty("customFieldItems")
     List<Object> customFieldItems,
 
-    @SerializedName("address")
+    @JsonProperty("address")
     Object address,
 
-    @SerializedName("idBoard")
+    @JsonProperty("idBoard")
     String idBoard,
 
-    @SerializedName("locationName")
+    @JsonProperty("locationName")
     Object locationName,
 
-    @SerializedName("cardRole")
+    @JsonProperty("cardRole")
     Object cardRole,
 
-    @SerializedName("coordinates")
+    @JsonProperty("coordinates")
     Object coordinates,
 
-    @SerializedName("start")
+    @JsonProperty("start")
     Object start,
 
-    @SerializedName("checkItemStates")
+    @JsonProperty("checkItemStates")
     Object checkItemStates,
 
-    @SerializedName("url")
+    @JsonProperty("url")
     String url,
 
-    @SerializedName("labels")
+    @JsonProperty("labels")
     List<LabelsItem> labels,
 
-    @SerializedName("badges")
+    @JsonProperty("badges")
     Badges badges,
 
-    @SerializedName("idMembers")
+    @JsonProperty("idMembers")
     List<Object> idMembers,
 
-    @SerializedName("idShort")
+    @JsonProperty("idShort")
     int idShort,
 
-    @SerializedName("due")
+    @JsonProperty("due")
     Object due,
 
-    @SerializedName("idAttachmentCover")
+    @JsonProperty("idAttachmentCover")
     Object idAttachmentCover,
 
-    @SerializedName("isTemplate")
+    @JsonProperty("isTemplate")
     boolean isTemplate,
 
-    @SerializedName("name")
+    @JsonProperty("name")
     String name,
 
-    @SerializedName("closed")
+    @JsonProperty("closed")
     boolean closed,
 
-    @SerializedName("manualCoverAttachment")
+    @JsonProperty("manualCoverAttachment")
     boolean manualCoverAttachment,
 
-    @SerializedName("desc")
+    @JsonProperty("desc")
     String desc
 ) {
 }

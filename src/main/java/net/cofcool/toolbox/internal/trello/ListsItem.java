@@ -1,34 +1,34 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record ListsItem(
 
-    @SerializedName("subscribed")
+    @JsonProperty("subscribed")
     Boolean subscribed,
 
-    @SerializedName("idBoard")
+    @JsonProperty("idBoard")
     String idBoard,
 
-    @SerializedName("pos")
+    @JsonProperty("pos")
     Object pos,
 
-    @SerializedName("name")
+    @JsonProperty("name")
     String name,
 
-    @SerializedName("closed")
+    @JsonProperty("closed")
     boolean closed,
 
-    @SerializedName("id")
+    @JsonProperty("id")
     String id,
 
-    @SerializedName("limits")
+    @JsonProperty("limits")
     Limits limits,
 
-    @SerializedName("softLimit")
+    @JsonProperty("softLimit")
     Object softLimit,
 
-    @SerializedName("creationMethod")
+    @JsonProperty("creationMethod")
     Object creationMethod
 ) {
 }

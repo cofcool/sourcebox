@@ -1,16 +1,16 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record IdList(
 
-    @SerializedName("name")
+    @JsonProperty("name")
     String name,
 
-    @SerializedName("id")
+    @JsonProperty("id")
     String id,
 
-    @SerializedName("pos")
+    @JsonProperty("pos")
     Object pos
 ) {
 }

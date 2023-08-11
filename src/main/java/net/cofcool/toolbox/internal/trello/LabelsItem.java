@@ -1,19 +1,19 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record LabelsItem(
 
-    @SerializedName("idBoard")
+    @JsonProperty("idBoard")
     String idBoard,
 
-    @SerializedName("color")
+    @JsonProperty("color")
     String color,
 
-    @SerializedName("name")
+    @JsonProperty("name")
     String name,
 
-    @SerializedName("id")
+    @JsonProperty("id")
     String id
 ) {
 }

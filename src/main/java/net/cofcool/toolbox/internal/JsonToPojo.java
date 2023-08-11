@@ -1,6 +1,5 @@
 package net.cofcool.toolbox.internal;
 
-import com.google.gson.Gson;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -18,6 +17,7 @@ import java.util.stream.Collectors;
 import net.cofcool.toolbox.App;
 import net.cofcool.toolbox.Tool;
 import net.cofcool.toolbox.ToolName;
+import net.cofcool.toolbox.util.JsonUtil;
 import org.apache.commons.io.FileUtils;
 
 public class JsonToPojo implements Tool {
@@ -54,7 +54,7 @@ public class JsonToPojo implements Tool {
         var lang = Lang.parse(langStr, verStr);
         getLogger().info("Write files to " + out);
 
-        writeClass(root, new Gson().fromJson(json, LinkedHashMap.class), pkg, out, lang, Boolean.parseBoolean(clean));
+        writeClass(root, JsonUtil.toPojo(json, LinkedHashMap.class), pkg, out, lang, Boolean.parseBoolean(clean));
     }
 
     @SuppressWarnings("unchecked")

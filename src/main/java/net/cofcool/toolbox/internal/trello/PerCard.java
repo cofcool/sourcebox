@@ -1,16 +1,16 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record PerCard(
 
-    @SerializedName("warnAt")
+    @JsonProperty("warnAt")
     int warnAt,
 
-    @SerializedName("disableAt")
+    @JsonProperty("disableAt")
     int disableAt,
 
-    @SerializedName("status")
+    @JsonProperty("status")
     String status
 ) {
 }

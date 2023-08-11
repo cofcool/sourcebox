@@ -1,34 +1,34 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record ActionsItem(
 
-    @SerializedName("date")
+    @JsonProperty("date")
     String date,
 
-    @SerializedName("data")
+    @JsonProperty("data")
     Data data,
 
-    @SerializedName("appCreator")
+    @JsonProperty("appCreator")
     AppCreator appCreator,
 
-    @SerializedName("memberCreator")
+    @JsonProperty("memberCreator")
     MemberCreator memberCreator,
 
-    @SerializedName("id")
+    @JsonProperty("id")
     String id,
 
-    @SerializedName("type")
+    @JsonProperty("type")
     String type,
 
-    @SerializedName("idMemberCreator")
+    @JsonProperty("idMemberCreator")
     String idMemberCreator,
 
-    @SerializedName("limits")
+    @JsonProperty("limits")
     Object limits,
 
-    @SerializedName("member")
+    @JsonProperty("member")
     Member member
 ) {
 }

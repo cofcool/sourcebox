@@ -1,84 +1,83 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
-
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 public record Prefs(
 
-    @SerializedName("canBeEnterprise")
+    @JsonProperty("canBeEnterprise")
     boolean canBeEnterprise,
 
-    @SerializedName("hideVotes")
+    @JsonProperty("hideVotes")
     boolean hideVotes,
 
-    @SerializedName("backgroundImage")
+    @JsonProperty("backgroundImage")
     String backgroundImage,
 
-    @SerializedName("voting")
+    @JsonProperty("voting")
     String voting,
 
-    @SerializedName("hiddenPluginBoardButtons")
+    @JsonProperty("hiddenPluginBoardButtons")
     List<Object> hiddenPluginBoardButtons,
 
-    @SerializedName("switcherViews")
+    @JsonProperty("switcherViews")
     List<SwitcherViewsItem> switcherViews,
 
-    @SerializedName("canBePublic")
+    @JsonProperty("canBePublic")
     boolean canBePublic,
 
-    @SerializedName("canBePrivate")
+    @JsonProperty("canBePrivate")
     boolean canBePrivate,
 
-    @SerializedName("backgroundImageScaled")
+    @JsonProperty("backgroundImageScaled")
     List<BackgroundImageScaledItem> backgroundImageScaled,
 
-    @SerializedName("invitations")
+    @JsonProperty("invitations")
     String invitations,
 
-    @SerializedName("selfJoin")
+    @JsonProperty("selfJoin")
     boolean selfJoin,
 
-    @SerializedName("backgroundBrightness")
+    @JsonProperty("backgroundBrightness")
     String backgroundBrightness,
 
-    @SerializedName("backgroundColor")
+    @JsonProperty("backgroundColor")
     Object backgroundColor,
 
-    @SerializedName("comments")
+    @JsonProperty("comments")
     String comments,
 
-    @SerializedName("backgroundTopColor")
+    @JsonProperty("backgroundTopColor")
     String backgroundTopColor,
 
-    @SerializedName("canBeOrg")
+    @JsonProperty("canBeOrg")
     boolean canBeOrg,
 
-    @SerializedName("backgroundBottomColor")
+    @JsonProperty("backgroundBottomColor")
     String backgroundBottomColor,
 
-    @SerializedName("calendarFeedEnabled")
+    @JsonProperty("calendarFeedEnabled")
     boolean calendarFeedEnabled,
 
-    @SerializedName("backgroundTile")
+    @JsonProperty("backgroundTile")
     boolean backgroundTile,
 
-    @SerializedName("permissionLevel")
+    @JsonProperty("permissionLevel")
     String permissionLevel,
 
-    @SerializedName("cardAging")
+    @JsonProperty("cardAging")
     String cardAging,
 
-    @SerializedName("canInvite")
+    @JsonProperty("canInvite")
     boolean canInvite,
 
-    @SerializedName("isTemplate")
+    @JsonProperty("isTemplate")
     boolean isTemplate,
 
-    @SerializedName("background")
+    @JsonProperty("background")
     String background,
 
-    @SerializedName("cardCovers")
+    @JsonProperty("cardCovers")
     boolean cardCovers
 ) {
 }

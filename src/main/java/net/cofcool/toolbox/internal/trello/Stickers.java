@@ -1,10 +1,10 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record Stickers(
 
-    @SerializedName("perCard")
+    @JsonProperty("perCard")
     PerCard perCard
 ) {
 }

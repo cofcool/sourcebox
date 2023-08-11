@@ -1,19 +1,19 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record Cards(
 
-    @SerializedName("openPerList")
+    @JsonProperty("openPerList")
     OpenPerList openPerList,
 
-    @SerializedName("totalPerList")
+    @JsonProperty("totalPerList")
     TotalPerList totalPerList,
 
-    @SerializedName("totalPerBoard")
+    @JsonProperty("totalPerBoard")
     TotalPerBoard totalPerBoard,
 
-    @SerializedName("openPerBoard")
+    @JsonProperty("openPerBoard")
     OpenPerBoard openPerBoard
 ) {
 }

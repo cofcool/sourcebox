@@ -2,19 +2,19 @@
 package net.cofcool.toolbox.internal.trello;
 
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 
 @SuppressWarnings("unused")
 public class Label {
 
-    @SerializedName("color")
+    @JsonProperty("color")
     private String mColor;
-    @SerializedName("id")
+    @JsonProperty("id")
     private String mId;
-    @SerializedName("idBoard")
+    @JsonProperty("idBoard")
     private String mIdBoard;
-    @SerializedName("name")
+    @JsonProperty("name")
     private String mName;
 
     public String getColor() {

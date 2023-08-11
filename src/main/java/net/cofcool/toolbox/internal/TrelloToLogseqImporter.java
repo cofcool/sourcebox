@@ -10,8 +10,6 @@ import static java.time.temporal.ChronoField.NANO_OF_SECOND;
 import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
 import static java.time.temporal.ChronoField.YEAR;
 
-import com.google.gson.Gson;
-import com.google.gson.stream.JsonReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -35,6 +33,7 @@ import net.cofcool.toolbox.internal.trello.ChecklistsItem;
 import net.cofcool.toolbox.internal.trello.LabelsItem;
 import net.cofcool.toolbox.internal.trello.ListsItem;
 import net.cofcool.toolbox.internal.trello.Trello;
+import net.cofcool.toolbox.util.JsonUtil;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -51,8 +50,8 @@ public class TrelloToLogseqImporter implements Tool {
         var path = args.readArg("path").val();
         var outPath = args.readArg("out");
         var titleToPage = args.readArg("titleToPage").getVal().orElse("false").equalsIgnoreCase("true");
-        try (var reader = new JsonReader(new FileReader(path))) {
-            Trello trello = new Gson().fromJson(reader, Trello.class);
+        try (var reader = new FileReader(path)) {
+            Trello trello = JsonUtil.getObjectMapper().readValue(reader, Trello.class);
             var name = trello.name();
             for (Map.Entry<CreateTime, List<CardsItem>> entry : trello.cards()
                     .stream()

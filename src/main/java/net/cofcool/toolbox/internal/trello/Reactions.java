@@ -1,13 +1,13 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record Reactions(
 
-    @SerializedName("perAction")
+    @JsonProperty("perAction")
     PerAction perAction,
 
-    @SerializedName("uniquePerAction")
+    @JsonProperty("uniquePerAction")
     UniquePerAction uniquePerAction
 ) {
 }

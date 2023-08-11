@@ -1,69 +1,68 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
-
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 public record Plugin(
 
-    @SerializedName("privacyUrl")
+    @JsonProperty("privacyUrl")
     String privacyUrl,
 
-    @SerializedName("capabilities")
+    @JsonProperty("capabilities")
     List<Object> capabilities,
 
-    @SerializedName("author")
+    @JsonProperty("author")
     String author,
 
-    @SerializedName("idOrganizationOwner")
+    @JsonProperty("idOrganizationOwner")
     String idOrganizationOwner,
 
-    @SerializedName("icon")
+    @JsonProperty("icon")
     Icon icon,
 
-    @SerializedName("capabilitiesOptions")
+    @JsonProperty("capabilitiesOptions")
     List<Object> capabilitiesOptions,
 
-    @SerializedName("heroImageUrl")
+    @JsonProperty("heroImageUrl")
     HeroImageUrl heroImageUrl,
 
-    @SerializedName("url")
+    @JsonProperty("url")
     String url,
 
-    @SerializedName("usageBrackets")
+    @JsonProperty("usageBrackets")
     UsageBrackets usageBrackets,
 
-    @SerializedName("tags")
+    @JsonProperty("tags")
     List<String> tags,
 
-    @SerializedName("supportEmail")
+    @JsonProperty("supportEmail")
     String supportEmail,
 
-    @SerializedName("public")
+    @JsonProperty("public")
     boolean jsonMemberPublic,
 
-    @SerializedName("claimedDomains")
+    @JsonProperty("claimedDomains")
     List<Object> claimedDomains,
 
-    @SerializedName("name")
+    @JsonProperty("name")
     String name,
 
-    @SerializedName("moderatedState")
+    @JsonProperty("moderatedState")
     Object moderatedState,
 
-    @SerializedName("id")
+    @JsonProperty("id")
     String id,
 
-    @SerializedName("categories")
+    @JsonProperty("categories")
     List<String> categories,
 
-    @SerializedName("iframeConnectorUrl")
+    @JsonProperty("iframeConnectorUrl")
     String iframeConnectorUrl,
 
-    @SerializedName("isCompliantWithPrivacyStandards")
+    @JsonProperty("isCompliantWithPrivacyStandards")
     Object isCompliantWithPrivacyStandards,
 
-    @SerializedName("listing")
+    @JsonProperty("listing")
     Listing listing
 ) {
 }

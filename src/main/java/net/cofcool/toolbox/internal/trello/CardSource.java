@@ -1,19 +1,19 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record CardSource(
 
-    @SerializedName("idShort")
+    @JsonProperty("idShort")
     int idShort,
 
-    @SerializedName("name")
+    @JsonProperty("name")
     String name,
 
-    @SerializedName("id")
+    @JsonProperty("id")
     String id,
 
-    @SerializedName("shortLink")
+    @JsonProperty("shortLink")
     String shortLink
 ) {
 }

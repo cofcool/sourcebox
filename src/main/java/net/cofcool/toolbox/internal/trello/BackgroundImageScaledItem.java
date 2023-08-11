@@ -1,16 +1,16 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record BackgroundImageScaledItem(
 
-    @SerializedName("width")
+    @JsonProperty("width")
     int width,
 
-    @SerializedName("url")
+    @JsonProperty("url")
     String url,
 
-    @SerializedName("height")
+    @JsonProperty("height")
     int height
 ) {
 }

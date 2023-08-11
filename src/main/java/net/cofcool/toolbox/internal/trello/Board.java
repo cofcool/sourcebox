@@ -1,16 +1,17 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record Board(
 
-    @SerializedName("name")
+    @JsonProperty("name")
     String name,
 
-    @SerializedName("id")
+    @JsonProperty("id")
     String id,
 
-    @SerializedName("shortLink")
-    String shortLink
+    @JsonProperty("shortLink")
+    String shortLink,
+    String desc
 ) {
 }

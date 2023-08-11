@@ -2,15 +2,15 @@
 package net.cofcool.toolbox.internal.trello;
 
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 
 @SuppressWarnings("unused")
 public class CheckItemState {
 
-    @SerializedName("idCheckItem")
+    @JsonProperty("idCheckItem")
     private String mIdCheckItem;
-    @SerializedName("state")
+    @JsonProperty("state")
     private String mState;
 
     public String getIdCheckItem() {

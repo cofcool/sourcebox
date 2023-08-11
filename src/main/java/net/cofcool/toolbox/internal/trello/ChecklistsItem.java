@@ -1,33 +1,32 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
-
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 public record ChecklistsItem(
 
-    @SerializedName("idBoard")
+    @JsonProperty("idBoard")
     String idBoard,
 
-    @SerializedName("pos")
+    @JsonProperty("pos")
     double pos,
 
-    @SerializedName("idCard")
+    @JsonProperty("idCard")
     String idCard,
 
-    @SerializedName("name")
+    @JsonProperty("name")
     String name,
 
-    @SerializedName("id")
+    @JsonProperty("id")
     String id,
 
-    @SerializedName("checkItems")
+    @JsonProperty("checkItems")
     List<CheckItemsItem> checkItems,
 
-    @SerializedName("limits")
+    @JsonProperty("limits")
     Limits limits,
 
-    @SerializedName("creationMethod")
+    @JsonProperty("creationMethod")
     Object creationMethod
 ) {
 }

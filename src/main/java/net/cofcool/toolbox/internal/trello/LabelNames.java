@@ -1,97 +1,97 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record LabelNames(
 
-    @SerializedName("pink")
+    @JsonProperty("pink")
     String pink,
 
-    @SerializedName("orange_light")
+    @JsonProperty("orange_light")
     String orangeLight,
 
-    @SerializedName("yellow")
+    @JsonProperty("yellow")
     String yellow,
 
-    @SerializedName("blue_light")
+    @JsonProperty("blue_light")
     String blueLight,
 
-    @SerializedName("red_dark")
+    @JsonProperty("red_dark")
     String redDark,
 
-    @SerializedName("red")
+    @JsonProperty("red")
     String red,
 
-    @SerializedName("sky_dark")
+    @JsonProperty("sky_dark")
     String skyDark,
 
-    @SerializedName("black_light")
+    @JsonProperty("black_light")
     String blackLight,
 
-    @SerializedName("orange_dark")
+    @JsonProperty("orange_dark")
     String orangeDark,
 
-    @SerializedName("sky_light")
+    @JsonProperty("sky_light")
     String skyLight,
 
-    @SerializedName("blue_dark")
+    @JsonProperty("blue_dark")
     String blueDark,
 
-    @SerializedName("red_light")
+    @JsonProperty("red_light")
     String redLight,
 
-    @SerializedName("purple_dark")
+    @JsonProperty("purple_dark")
     String purpleDark,
 
-    @SerializedName("yellow_dark")
+    @JsonProperty("yellow_dark")
     String yellowDark,
 
-    @SerializedName("sky")
+    @JsonProperty("sky")
     String sky,
 
-    @SerializedName("black_dark")
+    @JsonProperty("black_dark")
     String blackDark,
 
-    @SerializedName("green_light")
+    @JsonProperty("green_light")
     String greenLight,
 
-    @SerializedName("green_dark")
+    @JsonProperty("green_dark")
     String greenDark,
 
-    @SerializedName("green")
+    @JsonProperty("green")
     String green,
 
-    @SerializedName("pink_light")
+    @JsonProperty("pink_light")
     String pinkLight,
 
-    @SerializedName("lime_dark")
+    @JsonProperty("lime_dark")
     String limeDark,
 
-    @SerializedName("purple_light")
+    @JsonProperty("purple_light")
     String purpleLight,
 
-    @SerializedName("pink_dark")
+    @JsonProperty("pink_dark")
     String pinkDark,
 
-    @SerializedName("lime")
+    @JsonProperty("lime")
     String lime,
 
-    @SerializedName("black")
+    @JsonProperty("black")
     String black,
 
-    @SerializedName("lime_light")
+    @JsonProperty("lime_light")
     String limeLight,
 
-    @SerializedName("orange")
+    @JsonProperty("orange")
     String orange,
 
-    @SerializedName("blue")
+    @JsonProperty("blue")
     String blue,
 
-    @SerializedName("yellow_light")
+    @JsonProperty("yellow_light")
     String yellowLight,
 
-    @SerializedName("purple")
+    @JsonProperty("purple")
     String purple
 ) {
 }

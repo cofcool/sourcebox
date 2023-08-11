@@ -1,27 +1,27 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
-
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 public record Old(
 
-    @SerializedName("name")
+    @JsonProperty("name")
     String name,
 
-    @SerializedName("idList")
+    @JsonProperty("idList")
     String idList,
 
-    @SerializedName("pos")
+    @JsonProperty("pos")
     double pos,
 
-    @SerializedName("dueReminder")
+    @JsonProperty("dueReminder")
     Object dueReminder,
 
-    @SerializedName("idLabels")
+    @JsonProperty("idLabels")
     List<String> idLabels,
 
-    @SerializedName("desc")
-    String desc
+    @JsonProperty("desc")
+    String desc,
+    boolean closed
 ) {
 }

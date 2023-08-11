@@ -1,25 +1,25 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record Cover(
 
-    @SerializedName("idUploadedBackground")
+    @JsonProperty("idUploadedBackground")
     Object idUploadedBackground,
 
-    @SerializedName("brightness")
+    @JsonProperty("brightness")
     String brightness,
 
-    @SerializedName("color")
+    @JsonProperty("color")
     Object color,
 
-    @SerializedName("size")
+    @JsonProperty("size")
     String size,
 
-    @SerializedName("idAttachment")
+    @JsonProperty("idAttachment")
     Object idAttachment,
 
-    @SerializedName("idPlugin")
+    @JsonProperty("idPlugin")
     Object idPlugin
 ) {
 }

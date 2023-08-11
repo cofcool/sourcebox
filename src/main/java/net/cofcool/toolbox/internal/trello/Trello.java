@@ -1,131 +1,131 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 public record Trello(
 
-    @SerializedName("descData")
+    @JsonProperty("descData")
     Object descData,
 
-    @SerializedName("checklists")
+    @JsonProperty("checklists")
     List<ChecklistsItem> checklists,
 
-    @SerializedName("idTags")
+    @JsonProperty("idTags")
     List<Object> idTags,
 
-    @SerializedName("pinned")
+    @JsonProperty("pinned")
     Boolean pinned,
 
-    @SerializedName("labelNames")
+    @JsonProperty("labelNames")
     LabelNames labelNames,
 
-    @SerializedName("cards")
+    @JsonProperty("cards")
     List<CardsItem> cards,
 
-    @SerializedName("shortUrl")
+    @JsonProperty("shortUrl")
     String shortUrl,
 
-    @SerializedName("customFields")
+    @JsonProperty("customFields")
     List<Object> customFields,
 
-    @SerializedName("dateLastActivity")
+    @JsonProperty("dateLastActivity")
     String dateLastActivity,
 
-    @SerializedName("datePluginDisable")
+    @JsonProperty("datePluginDisable")
     Object datePluginDisable,
 
-    @SerializedName("dateClosed")
+    @JsonProperty("dateClosed")
     Object dateClosed,
 
-    @SerializedName("shortLink")
+    @JsonProperty("shortLink")
     String shortLink,
 
-    @SerializedName("idBoardSource")
+    @JsonProperty("idBoardSource")
     Object idBoardSource,
 
-    @SerializedName("memberships")
+    @JsonProperty("memberships")
     List<MembershipsItem> memberships,
 
-    @SerializedName("creationMethod")
+    @JsonProperty("creationMethod")
     Object creationMethod,
 
-    @SerializedName("subscribed")
+    @JsonProperty("subscribed")
     Boolean subscribed,
 
-    @SerializedName("starred")
+    @JsonProperty("starred")
     Boolean starred,
 
-    @SerializedName("members")
+    @JsonProperty("members")
     List<MembersItem> members,
 
-    @SerializedName("idOrganization")
+    @JsonProperty("idOrganization")
     String idOrganization,
 
-    @SerializedName("dateLastView")
+    @JsonProperty("dateLastView")
     String dateLastView,
 
-    @SerializedName("pluginData")
+    @JsonProperty("pluginData")
     List<Object> pluginData,
 
-    @SerializedName("id")
+    @JsonProperty("id")
     String id,
 
-    @SerializedName("limits")
+    @JsonProperty("limits")
     Limits limits,
 
-    @SerializedName("powerUps")
+    @JsonProperty("powerUps")
     List<Object> powerUps,
 
-    @SerializedName("templateGallery")
+    @JsonProperty("templateGallery")
     Object templateGallery,
 
-    @SerializedName("premiumFeatures")
+    @JsonProperty("premiumFeatures")
     List<String> premiumFeatures,
 
-    @SerializedName("url")
+    @JsonProperty("url")
     String url,
 
-    @SerializedName("prefs")
+    @JsonProperty("prefs")
     Prefs prefs,
 
-    @SerializedName("labels")
+    @JsonProperty("labels")
     List<LabelsItem> labels,
 
-    @SerializedName("enterpriseOwned")
+    @JsonProperty("enterpriseOwned")
     Boolean enterpriseOwned,
 
-    @SerializedName("ixUpdate")
+    @JsonProperty("ixUpdate")
     String ixUpdate,
 
-    @SerializedName("lists")
+    @JsonProperty("lists")
     List<ListsItem> lists,
 
-    @SerializedName("idEnterprise")
+    @JsonProperty("idEnterprise")
     Object idEnterprise,
 
-    @SerializedName("name")
+    @JsonProperty("name")
     String name,
 
-    @SerializedName("closed")
+    @JsonProperty("closed")
     Boolean closed,
 
-    @SerializedName("nodeId")
+    @JsonProperty("nodeId")
     String nodeId,
 
-    @SerializedName("idMemberCreator")
+    @JsonProperty("idMemberCreator")
     String idMemberCreator,
 
-    @SerializedName("actions")
+    @JsonProperty("actions")
     List<ActionsItem> actions,
 
-    @SerializedName("desc")
+    @JsonProperty("desc")
     String desc,
 
-    @SerializedName("board")
+    @JsonProperty("board")
     int board,
 
-    @SerializedName("card")
+    @JsonProperty("card")
     int card
 ) {
 }

@@ -1,19 +1,19 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record CheckItem(
 
-    @SerializedName("name")
+    @JsonProperty("name")
     String name,
 
-    @SerializedName("id")
+    @JsonProperty("id")
     String id,
 
-    @SerializedName("state")
+    @JsonProperty("state")
     String state,
 
-    @SerializedName("textData")
+    @JsonProperty("textData")
     TextData textData
 ) {
 }

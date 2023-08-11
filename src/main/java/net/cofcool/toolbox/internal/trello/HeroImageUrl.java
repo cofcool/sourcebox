@@ -1,16 +1,16 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record HeroImageUrl(
 
-    @SerializedName("@2x")
+    @JsonProperty("@2x")
     String jsonMember2x,
 
-    @SerializedName("@1x")
+    @JsonProperty("@1x")
     String jsonMember1x,
 
-    @SerializedName("_id")
+    @JsonProperty("_id")
     String id
 ) {
 }

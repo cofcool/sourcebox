@@ -1,10 +1,10 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record UsageBrackets(
 
-    @SerializedName("boards")
+    @JsonProperty("boards")
     int boards
 ) {
 }

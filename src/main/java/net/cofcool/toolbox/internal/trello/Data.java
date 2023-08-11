@@ -1,64 +1,64 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record Data(
 
-    @SerializedName("list")
+    @JsonProperty("list")
     IdList list,
 
-    @SerializedName("card")
+    @JsonProperty("card")
     Card card,
 
-    @SerializedName("board")
+    @JsonProperty("board")
     Board board,
 
-    @SerializedName("text")
+    @JsonProperty("text")
     String text,
 
-    @SerializedName("textData")
+    @JsonProperty("textData")
     TextData textData,
 
-    @SerializedName("dateLastEdited")
+    @JsonProperty("dateLastEdited")
     String dateLastEdited,
 
-    @SerializedName("checklist")
+    @JsonProperty("checklist")
     Checklist checklist,
 
-    @SerializedName("checkItem")
+    @JsonProperty("checkItem")
     CheckItem checkItem,
 
-    @SerializedName("old")
+    @JsonProperty("old")
     Old old,
 
-    @SerializedName("listAfter")
+    @JsonProperty("listAfter")
     ListAfter listAfter,
 
-    @SerializedName("listBefore")
+    @JsonProperty("listBefore")
     ListBefore listBefore,
 
-    @SerializedName("reason")
+    @JsonProperty("reason")
     String reason,
 
-    @SerializedName("organization")
+    @JsonProperty("organization")
     Organization organization,
 
-    @SerializedName("plugin")
+    @JsonProperty("plugin")
     Plugin plugin,
 
-    @SerializedName("cardSource")
+    @JsonProperty("cardSource")
     CardSource cardSource,
 
-    @SerializedName("idMember")
+    @JsonProperty("idMember")
     String idMember,
 
-    @SerializedName("member")
+    @JsonProperty("member")
     Member member,
 
-    @SerializedName("deactivated")
+    @JsonProperty("deactivated")
     boolean deactivated,
 
-    @SerializedName("boardSource")
+    @JsonProperty("boardSource")
     BoardSource boardSource
 ) {
 }

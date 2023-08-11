@@ -1,16 +1,16 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record AppCreator(
 
-    @SerializedName("id")
+    @JsonProperty("id")
     String id,
 
-    @SerializedName("name")
+    @JsonProperty("name")
     String name,
 
-    @SerializedName("icon")
+    @JsonProperty("icon")
     Icon icon
 ) {
 }

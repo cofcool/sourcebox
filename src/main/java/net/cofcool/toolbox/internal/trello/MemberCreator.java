@@ -1,37 +1,37 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record MemberCreator(
 
-    @SerializedName("activityBlocked")
+    @JsonProperty("activityBlocked")
     boolean activityBlocked,
 
-    @SerializedName("avatarHash")
+    @JsonProperty("avatarHash")
     String avatarHash,
 
-    @SerializedName("avatarUrl")
+    @JsonProperty("avatarUrl")
     String avatarUrl,
 
-    @SerializedName("initials")
+    @JsonProperty("initials")
     String initials,
 
-    @SerializedName("nonPublicAvailable")
+    @JsonProperty("nonPublicAvailable")
     boolean nonPublicAvailable,
 
-    @SerializedName("idMemberReferrer")
+    @JsonProperty("idMemberReferrer")
     Object idMemberReferrer,
 
-    @SerializedName("fullName")
+    @JsonProperty("fullName")
     String fullName,
 
-    @SerializedName("id")
+    @JsonProperty("id")
     String id,
 
-    @SerializedName("nonPublic")
+    @JsonProperty("nonPublic")
     NonPublic nonPublic,
 
-    @SerializedName("username")
+    @JsonProperty("username")
     String username
 ) {
 }

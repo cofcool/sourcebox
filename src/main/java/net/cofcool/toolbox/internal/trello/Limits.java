@@ -1,40 +1,40 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record Limits(
 
-    @SerializedName("checklists")
+    @JsonProperty("checklists")
     Checklists checklists,
 
-    @SerializedName("attachments")
+    @JsonProperty("attachments")
     Attachments attachments,
 
-    @SerializedName("cards")
+    @JsonProperty("cards")
     Cards cards,
 
-    @SerializedName("customFieldOptions")
+    @JsonProperty("customFieldOptions")
     CustomFieldOptions customFieldOptions,
 
-    @SerializedName("customFields")
+    @JsonProperty("customFields")
     CustomFields customFields,
 
-    @SerializedName("lists")
+    @JsonProperty("lists")
     Lists lists,
 
-    @SerializedName("boards")
+    @JsonProperty("boards")
     Boards boards,
 
-    @SerializedName("stickers")
+    @JsonProperty("stickers")
     Stickers stickers,
 
-    @SerializedName("reactions")
+    @JsonProperty("reactions")
     Reactions reactions,
 
-    @SerializedName("checkItems")
+    @JsonProperty("checkItems")
     CheckItems checkItems,
 
-    @SerializedName("labels")
+    @JsonProperty("labels")
     Labels labels
 ) {
 }

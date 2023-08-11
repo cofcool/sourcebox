@@ -1,19 +1,19 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record Listing(
 
-    @SerializedName("overview")
+    @JsonProperty("overview")
     String overview,
 
-    @SerializedName("name")
+    @JsonProperty("name")
     String name,
 
-    @SerializedName("description")
+    @JsonProperty("description")
     String description,
 
-    @SerializedName("locale")
+    @JsonProperty("locale")
     String locale
 ) {
 }

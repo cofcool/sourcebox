@@ -2,27 +2,26 @@
 package net.cofcool.toolbox.internal.trello;
 
 
-import com.google.gson.annotations.SerializedName;
-
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @SuppressWarnings("unused")
 public class Action {
 
-    @SerializedName("appCreator")
+    @JsonProperty("appCreator")
     private AppCreator mAppCreator;
-    @SerializedName("data")
+    @JsonProperty("data")
     private Data mData;
-    @SerializedName("date")
+    @JsonProperty("date")
     private String mDate;
-    @SerializedName("id")
+    @JsonProperty("id")
     private String mId;
-    @SerializedName("idMemberCreator")
+    @JsonProperty("idMemberCreator")
     private String mIdMemberCreator;
-    @SerializedName("limits")
+    @JsonProperty("limits")
     private Limits mLimits;
-    @SerializedName("memberCreator")
+    @JsonProperty("memberCreator")
     private MemberCreator mMemberCreator;
-    @SerializedName("type")
+    @JsonProperty("type")
     private String mType;
 
     public AppCreator getAppCreator() {

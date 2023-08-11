@@ -1,16 +1,16 @@
 package net.cofcool.toolbox.internal.trello;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record NonPublic(
 
-    @SerializedName("avatarHash")
+    @JsonProperty("avatarHash")
     Object avatarHash,
 
-    @SerializedName("initials")
+    @JsonProperty("initials")
     String initials,
 
-    @SerializedName("fullName")
+    @JsonProperty("fullName")
     String fullName
 ) {
 }

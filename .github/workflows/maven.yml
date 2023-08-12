@@ -2,38 +2,34 @@ name: Java CI
 
 on:
   push:
-    tags:
-      - "*.*.*"
 
 jobs:
   package:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    name: MyToolbox on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Set up JDK 19
-        uses: graalvm/setup-graalvm@v1
+      - uses: graalvm/setup-graalvm@v1
         with:
-          version: '22.3.0'
-          java-version: 19
-          components: 'native-image'
+          java-version: '20.0.1'
+          distribution: 'graalvm'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          native-image-job-reports: 'true'
       - name: Cache Maven packages
         uses: actions/cache@v2
         with:
           path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
+          key: ${{ matrix.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ matrix.os }}-m2
       - name: Build Zip Package
         run: mvn clean package -Pnative
-      - name: Create Release
-        uses: ncipollo/release-action@v1
-        id: create_release
+      - name: Upload binary
+        uses: actions/upload-artifact@v3
         with:
-          allowUpdates: true
-          draft: false
-          prerelease: false
-          artifacts: "./target/*.zip"
-          bodyFile: "./target/changelog.md"
+          name: my-toolbox-${{ matrix.os }}.zip
+          path: my-toolbox-bin.zip

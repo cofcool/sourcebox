@@ -1,7 +1,21 @@
 {
   "resources":{
-  "includes":[{
-      "pattern":"\\Qversion.txt\\E"
-    }]},
+    "includes":[
+      {
+        "pattern":"\\Qversion.txt\\E"
+      },
+      {
+        "pattern":"\\Qwebroot/index.html\\E"
+      },
+      {
+        "pattern":"\\Qwebroot/jquery-3.7.0.min.js\\E"
+      },
+      {
+        "pattern":"\\QMETA-INF/MANIFEST.MF\\E"
+      },
+      {
+        "pattern":"\\QMETA-INF/services/io.vertx.core.spi.launcher.CommandFactory\\E"
+      }
+    ]},
   "bundles":[]
 }

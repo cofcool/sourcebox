@@ -53,7 +53,7 @@ public final class LoggerFactory {
         }
 
         @Override
-        public void info(Object val) {
+        public void info(String val, Object... arg) {
             System.out.println(val);
         }
 

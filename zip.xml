@@ -19,7 +19,7 @@
         </fileSet>
         <fileSet>
             <directory>script</directory>
-            <outputDirectory>/</outputDirectory>
+            <outputDirectory>/script</outputDirectory>
             <includes>
                 <include>**/*</include>
             </includes>
@@ -28,6 +28,12 @@
             <outputDirectory>/</outputDirectory>
             <includes>
                 <include>README.md</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>mytool.sh</include>
             </includes>
         </fileSet>
         <fileSet>
@@ -43,6 +49,14 @@
             <outputDirectory>/</outputDirectory>
             <includes>
                 <include>*.txt</include>
+                <include>*.properties</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>target/classes/webroot</directory>
+            <outputDirectory>/webroot</outputDirectory>
+            <includes>
+                <include>*</include>
             </includes>
         </fileSet>
         <fileSet>

@@ -1,956 +1,681 @@
 [
-{
-  "name":"java.lang.Class",
-  "methods":[
-    {"name":"getRecordComponents","parameterTypes":[] }, 
-    {"name":"isRecord","parameterTypes":[] }
-  ]
-},
-{
-  "name":"java.lang.Record",
-  "allDeclaredFields":true
-},
-{
-  "name":"java.lang.reflect.RecordComponent",
-  "methods":[
-    {"name":"getName","parameterTypes":[] }, 
-    {"name":"getType","parameterTypes":[] }
-  ]
-},
-{
-  "name":"java.sql.Date"
-},
-{
-  "name":"net.cofcool.toolbox.internal.Converts",
-  "allDeclaredClasses":true,
-  "methods":[{"name":"<init>","parameterTypes":[] }]
-},
-{
-  "name":"net.cofcool.toolbox.internal.Converts$Base64",
-  "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.Converts"] }]
-},
-{
-  "name":"net.cofcool.toolbox.internal.Converts$Hdate",
-  "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.Converts"] }]
-},
-{
-  "name":"net.cofcool.toolbox.internal.Converts$Lower",
-  "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.Converts"] }]
-},
-{
-  "name":"net.cofcool.toolbox.internal.Converts$Md5",
-  "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.Converts"] }]
-},
-{
-  "name":"net.cofcool.toolbox.internal.Converts$Now",
-  "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.Converts"] }]
-},
-{
-  "name":"net.cofcool.toolbox.internal.Converts$Random",
-  "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.Converts"] }]
-},
-{
-  "name":"net.cofcool.toolbox.internal.Converts$Replace",
-  "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.Converts"] }]
-},
-{
-  "name":"net.cofcool.toolbox.internal.Converts$Timesp",
-  "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.Converts"] }]
-},
-{
-  "name":"net.cofcool.toolbox.internal.Converts$Upper",
-  "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.Converts"] }]
-},
-{
-  "name":"net.cofcool.toolbox.internal.Converts$Url",
-  "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.Converts"] }]
-},
-{
-  "name":"net.cofcool.toolbox.internal.DirWebServer",
-  "methods":[{"name":"<init>","parameterTypes":[] }]
-},
+  {
+    "name":"[Lcom.fasterxml.jackson.databind.deser.Deserializers;"
+  },
+  {
+    "name":"[Lcom.fasterxml.jackson.databind.deser.KeyDeserializers;"
+  },
+  {
+    "name":"[Lcom.fasterxml.jackson.databind.deser.ValueInstantiators;"
+  },
+  {
+    "name":"[Lcom.fasterxml.jackson.databind.ser.Serializers;"
+  },
+  {
+    "name":"com.fasterxml.jackson.databind.ext.Java7SupportImpl",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"io.vertx.core.http.impl.VertxHttpRequestDecoder"
+  },
+  {
+    "name":"io.vertx.core.http.impl.VertxHttpResponseEncoder"
+  },
+  {
+    "name":"io.vertx.core.logging.Log4j2LogDelegateFactory",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"io.vertx.core.logging.SLF4JLogDelegateFactory"
+  },
+  {
+    "name":"io.vertx.core.net.impl.ServerChannelLoadBalancer"
+  },
+  {
+    "name":"io.vertx.core.net.impl.VertxHandler",
+    "methods":[
+      {"name":"channelInactive","parameterTypes":["io.netty.channel.ChannelHandlerContext"] },
+      {"name":"channelRead","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] },
+      {"name":"channelReadComplete","parameterTypes":["io.netty.channel.ChannelHandlerContext"] },
+      {"name":"channelWritabilityChanged","parameterTypes":["io.netty.channel.ChannelHandlerContext"] },
+      {"name":"close","parameterTypes":["io.netty.channel.ChannelHandlerContext","io.netty.channel.ChannelPromise"] },
+      {"name":"exceptionCaught","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Throwable"] },
+      {"name":"userEventTriggered","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] }
+    ]
+  },
+  {
+    "name":"java.lang.Class",
+    "methods":[{"name":"getRecordComponents","parameterTypes":[] }]
+  },
+  {
+    "name":"java.lang.ProcessHandle",
+    "methods":[
+      {"name":"current","parameterTypes":[] },
+      {"name":"pid","parameterTypes":[] }
+    ]
+  },
+  {
+    "name":"java.lang.Record",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true
+  },
+  {
+    "name":"java.lang.Thread",
+    "methods":[{"name":"isVirtual","parameterTypes":[] }]
+  },
+  {
+    "name":"java.lang.management.ManagementFactory",
+    "methods":[{"name":"getRuntimeMXBean","parameterTypes":[] }]
+  },
+  {
+    "name":"java.lang.management.RuntimeMXBean",
+    "methods":[{"name":"getInputArguments","parameterTypes":[] }]
+  },
+  {
+    "name":"java.lang.management.ThreadInfo",
+    "fields":[{"name":"virtual"}]
+  },
+  {
+    "name":"java.lang.reflect.RecordComponent",
+    "methods":[
+      {"name":"getName","parameterTypes":[] },
+      {"name":"getType","parameterTypes":[] }
+    ]
+  },
+  {
+    "name":"java.nio.Bits",
+    "fields":[{"name":"UNALIGNED"}]
+  },
+  {
+    "name":"java.nio.Buffer",
+    "fields":[{"name":"address"}]
+  },
+  {
+    "name":"java.nio.ByteBuffer",
+    "methods":[{"name":"alignedSlice","parameterTypes":["int"] }]
+  },
+  {
+    "name":"java.nio.DirectByteBuffer",
+    "methods":[{"name":"<init>","parameterTypes":["long","int"] }]
+  },
+  {
+    "name":"java.nio.channels.spi.SelectorProvider",
+    "methods":[
+      {"name":"openServerSocketChannel","parameterTypes":["java.net.ProtocolFamily"] },
+      {"name":"openSocketChannel","parameterTypes":["java.net.ProtocolFamily"] }
+    ]
+  },
+  {
+    "name":"java.security.SecureRandomParameters"
+  },
+  {
+    "name":"jdk.internal.misc.Unsafe",
+    "methods":[{"name":"getUnsafe","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.Converts",
+    "allDeclaredClasses":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.Converts$Base64",
+    "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.Converts"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.Converts$Hdate",
+    "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.Converts"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.Converts$Lower",
+    "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.Converts"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.Converts$Md5",
+    "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.Converts"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.Converts$Now",
+    "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.Converts"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.Converts$Random",
+    "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.Converts"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.Converts$Replace",
+    "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.Converts"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.Converts$Timesp",
+    "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.Converts"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.Converts$Upper",
+    "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.Converts"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.Converts$Url",
+    "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.Converts"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.DirWebServer",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
   {
     "name":"net.cofcool.toolbox.internal.FileNameFormatter",
     "methods":[{"name":"<init>","parameterTypes":[] }]
   },
-{
-  "name":"net.cofcool.toolbox.internal.GitCommitsToChangelog",
-  "methods":[{"name":"<init>","parameterTypes":[] }]
-},
-{
-  "name":"net.cofcool.toolbox.internal.JsonToPojo",
-  "methods":[{"name":"<init>","parameterTypes":[] }]
-},
-{
-  "name":"net.cofcool.toolbox.internal.LinkCovertTool",
-  "methods":[{"name":"<init>","parameterTypes":[] }]
-},
-{
-  "name":"net.cofcool.toolbox.internal.ShellStarter",
-  "methods":[{"name":"<init>","parameterTypes":[] }]
-},
-{
-  "name":"net.cofcool.toolbox.internal.SplitKindleClippings",
-  "methods":[{"name":"<init>","parameterTypes":[] }]
-},
-{
-  "name":"net.cofcool.toolbox.internal.TrelloToLogseqImporter",
-  "methods":[{"name":"<init>","parameterTypes":[] }]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.ActionsItem",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["java.lang.String","net.cofcool.toolbox.internal.trello.Data","net.cofcool.toolbox.internal.trello.AppCreator","net.cofcool.toolbox.internal.trello.MemberCreator","java.lang.String","java.lang.String","java.lang.String","java.lang.Object","net.cofcool.toolbox.internal.trello.Member"] }, 
-    {"name":"appCreator","parameterTypes":[] }, 
-    {"name":"data","parameterTypes":[] }, 
-    {"name":"date","parameterTypes":[] }, 
-    {"name":"id","parameterTypes":[] }, 
-    {"name":"idMemberCreator","parameterTypes":[] }, 
-    {"name":"limits","parameterTypes":[] }, 
-    {"name":"member","parameterTypes":[] }, 
-    {"name":"memberCreator","parameterTypes":[] }, 
-    {"name":"type","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.AppCreator",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","net.cofcool.toolbox.internal.trello.Icon"] }, 
-    {"name":"icon","parameterTypes":[] }, 
-    {"name":"id","parameterTypes":[] }, 
-    {"name":"name","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.Attachments",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.PerCard","net.cofcool.toolbox.internal.trello.PerBoard"] }, 
-    {"name":"perBoard","parameterTypes":[] }, 
-    {"name":"perCard","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.AttachmentsByType",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.Trello"] }, 
-    {"name":"trello","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.BackgroundImageScaledItem",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["int","java.lang.String","int"] }, 
-    {"name":"height","parameterTypes":[] }, 
-    {"name":"url","parameterTypes":[] }, 
-    {"name":"width","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.Badges",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["int","int","net.cofcool.toolbox.internal.trello.AttachmentsByType","boolean","java.lang.Object","boolean","java.lang.Object","java.lang.Boolean","java.lang.Object","boolean","boolean","int","java.lang.String","int","int"] }, 
-    {"name":"attachments","parameterTypes":[] }, 
-    {"name":"attachmentsByType","parameterTypes":[] }, 
-    {"name":"checkItems","parameterTypes":[] }, 
-    {"name":"checkItemsChecked","parameterTypes":[] }, 
-    {"name":"checkItemsEarliestDue","parameterTypes":[] }, 
-    {"name":"comments","parameterTypes":[] }, 
-    {"name":"description","parameterTypes":[] }, 
-    {"name":"due","parameterTypes":[] }, 
-    {"name":"dueComplete","parameterTypes":[] }, 
-    {"name":"fogbugz","parameterTypes":[] }, 
-    {"name":"location","parameterTypes":[] }, 
-    {"name":"start","parameterTypes":[] }, 
-    {"name":"subscribed","parameterTypes":[] }, 
-    {"name":"viewingMemberVoted","parameterTypes":[] }, 
-    {"name":"votes","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.Board",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","java.lang.String"] }, 
-    {"name":"id","parameterTypes":[] }, 
-    {"name":"name","parameterTypes":[] }, 
-    {"name":"shortLink","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.BoardSource",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["java.lang.String"] }, 
-    {"name":"id","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.Boards",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.TotalMembersPerBoard","net.cofcool.toolbox.internal.trello.TotalAccessRequestsPerBoard"] }, 
-    {"name":"totalAccessRequestsPerBoard","parameterTypes":[] }, 
-    {"name":"totalMembersPerBoard","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.Card",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["int","java.lang.String","java.lang.String","java.lang.String","java.lang.String","double","int","java.util.List","java.lang.String"] }, 
-    {"name":"desc","parameterTypes":[] }, 
-    {"name":"dueReminder","parameterTypes":[] }, 
-    {"name":"id","parameterTypes":[] }, 
-    {"name":"idLabels","parameterTypes":[] }, 
-    {"name":"idList","parameterTypes":[] }, 
-    {"name":"idShort","parameterTypes":[] }, 
-    {"name":"name","parameterTypes":[] }, 
-    {"name":"pos","parameterTypes":[] }, 
-    {"name":"shortLink","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.CardSource",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["int","java.lang.String","java.lang.String","java.lang.String"] }, 
-    {"name":"id","parameterTypes":[] }, 
-    {"name":"idShort","parameterTypes":[] }, 
-    {"name":"name","parameterTypes":[] }, 
-    {"name":"shortLink","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.Cards",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.OpenPerList","net.cofcool.toolbox.internal.trello.TotalPerList","net.cofcool.toolbox.internal.trello.TotalPerBoard","net.cofcool.toolbox.internal.trello.OpenPerBoard"] }, 
-    {"name":"openPerBoard","parameterTypes":[] }, 
-    {"name":"openPerList","parameterTypes":[] }, 
-    {"name":"totalPerBoard","parameterTypes":[] }, 
-    {"name":"totalPerList","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.CardsItem",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["java.lang.Object","java.util.List","java.util.List","java.lang.String","boolean","java.lang.String","java.lang.String","java.util.List","java.lang.String","java.lang.Object","net.cofcool.toolbox.internal.trello.Cover","java.lang.Object","java.lang.Boolean","java.lang.Double","java.lang.Object","java.util.List","java.util.List","java.lang.String","java.lang.String","net.cofcool.toolbox.internal.trello.Limits","java.util.List","java.lang.Object","java.lang.String","java.lang.Object","java.lang.Object","java.lang.Object","java.lang.Object","java.lang.Object","java.lang.String","java.util.List","net.cofcool.toolbox.internal.trello.Badges","java.util.List","int","java.lang.Object","java.lang.Object","boolean","java.lang.String","boolean","boolean","java.lang.String"] }, 
-    {"name":"address","parameterTypes":[] }, 
-    {"name":"attachments","parameterTypes":[] }, 
-    {"name":"badges","parameterTypes":[] }, 
-    {"name":"cardRole","parameterTypes":[] }, 
-    {"name":"checkItemStates","parameterTypes":[] }, 
-    {"name":"closed","parameterTypes":[] }, 
-    {"name":"coordinates","parameterTypes":[] }, 
-    {"name":"cover","parameterTypes":[] }, 
-    {"name":"creationMethod","parameterTypes":[] }, 
-    {"name":"customFieldItems","parameterTypes":[] }, 
-    {"name":"dateLastActivity","parameterTypes":[] }, 
-    {"name":"desc","parameterTypes":[] }, 
-    {"name":"descData","parameterTypes":[] }, 
-    {"name":"due","parameterTypes":[] }, 
-    {"name":"dueComplete","parameterTypes":[] }, 
-    {"name":"dueReminder","parameterTypes":[] }, 
-    {"name":"email","parameterTypes":[] }, 
-    {"name":"id","parameterTypes":[] }, 
-    {"name":"idAttachmentCover","parameterTypes":[] }, 
-    {"name":"idBoard","parameterTypes":[] }, 
-    {"name":"idChecklists","parameterTypes":[] }, 
-    {"name":"idLabels","parameterTypes":[] }, 
-    {"name":"idList","parameterTypes":[] }, 
-    {"name":"idMembers","parameterTypes":[] }, 
-    {"name":"idMembersVoted","parameterTypes":[] }, 
-    {"name":"idShort","parameterTypes":[] }, 
-    {"name":"isTemplate","parameterTypes":[] }, 
-    {"name":"labels","parameterTypes":[] }, 
-    {"name":"limits","parameterTypes":[] }, 
-    {"name":"locationName","parameterTypes":[] }, 
-    {"name":"manualCoverAttachment","parameterTypes":[] }, 
-    {"name":"name","parameterTypes":[] }, 
-    {"name":"pluginData","parameterTypes":[] }, 
-    {"name":"pos","parameterTypes":[] }, 
-    {"name":"shortLink","parameterTypes":[] }, 
-    {"name":"shortUrl","parameterTypes":[] }, 
-    {"name":"start","parameterTypes":[] }, 
-    {"name":"staticMapUrl","parameterTypes":[] }, 
-    {"name":"subscribed","parameterTypes":[] }, 
-    {"name":"url","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.CheckItem",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","java.lang.String","net.cofcool.toolbox.internal.trello.TextData"] }, 
-    {"name":"id","parameterTypes":[] }, 
-    {"name":"name","parameterTypes":[] }, 
-    {"name":"state","parameterTypes":[] }, 
-    {"name":"textData","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.CheckItems",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.PerChecklist"] }, 
-    {"name":"perChecklist","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.CheckItemsItem",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["java.lang.Object","double","java.lang.Object","java.lang.Object","java.lang.String","java.lang.String","net.cofcool.toolbox.internal.trello.NameData","java.lang.String","java.lang.String"] }, 
-    {"name":"due","parameterTypes":[] }, 
-    {"name":"dueReminder","parameterTypes":[] }, 
-    {"name":"id","parameterTypes":[] }, 
-    {"name":"idChecklist","parameterTypes":[] }, 
-    {"name":"idMember","parameterTypes":[] }, 
-    {"name":"name","parameterTypes":[] }, 
-    {"name":"nameData","parameterTypes":[] }, 
-    {"name":"pos","parameterTypes":[] }, 
-    {"name":"state","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.Checklist",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["java.lang.String","java.lang.String"] }, 
-    {"name":"id","parameterTypes":[] }, 
-    {"name":"name","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.Checklists",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.PerCard","net.cofcool.toolbox.internal.trello.PerBoard"] }, 
-    {"name":"perBoard","parameterTypes":[] }, 
-    {"name":"perCard","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.ChecklistsItem",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["java.lang.String","double","java.lang.String","java.lang.String","java.lang.String","java.util.List","net.cofcool.toolbox.internal.trello.Limits","java.lang.Object"] }, 
-    {"name":"checkItems","parameterTypes":[] }, 
-    {"name":"creationMethod","parameterTypes":[] }, 
-    {"name":"id","parameterTypes":[] }, 
-    {"name":"idBoard","parameterTypes":[] }, 
-    {"name":"idCard","parameterTypes":[] }, 
-    {"name":"limits","parameterTypes":[] }, 
-    {"name":"name","parameterTypes":[] }, 
-    {"name":"pos","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.Cover",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["java.lang.Object","java.lang.String","java.lang.Object","java.lang.String","java.lang.Object","java.lang.Object"] }, 
-    {"name":"brightness","parameterTypes":[] }, 
-    {"name":"color","parameterTypes":[] }, 
-    {"name":"idAttachment","parameterTypes":[] }, 
-    {"name":"idPlugin","parameterTypes":[] }, 
-    {"name":"idUploadedBackground","parameterTypes":[] }, 
-    {"name":"size","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.CustomFieldOptions",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.PerField"] }, 
-    {"name":"perField","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.CustomFields",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.PerBoard"] }, 
-    {"name":"perBoard","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.Data",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.IdList","net.cofcool.toolbox.internal.trello.Card","net.cofcool.toolbox.internal.trello.Board","java.lang.String","net.cofcool.toolbox.internal.trello.TextData","java.lang.String","net.cofcool.toolbox.internal.trello.Checklist","net.cofcool.toolbox.internal.trello.CheckItem","net.cofcool.toolbox.internal.trello.Old","net.cofcool.toolbox.internal.trello.ListAfter","net.cofcool.toolbox.internal.trello.ListBefore","java.lang.String","net.cofcool.toolbox.internal.trello.Organization","net.cofcool.toolbox.internal.trello.Plugin","net.cofcool.toolbox.internal.trello.CardSource","java.lang.String","net.cofcool.toolbox.internal.trello.Member","boolean","net.cofcool.toolbox.internal.trello.BoardSource"] }, 
-    {"name":"board","parameterTypes":[] }, 
-    {"name":"boardSource","parameterTypes":[] }, 
-    {"name":"card","parameterTypes":[] }, 
-    {"name":"cardSource","parameterTypes":[] }, 
-    {"name":"checkItem","parameterTypes":[] }, 
-    {"name":"checklist","parameterTypes":[] }, 
-    {"name":"dateLastEdited","parameterTypes":[] }, 
-    {"name":"deactivated","parameterTypes":[] }, 
-    {"name":"idMember","parameterTypes":[] }, 
-    {"name":"list","parameterTypes":[] }, 
-    {"name":"listAfter","parameterTypes":[] }, 
-    {"name":"listBefore","parameterTypes":[] }, 
-    {"name":"member","parameterTypes":[] }, 
-    {"name":"old","parameterTypes":[] }, 
-    {"name":"organization","parameterTypes":[] }, 
-    {"name":"plugin","parameterTypes":[] }, 
-    {"name":"reason","parameterTypes":[] }, 
-    {"name":"text","parameterTypes":[] }, 
-    {"name":"textData","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.Emoji",
-  "allDeclaredFields":true,
-  "methods":[{"name":"<init>","parameterTypes":[] }]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.HeroImageUrl",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","java.lang.String"] }, 
-    {"name":"id","parameterTypes":[] }, 
-    {"name":"jsonMember1x","parameterTypes":[] }, 
-    {"name":"jsonMember2x","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.Icon",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["java.lang.String"] }, 
-    {"name":"url","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.IdList",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","java.lang.Object"] }, 
-    {"name":"id","parameterTypes":[] }, 
-    {"name":"name","parameterTypes":[] }, 
-    {"name":"pos","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.LabelNames",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String"] }, 
-    {"name":"black","parameterTypes":[] }, 
-    {"name":"blackDark","parameterTypes":[] }, 
-    {"name":"blackLight","parameterTypes":[] }, 
-    {"name":"blue","parameterTypes":[] }, 
-    {"name":"blueDark","parameterTypes":[] }, 
-    {"name":"blueLight","parameterTypes":[] }, 
-    {"name":"green","parameterTypes":[] }, 
-    {"name":"greenDark","parameterTypes":[] }, 
-    {"name":"greenLight","parameterTypes":[] }, 
-    {"name":"lime","parameterTypes":[] }, 
-    {"name":"limeDark","parameterTypes":[] }, 
-    {"name":"limeLight","parameterTypes":[] }, 
-    {"name":"orange","parameterTypes":[] }, 
-    {"name":"orangeDark","parameterTypes":[] }, 
-    {"name":"orangeLight","parameterTypes":[] }, 
-    {"name":"pink","parameterTypes":[] }, 
-    {"name":"pinkDark","parameterTypes":[] }, 
-    {"name":"pinkLight","parameterTypes":[] }, 
-    {"name":"purple","parameterTypes":[] }, 
-    {"name":"purpleDark","parameterTypes":[] }, 
-    {"name":"purpleLight","parameterTypes":[] }, 
-    {"name":"red","parameterTypes":[] }, 
-    {"name":"redDark","parameterTypes":[] }, 
-    {"name":"redLight","parameterTypes":[] }, 
-    {"name":"sky","parameterTypes":[] }, 
-    {"name":"skyDark","parameterTypes":[] }, 
-    {"name":"skyLight","parameterTypes":[] }, 
-    {"name":"yellow","parameterTypes":[] }, 
-    {"name":"yellowDark","parameterTypes":[] }, 
-    {"name":"yellowLight","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.Labels",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.PerBoard"] }, 
-    {"name":"perBoard","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.LabelsItem",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","java.lang.String","java.lang.String"] }, 
-    {"name":"color","parameterTypes":[] }, 
-    {"name":"id","parameterTypes":[] }, 
-    {"name":"idBoard","parameterTypes":[] }, 
-    {"name":"name","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.Limits",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.Checklists","net.cofcool.toolbox.internal.trello.Attachments","net.cofcool.toolbox.internal.trello.Cards","net.cofcool.toolbox.internal.trello.CustomFieldOptions","net.cofcool.toolbox.internal.trello.CustomFields","net.cofcool.toolbox.internal.trello.Lists","net.cofcool.toolbox.internal.trello.Boards","net.cofcool.toolbox.internal.trello.Stickers","net.cofcool.toolbox.internal.trello.Reactions","net.cofcool.toolbox.internal.trello.CheckItems","net.cofcool.toolbox.internal.trello.Labels"] }, 
-    {"name":"attachments","parameterTypes":[] }, 
-    {"name":"boards","parameterTypes":[] }, 
-    {"name":"cards","parameterTypes":[] }, 
-    {"name":"checkItems","parameterTypes":[] }, 
-    {"name":"checklists","parameterTypes":[] }, 
-    {"name":"customFieldOptions","parameterTypes":[] }, 
-    {"name":"customFields","parameterTypes":[] }, 
-    {"name":"labels","parameterTypes":[] }, 
-    {"name":"lists","parameterTypes":[] }, 
-    {"name":"reactions","parameterTypes":[] }, 
-    {"name":"stickers","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.ListAfter",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["java.lang.String","java.lang.String"] }, 
-    {"name":"id","parameterTypes":[] }, 
-    {"name":"name","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.ListBefore",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["java.lang.String","java.lang.String"] }, 
-    {"name":"id","parameterTypes":[] }, 
-    {"name":"name","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.Listing",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","java.lang.String","java.lang.String"] }, 
-    {"name":"description","parameterTypes":[] }, 
-    {"name":"locale","parameterTypes":[] }, 
-    {"name":"name","parameterTypes":[] }, 
-    {"name":"overview","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.Lists",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.TotalPerBoard","net.cofcool.toolbox.internal.trello.OpenPerBoard"] }, 
-    {"name":"openPerBoard","parameterTypes":[] }, 
-    {"name":"totalPerBoard","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.ListsItem",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.String","java.lang.Object","java.lang.String","boolean","java.lang.String","net.cofcool.toolbox.internal.trello.Limits","java.lang.Object","java.lang.Object"] }, 
-    {"name":"closed","parameterTypes":[] }, 
-    {"name":"creationMethod","parameterTypes":[] }, 
-    {"name":"id","parameterTypes":[] }, 
-    {"name":"idBoard","parameterTypes":[] }, 
-    {"name":"limits","parameterTypes":[] }, 
-    {"name":"name","parameterTypes":[] }, 
-    {"name":"pos","parameterTypes":[] }, 
-    {"name":"softLimit","parameterTypes":[] }, 
-    {"name":"subscribed","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.Member",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["boolean","java.lang.String","java.lang.String","java.lang.String","boolean","java.lang.Object","java.lang.String","java.lang.String","net.cofcool.toolbox.internal.trello.NonPublic","java.lang.String","java.lang.String"] }, 
-    {"name":"activityBlocked","parameterTypes":[] }, 
-    {"name":"avatarHash","parameterTypes":[] }, 
-    {"name":"avatarUrl","parameterTypes":[] }, 
-    {"name":"fullName","parameterTypes":[] }, 
-    {"name":"id","parameterTypes":[] }, 
-    {"name":"idMemberReferrer","parameterTypes":[] }, 
-    {"name":"initials","parameterTypes":[] }, 
-    {"name":"name","parameterTypes":[] }, 
-    {"name":"nonPublic","parameterTypes":[] }, 
-    {"name":"nonPublicAvailable","parameterTypes":[] }, 
-    {"name":"username","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.MemberCreator",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["boolean","java.lang.String","java.lang.String","java.lang.String","boolean","java.lang.Object","java.lang.String","java.lang.String","net.cofcool.toolbox.internal.trello.NonPublic","java.lang.String"] }, 
-    {"name":"activityBlocked","parameterTypes":[] }, 
-    {"name":"avatarHash","parameterTypes":[] }, 
-    {"name":"avatarUrl","parameterTypes":[] }, 
-    {"name":"fullName","parameterTypes":[] }, 
-    {"name":"id","parameterTypes":[] }, 
-    {"name":"idMemberReferrer","parameterTypes":[] }, 
-    {"name":"initials","parameterTypes":[] }, 
-    {"name":"nonPublic","parameterTypes":[] }, 
-    {"name":"nonPublicAvailable","parameterTypes":[] }, 
-    {"name":"username","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.MembersItem",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["java.util.List","java.lang.String","java.lang.String","boolean","java.lang.Object","java.lang.String","java.lang.String","net.cofcool.toolbox.internal.trello.NonPublic","boolean","java.util.List","java.lang.String","java.util.List","boolean","java.lang.String","java.lang.String","java.lang.Object","java.lang.String","java.lang.String","java.lang.Object","java.lang.String","java.lang.String"] }, 
-    {"name":"aaId","parameterTypes":[] }, 
-    {"name":"activityBlocked","parameterTypes":[] }, 
-    {"name":"avatarHash","parameterTypes":[] }, 
-    {"name":"avatarUrl","parameterTypes":[] }, 
-    {"name":"bio","parameterTypes":[] }, 
-    {"name":"bioData","parameterTypes":[] }, 
-    {"name":"confirmed","parameterTypes":[] }, 
-    {"name":"fullName","parameterTypes":[] }, 
-    {"name":"id","parameterTypes":[] }, 
-    {"name":"idEnterprise","parameterTypes":[] }, 
-    {"name":"idEnterprisesDeactivated","parameterTypes":[] }, 
-    {"name":"idMemberReferrer","parameterTypes":[] }, 
-    {"name":"idPremOrgsAdmin","parameterTypes":[] }, 
-    {"name":"initials","parameterTypes":[] }, 
-    {"name":"memberType","parameterTypes":[] }, 
-    {"name":"nonPublic","parameterTypes":[] }, 
-    {"name":"nonPublicAvailable","parameterTypes":[] }, 
-    {"name":"products","parameterTypes":[] }, 
-    {"name":"status","parameterTypes":[] }, 
-    {"name":"url","parameterTypes":[] }, 
-    {"name":"username","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.MembershipsItem",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["boolean","java.lang.String","java.lang.String","java.lang.String","boolean"] }, 
-    {"name":"deactivated","parameterTypes":[] }, 
-    {"name":"id","parameterTypes":[] }, 
-    {"name":"idMember","parameterTypes":[] }, 
-    {"name":"memberType","parameterTypes":[] }, 
-    {"name":"unconfirmed","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.NameData",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.Emoji"] }, 
-    {"name":"emoji","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.NonPublic",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["java.lang.Object","java.lang.String","java.lang.String"] }, 
-    {"name":"avatarHash","parameterTypes":[] }, 
-    {"name":"fullName","parameterTypes":[] }, 
-    {"name":"initials","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.Old",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","double","java.lang.Object","java.util.List","java.lang.String"] }, 
-    {"name":"desc","parameterTypes":[] }, 
-    {"name":"dueReminder","parameterTypes":[] }, 
-    {"name":"idLabels","parameterTypes":[] }, 
-    {"name":"idList","parameterTypes":[] }, 
-    {"name":"name","parameterTypes":[] }, 
-    {"name":"pos","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.OpenPerBoard",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["int","int","java.lang.String"] }, 
-    {"name":"disableAt","parameterTypes":[] }, 
-    {"name":"status","parameterTypes":[] }, 
-    {"name":"warnAt","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.OpenPerList",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["int","int","java.lang.String"] }, 
-    {"name":"disableAt","parameterTypes":[] }, 
-    {"name":"status","parameterTypes":[] }, 
-    {"name":"warnAt","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.Organization",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["java.lang.String","java.lang.String"] }, 
-    {"name":"id","parameterTypes":[] }, 
-    {"name":"name","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.PerAction",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["int","int","java.lang.String"] }, 
-    {"name":"disableAt","parameterTypes":[] }, 
-    {"name":"status","parameterTypes":[] }, 
-    {"name":"warnAt","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.PerBoard",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["int","int","java.lang.String"] }, 
-    {"name":"disableAt","parameterTypes":[] }, 
-    {"name":"status","parameterTypes":[] }, 
-    {"name":"warnAt","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.PerCard",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["int","int","java.lang.String"] }, 
-    {"name":"disableAt","parameterTypes":[] }, 
-    {"name":"status","parameterTypes":[] }, 
-    {"name":"warnAt","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.PerChecklist",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["int","int","java.lang.String"] }, 
-    {"name":"disableAt","parameterTypes":[] }, 
-    {"name":"status","parameterTypes":[] }, 
-    {"name":"warnAt","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.PerField",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["int","int","java.lang.String"] }, 
-    {"name":"disableAt","parameterTypes":[] }, 
-    {"name":"status","parameterTypes":[] }, 
-    {"name":"warnAt","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.Plugin",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["java.lang.String","java.util.List","java.lang.String","java.lang.String","net.cofcool.toolbox.internal.trello.Icon","java.util.List","net.cofcool.toolbox.internal.trello.HeroImageUrl","java.lang.String","net.cofcool.toolbox.internal.trello.UsageBrackets","java.util.List","java.lang.String","boolean","java.util.List","java.lang.String","java.lang.Object","java.lang.String","java.util.List","java.lang.String","java.lang.Object","net.cofcool.toolbox.internal.trello.Listing"] }, 
-    {"name":"author","parameterTypes":[] }, 
-    {"name":"capabilities","parameterTypes":[] }, 
-    {"name":"capabilitiesOptions","parameterTypes":[] }, 
-    {"name":"categories","parameterTypes":[] }, 
-    {"name":"claimedDomains","parameterTypes":[] }, 
-    {"name":"heroImageUrl","parameterTypes":[] }, 
-    {"name":"icon","parameterTypes":[] }, 
-    {"name":"id","parameterTypes":[] }, 
-    {"name":"idOrganizationOwner","parameterTypes":[] }, 
-    {"name":"iframeConnectorUrl","parameterTypes":[] }, 
-    {"name":"isCompliantWithPrivacyStandards","parameterTypes":[] }, 
-    {"name":"jsonMemberPublic","parameterTypes":[] }, 
-    {"name":"listing","parameterTypes":[] }, 
-    {"name":"moderatedState","parameterTypes":[] }, 
-    {"name":"name","parameterTypes":[] }, 
-    {"name":"privacyUrl","parameterTypes":[] }, 
-    {"name":"supportEmail","parameterTypes":[] }, 
-    {"name":"tags","parameterTypes":[] }, 
-    {"name":"url","parameterTypes":[] }, 
-    {"name":"usageBrackets","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.Prefs",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["boolean","boolean","java.lang.String","java.lang.String","java.util.List","java.util.List","boolean","boolean","java.util.List","java.lang.String","boolean","java.lang.String","java.lang.Object","java.lang.String","java.lang.String","boolean","java.lang.String","boolean","boolean","java.lang.String","java.lang.String","boolean","boolean","java.lang.String","boolean"] }, 
-    {"name":"background","parameterTypes":[] }, 
-    {"name":"backgroundBottomColor","parameterTypes":[] }, 
-    {"name":"backgroundBrightness","parameterTypes":[] }, 
-    {"name":"backgroundColor","parameterTypes":[] }, 
-    {"name":"backgroundImage","parameterTypes":[] }, 
-    {"name":"backgroundImageScaled","parameterTypes":[] }, 
-    {"name":"backgroundTile","parameterTypes":[] }, 
-    {"name":"backgroundTopColor","parameterTypes":[] }, 
-    {"name":"calendarFeedEnabled","parameterTypes":[] }, 
-    {"name":"canBeEnterprise","parameterTypes":[] }, 
-    {"name":"canBeOrg","parameterTypes":[] }, 
-    {"name":"canBePrivate","parameterTypes":[] }, 
-    {"name":"canBePublic","parameterTypes":[] }, 
-    {"name":"canInvite","parameterTypes":[] }, 
-    {"name":"cardAging","parameterTypes":[] }, 
-    {"name":"cardCovers","parameterTypes":[] }, 
-    {"name":"comments","parameterTypes":[] }, 
-    {"name":"hiddenPluginBoardButtons","parameterTypes":[] }, 
-    {"name":"hideVotes","parameterTypes":[] }, 
-    {"name":"invitations","parameterTypes":[] }, 
-    {"name":"isTemplate","parameterTypes":[] }, 
-    {"name":"permissionLevel","parameterTypes":[] }, 
-    {"name":"selfJoin","parameterTypes":[] }, 
-    {"name":"switcherViews","parameterTypes":[] }, 
-    {"name":"voting","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.Reactions",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.PerAction","net.cofcool.toolbox.internal.trello.UniquePerAction"] }, 
-    {"name":"perAction","parameterTypes":[] }, 
-    {"name":"uniquePerAction","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.Stickers",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.PerCard"] }, 
-    {"name":"perCard","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.SwitcherViewsItem",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","boolean"] }, 
-    {"name":"enabled","parameterTypes":[] }, 
-    {"name":"id","parameterTypes":[] }, 
-    {"name":"viewType","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.TextData",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.Emoji"] }, 
-    {"name":"emoji","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.TotalAccessRequestsPerBoard",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["int","int","java.lang.String"] }, 
-    {"name":"disableAt","parameterTypes":[] }, 
-    {"name":"status","parameterTypes":[] }, 
-    {"name":"warnAt","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.TotalMembersPerBoard",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["int","int","java.lang.String"] }, 
-    {"name":"disableAt","parameterTypes":[] }, 
-    {"name":"status","parameterTypes":[] }, 
-    {"name":"warnAt","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.TotalPerBoard",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["int","int","java.lang.String"] }, 
-    {"name":"disableAt","parameterTypes":[] }, 
-    {"name":"status","parameterTypes":[] }, 
-    {"name":"warnAt","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.TotalPerList",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["int","int","java.lang.String"] }, 
-    {"name":"disableAt","parameterTypes":[] }, 
-    {"name":"status","parameterTypes":[] }, 
-    {"name":"warnAt","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.Trello",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["java.lang.Object","java.util.List","java.util.List","java.lang.Boolean","net.cofcool.toolbox.internal.trello.LabelNames","java.util.List","java.lang.String","java.util.List","java.lang.String","java.lang.Object","java.lang.Object","java.lang.String","java.lang.Object","java.util.List","java.lang.Object","java.lang.Boolean","java.lang.Boolean","java.util.List","java.lang.String","java.lang.String","java.util.List","java.lang.String","net.cofcool.toolbox.internal.trello.Limits","java.util.List","java.lang.Object","java.util.List","java.lang.String","net.cofcool.toolbox.internal.trello.Prefs","java.util.List","java.lang.Boolean","java.lang.String","java.util.List","java.lang.Object","java.lang.String","java.lang.Boolean","java.lang.String","java.lang.String","java.util.List","java.lang.String","int","int"] }, 
-    {"name":"actions","parameterTypes":[] }, 
-    {"name":"board","parameterTypes":[] }, 
-    {"name":"card","parameterTypes":[] }, 
-    {"name":"cards","parameterTypes":[] }, 
-    {"name":"checklists","parameterTypes":[] }, 
-    {"name":"closed","parameterTypes":[] }, 
-    {"name":"creationMethod","parameterTypes":[] }, 
-    {"name":"customFields","parameterTypes":[] }, 
-    {"name":"dateClosed","parameterTypes":[] }, 
-    {"name":"dateLastActivity","parameterTypes":[] }, 
-    {"name":"dateLastView","parameterTypes":[] }, 
-    {"name":"datePluginDisable","parameterTypes":[] }, 
-    {"name":"desc","parameterTypes":[] }, 
-    {"name":"descData","parameterTypes":[] }, 
-    {"name":"enterpriseOwned","parameterTypes":[] }, 
-    {"name":"id","parameterTypes":[] }, 
-    {"name":"idBoardSource","parameterTypes":[] }, 
-    {"name":"idEnterprise","parameterTypes":[] }, 
-    {"name":"idMemberCreator","parameterTypes":[] }, 
-    {"name":"idOrganization","parameterTypes":[] }, 
-    {"name":"idTags","parameterTypes":[] }, 
-    {"name":"ixUpdate","parameterTypes":[] }, 
-    {"name":"labelNames","parameterTypes":[] }, 
-    {"name":"labels","parameterTypes":[] }, 
-    {"name":"limits","parameterTypes":[] }, 
-    {"name":"lists","parameterTypes":[] }, 
-    {"name":"members","parameterTypes":[] }, 
-    {"name":"memberships","parameterTypes":[] }, 
-    {"name":"name","parameterTypes":[] }, 
-    {"name":"nodeId","parameterTypes":[] }, 
-    {"name":"pinned","parameterTypes":[] }, 
-    {"name":"pluginData","parameterTypes":[] }, 
-    {"name":"powerUps","parameterTypes":[] }, 
-    {"name":"prefs","parameterTypes":[] }, 
-    {"name":"premiumFeatures","parameterTypes":[] }, 
-    {"name":"shortLink","parameterTypes":[] }, 
-    {"name":"shortUrl","parameterTypes":[] }, 
-    {"name":"starred","parameterTypes":[] }, 
-    {"name":"subscribed","parameterTypes":[] }, 
-    {"name":"templateGallery","parameterTypes":[] }, 
-    {"name":"url","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.UniquePerAction",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["int","int","java.lang.String"] }, 
-    {"name":"disableAt","parameterTypes":[] }, 
-    {"name":"status","parameterTypes":[] }, 
-    {"name":"warnAt","parameterTypes":[] }
-  ]
-},
-{
-  "name":"net.cofcool.toolbox.internal.trello.UsageBrackets",
-  "allDeclaredFields":true,
-  "methods":[
-    {"name":"<init>","parameterTypes":["int"] }, 
-    {"name":"boards","parameterTypes":[] }
-  ]
-}
+  {
+    "name":"net.cofcool.toolbox.internal.GitCommitsToChangelog",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.JsonToPojo",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.LinkCovertTool",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.ShellStarter",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.SimpleNote",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.SplitKindleClippings",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.TrelloToLogseqImporter",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.simplenote.NoteRepository$Note",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[
+      {"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","java.time.LocalDateTime","net.cofcool.toolbox.internal.simplenote.NoteRepository$NoteState"] },
+      {"name":"content","parameterTypes":[] },
+      {"name":"date","parameterTypes":[] },
+      {"name":"id","parameterTypes":[] },
+      {"name":"state","parameterTypes":[] }
+    ]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.simplenote.NoteRepository$NoteState",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true
+  },
+  {
+    "name":"sun.misc.Unsafe",
+    "fields":[{"name":"theUnsafe"}],
+    "methods":[
+      {"name":"copyMemory","parameterTypes":["java.lang.Object","long","java.lang.Object","long","long"] },
+      {"name":"getAndAddLong","parameterTypes":["java.lang.Object","long","long"] },
+      {"name":"getAndSetObject","parameterTypes":["java.lang.Object","long","java.lang.Object"] },
+      {"name":"invokeCleaner","parameterTypes":["java.nio.ByteBuffer"] },
+      {"name":"storeFence","parameterTypes":[] }
+    ]
+  },
+  {
+    "name":"sun.nio.ch.SelectorImpl",
+    "fields":[
+      {"name":"publicSelectedKeys"},
+      {"name":"selectedKeys"}
+    ]
+  },
+  {
+    "name":"sun.security.provider.NativePRNG",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.provider.SHA",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.ActionsItem",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.String","net.cofcool.toolbox.internal.trello.Data","net.cofcool.toolbox.internal.trello.AppCreator","net.cofcool.toolbox.internal.trello.MemberCreator","java.lang.String","java.lang.String","java.lang.String","java.lang.Object","net.cofcool.toolbox.internal.trello.Member"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.AppCreator",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","net.cofcool.toolbox.internal.trello.Icon"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.Attachments",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.PerCard","net.cofcool.toolbox.internal.trello.PerBoard"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.AttachmentsByType",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.Trello"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.BackgroundImageScaledItem",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["int","java.lang.String","int"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.Badges",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["int","int","net.cofcool.toolbox.internal.trello.AttachmentsByType","boolean","java.lang.Object","boolean","java.lang.Object","java.lang.Boolean","java.lang.Object","boolean","boolean","int","java.lang.String","int","int"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.Board",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","java.lang.String","java.lang.String"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.BoardSource",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.Boards",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.TotalMembersPerBoard","net.cofcool.toolbox.internal.trello.TotalAccessRequestsPerBoard"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.Card",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["int","java.lang.String","java.lang.String","java.lang.String","java.lang.String","double","int","java.util.List","java.lang.String","boolean"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.CardSource",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["int","java.lang.String","java.lang.String","java.lang.String"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.Cards",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.OpenPerList","net.cofcool.toolbox.internal.trello.TotalPerList","net.cofcool.toolbox.internal.trello.TotalPerBoard","net.cofcool.toolbox.internal.trello.OpenPerBoard"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.CardsItem",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.Object","java.util.List","java.util.List","java.lang.String","boolean","java.lang.String","java.lang.String","java.util.List","java.lang.String","java.lang.Object","net.cofcool.toolbox.internal.trello.Cover","java.lang.Object","java.lang.Boolean","java.lang.Double","java.lang.Object","java.util.List","java.util.List","java.lang.String","java.lang.String","net.cofcool.toolbox.internal.trello.Limits","java.util.List","java.lang.Object","java.lang.String","java.lang.Object","java.lang.Object","java.lang.Object","java.lang.Object","java.lang.Object","java.lang.String","java.util.List","net.cofcool.toolbox.internal.trello.Badges","java.util.List","int","java.lang.Object","java.lang.Object","boolean","java.lang.String","boolean","boolean","java.lang.String"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.CheckItem",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","java.lang.String","net.cofcool.toolbox.internal.trello.TextData"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.CheckItems",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.PerChecklist"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.CheckItemsItem",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.Object","double","java.lang.Object","java.lang.Object","java.lang.String","java.lang.String","net.cofcool.toolbox.internal.trello.NameData","java.lang.String","java.lang.String"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.Checklist",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.lang.String"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.Checklists",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.PerCard","net.cofcool.toolbox.internal.trello.PerBoard"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.ChecklistsItem",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.String","double","java.lang.String","java.lang.String","java.lang.String","java.util.List","net.cofcool.toolbox.internal.trello.Limits","java.lang.Object"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.Cover",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.Object","java.lang.String","java.lang.Object","java.lang.String","java.lang.Object","java.lang.Object"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.CustomFieldOptions",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.PerField"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.CustomFields",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.PerBoard"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.Data",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.IdList","net.cofcool.toolbox.internal.trello.Card","net.cofcool.toolbox.internal.trello.Board","java.lang.String","net.cofcool.toolbox.internal.trello.TextData","java.lang.String","net.cofcool.toolbox.internal.trello.Checklist","net.cofcool.toolbox.internal.trello.CheckItem","net.cofcool.toolbox.internal.trello.Old","net.cofcool.toolbox.internal.trello.ListAfter","net.cofcool.toolbox.internal.trello.ListBefore","java.lang.String","net.cofcool.toolbox.internal.trello.Organization","net.cofcool.toolbox.internal.trello.Plugin","net.cofcool.toolbox.internal.trello.CardSource","java.lang.String","net.cofcool.toolbox.internal.trello.Member","boolean","net.cofcool.toolbox.internal.trello.BoardSource"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.Emoji",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.HeroImageUrl",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.Icon",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.IdList",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","java.lang.Object"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.LabelNames",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.Labels",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.PerBoard"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.LabelsItem",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","java.lang.String","java.lang.String"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.Limits",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.Checklists","net.cofcool.toolbox.internal.trello.Attachments","net.cofcool.toolbox.internal.trello.Cards","net.cofcool.toolbox.internal.trello.CustomFieldOptions","net.cofcool.toolbox.internal.trello.CustomFields","net.cofcool.toolbox.internal.trello.Lists","net.cofcool.toolbox.internal.trello.Boards","net.cofcool.toolbox.internal.trello.Stickers","net.cofcool.toolbox.internal.trello.Reactions","net.cofcool.toolbox.internal.trello.CheckItems","net.cofcool.toolbox.internal.trello.Labels"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.ListAfter",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.lang.String"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.ListBefore",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.lang.String"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.Listing",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.Lists",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.TotalPerBoard","net.cofcool.toolbox.internal.trello.OpenPerBoard"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.ListsItem",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.String","java.lang.Object","java.lang.String","boolean","java.lang.String","net.cofcool.toolbox.internal.trello.Limits","java.lang.Object","java.lang.Object"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.Member",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["boolean","java.lang.String","java.lang.String","java.lang.String","boolean","java.lang.Object","java.lang.String","java.lang.String","net.cofcool.toolbox.internal.trello.NonPublic","java.lang.String","java.lang.String"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.MemberCreator",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["boolean","java.lang.String","java.lang.String","java.lang.String","boolean","java.lang.Object","java.lang.String","java.lang.String","net.cofcool.toolbox.internal.trello.NonPublic","java.lang.String"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.MembersItem",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.util.List","java.lang.String","java.lang.String","boolean","java.lang.Object","java.lang.String","java.lang.String","net.cofcool.toolbox.internal.trello.NonPublic","boolean","java.util.List","java.lang.String","java.util.List","boolean","java.lang.String","java.lang.String","java.lang.Object","java.lang.String","java.lang.String","java.lang.Object","java.lang.String","java.lang.String"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.MembershipsItem",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["boolean","java.lang.String","java.lang.String","java.lang.String","boolean"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.NameData",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.Emoji"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.NonPublic",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.Object","java.lang.String","java.lang.String"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.Old",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","double","java.lang.Object","java.util.List","java.lang.String","boolean"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.OpenPerBoard",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["int","int","java.lang.String"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.OpenPerList",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["int","int","java.lang.String"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.Organization",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.PerAction",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["int","int","java.lang.String"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.PerBoard",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["int","int","java.lang.String"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.PerCard",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["int","int","java.lang.String"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.PerChecklist",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["int","int","java.lang.String"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.PerField",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["int","int","java.lang.String"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.Plugin",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.Prefs",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["boolean","boolean","java.lang.String","java.lang.String","java.util.List","java.util.List","boolean","boolean","java.util.List","java.lang.String","boolean","java.lang.String","java.lang.Object","java.lang.String","java.lang.String","boolean","java.lang.String","boolean","boolean","java.lang.String","java.lang.String","boolean","boolean","java.lang.String","boolean"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.Reactions",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.PerAction","net.cofcool.toolbox.internal.trello.UniquePerAction"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.Stickers",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.PerCard"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.SwitcherViewsItem",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","boolean"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.TextData",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.trello.Emoji"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.TotalAccessRequestsPerBoard",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["int","int","java.lang.String"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.TotalMembersPerBoard",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["int","int","java.lang.String"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.TotalPerBoard",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["int","int","java.lang.String"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.TotalPerList",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["int","int","java.lang.String"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.Trello",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.Object","java.util.List","java.util.List","java.lang.Boolean","net.cofcool.toolbox.internal.trello.LabelNames","java.util.List","java.lang.String","java.util.List","java.lang.String","java.lang.Object","java.lang.Object","java.lang.String","java.lang.Object","java.util.List","java.lang.Object","java.lang.Boolean","java.lang.Boolean","java.util.List","java.lang.String","java.lang.String","java.util.List","java.lang.String","net.cofcool.toolbox.internal.trello.Limits","java.util.List","java.lang.Object","java.util.List","java.lang.String","net.cofcool.toolbox.internal.trello.Prefs","java.util.List","java.lang.Boolean","java.lang.String","java.util.List","java.lang.Object","java.lang.String","java.lang.Boolean","java.lang.String","java.lang.String","java.util.List","java.lang.String","int","int"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.UniquePerAction",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["int","int","java.lang.String"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.trello.UsageBrackets",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true
+  }
 ]

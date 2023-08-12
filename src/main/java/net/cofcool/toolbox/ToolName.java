@@ -7,6 +7,7 @@ import net.cofcool.toolbox.internal.GitCommitsToChangelog;
 import net.cofcool.toolbox.internal.JsonToPojo;
 import net.cofcool.toolbox.internal.LinkCovertTool;
 import net.cofcool.toolbox.internal.ShellStarter;
+import net.cofcool.toolbox.internal.SimpleNote;
 import net.cofcool.toolbox.internal.SplitKindleClippings;
 import net.cofcool.toolbox.internal.TrelloToLogseqImporter;
 
@@ -19,7 +20,8 @@ public enum ToolName {
     converts("some simple utilities about string, like base64 encode", Converts.class),
     json2POJO("convert json structure to POJO class", JsonToPojo.class),
     dirWebServer("start a simple web directory server", DirWebServer.class),
-    rename("rename file conveniently", FileNameFormatter.class);
+    rename("rename file conveniently", FileNameFormatter.class),
+    note("simple web notebook", SimpleNote.class);
 
     private final String desc;
     private final Class<? extends Tool> tool;

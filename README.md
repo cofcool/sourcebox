@@ -1,6 +1,6 @@
 # 常用小工具
 
-使用 Java(最低要求 JDK 19, 推荐使用 `GraalVM`), Python 等语言实现, 运行 `./my-tools.sh` 查看帮助信息, `--debug=true` 打开调试模式, `--help={COMMAND}` 查看帮助信息, 如 `--help=converts`
+使用 Java(最低要求 JDK 19, 推荐使用 `GraalVM`), Python 等语言实现, 运行 `./mytool.sh` 查看帮助信息, `--debug=true` 打开调试模式, `--help={COMMAND}` 查看帮助信息, 如 `--help=converts`
 
 项目构建:
 
@@ -11,7 +11,7 @@
 
 ## 常用字符串转换工具
 
-使用: `./my-tools.sh --tool=converts --cmd="upper test"`
+使用: `./mytool.sh --tool=converts --cmd="upper test"`
 
 支持功能（可通过 `|` 连接多个命令）:
 
@@ -27,19 +27,35 @@
 
 ## Git 提交记录生成更新日志
 
-使用: `./my-tools.sh --tool=gitCommits2Log --path=./`
+使用: `./mytool.sh --tool=gitCommits2Log --path=./`
 
 ## 简单 Web 文件服务器
 
-使用 `./my-tools.sh --tool=dirWebServer`
+使用 `./mytool.sh --tool=dirWebServer`
 
 ## JSON 生成对象
 
-使用: `./my-tools.sh --tool=json2POJO --path=./`
+使用: `./mytool.sh --tool=json2POJO --path=./`
 
 支持:
 
 * Java class/record
+
+## Trello 导出的 JSON 文件导入到 Logseq
+
+支持把从 Trello 看板导出的 JSON 文件导入到 Logseq
+
+##  文件重命名
+
+使用: `./mytool.sh --tool=rename --path=./`
+
+支持:
+
+* order, 文件序号
+* date, 日期
+* datetime, 时间
+* urlencoded, 解码 URL 编码
+* replace, 字符串替换
 
 ## dhtml2text
 
@@ -65,33 +81,9 @@ pip3 install chardet
 python3 dhtml2text.py
 ```
 
-## listAllFiles
-
-Node.js，列出当前目录下的所有文件，并读取内容。
-
-## MenuGenerator
-
-Node.js，根据OpenAPI规范，可提取Swagger生成的api.json文件中的关键字并写入文件。
-
 ## LinkCovertTool
 
 Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到链接并输出到Markdown文件。
-
-## Trello 导出的 JSON 文件导入到 Logseq
-
-支持把从 Trello 看板导出的 JSON 文件导入到 Logseq
-
-##  文件重命名
-
-使用: `./my-tools.sh --tool=rename --path=./`
-
-支持:
-
-* order, 文件序号
-* date, 日期
-* datetime, 时间
-* urlencoded, 解码 URL 编码
-* replace, 字符串替换
 
 ## 简单笔记
 
@@ -105,4 +97,3 @@ Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到
 
 # 致谢
 
-* SimpleHTTPServerWithUpload 来自 https://gist.github.com/UniIsland/3346170

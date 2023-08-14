@@ -2,6 +2,8 @@ name: Java CI
 
 on:
   push:
+    tags:
+      - "*.*.*"
 
 jobs:
   package:
@@ -32,4 +34,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: my-toolbox-${{ matrix.os }}.zip
-          path: my-toolbox-bin.zip
+          path: ./target/my-toolbox-bin.zip

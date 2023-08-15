@@ -11,6 +11,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TimeZone;
@@ -45,7 +46,7 @@ public class Converts implements Tool {
 
     @Override
     public void run(Args args) throws Exception {
-        getLogger().info(runCommand(args));
+        args.getContext().write(runCommand(args));
     }
 
     protected String runCommand(Args args) throws Exception {
@@ -271,7 +272,8 @@ public class Converts implements Tool {
                 ""
             ))
             .arg(new Arg("pipeline", null, "next commands, like: md5 | replace", false, ""))
-            .arg(new Arg(INPUT, null, "input string", false, ""));
+            .arg(new Arg(INPUT, null, "input string", false, ""))
+            .runnerTypes(EnumSet.allOf(RunnerType.class));
         pipelineMap.keySet().forEach(s -> args.alias(s, name(), "cmd", "cmd="+ s + " --in", (before, arg, alias) -> {
             before.put(alias.val(), Arg.of(alias.val(), arg.key()));
             before.put(INPUT, Arg.of(INPUT, arg.val()));

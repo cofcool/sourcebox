@@ -30,8 +30,7 @@ public class NoteIndex {
         router.get("/list").handler(context ->
             noteService.find(null)
                 .andThen(it ->
-                    context.request()
-                        .response()
+                    context.response()
                         .putHeader("Content-Type", "application/json")
                         .end(Json.encodeToBuffer(it.result()))
                 )
@@ -41,7 +40,6 @@ public class NoteIndex {
             noteService.save(context.body().asPojo(Note.class))
                 .andThen(it ->
                     context
-                        .request()
                         .response()
                         .putHeader("Content-Type", "application/json")
                         .end(Json.encodeToBuffer(it.result()))
@@ -51,7 +49,7 @@ public class NoteIndex {
         router.delete("/note/:id").handler(context ->
             noteService
                 .logicDelete(new Note(context.pathParam("id"), null, null, null))
-                .andThen(a -> context.request().response().end("ok"))
+                .andThen(a -> context.response().end("ok"))
         );
 
         router.post("/upload").handler(BodyHandler.create().setDeleteUploadedFilesOnEnd(true))
@@ -59,7 +57,7 @@ public class NoteIndex {
                 context.fileUploads().forEach(e ->
                     context.vertx().fileSystem().readFile(e.uploadedFileName(), it ->
                         noteService.save(JsonUtil.toPojoList(it.result().getBytes(), Note.class))
-                            .andThen(a -> context.request().response().end("Ok"))
+                            .andThen(a -> context.response().end("Ok"))
                     )
                 )
             );

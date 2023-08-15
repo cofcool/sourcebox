@@ -4,12 +4,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import net.cofcool.toolbox.ToolContext.ConsoleToolContext;
 
 public interface Tool {
 
@@ -64,7 +68,12 @@ public interface Tool {
     class Args extends LinkedHashMap<String, Arg> {
 
         private final Map<String, Arg> aliases = new HashMap<>();
+
+        private final Set<RunnerType> runnerTypes = new HashSet<>();
+
         private final Map<String, AliasInterceptor> aliasInterceptors = new HashMap<>();
+
+        private ToolContext context = new ConsoleToolContext();
 
         public Args(int initialCapacity) {
             super(initialCapacity);
@@ -106,6 +115,12 @@ public interface Tool {
             return this;
         }
 
+        public Args context(ToolContext context) {
+            Objects.requireNonNull(context, "context can not be null");
+            this.context = context;
+            return this;
+        }
+
         public Args args(Collection<Arg> args) {
             for (Arg arg : args) {
                 arg(arg);
@@ -131,6 +146,10 @@ public interface Tool {
             return arg;
         }
 
+        public ToolContext getContext() {
+            return context;
+        }
+
         public Optional<String> getArgVal(String key) {
             var arg = get(key);
             if (arg == null) {
@@ -149,6 +168,15 @@ public interface Tool {
                 aliasInterceptors.put(alias, argInterceptor);
             }
             return this;
+        }
+
+        public Args runnerTypes(Set<RunnerType> runnerTypes) {
+            this.runnerTypes.addAll(runnerTypes);
+            return this;
+        }
+
+        public boolean supportsType(RunnerType type) {
+            return runnerTypes.contains(type);
         }
 
         public Args copyAliasFrom(Args args) {
@@ -214,5 +242,9 @@ public interface Tool {
          * @param alias alias argument
          */
         void post(Map<String, Arg> before, Arg arg, Arg alias);
+    }
+
+    enum RunnerType {
+        WEB, CLI, GUI
     }
 }

@@ -1,10 +1,14 @@
-package net.cofcool.toolbox.web;
+package net.cofcool.toolbox.runner;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpServerResponse;
+import java.util.Objects;
+import lombok.AllArgsConstructor;
 import lombok.CustomLog;
 import net.cofcool.toolbox.Tool.Args;
+import net.cofcool.toolbox.ToolContext;
 import net.cofcool.toolbox.ToolRunner;
 import net.cofcool.toolbox.internal.simplenote.NoteIndex;
 
@@ -12,8 +16,10 @@ import net.cofcool.toolbox.internal.simplenote.NoteIndex;
 public class WebRunner extends AbstractVerticle implements ToolRunner {
 
     @Override
-    public void run(Args args) throws Exception {
+    public boolean run(Args args) throws Exception {
         Vertx.vertx().deployVerticle(this);
+
+        return true;
     }
 
     @Override
@@ -32,5 +38,17 @@ public class WebRunner extends AbstractVerticle implements ToolRunner {
                         log.error("Toolbox server start error", http.cause());
                     }
                 });
+    }
+
+    @AllArgsConstructor
+    private static class WebToolContext implements ToolContext {
+
+        private final HttpServerResponse response;
+
+        @Override
+        public ToolContext write(Object val) {
+            response.write(Objects.toString(val, ""));
+            return this;
+        }
     }
 }

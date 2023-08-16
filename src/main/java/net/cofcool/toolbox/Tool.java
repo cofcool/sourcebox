@@ -13,7 +13,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import net.cofcool.toolbox.ToolContext.ConsoleToolContext;
 
 public interface Tool {
 
@@ -73,7 +72,7 @@ public interface Tool {
 
         private final Map<String, AliasInterceptor> aliasInterceptors = new HashMap<>();
 
-        private ToolContext context = new ConsoleToolContext();
+        private ToolContext context;
 
         public Args(int initialCapacity) {
             super(initialCapacity);
@@ -97,7 +96,7 @@ public interface Tool {
             }
         }
 
-        Args setupConfig(Args config) throws IllegalArgumentException {
+        public Args setupConfig(Args config) throws IllegalArgumentException {
             var error = new ArrayList<Arg>();
             for (Arg arg : config.values()) {
                 if (get(arg.key()) == null) {

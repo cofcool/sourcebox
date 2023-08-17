@@ -3,8 +3,8 @@ package net.cofcool.toolbox;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -68,7 +68,7 @@ public interface Tool {
 
         private final Map<String, Arg> aliases = new HashMap<>();
 
-        private final Set<RunnerType> runnerTypes = new HashSet<>();
+        private Set<RunnerType> runnerTypes = EnumSet.of(RunnerType.CLI);
 
         private final Map<String, AliasInterceptor> aliasInterceptors = new HashMap<>();
 
@@ -94,24 +94,6 @@ public interface Tool {
                 }
                 arg(strings[0], strings.length == 1 ? null :strings[1].trim());
             }
-        }
-
-        public Args setupConfig(Args config) throws IllegalArgumentException {
-            var error = new ArrayList<Arg>();
-            for (Arg arg : config.values()) {
-                if (get(arg.key()) == null) {
-                    if (arg.required()) {
-                        error.add(arg);
-                    } else {
-                        arg(arg);
-                    }
-                }
-            }
-            if (!error.isEmpty()) {
-                throw new IllegalArgumentException(error.stream().map(a -> String.format("%s must be specified, like: %s=%s", a.key(), a.key(), a.demo())).collect(Collectors.joining("; ")));
-            }
-
-            return this;
         }
 
         public Args context(ToolContext context) {
@@ -170,7 +152,7 @@ public interface Tool {
         }
 
         public Args runnerTypes(Set<RunnerType> runnerTypes) {
-            this.runnerTypes.addAll(runnerTypes);
+            this.runnerTypes = runnerTypes;
             return this;
         }
 
@@ -195,6 +177,24 @@ public interface Tool {
                 }
             }
             putAll(cmds);
+            return this;
+        }
+
+        public Args copyConfigFrom(Args config) throws IllegalArgumentException {
+            var error = new ArrayList<Arg>();
+            for (Arg arg : config.values()) {
+                if (get(arg.key()) == null) {
+                    if (arg.required()) {
+                        error.add(arg);
+                    } else {
+                        arg(arg);
+                    }
+                }
+            }
+            if (!error.isEmpty()) {
+                throw new IllegalArgumentException(error.stream().map(a -> String.format("%s must be specified, like: %s=%s", a.key(), a.key(), a.demo())).collect(Collectors.joining("; ")));
+            }
+
             return this;
         }
 

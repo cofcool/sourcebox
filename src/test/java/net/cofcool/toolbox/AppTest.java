@@ -1,5 +1,6 @@
 package net.cofcool.toolbox;
 
+import net.cofcool.toolbox.Tool.RunnerType;
 import org.junit.jupiter.api.Test;
 
 class AppTest {
@@ -26,7 +27,7 @@ class AppTest {
 
     @Test
     void printAllHelp() {
-        for (Tool tool : App.ALL_TOOLS) {
+        for (Tool tool : App.supportTools(RunnerType.CLI)) {
             System.out.println(tool.name());
             System.out.println(tool.config().toHelpString());
             System.out.println("-------");

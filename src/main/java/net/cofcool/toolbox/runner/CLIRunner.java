@@ -5,6 +5,7 @@ import lombok.CustomLog;
 import net.cofcool.toolbox.App;
 import net.cofcool.toolbox.Tool;
 import net.cofcool.toolbox.Tool.Args;
+import net.cofcool.toolbox.Tool.RunnerType;
 import net.cofcool.toolbox.ToolContext;
 import net.cofcool.toolbox.ToolRunner;
 
@@ -17,12 +18,12 @@ public class CLIRunner implements ToolRunner {
         var run = new AtomicBoolean(false);
 
         args.readArg("tool").ifPresent(a -> {
-            for (Tool tool : App.ALL_TOOLS) {
+            for (Tool tool : App.supportTools(RunnerType.CLI)) {
                 if (tool.name().name().equals(a.val())) {
                     run.set(true);
                     log.info("Start run " + tool.name().name());
                     try {
-                        tool.run(args.setupConfig(tool.config()));
+                        tool.run(args.copyConfigFrom(tool.config()));
                     } catch (Throwable e) {
                         log.error(e);
                         log.info("Help");

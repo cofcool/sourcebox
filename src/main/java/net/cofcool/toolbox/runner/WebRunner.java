@@ -1,34 +1,51 @@
 package net.cofcool.toolbox.runner;
 
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.handler.BodyHandler;
 import java.util.Objects;
-import lombok.AllArgsConstructor;
 import lombok.CustomLog;
+import net.cofcool.toolbox.App;
+import net.cofcool.toolbox.Tool;
 import net.cofcool.toolbox.Tool.Args;
+import net.cofcool.toolbox.Tool.RunnerType;
 import net.cofcool.toolbox.ToolContext;
 import net.cofcool.toolbox.ToolRunner;
-import net.cofcool.toolbox.internal.simplenote.NoteIndex;
+import org.apache.commons.lang3.StringUtils;
 
+/**
+ * config listen port by system env: {@link #PORT_KEY}
+ */
 @CustomLog
 public class WebRunner extends AbstractVerticle implements ToolRunner {
 
+    public static final String PORT_KEY = "toolbox.web.port";
+
+    private Args args;
+
     @Override
     public boolean run(Args args) throws Exception {
-        Vertx.vertx().deployVerticle(this);
-
+        run(Vertx.vertx(), args);
         return true;
+    }
+
+    Future<String> run(Vertx vertx, Args args) {
+        this.args = args;
+        return vertx.deployVerticle(this);
     }
 
     @Override
     public void start(Promise<Void> startPromise) throws Exception {
         var server = vertx.createHttpServer();
+        var port = System.getProperty(PORT_KEY);
         server
-            .requestHandler(new NoteIndex(vertx).router())
+            .requestHandler(new Routers().build(vertx, args))
             .listen(
-                8888,
+                StringUtils.isEmpty(port) ? 8080 : Integer.parseInt(port),
                 http -> {
                     if (http.succeeded()) {
                         startPromise.complete();
@@ -40,15 +57,58 @@ public class WebRunner extends AbstractVerticle implements ToolRunner {
                 });
     }
 
-    @AllArgsConstructor
+
     private static class WebToolContext implements ToolContext {
 
-        private final HttpServerResponse response;
+        private final StringBuilder sb = new StringBuilder();
 
         @Override
         public ToolContext write(Object val) {
-            response.write(Objects.toString(val, ""));
+            sb.append(Objects.toString(val, ""));
             return this;
+        }
+
+        public JsonObject result() {
+            return new JsonObject().put("result", sb.toString());
+        }
+
+    }
+
+    private static class Routers {
+
+        public Router build(Vertx vertx, Args globalArgs) {
+            var router = Router.router(vertx);
+            var tools = App.supportTools(RunnerType.WEB);
+
+            router.route().handler(BodyHandler.create());
+
+            router.errorHandler(500, r -> {
+                log.error("Request error", r.failure());
+                r.json(new JsonObject().put("error", r.failure().getMessage()));
+            });
+
+            router.get("/")
+                .respond(r -> Future.succeededFuture(tools.stream().map(Tool::name).toList()));
+
+            for (Tool tool : tools) {
+                router.post("/" + tool.name().name()).respond(r -> {
+                    var args = new Args();
+                    r.body().asJsonObject().forEach(e -> args.arg(e.getKey(), (String) e.getValue()));
+                    var webToolContext = new WebToolContext();
+                    args.copyConfigFrom(globalArgs)
+                        .copyConfigFrom(tool.config())
+                        .context(webToolContext);
+
+                    try {
+                        tool.run(args);
+                        return Future.succeededFuture(webToolContext.result());
+                    } catch (Exception e) {
+                        return Future.failedFuture(e);
+                    }
+                });
+            }
+
+            return router;
         }
     }
 }

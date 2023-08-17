@@ -31,6 +31,7 @@ class NoteVerticleTest {
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertEquals(200, r.statusCode());
                 Assertions.assertEquals("application/json", r.getHeader("Content-Type"));
+                testContext.completeNow();
             })));
     }
 }

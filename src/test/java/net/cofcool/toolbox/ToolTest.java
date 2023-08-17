@@ -46,7 +46,7 @@ class ToolTest {
                     .alias("md6", name(), "cmd1",  "arg1");
             }
         };
-        args.copyAliasFrom(tool.config()).setupConfig(tool.config());
+        args.copyAliasFrom(tool.config()).copyConfigFrom(tool.config());
         Assertions.assertEquals(ToolName.converts.name(), args.readArg("tool").val());
         Assertions.assertEquals("md5", args.readArg("cmd").val());
         Assertions.assertEquals("sas", args.readArg("in").val());
@@ -58,8 +58,8 @@ class ToolTest {
         Args args = new Args()
             .arg(new Arg("name", "required", "test command", true, "demo"))
             .arg(new Arg("name1", "optional", "test command", false, "demo1"));
-        new Args().arg("name", null).setupConfig(args);
-        Executable executable = () -> new Args().arg("name1", null).setupConfig(args);
+        new Args().arg("name", null).copyConfigFrom(args);
+        Executable executable = () -> new Args().arg("name1", null).copyConfigFrom(args);
         Assertions.assertThrows(IllegalArgumentException.class, executable);
         try {
             executable.execute();

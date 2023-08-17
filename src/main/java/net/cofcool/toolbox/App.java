@@ -20,7 +20,7 @@ public class App {
 
     public static String ABOUT;
 
-    public static final Set<Tool> ALL_TOOLS = new HashSet<>();
+    private static final Set<Tool> ALL_TOOLS = new HashSet<>();
 
     private static final Map<RunnerType, ToolRunner> RUNNER_MAP = Map.of(
         RunnerType.WEB, new WebRunner(),
@@ -34,7 +34,7 @@ public class App {
     public static void main(String[] args) {
         var pArgs = new Tool.Args(args)
             .copyAliasFrom(ALIAS)
-            .setupConfig(
+            .copyConfigFrom(
                 new Args()
                     .arg(new Arg("debug", "false", "", false, null))
                     .arg(new Arg("help", null, "", false, null))
@@ -87,6 +87,10 @@ public class App {
         var tool = ((Constructor<Tool>) type.getConstructor()).newInstance();
         ALL_TOOLS.add(tool);
         return tool;
+    }
+
+    public static Set<Tool> supportTools(RunnerType type) {
+        return ALL_TOOLS.stream().filter(tool -> tool.config().supportsType(type)).collect(Collectors.toSet());
     }
 
     private static void logAbout(Logger logger) {

@@ -9,6 +9,9 @@
 
 **TODO**
 
+* Web 页面
+* JavaFX
+
 ## 常用字符串转换工具
 
 使用: `./mytool.sh --tool=converts --cmd="upper test"`

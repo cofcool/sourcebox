@@ -26,24 +26,15 @@ public class NoteIndex {
         var staticHandler = StaticHandler.create();
         router.route("/").handler(it -> it.redirect("/static/"));
         router.route("/static/*").handler(staticHandler);
+        router.route().handler(BodyHandler.create());
 
-        router.get("/list").handler(context ->
-            noteService.find(null)
-                .andThen(it ->
-                    context.response()
-                        .putHeader("Content-Type", "application/json")
-                        .end(Json.encodeToBuffer(it.result()))
-                )
+        router.get("/list").respond(context ->
+            noteService.find(null).andThen(it -> Json.encodeToBuffer(it.result()))
         );
 
-        router.post("/note").handler(BodyHandler.create()).handler(context ->
+        router.post("/note").respond(context ->
             noteService.save(context.body().asPojo(Note.class))
-                .andThen(it ->
-                    context
-                        .response()
-                        .putHeader("Content-Type", "application/json")
-                        .end(Json.encodeToBuffer(it.result()))
-                )
+                .andThen(it -> Json.encodeToBuffer(it.result()))
         );
 
         router.delete("/note/:id").handler(context ->

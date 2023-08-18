@@ -53,4 +53,17 @@ class WebRunnerTest {
                 testContext.completeNow();
             })));
     }
+
+    @Test
+    void reqHelp(Vertx vertx, VertxTestContext testContext) {
+        vertx.createHttpClient()
+            .request(HttpMethod.GET, 8080, "127.0.0.1", "/help")
+            .compose(HttpClientRequest::send)
+            .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
+                Assertions.assertEquals(200, r.statusCode());
+                Assertions.assertEquals("application/json", r.getHeader("Content-Type"));
+                r.body(res -> System.out.println(res.map(Json::decodeValue).result()));
+                testContext.completeNow();
+            })));
+    }
 }

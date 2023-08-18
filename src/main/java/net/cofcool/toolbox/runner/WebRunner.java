@@ -90,6 +90,20 @@ public class WebRunner extends AbstractVerticle implements ToolRunner {
             router.get("/")
                 .respond(r -> Future.succeededFuture(tools.stream().map(Tool::name).toList()));
 
+            router.get("/help")
+                .respond(r ->
+                    Future.succeededFuture(
+                        tools.stream()
+                            .map(t ->
+                                new JsonObject().put(
+                                    t.name().name(),
+                                    JsonObject.of("desc", t.name().toString(), "help", t.config().toHelpString())
+                                )
+                            )
+                            .reduce(new JsonObject(), JsonObject::mergeIn)
+                    )
+                );
+
             for (Tool tool : tools) {
                 router.post("/" + tool.name().name()).respond(r -> {
                     var args = new Args();

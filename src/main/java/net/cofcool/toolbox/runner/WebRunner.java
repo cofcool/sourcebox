@@ -44,6 +44,7 @@ public class WebRunner extends AbstractVerticle implements ToolRunner {
         var port = System.getProperty(PORT_KEY);
         server
             .requestHandler(new Routers().build(vertx, args))
+            .exceptionHandler(e -> log.error("Toolbox server socket error", e))
             .listen(
                 StringUtils.isEmpty(port) ? 8080 : Integer.parseInt(port),
                 http -> {
@@ -51,8 +52,8 @@ public class WebRunner extends AbstractVerticle implements ToolRunner {
                         startPromise.complete();
                         log.info(String.format("Toolbox server started on port %s", http.result().actualPort()));
                     } else {
-                        startPromise.fail(http.cause());
                         log.error("Toolbox server start error", http.cause());
+                        startPromise.fail(http.cause());
                     }
                 });
     }

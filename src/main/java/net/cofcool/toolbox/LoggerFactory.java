@@ -28,10 +28,10 @@ public final class LoggerFactory {
     }
 
     public static Logger getLogger(Class<?> clazz) {
-        return loggers.computeIfAbsent(clazz, c -> new LoggerImpl(c, debug));
+        return loggers.computeIfAbsent(clazz, LoggerImpl::new);
     }
 
-    private record LoggerImpl(Class<?> clazz, boolean debug) implements Logger {
+    private record LoggerImpl(Class<?> clazz) implements Logger {
 
         @Override
         public void error(Object val) {

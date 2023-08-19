@@ -20,7 +20,9 @@ class WebRunnerTest {
     @BeforeEach
     void deployVerticle(Vertx vertx, VertxTestContext testContext) throws Exception {
         System.setProperty("logging.debug", "true");
-        new WebRunner().run(vertx, new Args()).onComplete(a -> testContext.succeeding(t -> testContext.completeNow()));
+        new WebRunner()
+            .run(vertx, new Args())
+            .onComplete(testContext.succeeding(t -> testContext.completeNow()));
     }
 
     @Test

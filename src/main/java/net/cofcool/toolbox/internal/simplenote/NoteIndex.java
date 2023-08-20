@@ -6,6 +6,7 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 import lombok.CustomLog;
+import net.cofcool.toolbox.internal.simplenote.NoteConfig.NoteCodec;
 import net.cofcool.toolbox.internal.simplenote.NoteRepository.Note;
 import net.cofcool.toolbox.util.JsonUtil;
 
@@ -18,6 +19,7 @@ public class NoteIndex {
     public NoteIndex(Vertx vertx) {
         this.vertx = vertx;
         this.noteService = new NoteService(vertx);
+        vertx.eventBus().registerDefaultCodec(Note.class, new NoteCodec());
     }
 
     public Router router() {

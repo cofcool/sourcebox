@@ -1,10 +1,12 @@
 package net.cofcool.toolbox.runner;
 
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.json.jackson.DatabindCodec;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import java.util.Objects;
@@ -15,6 +17,9 @@ import net.cofcool.toolbox.Tool.Args;
 import net.cofcool.toolbox.Tool.RunnerType;
 import net.cofcool.toolbox.ToolContext;
 import net.cofcool.toolbox.ToolRunner;
+import net.cofcool.toolbox.WebTool;
+import net.cofcool.toolbox.util.JsonUtil;
+import net.cofcool.toolbox.util.VertxUtils;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -29,7 +34,7 @@ public class WebRunner extends AbstractVerticle implements ToolRunner {
 
     @Override
     public boolean run(Args args) throws Exception {
-        run(Vertx.vertx(), args);
+        run(Vertx.vertx(), args).onComplete(VertxUtils.logResult(log));
         return true;
     }
 
@@ -58,6 +63,13 @@ public class WebRunner extends AbstractVerticle implements ToolRunner {
                 });
     }
 
+    @Override
+    public void init(Vertx vertx, Context context) {
+        super.init(vertx, context);
+
+        JsonUtil.enableTimeModule(DatabindCodec.mapper());
+        JsonUtil.enableTimeModule(DatabindCodec.prettyMapper());
+    }
 
     private static class WebToolContext implements ToolContext {
 
@@ -106,21 +118,26 @@ public class WebRunner extends AbstractVerticle implements ToolRunner {
                 );
 
             for (Tool tool : tools) {
-                router.post("/" + tool.name().name()).respond(r -> {
-                    var args = new Args();
-                    r.body().asJsonObject().forEach(e -> args.arg(e.getKey(), (String) e.getValue()));
-                    var webToolContext = new WebToolContext();
-                    args.copyConfigFrom(globalArgs)
-                        .copyConfigFrom(tool.config())
-                        .context(webToolContext);
+                var path = "/" + tool.name().name();
+                if (tool instanceof WebTool) {
+                    router.route(path + "/*").subRouter(((WebTool) tool).router(vertx));
+                } else {
+                    router.post(path).respond(r -> {
+                        var args = new Args();
+                        r.body().asJsonObject().forEach(e -> args.arg(e.getKey(), (String) e.getValue()));
+                        var webToolContext = new WebToolContext();
+                        args.copyConfigFrom(globalArgs)
+                            .copyConfigFrom(tool.config())
+                            .context(webToolContext);
 
-                    try {
-                        tool.run(args);
-                        return Future.succeededFuture(webToolContext.result());
-                    } catch (Exception e) {
-                        return Future.failedFuture(e);
-                    }
-                });
+                        try {
+                            tool.run(args);
+                            return Future.succeededFuture(webToolContext.result());
+                        } catch (Exception e) {
+                            return Future.failedFuture(e);
+                        }
+                    });
+                }
             }
 
             return router;

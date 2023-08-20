@@ -47,6 +47,5 @@ public class NoteVerticle extends AbstractVerticle {
         super.init(vertx, context);
         JsonUtil.enableTimeModule(DatabindCodec.mapper());
         JsonUtil.enableTimeModule(DatabindCodec.prettyMapper());
-        vertx.eventBus().registerDefaultCodec(Note.class, new NoteCodec());
     }
 }

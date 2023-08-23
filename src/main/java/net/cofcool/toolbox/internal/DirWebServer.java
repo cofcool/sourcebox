@@ -13,12 +13,12 @@ import io.vertx.ext.web.handler.StaticHandler;
 import java.nio.file.Path;
 import lombok.AllArgsConstructor;
 import lombok.CustomLog;
-import net.cofcool.toolbox.Tool;
 import net.cofcool.toolbox.ToolName;
+import net.cofcool.toolbox.WebTool;
 import net.cofcool.toolbox.util.VertxUtils;
 
 @CustomLog
-public class DirWebServer implements Tool {
+public class DirWebServer implements WebTool {
 
     @Override
     public ToolName name() {
@@ -43,6 +43,42 @@ public class DirWebServer implements Tool {
             .alias("dir", name(), "root", null);
     }
 
+    @Override
+    public Router router(Vertx vertx) {
+        return router(vertx, config().readArg("root").val());
+    }
+
+    private static Router router(Vertx vertx, String path) {
+        var router = Router.router(vertx);
+
+        router.route().handler(LoggerHandler.create());
+        router.get().handler(
+            StaticHandler
+                .create(FileSystemAccess.ROOT, path)
+                .setDirectoryTemplate("webroot/vertx-web-directory.html")
+                .setDirectoryListing(true)
+        );
+        router.errorHandler(500, r -> {
+            log.error("Request error", r.failure());
+            r.json(new JsonObject().put("error", r.failure().getMessage()));
+        });
+
+        router.post("/upload").handler(BodyHandler.create().setUploadsDirectory(path))
+            .respond(context -> {
+                context.fileUploads().forEach(e ->
+                    context.vertx().fileSystem().move(e.uploadedFileName(), e.fileName(), a -> {
+                        if (a.failed()) {
+                            log.error("rename " + e.uploadedFileName(), a.cause());
+                        } else {
+                            log.debug("rename " + e.uploadedFileName() + " to " + e.fileName());
+                        }
+                    })
+                );
+                return Future.succeededFuture(JsonObject.of("result", "ok"));
+            });
+        return router;
+    }
+
     @AllArgsConstructor
     private static class DirVerticle extends AbstractVerticle {
 
@@ -51,38 +87,8 @@ public class DirWebServer implements Tool {
 
         @Override
         public void start(Promise<Void> startPromise) throws Exception {
-            var server = vertx.createHttpServer();
-
-            var router = Router.router(vertx);
-
-            router.route().handler(LoggerHandler.create());
-            router.get().handler(
-                StaticHandler
-                    .create(FileSystemAccess.ROOT, path)
-                    .setDirectoryTemplate("webroot/vertx-web-directory.html")
-                    .setDirectoryListing(true)
-            );
-            router.errorHandler(500, r -> {
-                log.error("Request error", r.failure());
-                r.json(new JsonObject().put("error", r.failure().getMessage()));
-            });
-
-            router.post("/upload").handler(BodyHandler.create().setUploadsDirectory(path))
-                .respond(context -> {
-                    context.fileUploads().forEach(e ->
-                        context.vertx().fileSystem().move(e.uploadedFileName(), e.fileName(), a -> {
-                            if (a.failed()) {
-                                log.error("rename " + e.uploadedFileName(), a.cause());
-                            } else {
-                                log.debug("rename " + e.uploadedFileName() + " to " + e.fileName());
-                            }
-                        })
-                    );
-                    return Future.succeededFuture(JsonObject.of("result", "ok"));
-                });
-
-            server
-                .requestHandler(router)
+            vertx.createHttpServer()
+                .requestHandler(router(vertx, path))
                 .exceptionHandler(e -> log.error("Dir server socket error", e))
                 .listen(
                     port,

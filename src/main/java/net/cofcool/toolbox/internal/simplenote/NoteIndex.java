@@ -25,9 +25,8 @@ public class NoteIndex {
     public Router router() {
         var router = Router.router(vertx);
 
-        var staticHandler = StaticHandler.create();
         router.route("/").handler(it -> it.redirect("/static/"));
-        router.route("/static/*").handler(staticHandler);
+        router.route("/static/*").handler(StaticHandler.create());
         router.route().handler(BodyHandler.create());
 
         router.get("/list").respond(context ->

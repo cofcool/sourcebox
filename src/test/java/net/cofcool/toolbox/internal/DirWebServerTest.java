@@ -54,7 +54,7 @@ class DirWebServerTest extends BaseTest {
     void get() throws Exception {
         var request = HttpRequest
             .newBuilder()
-            .uri(URI.create("http://127.0.0.1:" + args.readArg("port").val() + "/upload"))
+            .uri(URI.create("http://127.0.0.1:" + args.readArg("port").val() + "/files"))
             .GET()
             .build();
         var response = client.send(request, BodyHandlers.ofString());

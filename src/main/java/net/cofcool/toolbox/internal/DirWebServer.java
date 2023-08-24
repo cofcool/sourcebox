@@ -4,6 +4,7 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
+import io.vertx.core.file.FileSystemException;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
@@ -11,11 +12,13 @@ import io.vertx.ext.web.handler.FileSystemAccess;
 import io.vertx.ext.web.handler.LoggerHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import lombok.AllArgsConstructor;
 import lombok.CustomLog;
 import net.cofcool.toolbox.ToolName;
 import net.cofcool.toolbox.WebTool;
 import net.cofcool.toolbox.util.VertxUtils;
+import org.apache.commons.io.FilenameUtils;
 
 @CustomLog
 public class DirWebServer implements WebTool {
@@ -65,17 +68,26 @@ public class DirWebServer implements WebTool {
 
         router.post("/upload").handler(BodyHandler.create().setUploadsDirectory(path))
             .respond(context -> {
-                context.fileUploads().forEach(e ->
-                    context.vertx().fileSystem().move(e.uploadedFileName(), e.fileName(), a -> {
-                        if (a.failed()) {
-                            log.error("rename " + e.uploadedFileName(), a.cause());
-                        } else {
-                            log.debug("rename " + e.uploadedFileName() + " to " + e.fileName());
-                        }
-                    })
-                );
-                return Future.succeededFuture(JsonObject.of("result", "ok"));
+                var files = new ArrayList<>();
+                context.fileUploads().forEach(e -> {
+                    try {
+                        var newFile = Path.of(path, e.fileName()).toString();
+                        context.vertx().fileSystem().moveBlocking(e.uploadedFileName(), newFile);
+                        log.debug("rename " + e.uploadedFileName() + " to " + newFile);
+                        files.add(e.fileName());
+                    } catch (FileSystemException ex) {
+                        log.error("rename " + e.uploadedFileName(), ex);
+                    }
+                });
+                return Future.succeededFuture(JsonObject.of("result", files));
             });
+
+        router.get("/files").respond(r ->
+            vertx.fileSystem()
+                .readDir(path)
+                .compose(a -> Future.succeededFuture(a.stream().map(FilenameUtils::getName).toList()))
+        );
+
         return router;
     }
 

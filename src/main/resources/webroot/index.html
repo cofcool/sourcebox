@@ -15,7 +15,7 @@
   <button type="submit" >保存</button>
 </form>
 <script>
-$.getJSON( "/list", function( data ) {
+$.getJSON( "../list", function( data ) {
   var items = [];
   $.each( data, function( key, val ) {
     items.push( "<li id='" + key + "'>" + val.content + ' - ' + val.date + "</li>" );
@@ -35,7 +35,7 @@ data.content = e.target[0].value;
 
 $.ajax({
   type: "POST",
-  url: "/note",
+  url: "../note",
   data: JSON.stringify(data),
   success: function() {
     e.target.reset();

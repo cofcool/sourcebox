@@ -1,12 +1,10 @@
 package net.cofcool.toolbox.runner;
 
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.json.jackson.DatabindCodec;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import java.util.Objects;
@@ -18,7 +16,6 @@ import net.cofcool.toolbox.Tool.RunnerType;
 import net.cofcool.toolbox.ToolContext;
 import net.cofcool.toolbox.ToolRunner;
 import net.cofcool.toolbox.WebTool;
-import net.cofcool.toolbox.util.JsonUtil;
 import net.cofcool.toolbox.util.VertxUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -45,30 +42,15 @@ public class WebRunner extends AbstractVerticle implements ToolRunner {
 
     @Override
     public void start(Promise<Void> startPromise) throws Exception {
-        var server = vertx.createHttpServer();
         var port = System.getProperty(PORT_KEY);
-        server
-            .requestHandler(new Routers().build(vertx, args))
-            .exceptionHandler(e -> log.error("Toolbox server socket error", e))
-            .listen(
+        VertxUtils
+            .initHttpServer(
+                vertx,
+                startPromise,
+                Routers.build(vertx, args),
                 StringUtils.isEmpty(port) ? 8080 : Integer.parseInt(port),
-                http -> {
-                    if (http.succeeded()) {
-                        startPromise.complete();
-                        log.info(String.format("Toolbox server started on port %s", http.result().actualPort()));
-                    } else {
-                        log.error("Toolbox server start error", http.cause());
-                        startPromise.fail(http.cause());
-                    }
-                });
-    }
-
-    @Override
-    public void init(Vertx vertx, Context context) {
-        super.init(vertx, context);
-
-        JsonUtil.enableTimeModule(DatabindCodec.mapper());
-        JsonUtil.enableTimeModule(DatabindCodec.prettyMapper());
+                log
+            );
     }
 
     private static class WebToolContext implements ToolContext {
@@ -89,7 +71,7 @@ public class WebRunner extends AbstractVerticle implements ToolRunner {
 
     private static class Routers {
 
-        public Router build(Vertx vertx, Args globalArgs) {
+        public static Router build(Vertx vertx, Args globalArgs) {
             var router = Router.router(vertx);
             var tools = App.supportTools(RunnerType.WEB);
 

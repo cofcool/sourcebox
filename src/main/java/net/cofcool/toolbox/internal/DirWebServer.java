@@ -69,6 +69,7 @@ public class DirWebServer implements WebTool {
         router.post("/upload").handler(BodyHandler.create().setUploadsDirectory(path))
             .respond(context -> {
                 var files = new ArrayList<>();
+                var err = new ArrayList<>();
                 context.fileUploads().forEach(e -> {
                     try {
                         var newFile = Path.of(path, e.fileName()).toString();
@@ -77,9 +78,10 @@ public class DirWebServer implements WebTool {
                         files.add(e.fileName());
                     } catch (FileSystemException ex) {
                         log.error("rename " + e.uploadedFileName(), ex);
+                        err.add(ex.getMessage());
                     }
                 });
-                return Future.succeededFuture(JsonObject.of("result", files));
+                return Future.succeededFuture(JsonObject.of("result", files, "error", err));
             });
 
         router.get("/files").respond(r ->
@@ -99,20 +101,8 @@ public class DirWebServer implements WebTool {
 
         @Override
         public void start(Promise<Void> startPromise) throws Exception {
-            vertx.createHttpServer()
-                .requestHandler(router(vertx, path))
-                .exceptionHandler(e -> log.error("Dir server socket error", e))
-                .listen(
-                    port,
-                    http -> {
-                        if (http.succeeded()) {
-                            startPromise.complete();
-                            log.info(String.format("Dir server started on port %s", http.result().actualPort()));
-                        } else {
-                            log.error("Dir server start error", http.cause());
-                            startPromise.fail(http.cause());
-                        }
-                    });
+            VertxUtils
+                .initHttpServer(vertx, startPromise, router(vertx, path), port, log);
         }
     }
 

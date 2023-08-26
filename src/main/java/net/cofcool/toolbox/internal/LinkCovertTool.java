@@ -27,8 +27,7 @@ public class LinkCovertTool implements Tool {
 
         File inputFile = new File(inputPath);
         if (inputFile.isDirectory()) {
-            File[] allFiles = inputFile.listFiles();
-            files = Arrays.asList(allFiles);
+            files = Arrays.asList(inputFile.listFiles());
         }else {
             files.add(inputFile);
         }

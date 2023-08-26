@@ -160,6 +160,10 @@ public interface Tool {
             return runnerTypes.contains(type);
         }
 
+        public boolean isCurrentType(RunnerType type) {
+            return context.runnerType() == type;
+        }
+
         public Args copyAliasFrom(Args args) {
             aliases.putAll(args.aliases);
             aliasInterceptors.putAll(args.aliasInterceptors);

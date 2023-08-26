@@ -43,5 +43,10 @@ public class CLIRunner implements ToolRunner {
             System.out.println(val);
             return this;
         }
+
+        @Override
+        public RunnerType runnerType() {
+            return RunnerType.CLI;
+        }
     }
 }

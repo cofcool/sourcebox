@@ -63,6 +63,11 @@ public class WebRunner extends AbstractVerticle implements ToolRunner {
             return this;
         }
 
+        @Override
+        public RunnerType runnerType() {
+            return RunnerType.WEB;
+        }
+
         public JsonObject result() {
             return new JsonObject().put("result", sb.toString());
         }

@@ -60,6 +60,10 @@
 * urlencoded, 解码 URL 编码
 * replace, 字符串替换
 
+## 阅读软件笔记、高亮导出为 markdown 文件
+
+支持 Kindle、Moon+ Reader
+
 ## dhtml2text
 
 该脚本可以下载指定页面下的所有a标签对应的链接，也可把下载下来的html页面合并为纯文本文件。

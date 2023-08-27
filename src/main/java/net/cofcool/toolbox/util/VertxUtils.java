@@ -1,12 +1,23 @@
 package net.cofcool.toolbox.util;
 
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
+import io.vertx.core.file.FileSystemException;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.jackson.DatabindCodec;
+import io.vertx.ext.web.FileUpload;
+import io.vertx.ext.web.Route;
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.BodyHandler;
+import java.util.ArrayList;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import net.cofcool.toolbox.Logger;
 
 public final class VertxUtils {
@@ -43,6 +54,37 @@ public final class VertxUtils {
                     }
                 }
             );
+    }
+
+    public static Route uploadRoute(Router router, BiFunction<FileUpload, RoutingContext, String> fileHandler, BiConsumer<Exception, FileUpload> errorHandler) {
+        return uploadRoute(router, null, fileHandler, errorHandler);
+    }
+
+    public static Route uploadRoute(Router router, String persistencePath, BiFunction<FileUpload, RoutingContext, String> fileHandler, BiConsumer<Exception, FileUpload> errorHandler) {
+        var route = router.post("/upload");
+        var bodyHandler = BodyHandler.create();
+        if (persistencePath != null) {
+            bodyHandler.setUploadsDirectory(persistencePath);
+        } else {
+            bodyHandler.setDeleteUploadedFilesOnEnd(true);
+        }
+        return route
+            .handler(bodyHandler)
+            .respond(context -> {
+                var files = new ArrayList<>();
+                var err = new ArrayList<>();
+                context.fileUploads().forEach(e -> {
+                    try {
+                        files.add(fileHandler.apply(e, context));
+                    } catch (FileSystemException ex) {
+                        if (errorHandler != null) {
+                            errorHandler.accept(ex, e);
+                        }
+                        err.add(ex.getMessage());
+                    }
+                });
+                return Future.succeededFuture(JsonObject.of("result", files, "error", err));
+            });
     }
 
 }

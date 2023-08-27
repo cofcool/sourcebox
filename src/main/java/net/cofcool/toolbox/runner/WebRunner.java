@@ -7,6 +7,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
+import io.vertx.ext.web.handler.LoggerHandler;
 import java.util.Objects;
 import lombok.CustomLog;
 import net.cofcool.toolbox.App;
@@ -81,6 +82,7 @@ public class WebRunner extends AbstractVerticle implements ToolRunner {
             var tools = App.supportTools(RunnerType.WEB);
 
             router.route().handler(BodyHandler.create());
+            router.route().handler(LoggerHandler.create());
 
             router.errorHandler(500, r -> {
                 log.error("Request error", r.failure());
@@ -103,6 +105,11 @@ public class WebRunner extends AbstractVerticle implements ToolRunner {
                             .reduce(new JsonObject(), JsonObject::mergeIn)
                     )
                 );
+            VertxUtils.uploadRoute(
+                router,
+                (f, r) -> f.uploadedFileName(),
+                null
+            );
 
             for (Tool tool : tools) {
                 var path = "/" + tool.name().name();

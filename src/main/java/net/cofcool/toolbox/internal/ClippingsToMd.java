@@ -34,10 +34,7 @@ public class ClippingsToMd implements Tool {
         var out = args.readArg("out").val();
         var type = ClipType.valueOf(args.readArg("type").val());
 
-        var fileContent = path;
-        if (args.isCurrentType(RunnerType.CLI)) {
-            fileContent = FileUtils.readFileToString(new File(path), StandardCharsets.UTF_8);
-        }
+        var fileContent = FileUtils.readFileToString(new File(path), StandardCharsets.UTF_8);
 
         var highlights = switch (type) {
             case kindle -> kindle(fileContent);
@@ -159,7 +156,9 @@ public class ClippingsToMd implements Tool {
             if (bookmark) {
                 str += "(🔖)";
             }
-            str += "(" + time.format(formatter) + ")";
+            if (time != null) {
+                str += "(" + time.format(formatter) + ")";
+            }
             if (!StringUtils.isBlank(comment)) {
                 str = str + "\n\n   * " + comment ;
             }

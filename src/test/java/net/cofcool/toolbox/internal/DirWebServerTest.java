@@ -25,7 +25,7 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 @TestInstance(Lifecycle.PER_METHOD)
 class DirWebServerTest extends BaseTest {
 
-    static final String UPLOAD_FILE = "splitKindleClippingsTest.txt";
+    static final String UPLOAD_FILE = "clippingsKindle.txt";
     static final String ROOT = "./target/upload";
 
     static Args ARGS;

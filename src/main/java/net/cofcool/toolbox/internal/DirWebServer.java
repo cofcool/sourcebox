@@ -4,15 +4,12 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
-import io.vertx.core.file.FileSystemException;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
-import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.FileSystemAccess;
 import io.vertx.ext.web.handler.LoggerHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import lombok.AllArgsConstructor;
 import lombok.CustomLog;
 import net.cofcool.toolbox.ToolName;
@@ -66,23 +63,17 @@ public class DirWebServer implements WebTool {
             r.json(new JsonObject().put("error", r.failure().getMessage()));
         });
 
-        router.post("/upload").handler(BodyHandler.create().setUploadsDirectory(path))
-            .respond(context -> {
-                var files = new ArrayList<>();
-                var err = new ArrayList<>();
-                context.fileUploads().forEach(e -> {
-                    try {
-                        var newFile = Path.of(path, e.fileName()).toString();
-                        context.vertx().fileSystem().moveBlocking(e.uploadedFileName(), newFile);
-                        log.debug("rename " + e.uploadedFileName() + " to " + newFile);
-                        files.add(e.fileName());
-                    } catch (FileSystemException ex) {
-                        log.error("rename " + e.uploadedFileName(), ex);
-                        err.add(ex.getMessage());
-                    }
-                });
-                return Future.succeededFuture(JsonObject.of("result", files, "error", err));
-            });
+        VertxUtils.uploadRoute(
+            router,
+            path,
+            (f, r) -> {
+                var newFile = Path.of(path, f.fileName()).toString();
+                r.vertx().fileSystem().moveBlocking(f.uploadedFileName(), newFile);
+                log.debug("rename " + f.uploadedFileName() + " to " + newFile);
+                return f.fileName();
+            },
+            (e, f) -> log.error("rename " + f.uploadedFileName(), e)
+        );
 
         router.get("/files").respond(r ->
             vertx.fileSystem()

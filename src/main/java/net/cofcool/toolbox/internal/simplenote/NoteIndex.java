@@ -9,6 +9,7 @@ import lombok.CustomLog;
 import net.cofcool.toolbox.internal.simplenote.NoteConfig.NoteCodec;
 import net.cofcool.toolbox.internal.simplenote.NoteRepository.Note;
 import net.cofcool.toolbox.util.JsonUtil;
+import net.cofcool.toolbox.util.VertxUtils;
 
 @CustomLog
 public class NoteIndex {
@@ -44,15 +45,16 @@ public class NoteIndex {
                 .andThen(a -> context.response().end("ok"))
         );
 
-        router.post("/upload").handler(BodyHandler.create().setDeleteUploadedFilesOnEnd(true))
-            .handler(context ->
-                context.fileUploads().forEach(e ->
-                    context.vertx().fileSystem().readFile(e.uploadedFileName(), it ->
-                        noteService.save(JsonUtil.toPojoList(it.result().getBytes(), Note.class))
-                            .andThen(a -> context.response().end("Ok"))
-                    )
-                )
-            );
+        VertxUtils.uploadRoute(
+            router,
+            (f, r) -> {
+                r.vertx().fileSystem().readFile(f.uploadedFileName(), it ->
+                    noteService.save(JsonUtil.toPojoList(it.result().getBytes(), Note.class))
+                );
+                return "OK";
+            },
+            (e, f) -> log.error("Parsing note file error", e)
+        );
 
         return router;
     }

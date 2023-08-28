@@ -3,7 +3,6 @@ package net.cofcool.toolbox.internal.simplenote;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
 import io.vertx.ext.web.Router;
-import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 import lombok.CustomLog;
 import net.cofcool.toolbox.internal.simplenote.NoteConfig.NoteCodec;
@@ -28,7 +27,7 @@ public class NoteIndex {
 
         router.route("/").handler(it -> it.redirect(it.request().path() + "static/"));
         router.route("/static/*").handler(StaticHandler.create());
-        router.route().handler(BodyHandler.create());
+        router.route().handler(VertxUtils.bodyHandler(null));
 
         router.get("/list").respond(context ->
             noteService.find(null).andThen(it -> Json.encodeToBuffer(it.result()))

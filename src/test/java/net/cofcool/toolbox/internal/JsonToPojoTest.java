@@ -5,9 +5,9 @@ import net.cofcool.toolbox.BaseTest;
 import net.cofcool.toolbox.Tool;
 import org.junit.jupiter.api.Test;
 
-class JsonToPojoTest extends BaseTest {
+public class JsonToPojoTest extends BaseTest {
 
-    static final String JSON_STR = """
+    public static final String JSON_STR = """
         {
             "str": "strVal",
             "obj": {

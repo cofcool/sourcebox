@@ -19,12 +19,19 @@ import java.util.ArrayList;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import net.cofcool.toolbox.Logger;
+import org.apache.commons.io.FilenameUtils;
 
 public final class VertxUtils {
+
+    public static final String GLOBAL_UPLOAD_DIR = System.getProperty("upload.dir", BodyHandler.DEFAULT_UPLOADS_DIRECTORY);
 
     static {
         JsonUtil.enableTimeModule(DatabindCodec.mapper());
         JsonUtil.enableTimeModule(DatabindCodec.prettyMapper());
+    }
+
+    public static String resourcePath(String name) {
+        return FilenameUtils.concat(GLOBAL_UPLOAD_DIR, name);
     }
 
     public static <T> Handler<AsyncResult<T>> logResult(Logger log) {
@@ -56,20 +63,21 @@ public final class VertxUtils {
             );
     }
 
+    public static BodyHandler bodyHandler(String persistencePath) {
+        return BodyHandler
+            .create()
+            .setUploadsDirectory(persistencePath != null ? persistencePath : GLOBAL_UPLOAD_DIR);
+    }
+
     public static Route uploadRoute(Router router, BiFunction<FileUpload, RoutingContext, String> fileHandler, BiConsumer<Exception, FileUpload> errorHandler) {
         return uploadRoute(router, null, fileHandler, errorHandler);
     }
 
     public static Route uploadRoute(Router router, String persistencePath, BiFunction<FileUpload, RoutingContext, String> fileHandler, BiConsumer<Exception, FileUpload> errorHandler) {
         var route = router.post("/upload");
-        var bodyHandler = BodyHandler.create();
-        if (persistencePath != null) {
-            bodyHandler.setUploadsDirectory(persistencePath);
-        } else {
-            bodyHandler.setDeleteUploadedFilesOnEnd(true);
-        }
+
         return route
-            .handler(bodyHandler)
+            .handler(bodyHandler(persistencePath))
             .respond(context -> {
                 var files = new ArrayList<>();
                 var err = new ArrayList<>();

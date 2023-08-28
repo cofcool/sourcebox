@@ -6,9 +6,15 @@ import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
-import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.LoggerHandler;
-import java.util.Objects;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import lombok.CustomLog;
 import net.cofcool.toolbox.App;
 import net.cofcool.toolbox.Tool;
@@ -18,6 +24,8 @@ import net.cofcool.toolbox.ToolContext;
 import net.cofcool.toolbox.ToolRunner;
 import net.cofcool.toolbox.WebTool;
 import net.cofcool.toolbox.util.VertxUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -56,11 +64,11 @@ public class WebRunner extends AbstractVerticle implements ToolRunner {
 
     private static class WebToolContext implements ToolContext {
 
-        private final StringBuilder sb = new StringBuilder();
+        Map<String, String> out = new ConcurrentHashMap<>();
 
         @Override
-        public ToolContext write(Object val) {
-            sb.append(Objects.toString(val, ""));
+        public ToolContext write(String name, String in) {
+            out.put(name, in);
             return this;
         }
 
@@ -70,7 +78,23 @@ public class WebRunner extends AbstractVerticle implements ToolRunner {
         }
 
         public JsonObject result() {
-            return new JsonObject().put("result", sb.toString());
+            String name;
+            if (out.size() == 1) {
+                name = out.values().toArray(String[]::new)[0];
+            } else {
+                name = VertxUtils.resourcePath(RandomStringUtils.randomAlphabetic(10) + ".zip");
+                try (var zipOut = new ZipOutputStream(new FileOutputStream(name))) {
+                    for (Entry<String, String> entry : out.entrySet()) {
+                        zipOut.putNextEntry(new ZipEntry(entry.getKey()));
+                        IOUtils.write(entry.getValue(), zipOut, StandardCharsets.UTF_8);
+                    }
+                } catch (IOException e) {
+                    log.error("Write zip file error", e);
+                    throw new RuntimeException(e);
+                }
+            }
+            log.info("Generate file " + name + " ok");
+            return JsonObject.of("result", name);
         }
 
     }
@@ -81,7 +105,7 @@ public class WebRunner extends AbstractVerticle implements ToolRunner {
             var router = Router.router(vertx);
             var tools = App.supportTools(RunnerType.WEB);
 
-            router.route().handler(BodyHandler.create());
+            router.route().handler(VertxUtils.bodyHandler(null));
             router.route().handler(LoggerHandler.create());
 
             router.errorHandler(500, r -> {
@@ -105,6 +129,13 @@ public class WebRunner extends AbstractVerticle implements ToolRunner {
                             .reduce(new JsonObject(), JsonObject::mergeIn)
                     )
                 );
+
+            router.get("/resource/:name")
+                .handler(r -> {
+                    var name = r.pathParam("name");
+                    r.attachment(name).response().sendFile(VertxUtils.resourcePath(name));
+                });
+
             VertxUtils.uploadRoute(
                 router,
                 (f, r) -> f.uploadedFileName(),

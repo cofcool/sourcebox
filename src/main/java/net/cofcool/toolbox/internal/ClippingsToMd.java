@@ -52,11 +52,8 @@ public class ClippingsToMd implements Tool {
             )
             .collect(Collectors.joining("\n"));
         getLogger().info("Write file to " + out);
-        if (args.isCurrentType(RunnerType.WEB)) {
-            args.getContext().write(ret);
-        } else {
-            FileUtils.writeStringToFile(new File(out), ret, StandardCharsets.UTF_8);
-        }
+
+        args.getContext().write(out, ret);
     }
 
 

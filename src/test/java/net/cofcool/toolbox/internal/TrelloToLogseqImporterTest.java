@@ -4,12 +4,14 @@ import net.cofcool.toolbox.BaseTest;
 import net.cofcool.toolbox.Tool;
 import org.junit.jupiter.api.Test;
 
-class TrelloToLogseqImporterTest extends BaseTest {
+public class TrelloToLogseqImporterTest extends BaseTest {
 
+
+    public static final String RESOURCE_PATH = Utils.getTestResourcePath("/trello-demo.json");
 
     @Test
     void run() throws Exception {
-        instance().run(args.arg("path", Utils.getTestResourcePath("/trello-demo.json")).arg("out", "./target/trello"));
+        instance().run(args.arg("path", RESOURCE_PATH).arg("out", "./target/trello"));
     }
 
     @Test
@@ -17,7 +19,7 @@ class TrelloToLogseqImporterTest extends BaseTest {
         instance()
             .run(
                 args
-                    .arg("path", Utils.getTestResourcePath("/trello-demo.json"))
+                    .arg("path", RESOURCE_PATH)
                     .arg("out", "./target/trello")
                     .arg("titleToPage", "true")
             );

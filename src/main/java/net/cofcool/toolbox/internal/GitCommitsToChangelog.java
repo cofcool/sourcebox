@@ -113,7 +113,7 @@ public class GitCommitsToChangelog implements Tool {
                             );
                         });
                 });
-            FileUtils.writeStringToFile(new File(out), String.join("\n", commits), StandardCharsets.UTF_8);
+            args.getContext().write(out, String.join("\n", commits));
             getLogger().info("Generate " + out + " ok");
         }
     }

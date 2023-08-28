@@ -1,13 +1,17 @@
 package net.cofcool.toolbox.runner;
 
+import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.CustomLog;
+import lombok.SneakyThrows;
 import net.cofcool.toolbox.App;
 import net.cofcool.toolbox.Tool;
 import net.cofcool.toolbox.Tool.Args;
 import net.cofcool.toolbox.Tool.RunnerType;
 import net.cofcool.toolbox.ToolContext;
 import net.cofcool.toolbox.ToolRunner;
+import org.apache.commons.io.FileUtils;
 
 @CustomLog
 public class CLIRunner implements ToolRunner {
@@ -36,11 +40,21 @@ public class CLIRunner implements ToolRunner {
         return run.get();
     }
 
-    private static class ConsoleToolContext implements ToolContext {
+    public static class ConsoleToolContext implements ToolContext {
 
         @Override
         public ToolContext write(Object val) {
             System.out.println(val);
+            return this;
+        }
+
+        @Override
+        @SneakyThrows
+        public ToolContext write(String name, String in) {
+            var file = new File(name);
+            FileUtils.forceMkdirParent(file);
+            FileUtils.write(file, in, StandardCharsets.UTF_8);
+
             return this;
         }
 

@@ -119,7 +119,8 @@ public class FileNameFormatter implements Tool {
         date(() -> new DateGenerator(DATE_FORMATTER)),
         datetime(() -> new DateGenerator(DATE_TIME_FORMATTER)),
         urlencoded(UrlNameDecoder::new),
-        replace(ReplaceDecoder::new);
+        replace(Replace::new),
+        delete(Delete::new);
 
         private final Supplier<NameGenerator> supplier;
 
@@ -190,7 +191,7 @@ public class FileNameFormatter implements Tool {
         }
     }
 
-    private static class ReplaceDecoder implements NameGenerator {
+    private static class Replace implements NameGenerator {
 
         @Override
         public String name(String old, String ext, Args args) {
@@ -200,6 +201,19 @@ public class FileNameFormatter implements Tool {
         @Override
         public String help() {
             return "--old=demo --new=test";
+        }
+    }
+
+    private static class Delete implements NameGenerator {
+
+        @Override
+        public String name(String old, String ext, Args args) {
+            return (old + ext).replace(args.readArg("old").val(), "");
+        }
+
+        @Override
+        public String help() {
+            return "--old=demo";
         }
     }
 

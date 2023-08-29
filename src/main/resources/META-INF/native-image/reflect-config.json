@@ -186,7 +186,7 @@
     "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {
-    "name":"net.cofcool.toolbox.internal.SplitKindleClippings",
+    "name":"net.cofcool.toolbox.internal.ClippingsToMd",
     "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {

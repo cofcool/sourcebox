@@ -102,6 +102,19 @@ class FileNameFormatterTest extends BaseTest {
     }
 
     @Test
+    void runWithDelete() throws Exception {
+        var path = file.getPath();
+        System.out.println(path);
+        FileUtils.writeStringToFile(new File(path + File.separator + "demo.txt"), "test", StandardCharsets.UTF_8);
+        instance().run(args
+            .arg("path", path)
+            .arg("formatter", Formatter.delete.name())
+            .arg("old", "mo")
+        );
+        Assertions.assertTrue(new File(path + File.separator + "de.txt").exists());
+    }
+
+    @Test
     void runWithIgnore() throws Exception {
         var path = file.getPath();
         System.out.println(path);

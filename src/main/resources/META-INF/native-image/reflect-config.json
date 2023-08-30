@@ -12,8 +12,229 @@
     "name":"[Lcom.fasterxml.jackson.databind.ser.Serializers;"
   },
   {
+    "name":"apple.security.AppleProvider",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
     "name":"com.fasterxml.jackson.databind.ext.Java7SupportImpl",
     "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.sun.crypto.provider.AESCipher$General",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.sun.crypto.provider.ARCFOURCipher",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.sun.crypto.provider.ChaCha20Cipher$ChaCha20Poly1305",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.sun.crypto.provider.DESCipher",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.sun.crypto.provider.DESedeCipher",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.sun.crypto.provider.DHParameters",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.sun.crypto.provider.GaloisCounterMode$AESGCM",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.sun.crypto.provider.TlsMasterSecretGenerator",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"io.netty.bootstrap.ServerBootstrap$1"
+  },
+  {
+    "name":"io.netty.bootstrap.ServerBootstrap$ServerBootstrapAcceptor",
+    "methods":[{"name":"channelRead","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] }, {"name":"exceptionCaught","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Throwable"] }]
+  },
+  {
+    "name":"io.netty.buffer.AbstractByteBufAllocator",
+    "queryAllDeclaredMethods":true
+  },
+  {
+    "name":"io.netty.buffer.AbstractReferenceCountedByteBuf",
+    "fields":[{"name":"refCnt"}]
+  },
+  {
+    "name":"io.netty.channel.AbstractChannelHandlerContext",
+    "fields":[{"name":"handlerState"}]
+  },
+  {
+    "name":"io.netty.channel.ChannelDuplexHandler",
+    "methods":[{"name":"bind","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.net.SocketAddress","io.netty.channel.ChannelPromise"] }, {"name":"close","parameterTypes":["io.netty.channel.ChannelHandlerContext","io.netty.channel.ChannelPromise"] }, {"name":"connect","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.net.SocketAddress","java.net.SocketAddress","io.netty.channel.ChannelPromise"] }, {"name":"deregister","parameterTypes":["io.netty.channel.ChannelHandlerContext","io.netty.channel.ChannelPromise"] }, {"name":"disconnect","parameterTypes":["io.netty.channel.ChannelHandlerContext","io.netty.channel.ChannelPromise"] }, {"name":"flush","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"read","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"write","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object","io.netty.channel.ChannelPromise"] }]
+  },
+  {
+    "name":"io.netty.channel.ChannelHandlerAdapter",
+    "methods":[{"name":"exceptionCaught","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Throwable"] }]
+  },
+  {
+    "name":"io.netty.channel.ChannelInboundHandlerAdapter",
+    "methods":[{"name":"channelActive","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"channelInactive","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"channelRead","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] }, {"name":"channelReadComplete","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"channelRegistered","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"channelUnregistered","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"channelWritabilityChanged","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"exceptionCaught","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Throwable"] }, {"name":"userEventTriggered","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] }]
+  },
+  {
+    "name":"io.netty.channel.ChannelInitializer",
+    "methods":[{"name":"channelRegistered","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"exceptionCaught","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Throwable"] }]
+  },
+  {
+    "name":"io.netty.channel.ChannelOutboundBuffer",
+    "fields":[{"name":"totalPendingSize"}, {"name":"unwritable"}]
+  },
+  {
+    "name":"io.netty.channel.ChannelOutboundHandlerAdapter",
+    "methods":[{"name":"bind","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.net.SocketAddress","io.netty.channel.ChannelPromise"] }, {"name":"close","parameterTypes":["io.netty.channel.ChannelHandlerContext","io.netty.channel.ChannelPromise"] }, {"name":"connect","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.net.SocketAddress","java.net.SocketAddress","io.netty.channel.ChannelPromise"] }, {"name":"deregister","parameterTypes":["io.netty.channel.ChannelHandlerContext","io.netty.channel.ChannelPromise"] }, {"name":"disconnect","parameterTypes":["io.netty.channel.ChannelHandlerContext","io.netty.channel.ChannelPromise"] }, {"name":"flush","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"read","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }]
+  },
+  {
+    "name":"io.netty.channel.CombinedChannelDuplexHandler",
+    "methods":[{"name":"bind","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.net.SocketAddress","io.netty.channel.ChannelPromise"] }, {"name":"channelActive","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"channelInactive","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"channelRead","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] }, {"name":"channelReadComplete","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"channelRegistered","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"channelUnregistered","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"channelWritabilityChanged","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"close","parameterTypes":["io.netty.channel.ChannelHandlerContext","io.netty.channel.ChannelPromise"] }, {"name":"connect","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.net.SocketAddress","java.net.SocketAddress","io.netty.channel.ChannelPromise"] }, {"name":"deregister","parameterTypes":["io.netty.channel.ChannelHandlerContext","io.netty.channel.ChannelPromise"] }, {"name":"disconnect","parameterTypes":["io.netty.channel.ChannelHandlerContext","io.netty.channel.ChannelPromise"] }, {"name":"exceptionCaught","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Throwable"] }, {"name":"flush","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"read","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"userEventTriggered","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] }, {"name":"write","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object","io.netty.channel.ChannelPromise"] }]
+  },
+  {
+    "name":"io.netty.channel.DefaultChannelConfig",
+    "fields":[{"name":"autoRead"}, {"name":"writeBufferWaterMark"}]
+  },
+  {
+    "name":"io.netty.channel.DefaultChannelPipeline",
+    "fields":[{"name":"estimatorHandle"}]
+  },
+  {
+    "name":"io.netty.channel.DefaultChannelPipeline$HeadContext",
+    "methods":[{"name":"bind","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.net.SocketAddress","io.netty.channel.ChannelPromise"] }, {"name":"channelActive","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"channelInactive","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"channelRead","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] }, {"name":"channelReadComplete","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"channelRegistered","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"channelUnregistered","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"channelWritabilityChanged","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"close","parameterTypes":["io.netty.channel.ChannelHandlerContext","io.netty.channel.ChannelPromise"] }, {"name":"connect","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.net.SocketAddress","java.net.SocketAddress","io.netty.channel.ChannelPromise"] }, {"name":"deregister","parameterTypes":["io.netty.channel.ChannelHandlerContext","io.netty.channel.ChannelPromise"] }, {"name":"disconnect","parameterTypes":["io.netty.channel.ChannelHandlerContext","io.netty.channel.ChannelPromise"] }, {"name":"exceptionCaught","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Throwable"] }, {"name":"flush","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"read","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"userEventTriggered","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] }, {"name":"write","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object","io.netty.channel.ChannelPromise"] }]
+  },
+  {
+    "name":"io.netty.channel.DefaultChannelPipeline$TailContext",
+    "methods":[{"name":"channelActive","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"channelInactive","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"channelRead","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] }, {"name":"channelReadComplete","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"channelRegistered","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"channelUnregistered","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"channelWritabilityChanged","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"exceptionCaught","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Throwable"] }, {"name":"userEventTriggered","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] }]
+  },
+  {
+    "name":"io.netty.handler.codec.ByteToMessageDecoder",
+    "methods":[{"name":"channelInactive","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"channelRead","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] }, {"name":"channelReadComplete","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }]
+  },
+  {
+    "name":"io.netty.handler.codec.MessageToMessageDecoder",
+    "methods":[{"name":"channelRead","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] }]
+  },
+  {
+    "name":"io.netty.handler.codec.MessageToMessageEncoder",
+    "methods":[{"name":"write","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object","io.netty.channel.ChannelPromise"] }]
+  },
+  {
+    "name":"io.netty.handler.codec.dns.DatagramDnsQueryEncoder"
+  },
+  {
+    "name":"io.netty.handler.codec.haproxy.HAProxyMessageDecoder"
+  },
+  {
+    "name":"io.netty.handler.codec.http.HttpClientCodec"
+  },
+  {
+    "name":"io.netty.handler.codec.http.HttpObjectDecoder",
+    "methods":[{"name":"userEventTriggered","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] }]
+  },
+  {
+    "name":"io.netty.handler.codec.http.HttpObjectEncoder",
+    "methods":[{"name":"write","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object","io.netty.channel.ChannelPromise"] }]
+  },
+  {
+    "name":"io.netty.handler.codec.http.websocketx.extensions.WebSocketServerExtensionHandler",
+    "methods":[{"name":"channelRead","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] }, {"name":"write","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object","io.netty.channel.ChannelPromise"] }]
+  },
+  {
+    "name":"io.netty.handler.codec.http2.Http2ConnectionHandler",
+    "methods":[{"name":"bind","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.net.SocketAddress","io.netty.channel.ChannelPromise"] }, {"name":"channelActive","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"channelWritabilityChanged","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"close","parameterTypes":["io.netty.channel.ChannelHandlerContext","io.netty.channel.ChannelPromise"] }, {"name":"connect","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.net.SocketAddress","java.net.SocketAddress","io.netty.channel.ChannelPromise"] }, {"name":"deregister","parameterTypes":["io.netty.channel.ChannelHandlerContext","io.netty.channel.ChannelPromise"] }, {"name":"disconnect","parameterTypes":["io.netty.channel.ChannelHandlerContext","io.netty.channel.ChannelPromise"] }, {"name":"flush","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"read","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"write","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object","io.netty.channel.ChannelPromise"] }]
+  },
+  {
+    "name":"io.netty.resolver.dns.Cache$Entries",
+    "fields":[{"name":"expirationFuture"}]
+  },
+  {
+    "name":"io.netty.resolver.dns.DnsNameResolver$1"
+  },
+  {
+    "name":"io.netty.resolver.dns.DnsNameResolver$3"
+  },
+  {
+    "name":"io.netty.resolver.dns.DnsNameResolver$DnsResponseHandler",
+    "methods":[{"name":"channelActive","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"channelRead","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] }, {"name":"exceptionCaught","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Throwable"] }]
+  },
+  {
+    "name":"io.netty.resolver.dns.macos.MacOSDnsServerAddressStreamProvider"
+  },
+  {
+    "name":"io.netty.util.AbstractReferenceCounted",
+    "fields":[{"name":"refCnt"}]
+  },
+  {
+    "name":"io.netty.util.DefaultAttributeMap",
+    "fields":[{"name":"attributes"}]
+  },
+  {
+    "name":"io.netty.util.Recycler$DefaultHandle",
+    "fields":[{"name":"state"}]
+  },
+  {
+    "name":"io.netty.util.ReferenceCountUtil",
+    "queryAllDeclaredMethods":true
+  },
+  {
+    "name":"io.netty.util.concurrent.DefaultPromise",
+    "fields":[{"name":"result"}]
+  },
+  {
+    "name":"io.netty.util.concurrent.SingleThreadEventExecutor",
+    "fields":[{"name":"state"}, {"name":"threadProperties"}]
+  },
+  {
+    "name":"io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueColdProducerFields",
+    "fields":[{"name":"producerLimit"}]
+  },
+  {
+    "name":"io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueConsumerFields",
+    "fields":[{"name":"consumerIndex"}]
+  },
+  {
+    "name":"io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueProducerFields",
+    "fields":[{"name":"producerIndex"}]
+  },
+  {
+    "name":"io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueueConsumerIndexField",
+    "fields":[{"name":"consumerIndex"}]
+  },
+  {
+    "name":"io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueueProducerIndexField",
+    "fields":[{"name":"producerIndex"}]
+  },
+  {
+    "name":"io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueueProducerLimitField",
+    "fields":[{"name":"producerLimit"}]
+  },
+  {
+    "name":"io.vertx.core.eventbus.impl.EventBusImpl",
+    "fields":[{"name":"inboundInterceptors"}, {"name":"outboundInterceptors"}]
+  },
+  {
+    "name":"io.vertx.core.http.impl.Http1xOrH2CHandler",
+    "methods":[{"name":"channelRead","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] }]
+  },
+  {
+    "name":"io.vertx.core.http.impl.Http1xUpgradeToH2CHandler",
+    "methods":[{"name":"channelRead","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] }, {"name":"userEventTriggered","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] }]
+  },
+  {
+    "name":"io.vertx.core.http.impl.HttpServerWorker$1",
+    "methods":[{"name":"exceptionCaught","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Throwable"] }, {"name":"userEventTriggered","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] }]
+  },
+  {
+    "name":"io.vertx.core.http.impl.VertxHttp2ConnectionHandler",
+    "methods":[{"name":"channelInactive","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"channelRead","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] }, {"name":"channelReadComplete","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"exceptionCaught","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Throwable"] }, {"name":"userEventTriggered","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] }]
   },
   {
     "name":"io.vertx.core.http.impl.VertxHttpRequestDecoder"
@@ -29,19 +250,26 @@
     "name":"io.vertx.core.logging.SLF4JLogDelegateFactory"
   },
   {
+    "name":"io.vertx.core.net.impl.ChannelProvider$2"
+  },
+  {
     "name":"io.vertx.core.net.impl.ServerChannelLoadBalancer"
   },
   {
     "name":"io.vertx.core.net.impl.VertxHandler",
-    "methods":[
-      {"name":"channelInactive","parameterTypes":["io.netty.channel.ChannelHandlerContext"] },
-      {"name":"channelRead","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] },
-      {"name":"channelReadComplete","parameterTypes":["io.netty.channel.ChannelHandlerContext"] },
-      {"name":"channelWritabilityChanged","parameterTypes":["io.netty.channel.ChannelHandlerContext"] },
-      {"name":"close","parameterTypes":["io.netty.channel.ChannelHandlerContext","io.netty.channel.ChannelPromise"] },
-      {"name":"exceptionCaught","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Throwable"] },
-      {"name":"userEventTriggered","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] }
-    ]
+    "methods":[{"name":"channelInactive","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"channelRead","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] }, {"name":"channelReadComplete","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"channelWritabilityChanged","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"close","parameterTypes":["io.netty.channel.ChannelHandlerContext","io.netty.channel.ChannelPromise"] }, {"name":"exceptionCaught","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Throwable"] }, {"name":"userEventTriggered","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] }]
+  },
+  {
+    "name":"io.vertx.ext.web.impl.RoutingContextImpl",
+    "fields":[{"name":"handlerSeq"}]
+  },
+  {
+    "name":"io.vertx.ext.web.impl.RoutingContextImplBase",
+    "fields":[{"name":"currentRouteNextFailureHandlerIndex"}, {"name":"currentRouteNextHandlerIndex"}]
+  },
+  {
+    "name":"io.vertx.junit5.VertxExtension",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {
     "name":"java.lang.Class",
@@ -49,10 +277,7 @@
   },
   {
     "name":"java.lang.ProcessHandle",
-    "methods":[
-      {"name":"current","parameterTypes":[] },
-      {"name":"pid","parameterTypes":[] }
-    ]
+    "methods":[{"name":"current","parameterTypes":[] }, {"name":"pid","parameterTypes":[] }]
   },
   {
     "name":"java.lang.Record",
@@ -61,7 +286,7 @@
   },
   {
     "name":"java.lang.Thread",
-    "methods":[{"name":"isVirtual","parameterTypes":[] }]
+    "fields":[{"name":"threadLocalRandomProbe"}]
   },
   {
     "name":"java.lang.management.ManagementFactory",
@@ -77,14 +302,18 @@
   },
   {
     "name":"java.lang.reflect.RecordComponent",
-    "methods":[
-      {"name":"getName","parameterTypes":[] },
-      {"name":"getType","parameterTypes":[] }
-    ]
+    "methods":[{"name":"getName","parameterTypes":[] }, {"name":"getType","parameterTypes":[] }]
+  },
+  {
+    "name":"java.net.SocketOption"
+  },
+  {
+    "name":"java.net.StandardSocketOptions",
+    "fields":[{"name":"IP_MULTICAST_IF"}, {"name":"IP_MULTICAST_LOOP"}, {"name":"IP_MULTICAST_TTL"}]
   },
   {
     "name":"java.nio.Bits",
-    "fields":[{"name":"UNALIGNED"}]
+    "methods":[{"name":"unaligned","parameterTypes":[] }]
   },
   {
     "name":"java.nio.Buffer",
@@ -99,18 +328,103 @@
     "methods":[{"name":"<init>","parameterTypes":["long","int"] }]
   },
   {
+    "name":"java.nio.channels.NetworkChannel",
+    "methods":[{"name":"getOption","parameterTypes":["java.net.SocketOption"] }, {"name":"setOption","parameterTypes":["java.net.SocketOption","java.lang.Object"] }]
+  },
+  {
     "name":"java.nio.channels.spi.SelectorProvider",
-    "methods":[
-      {"name":"openServerSocketChannel","parameterTypes":["java.net.ProtocolFamily"] },
-      {"name":"openSocketChannel","parameterTypes":["java.net.ProtocolFamily"] }
-    ]
+    "methods":[{"name":"openServerSocketChannel","parameterTypes":["java.net.ProtocolFamily"] }, {"name":"openSocketChannel","parameterTypes":["java.net.ProtocolFamily"] }]
+  },
+  {
+    "name":"java.security.AlgorithmParametersSpi"
+  },
+  {
+    "name":"java.security.KeyStoreSpi"
   },
   {
     "name":"java.security.SecureRandomParameters"
   },
   {
+    "name":"java.util.concurrent.ForkJoinTask",
+    "fields":[{"name":"aux"}, {"name":"status"}]
+  },
+  {
+    "name":"java.util.concurrent.atomic.AtomicBoolean",
+    "fields":[{"name":"value"}]
+  },
+  {
+    "name":"java.util.concurrent.atomic.AtomicReference",
+    "fields":[{"name":"value"}]
+  },
+  {
+    "name":"java.util.concurrent.atomic.Striped64",
+    "fields":[{"name":"base"}, {"name":"cellsBusy"}]
+  },
+  {
+    "name":"java.util.concurrent.atomic.Striped64$Cell",
+    "fields":[{"name":"value"}]
+  },
+  {
+    "name":"javax.security.auth.x500.X500Principal",
+    "fields":[{"name":"thisX500Name"}],
+    "methods":[{"name":"<init>","parameterTypes":["sun.security.x509.X500Name"] }]
+  },
+  {
     "name":"jdk.internal.misc.Unsafe",
     "methods":[{"name":"getUnsafe","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.AppTest",
+    "allDeclaredFields":true,
+    "allDeclaredClasses":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllPublicMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"printAllHelp","parameterTypes":[] }, {"name":"run","parameterTypes":[] }, {"name":"runWithHelp","parameterTypes":[] }, {"name":"runWithHelp1","parameterTypes":[] }, {"name":"runWithNoName","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.BaseTest",
+    "allDeclaredFields":true,
+    "allDeclaredClasses":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllPublicMethods":true,
+    "methods":[{"name":"setup","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.LoggerFactoryTest",
+    "allDeclaredFields":true,
+    "allDeclaredClasses":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllPublicMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"error","parameterTypes":[] }, {"name":"info","parameterTypes":[] }, {"name":"setup","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.ToolName",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true
+  },
+  {
+    "name":"net.cofcool.toolbox.ToolTest",
+    "allDeclaredFields":true,
+    "allDeclaredClasses":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllPublicMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"args","parameterTypes":[] }, {"name":"argsAlias","parameterTypes":[] }, {"name":"argsWithConfig","parameterTypes":[] }, {"name":"toHelpString","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.ClippingsToMd",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.ClippingsToMdTest",
+    "allDeclaredFields":true,
+    "allDeclaredClasses":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllPublicMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"run","parameterTypes":[] }, {"name":"runWithMrexpt","parameterTypes":[] }]
   },
   {
     "name":"net.cofcool.toolbox.internal.Converts",
@@ -158,20 +472,65 @@
     "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.Converts"] }]
   },
   {
+    "name":"net.cofcool.toolbox.internal.ConvertsTest",
+    "allDeclaredFields":true,
+    "allDeclaredClasses":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllPublicMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"base64","parameterTypes":[] }, {"name":"exception","parameterTypes":[] }, {"name":"hdate","parameterTypes":[] }, {"name":"lower","parameterTypes":[] }, {"name":"md5","parameterTypes":[] }, {"name":"now","parameterTypes":[] }, {"name":"random","parameterTypes":[] }, {"name":"replace","parameterTypes":[] }, {"name":"runPipeline","parameterTypes":[] }, {"name":"timesp","parameterTypes":[] }, {"name":"upper","parameterTypes":[] }, {"name":"url","parameterTypes":[] }]
+  },
+  {
     "name":"net.cofcool.toolbox.internal.DirWebServer",
     "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.DirWebServerTest",
+    "allDeclaredFields":true,
+    "allDeclaredClasses":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllPublicMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"get","parameterTypes":[] }, {"name":"post","parameterTypes":[] }, {"name":"startServer","parameterTypes":[] }]
   },
   {
     "name":"net.cofcool.toolbox.internal.FileNameFormatter",
     "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {
+    "name":"net.cofcool.toolbox.internal.FileNameFormatterTest",
+    "allDeclaredFields":true,
+    "allDeclaredClasses":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllPublicMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"printInnerHelp","parameterTypes":[] }, {"name":"run","parameterTypes":[] }, {"name":"runWithDate","parameterTypes":[] }, {"name":"runWithDeepDirectories","parameterTypes":[] }, {"name":"runWithDelete","parameterTypes":[] }, {"name":"runWithDest","parameterTypes":[] }, {"name":"runWithIgnore","parameterTypes":[] }, {"name":"runWithReplace","parameterTypes":[] }, {"name":"runWithReplaceExt","parameterTypes":[] }, {"name":"runWithStart","parameterTypes":[] }, {"name":"runWithUrlencoded","parameterTypes":[] }]
+  },
+  {
     "name":"net.cofcool.toolbox.internal.GitCommitsToChangelog",
     "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {
+    "name":"net.cofcool.toolbox.internal.GitCommitsToChangelogTest",
+    "allDeclaredFields":true,
+    "allDeclaredClasses":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllPublicMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"run","parameterTypes":[] }, {"name":"runWithFull","parameterTypes":[] }, {"name":"runWithLogId","parameterTypes":[] }, {"name":"runWithLogPath","parameterTypes":[] }, {"name":"runWithNoTag","parameterTypes":[] }, {"name":"runWithStyle","parameterTypes":[] }, {"name":"runWithTag","parameterTypes":[] }, {"name":"runWithUser","parameterTypes":[] }, {"name":"style","parameterTypes":[] }]
+  },
+  {
     "name":"net.cofcool.toolbox.internal.JsonToPojo",
     "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.JsonToPojoTest",
+    "allDeclaredFields":true,
+    "allDeclaredClasses":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllPublicMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"run","parameterTypes":[] }, {"name":"runToClass","parameterTypes":[] }, {"name":"runWithInput","parameterTypes":[] }]
   },
   {
     "name":"net.cofcool.toolbox.internal.LinkCovertTool",
@@ -182,29 +541,46 @@
     "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {
+    "name":"net.cofcool.toolbox.internal.ShellStarterTest",
+    "allDeclaredFields":true,
+    "allDeclaredClasses":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllPublicMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"run","parameterTypes":[] }]
+  },
+  {
     "name":"net.cofcool.toolbox.internal.SimpleNote",
     "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {
-    "name":"net.cofcool.toolbox.internal.ClippingsToMd",
-    "methods":[{"name":"<init>","parameterTypes":[] }]
+    "name":"net.cofcool.toolbox.internal.SimpleNoteTest",
+    "allDeclaredFields":true,
+    "allDeclaredClasses":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllPublicMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"run","parameterTypes":[] }]
   },
   {
     "name":"net.cofcool.toolbox.internal.TrelloToLogseqImporter",
     "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {
+    "name":"net.cofcool.toolbox.internal.TrelloToLogseqImporterTest",
+    "allDeclaredFields":true,
+    "allDeclaredClasses":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllPublicMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"run","parameterTypes":[] }, {"name":"runWithTitleToPage","parameterTypes":[] }]
+  },
+  {
     "name":"net.cofcool.toolbox.internal.simplenote.NoteRepository$Note",
     "allDeclaredFields":true,
     "queryAllDeclaredMethods":true,
     "queryAllDeclaredConstructors":true,
-    "methods":[
-      {"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","java.time.LocalDateTime","net.cofcool.toolbox.internal.simplenote.NoteRepository$NoteState"] },
-      {"name":"content","parameterTypes":[] },
-      {"name":"date","parameterTypes":[] },
-      {"name":"id","parameterTypes":[] },
-      {"name":"state","parameterTypes":[] }
-    ]
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","java.time.LocalDateTime","net.cofcool.toolbox.internal.simplenote.NoteRepository$NoteState"] }, {"name":"content","parameterTypes":[] }, {"name":"date","parameterTypes":[] }, {"name":"id","parameterTypes":[] }, {"name":"state","parameterTypes":[] }]
   },
   {
     "name":"net.cofcool.toolbox.internal.simplenote.NoteRepository$NoteState",
@@ -212,30 +588,13 @@
     "queryAllDeclaredMethods":true
   },
   {
-    "name":"sun.misc.Unsafe",
-    "fields":[{"name":"theUnsafe"}],
-    "methods":[
-      {"name":"copyMemory","parameterTypes":["java.lang.Object","long","java.lang.Object","long","long"] },
-      {"name":"getAndAddLong","parameterTypes":["java.lang.Object","long","long"] },
-      {"name":"getAndSetObject","parameterTypes":["java.lang.Object","long","java.lang.Object"] },
-      {"name":"invokeCleaner","parameterTypes":["java.nio.ByteBuffer"] },
-      {"name":"storeFence","parameterTypes":[] }
-    ]
-  },
-  {
-    "name":"sun.nio.ch.SelectorImpl",
-    "fields":[
-      {"name":"publicSelectedKeys"},
-      {"name":"selectedKeys"}
-    ]
-  },
-  {
-    "name":"sun.security.provider.NativePRNG",
-    "methods":[{"name":"<init>","parameterTypes":[] }]
-  },
-  {
-    "name":"sun.security.provider.SHA",
-    "methods":[{"name":"<init>","parameterTypes":[] }]
+    "name":"net.cofcool.toolbox.internal.simplenote.NoteVerticleTest",
+    "allDeclaredFields":true,
+    "allDeclaredClasses":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllPublicMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"deployVerticle","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"list","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"verticleDeployed","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }]
   },
   {
     "name":"net.cofcool.toolbox.internal.trello.ActionsItem",
@@ -677,5 +1036,178 @@
     "allDeclaredFields":true,
     "queryAllDeclaredMethods":true,
     "queryAllDeclaredConstructors":true
+  },
+  {
+    "name":"net.cofcool.toolbox.runner.WebRunnerTest",
+    "allDeclaredFields":true,
+    "allDeclaredClasses":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllPublicMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"deployVerticle","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"reqConverts","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"reqHelp","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"reqJson2POJO","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"reqResource","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"reqTrelloLogseqImporter","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"reqUpload","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"run","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"tools","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }]
+  },
+  {
+    "name":"org.apache.maven.surefire.junitplatform.JUnitPlatformProvider",
+    "methods":[{"name":"<init>","parameterTypes":["org.apache.maven.surefire.providerapi.ProviderParameters"] }]
+  },
+  {
+    "name":"org.apiguardian.api.API",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"org.junit.jupiter.api.Test",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"org.junit.jupiter.api.TestInstance",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"org.junit.jupiter.api.extension.ExtendWith",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"org.junit.jupiter.api.io.TempDir",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"org.junit.platform.commons.annotation.Testable",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"sun.misc.Unsafe",
+    "fields":[{"name":"theUnsafe"}],
+    "methods":[{"name":"copyMemory","parameterTypes":["java.lang.Object","long","java.lang.Object","long","long"] }, {"name":"getAndAddLong","parameterTypes":["java.lang.Object","long","long"] }, {"name":"getAndSetObject","parameterTypes":["java.lang.Object","long","java.lang.Object"] }, {"name":"invokeCleaner","parameterTypes":["java.nio.ByteBuffer"] }, {"name":"storeFence","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.misc.VM"
+  },
+  {
+    "name":"sun.nio.ch.SelectorImpl",
+    "fields":[{"name":"publicSelectedKeys"}, {"name":"selectedKeys"}]
+  },
+  {
+    "name":"sun.security.pkcs12.PKCS12KeyStore",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.pkcs12.PKCS12KeyStore$DualFormatPKCS12",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.provider.DSA$SHA224withDSA",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.provider.DSA$SHA256withDSA",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.provider.MD5",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.provider.NativePRNG",
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"<init>","parameterTypes":["java.security.SecureRandomParameters"] }]
+  },
+  {
+    "name":"sun.security.provider.SHA",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.provider.SHA2$SHA224",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.provider.SHA2$SHA256",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.provider.SHA5$SHA384",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.provider.SHA5$SHA512",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.provider.X509Factory",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.rsa.PSSParameters",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.rsa.RSAKeyFactory$Legacy",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.rsa.RSAPSSSignature",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.rsa.RSASignature$SHA224withRSA",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.ssl.KeyManagerFactoryImpl$SunX509",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.ssl.SSLContextImpl$DefaultSSLContext",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.ssl.TrustManagerFactoryImpl$PKIXFactory",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.x509.AuthorityInfoAccessExtension",
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+  },
+  {
+    "name":"sun.security.x509.AuthorityKeyIdentifierExtension",
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+  },
+  {
+    "name":"sun.security.x509.BasicConstraintsExtension",
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+  },
+  {
+    "name":"sun.security.x509.CRLDistributionPointsExtension",
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+  },
+  {
+    "name":"sun.security.x509.CertificatePoliciesExtension",
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+  },
+  {
+    "name":"sun.security.x509.ExtendedKeyUsageExtension",
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+  },
+  {
+    "name":"sun.security.x509.IssuerAlternativeNameExtension",
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+  },
+  {
+    "name":"sun.security.x509.KeyUsageExtension",
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+  },
+  {
+    "name":"sun.security.x509.NetscapeCertTypeExtension",
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+  },
+  {
+    "name":"sun.security.x509.PrivateKeyUsageExtension",
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+  },
+  {
+    "name":"sun.security.x509.SubjectAlternativeNameExtension",
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+  },
+  {
+    "name":"sun.security.x509.SubjectKeyIdentifierExtension",
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
   }
 ]

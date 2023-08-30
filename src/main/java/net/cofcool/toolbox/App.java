@@ -58,8 +58,8 @@ public class App {
             }
         });
 
-        var runner = RUNNER_MAP.get(RunnerType.valueOf(pArgs.readArg("mode").val()));
         try {
+            var runner = RUNNER_MAP.get(RunnerType.valueOf(pArgs.readArg("mode").val()));
             notRun.set(!runner.run(pArgs));
         } catch (Exception e) {
             notRun.set(false);

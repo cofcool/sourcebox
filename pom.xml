@@ -22,7 +22,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>20</maven.compiler.source>
     <maven.compiler.target>20</maven.compiler.target>
-    <graalvm-native.version>0.9.24</graalvm-native.version>
+    <graalvm-native.version>0.9.25</graalvm-native.version>
 
     <vertx.version>4.4.4</vertx.version>
     <junit-jupiter.version>5.9.1</junit-jupiter.version>
@@ -200,6 +200,7 @@
             <groupId>org.graalvm.buildtools</groupId>
             <artifactId>native-maven-plugin</artifactId>
             <version>${graalvm-native.version}</version>
+            <extensions>true</extensions>
             <executions>
               <execution>
                 <id>build-native</id>
@@ -211,6 +212,9 @@
             </executions>
             <configuration>
               <skip>false</skip>
+              <agent>
+                <enabled>true</enabled>
+              </agent>
               <imageName>my-toolbox</imageName>
               <buildArgs>
                 --no-fallback

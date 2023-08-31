@@ -11,9 +11,11 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import lombok.CustomLog;
+import net.cofcool.toolbox.ToolName;
 import net.cofcool.toolbox.internal.simplenote.NoteRepository.Note;
 import net.cofcool.toolbox.internal.simplenote.NoteRepository.NoteState;
 import net.cofcool.toolbox.util.JsonUtil;
+import net.cofcool.toolbox.util.VertxDeployer;
 
 @CustomLog
 public class NoteService {
@@ -24,10 +26,10 @@ public class NoteService {
     public NoteService(Vertx vertx) {
         this.vertx = vertx;
 
-        var config = vertx.getOrCreateContext().config();
+        var config = VertxDeployer.getSharedArgs(ToolName.note.name(), vertx);
         var path = Path.of(
-                config.getString(NoteConfig.PATH_KEY, NoteConfig.PATH_VAL),
-                config.getString(NoteConfig.FILE_KEY, NoteConfig.FILE_NAME)
+                config.readArg(NoteConfig.PATH_KEY).val(),
+                config.readArg(NoteConfig.FILE_KEY).val()
             )
             .toAbsolutePath().toString();
         noteRepository = new FileRepository(path, vertx);

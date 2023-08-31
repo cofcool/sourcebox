@@ -100,7 +100,7 @@ Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到
 
 * filepath，文件保存路径，默认为 `/tmp`
 * filename，文件名称，默认为 `note.json`
-* port，监听端口，默认为 `8888`
+* port，监听端口，默认为 `38888`
 
 # 致谢
 

@@ -23,41 +23,36 @@ import net.cofcool.toolbox.Tool.RunnerType;
 import net.cofcool.toolbox.ToolContext;
 import net.cofcool.toolbox.ToolRunner;
 import net.cofcool.toolbox.WebTool;
+import net.cofcool.toolbox.util.VertxDeployer;
 import net.cofcool.toolbox.util.VertxUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * config listen port by system env: {@link #PORT_KEY}
  */
 @CustomLog
-public class WebRunner extends AbstractVerticle implements ToolRunner {
+public class WebRunner extends AbstractVerticle implements ToolRunner, VertxDeployer {
 
-    public static final String PORT_KEY = "toolbox.web.port";
-
-    private Args args;
+    public static final String PORT_KEY = "web.port";
+    public static final int PORT_VAL = 38080;
 
     @Override
     public boolean run(Args args) throws Exception {
-        run(Vertx.vertx(), args).onComplete(VertxUtils.logResult(log));
+        Vertx v = Vertx.vertx();
+        deploy(v, null, args).onComplete(VertxUtils.logResult(log, e -> v.close()));
         return true;
-    }
-
-    Future<String> run(Vertx vertx, Args args) {
-        this.args = args;
-        return vertx.deployVerticle(this);
     }
 
     @Override
     public void start(Promise<Void> startPromise) throws Exception {
-        var port = System.getProperty(PORT_KEY);
+        var port = System.getProperty(PORT_KEY, PORT_VAL + "");
         VertxUtils
             .initHttpServer(
                 vertx,
                 startPromise,
-                Routers.build(vertx, args),
-                StringUtils.isEmpty(port) ? 8080 : Integer.parseInt(port),
+                Routers.build(vertx),
+                Integer.parseInt(port),
                 log
             );
     }
@@ -101,7 +96,7 @@ public class WebRunner extends AbstractVerticle implements ToolRunner {
 
     private static class Routers {
 
-        public static Router build(Vertx vertx, Args globalArgs) {
+        public static Router build(Vertx vertx) {
             var router = Router.router(vertx);
             var tools = App.supportTools(RunnerType.WEB);
 
@@ -142,17 +137,19 @@ public class WebRunner extends AbstractVerticle implements ToolRunner {
                 null
             );
 
+            var globalConfig = VertxDeployer.getSharedArgs(WebRunner.class.getSimpleName(), vertx);
             for (Tool tool : tools) {
                 var path = "/" + tool.name().name();
                 if (tool instanceof WebTool) {
+                    VertxDeployer.sharedArgs(vertx, tool.name().name(), tool.config().copyConfigFrom(globalConfig));
                     router.route(path + "/*").subRouter(((WebTool) tool).router(vertx));
                 } else {
                     router.post(path).respond(r -> {
                         var args = new Args();
                         r.body().asJsonObject().forEach(e -> args.arg(e.getKey(), (String) e.getValue()));
                         var webToolContext = new WebToolContext();
-                        args.copyConfigFrom(globalArgs)
-                            .copyConfigFrom(tool.config())
+                        args.copyConfigFrom(tool.config())
+                            .copyConfigFrom(globalConfig)
                             .context(webToolContext);
 
                         try {

@@ -35,9 +35,16 @@ public final class VertxUtils {
     }
 
     public static <T> Handler<AsyncResult<T>> logResult(Logger log) {
+        return logResult(log, null);
+    }
+
+    public static <T> Handler<AsyncResult<T>> logResult(Logger log, Handler<Throwable> handler) {
         return a -> {
             if (a.failed()) {
                 log.error("Server run error", a.cause());
+                if (handler != null) {
+                    handler.handle(a.cause());
+                }
             } else {
                 log.info("Server run result is " + a.result());
             }

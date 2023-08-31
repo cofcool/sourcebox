@@ -1,17 +1,21 @@
 package net.cofcool.toolbox.internal;
 
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
+import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
 import java.util.EnumSet;
-import java.util.HashMap;
-import net.cofcool.toolbox.Tool;
+import lombok.CustomLog;
 import net.cofcool.toolbox.ToolName;
 import net.cofcool.toolbox.WebTool;
 import net.cofcool.toolbox.internal.simplenote.NoteConfig;
 import net.cofcool.toolbox.internal.simplenote.NoteIndex;
-import net.cofcool.toolbox.internal.simplenote.NoteVerticle;
-import net.cofcool.toolbox.util.JsonUtil;
+import net.cofcool.toolbox.util.VertxDeployer;
+import net.cofcool.toolbox.util.VertxUtils;
 
+@CustomLog
 public class SimpleNote implements WebTool {
 
     @Override
@@ -21,11 +25,15 @@ public class SimpleNote implements WebTool {
 
     @Override
     public void run(Args args) throws Exception {
-        var json = new HashMap<String, Object>();
-        args.getArgVal(NoteConfig.PORT_KEY).ifPresent(k -> json.put(NoteConfig.PORT_KEY, Integer.valueOf(k)));
-        args.getArgVal(NoteConfig.PATH_KEY).ifPresent(k -> json.put(NoteConfig.PATH_KEY, k));
-        args.getArgVal(NoteConfig.FILE_KEY).ifPresent(k -> json.put(NoteConfig.FILE_KEY, k));
-        NoteVerticle.start(JsonUtil.toJson(json));
+        deploy(args);
+    }
+
+    @Override
+    public Future<String> deploy(Vertx vertx, Verticle verticle, Args args) {
+        if (verticle == null) {
+            verticle = new NoteVerticle();
+        }
+        return WebTool.super.deploy(vertx, verticle, args);
     }
 
     @Override
@@ -41,5 +49,21 @@ public class SimpleNote implements WebTool {
     @Override
     public Router router(Vertx vertx) {
         return new NoteIndex(vertx).router();
+    }
+
+    private static class NoteVerticle extends AbstractVerticle {
+
+        @Override
+        public void start(Promise<Void> startPromise) throws Exception {
+            VertxUtils
+                .initHttpServer(
+                    vertx,
+                    startPromise,
+                    new NoteIndex(vertx).router(),
+                    Integer.parseInt(VertxDeployer.getSharedArgs(ToolName.note.name(), vertx).readArg(NoteConfig.PORT_KEY).val()),
+                    log
+                );
+        }
+
     }
 }

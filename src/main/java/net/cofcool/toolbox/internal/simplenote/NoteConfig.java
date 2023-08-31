@@ -4,13 +4,14 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.eventbus.MessageCodec;
 import io.vertx.core.json.Json;
 import net.cofcool.toolbox.internal.simplenote.NoteRepository.Note;
+import net.cofcool.toolbox.runner.WebRunner;
 
 public interface NoteConfig {
     String PORT_KEY = "port";
-    int PORT_VAL = 8888;
+    int PORT_VAL = WebRunner.PORT_VAL;
 
     String PATH_KEY = "filepath";
-    String PATH_VAL = "/tmp";
+    String PATH_VAL = "./";
 
     String FILE_KEY = "filename";
     String FILE_NAME = "notes.json";

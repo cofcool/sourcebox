@@ -1,5 +1,6 @@
 package net.cofcool.toolbox;
 
+import io.vertx.core.shareddata.Shareable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,7 +27,8 @@ public interface Tool {
         return LoggerFactory.getLogger(getClass());
     }
 
-    record Arg(String key, String val, String desc, boolean required, String demo) {
+    record Arg(String key, String val, String desc, boolean required, String demo) implements
+        Shareable {
 
         public boolean isPresent() {
             return val != null;
@@ -64,7 +66,7 @@ public interface Tool {
 
     }
 
-    class Args extends LinkedHashMap<String, Arg> {
+    class Args extends LinkedHashMap<String, Arg> implements Shareable {
 
         private final Map<String, Arg> aliases = new HashMap<>();
 

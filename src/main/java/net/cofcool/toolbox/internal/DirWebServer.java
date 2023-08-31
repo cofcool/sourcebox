@@ -3,17 +3,21 @@ package net.cofcool.toolbox.internal;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
+import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.FileSystemAccess;
 import io.vertx.ext.web.handler.LoggerHandler;
 import io.vertx.ext.web.handler.StaticHandler;
+import java.io.IOException;
 import java.nio.file.Path;
-import lombok.AllArgsConstructor;
+import java.nio.file.Paths;
 import lombok.CustomLog;
 import net.cofcool.toolbox.ToolName;
 import net.cofcool.toolbox.WebTool;
+import net.cofcool.toolbox.runner.WebRunner;
+import net.cofcool.toolbox.util.VertxDeployer;
 import net.cofcool.toolbox.util.VertxUtils;
 import org.apache.commons.io.FilenameUtils;
 
@@ -27,29 +31,38 @@ public class DirWebServer implements WebTool {
 
     @Override
     public void run(Args args) throws Exception {
-        var port = Integer.parseInt(args.readArg("port").val());
-        var rootPath = Path.of(args.readArg("root").val()).toRealPath();
+        deploy(null, null, args).onComplete(VertxUtils.logResult(log));
+    }
 
-        Vertx.vertx()
-            .deployVerticle(new DirVerticle(port, rootPath.toString()))
-            .onComplete(VertxUtils.logResult(log));
+    @Override
+    public Future<String> deploy(Vertx vertx, Verticle verticle, Args args) {
+        if (verticle == null) {
+            verticle = new DirVerticle();
+        }
+        return WebTool.super.deploy(vertx, verticle, args);
     }
 
     @Override
     public Args config() {
         return new Args()
-            .arg(new Arg("port", "8080", "web server listen port", false, null))
+            .arg(new Arg("port", WebRunner.PORT_VAL + "", "web server listen port", false, null))
             .arg(new Arg("root", System.getProperty("user.dir"), "web server root directory", false, null))
             .alias("dir", name(), "root", null);
     }
 
     @Override
     public Router router(Vertx vertx) {
-        return router(vertx, config().readArg("root").val());
+        return buildRouter(vertx);
     }
 
-    private static Router router(Vertx vertx, String path) {
+    private static Router buildRouter(Vertx vertx) {
         var router = Router.router(vertx);
+        String path;
+        try {
+            path = Paths.get(VertxDeployer.getSharedArgs(ToolName.dirWebServer.name(), vertx).readArg("root").val()).toRealPath().toString();
+        } catch (IOException e) {
+            throw new RuntimeException("Read path error", e);
+        }
 
         router.route().handler(LoggerHandler.create());
         router.get().handler(
@@ -84,16 +97,18 @@ public class DirWebServer implements WebTool {
         return router;
     }
 
-    @AllArgsConstructor
     private static class DirVerticle extends AbstractVerticle {
-
-        private final int port;
-        private final String path;
 
         @Override
         public void start(Promise<Void> startPromise) throws Exception {
             VertxUtils
-                .initHttpServer(vertx, startPromise, router(vertx, path), port, log);
+                .initHttpServer(
+                    vertx,
+                    startPromise,
+                    buildRouter(vertx),
+                    Integer.parseInt(VertxDeployer.getSharedArgs(ToolName.dirWebServer.name(), vertx).readArg("port").val()),
+                    log
+                );
         }
     }
 

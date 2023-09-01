@@ -51,6 +51,9 @@ public class CLIRunner implements ToolRunner {
         @Override
         @SneakyThrows
         public ToolContext write(String name, String in) {
+            if (name == null) {
+                return write(in);
+            }
             var file = new File(name);
             FileUtils.forceMkdirParent(file);
             FileUtils.write(file, in, StandardCharsets.UTF_8);

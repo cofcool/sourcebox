@@ -63,6 +63,9 @@ public class WebRunner extends AbstractVerticle implements ToolRunner, VertxDepl
 
         @Override
         public ToolContext write(String name, String in) {
+            if (name == null) {
+                name = ToolContext.randomName();
+            }
             out.put(name, in);
             return this;
         }
@@ -87,8 +90,8 @@ public class WebRunner extends AbstractVerticle implements ToolRunner, VertxDepl
                     log.error("Write zip file error", e);
                     throw new RuntimeException(e);
                 }
+                log.info("Generate file " + name + " ok");
             }
-            log.info("Generate file " + name + " ok");
             return JsonObject.of("result", name);
         }
 

@@ -5,6 +5,7 @@ import net.cofcool.toolbox.internal.Converts;
 import net.cofcool.toolbox.internal.DirWebServer;
 import net.cofcool.toolbox.internal.FileNameFormatter;
 import net.cofcool.toolbox.internal.GitCommitsToChangelog;
+import net.cofcool.toolbox.internal.JsonFormatter;
 import net.cofcool.toolbox.internal.JsonToPojo;
 import net.cofcool.toolbox.internal.LinkCovertTool;
 import net.cofcool.toolbox.internal.ShellStarter;
@@ -21,7 +22,8 @@ public enum ToolName {
     json2POJO("convert json structure to POJO class", JsonToPojo.class),
     dirWebServer("start a simple web directory server", DirWebServer.class),
     rename("rename file conveniently", FileNameFormatter.class),
-    note("simple web notebook", SimpleNote.class);
+    note("simple web notebook", SimpleNote.class),
+    json("make json more readable", JsonFormatter.class);
 
     private final String desc;
     private final Class<? extends Tool> tool;

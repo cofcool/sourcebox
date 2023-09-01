@@ -2,6 +2,8 @@
 
 使用 Java(最低要求 JDK 19, 推荐使用 `GraalVM`), Python 等语言实现, 运行 `./mytool.sh` 查看帮助信息, `--debug=true` 打开调试模式, `--help={COMMAND}` 查看帮助信息, 如 `--help=converts`
 
+部分命令支持别名， 如 `--tool=converts --cmd=random --in=test` 的别名为 `--random=test`，具体可查看帮助文档
+
 项目构建:
 
 * `mvn package` 构建 jar 包
@@ -98,9 +100,13 @@ Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到
 
 配置:
 
-* filepath，文件保存路径，默认为 `/tmp`
+* filepath，文件保存路径，默认为当前目录
 * filename，文件名称，默认为 `note.json`
-* port，监听端口，默认为 `38888`
+* port，监听端口，默认为 `38080`
+
+# JSON 格式化
+
+使用: `./mytool.sh --tool=json [--json="{}] [--path=dmeo.json]"`
 
 # 致谢
 

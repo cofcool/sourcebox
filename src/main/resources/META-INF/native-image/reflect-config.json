@@ -361,10 +361,6 @@
     "fields":[{"name":"base"}, {"name":"cellsBusy"}]
   },
   {
-    "name":"java.util.concurrent.atomic.Striped64$Cell",
-    "fields":[{"name":"value"}]
-  },
-  {
     "name":"javax.security.auth.x500.X500Principal",
     "fields":[{"name":"thisX500Name"}],
     "methods":[{"name":"<init>","parameterTypes":["sun.security.x509.X500Name"] }]
@@ -491,7 +487,7 @@
     "queryAllDeclaredMethods":true,
     "queryAllPublicMethods":true,
     "queryAllDeclaredConstructors":true,
-    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"get","parameterTypes":[] }, {"name":"post","parameterTypes":[] }, {"name":"startServer","parameterTypes":[] }]
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"deployVerticle","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"get","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"post","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }]
   },
   {
     "name":"net.cofcool.toolbox.internal.FileNameFormatter",
@@ -518,6 +514,19 @@
     "queryAllPublicMethods":true,
     "queryAllDeclaredConstructors":true,
     "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"run","parameterTypes":[] }, {"name":"runWithFull","parameterTypes":[] }, {"name":"runWithLogId","parameterTypes":[] }, {"name":"runWithLogPath","parameterTypes":[] }, {"name":"runWithNoTag","parameterTypes":[] }, {"name":"runWithStyle","parameterTypes":[] }, {"name":"runWithTag","parameterTypes":[] }, {"name":"runWithUser","parameterTypes":[] }, {"name":"style","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.JsonFormatter",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.JsonFormatterTest",
+    "allDeclaredFields":true,
+    "allDeclaredClasses":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllPublicMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"runWithJson","parameterTypes":[] }, {"name":"runWithPath","parameterTypes":[] }, {"name":"runWithPrettyJson","parameterTypes":[] }, {"name":"runWithPrettyJson1","parameterTypes":[] }]
   },
   {
     "name":"net.cofcool.toolbox.internal.JsonToPojo",
@@ -560,7 +569,7 @@
     "queryAllDeclaredMethods":true,
     "queryAllPublicMethods":true,
     "queryAllDeclaredConstructors":true,
-    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"run","parameterTypes":[] }]
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"deployVerticle","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"list","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"run","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }]
   },
   {
     "name":"net.cofcool.toolbox.internal.TrelloToLogseqImporter",
@@ -574,27 +583,6 @@
     "queryAllPublicMethods":true,
     "queryAllDeclaredConstructors":true,
     "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"run","parameterTypes":[] }, {"name":"runWithTitleToPage","parameterTypes":[] }]
-  },
-  {
-    "name":"net.cofcool.toolbox.internal.simplenote.NoteRepository$Note",
-    "allDeclaredFields":true,
-    "queryAllDeclaredMethods":true,
-    "queryAllDeclaredConstructors":true,
-    "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","java.time.LocalDateTime","net.cofcool.toolbox.internal.simplenote.NoteRepository$NoteState"] }, {"name":"content","parameterTypes":[] }, {"name":"date","parameterTypes":[] }, {"name":"id","parameterTypes":[] }, {"name":"state","parameterTypes":[] }]
-  },
-  {
-    "name":"net.cofcool.toolbox.internal.simplenote.NoteRepository$NoteState",
-    "allDeclaredFields":true,
-    "queryAllDeclaredMethods":true
-  },
-  {
-    "name":"net.cofcool.toolbox.internal.simplenote.NoteVerticleTest",
-    "allDeclaredFields":true,
-    "allDeclaredClasses":true,
-    "queryAllDeclaredMethods":true,
-    "queryAllPublicMethods":true,
-    "queryAllDeclaredConstructors":true,
-    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"deployVerticle","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"list","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"verticleDeployed","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }]
   },
   {
     "name":"net.cofcool.toolbox.internal.trello.ActionsItem",
@@ -1044,7 +1032,7 @@
     "queryAllDeclaredMethods":true,
     "queryAllPublicMethods":true,
     "queryAllDeclaredConstructors":true,
-    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"deployVerticle","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"reqConverts","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"reqHelp","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"reqJson2POJO","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"reqResource","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"reqTrelloLogseqImporter","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"reqUpload","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"run","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"tools","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }]
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"deployVerticle","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"reqConverts","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"reqHelp","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"reqJson","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"reqJson2POJO","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"reqResource","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"reqTrelloLogseqImporter","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"reqUpload","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"run","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"tools","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }]
   },
   {
     "name":"org.apache.maven.surefire.junitplatform.JUnitPlatformProvider",
@@ -1056,10 +1044,6 @@
   },
   {
     "name":"org.junit.jupiter.api.Test",
-    "queryAllPublicMethods":true
-  },
-  {
-    "name":"org.junit.jupiter.api.TestInstance",
     "queryAllPublicMethods":true
   },
   {

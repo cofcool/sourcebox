@@ -31,7 +31,7 @@ public class DirWebServer implements WebTool {
 
     @Override
     public void run(Args args) throws Exception {
-        deploy(null, null, args).onComplete(VertxUtils.logResult(log));
+        deploy(args).onComplete(VertxUtils.logResult(log));
     }
 
     @Override

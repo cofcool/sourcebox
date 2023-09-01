@@ -13,8 +13,10 @@ import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import net.cofcool.toolbox.Tool.Args;
 import net.cofcool.toolbox.ToolName;
+import net.cofcool.toolbox.internal.JsonFormatterTest;
 import net.cofcool.toolbox.internal.JsonToPojoTest;
 import net.cofcool.toolbox.internal.TrelloToLogseqImporterTest;
+import net.cofcool.toolbox.internal.simplenote.NoteConfig;
 import net.cofcool.toolbox.util.VertxUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,7 +31,7 @@ class WebRunnerTest {
         System.setProperty("logging.debug", "true");
         System.setProperty("upload.dir", "target/file-uploads");
         new WebRunner()
-            .deploy(vertx, null, new Args())
+            .deploy(vertx, null, new Args().arg(ToolName.note.name() + "." + NoteConfig.PATH_KEY, "./target/"))
             .onComplete(testContext.succeeding(t -> testContext.completeNow()));
     }
 
@@ -74,6 +76,20 @@ class WebRunnerTest {
                 Assertions.assertEquals(200, r.statusCode());
                 Assertions.assertEquals("application/json", r.getHeader("Content-Type"));
                 Assertions.assertTrue(vertx.fileSystem().existsBlocking(r.bodyAsJsonObject().getString("result")));
+                testContext.completeNow();
+            })));
+    }
+
+    @Test
+    void reqJson(Vertx vertx, VertxTestContext testContext) {
+        WebClient.create(vertx)
+            .post( WebRunner.PORT_VAL, "127.0.0.1", "/" + ToolName.json.name())
+            .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
+            .sendJson(JsonObject.of("json", JsonFormatterTest.JSON_STR).toBuffer())
+            .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
+                Assertions.assertEquals(200, r.statusCode());
+                Assertions.assertEquals("application/json", r.getHeader("Content-Type"));
+                Assertions.assertNotNull(r.bodyAsJsonObject().getString("result"));
                 testContext.completeNow();
             })));
     }

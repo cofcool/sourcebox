@@ -106,7 +106,7 @@ Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到
 
 # JSON 格式化
 
-使用: `./mytool.sh --tool=json [--json="{}] [--path=dmeo.json]"`
+使用: `./mytool.sh --tool=json [--json='{}'] [--path=dmeo.json]`
 
 # 致谢
 

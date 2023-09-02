@@ -31,7 +31,12 @@ class WebRunnerTest {
         System.setProperty("logging.debug", "true");
         System.setProperty("upload.dir", "target/file-uploads");
         new WebRunner()
-            .deploy(vertx, null, new Args().arg(ToolName.note.name() + "." + NoteConfig.PATH_KEY, "./target/"))
+            .deploy(
+                vertx,
+                null,
+                new Args()
+                    .arg(ToolName.note.name() + "." + NoteConfig.PATH_KEY, "./target/")
+            )
             .onComplete(testContext.succeeding(t -> testContext.completeNow()));
     }
 

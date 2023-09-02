@@ -142,9 +142,14 @@ public class WebRunner extends AbstractVerticle implements ToolRunner, VertxDepl
 
             var globalConfig = VertxDeployer.getSharedArgs(WebRunner.class.getSimpleName(), vertx);
             for (Tool tool : tools) {
-                var path = "/" + tool.name().name();
+                String toolName = tool.name().name();
+                var path = "/" + toolName;
                 if (tool instanceof WebTool) {
-                    VertxDeployer.sharedArgs(vertx, tool.name().name(), tool.config().copyConfigFrom(globalConfig));
+                    VertxDeployer.sharedArgs(
+                        vertx,
+                        toolName,
+                        new Args().copyConfigFrom(globalConfig.removePrefix(toolName)).copyConfigFrom(tool.config())
+                    );
                     router.route(path + "/*").subRouter(((WebTool) tool).router(vertx));
                 } else {
                     router.post(path).respond(r -> {

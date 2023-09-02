@@ -21,6 +21,13 @@ class ToolTest {
     }
 
     @Test
+    void prefixArgs() {
+        Args args = new Args(new String[]{"--demo.tool=test", "--demo.cmd=md5"});
+        Assertions.assertEquals("test", args.readArg("demo.tool").val());
+        Assertions.assertEquals("md5", args.removePrefix("demo").readArg("cmd").val());
+    }
+
+    @Test
     void argsAlias() {
         var args = new Args(new String[]{"--md5=sas", "--md6=111"});
         var tool = new Tool() {

@@ -186,6 +186,22 @@ public interface Tool {
             return this;
         }
 
+        public Args removePrefix(String prefix) {
+            var newRags =  new Args();
+            forEach((k, v) -> {
+                if (k.startsWith(prefix)) {
+                    newRags.arg(new Arg(k.substring(prefix.length() + 1), v.val, v.desc, v.required, v.demo));
+                } else {
+                    newRags.arg(v);
+                }
+            });
+
+            return newRags;
+        }
+
+        /**
+         * only copy that does not exist
+         */
         public Args copyConfigFrom(Args config) throws IllegalArgumentException {
             var error = new ArrayList<Arg>();
             for (Arg arg : config.values()) {

@@ -10,6 +10,7 @@ import net.cofcool.toolbox.ToolName;
 
 public class JsonFormatter implements Tool {
 
+    @SuppressWarnings("rawtypes")
     private static final Class<LinkedHashMap> OBJ_TYPE = LinkedHashMap.class;
     private final ObjectMapper objectMapper = init();
 

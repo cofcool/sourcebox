@@ -361,6 +361,10 @@
     "fields":[{"name":"base"}, {"name":"cellsBusy"}]
   },
   {
+    "name":"java.util.concurrent.atomic.Striped64$Cell",
+    "fields":[{"name":"value"}]
+  },
+  {
     "name":"javax.security.auth.x500.X500Principal",
     "fields":[{"name":"thisX500Name"}],
     "methods":[{"name":"<init>","parameterTypes":["sun.security.x509.X500Name"] }]
@@ -407,7 +411,7 @@
     "queryAllDeclaredMethods":true,
     "queryAllPublicMethods":true,
     "queryAllDeclaredConstructors":true,
-    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"args","parameterTypes":[] }, {"name":"argsAlias","parameterTypes":[] }, {"name":"argsWithConfig","parameterTypes":[] }, {"name":"toHelpString","parameterTypes":[] }]
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"args","parameterTypes":[] }, {"name":"argsAlias","parameterTypes":[] }, {"name":"argsWithConfig","parameterTypes":[] }, {"name":"prefixArgs","parameterTypes":[] }, {"name":"toHelpString","parameterTypes":[] }]
   },
   {
     "name":"net.cofcool.toolbox.internal.ClippingsToMd",
@@ -569,7 +573,7 @@
     "queryAllDeclaredMethods":true,
     "queryAllPublicMethods":true,
     "queryAllDeclaredConstructors":true,
-    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"deployVerticle","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"list","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"run","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }]
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"addNote","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"deployVerticle","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"list","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"run","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }]
   },
   {
     "name":"net.cofcool.toolbox.internal.TrelloToLogseqImporter",
@@ -583,6 +587,18 @@
     "queryAllPublicMethods":true,
     "queryAllDeclaredConstructors":true,
     "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"run","parameterTypes":[] }, {"name":"runWithTitleToPage","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.simplenote.NoteRepository$Note",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","java.time.LocalDateTime","net.cofcool.toolbox.internal.simplenote.NoteRepository$NoteState"] }, {"name":"content","parameterTypes":[] }, {"name":"date","parameterTypes":[] }, {"name":"id","parameterTypes":[] }, {"name":"state","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.simplenote.NoteRepository$NoteState",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true
   },
   {
     "name":"net.cofcool.toolbox.internal.trello.ActionsItem",

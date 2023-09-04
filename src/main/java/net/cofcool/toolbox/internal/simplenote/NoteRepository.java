@@ -28,7 +28,7 @@ public interface NoteRepository {
         NoteState state
     ) {
 
-        static Note init(String content) {
+        public static Note init(String content) {
             return new Note(UUID.randomUUID().toString(), content, LocalDateTime.now(), NoteState.NORMAL);
         }
 

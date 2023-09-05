@@ -56,6 +56,7 @@ public class JsonFormatter implements Tool {
             .arg(new Arg("json", null, "json string", false, "{}"))
             .arg(new Arg("path", null, "json file path", false, "./demo.json"))
             .arg(new Arg("pretty", "true", "", false, null))
+            .alias("json", name(), "path", null)
             .runnerTypes(EnumSet.of(RunnerType.CLI, RunnerType.WEB));
     }
 }

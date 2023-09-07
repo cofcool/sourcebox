@@ -97,7 +97,15 @@ public class App {
         logger.info("About: " + ABOUT);
         logger.info("Example: --tool=demo --path=tmp");
         logger.info("Help: --help={COMMAND}, like: --help=rename");
-        logger.info("Interface: --mode={CLI}, support: " + RUNNER_MAP.keySet());
+        logger.info("Interface: --mode={CLI}, support: "
+            + RUNNER_MAP.entrySet().stream()
+            .map(e ->
+                {
+                    String help = e.getValue().help();
+                    return e.getKey() + (help != null ? (": arguments: [" + help + "]") : "");
+                }
+                )
+            .collect(Collectors.joining("; ")));
         logger.info("Tools:\n    " + ALL_TOOLS.stream().map(Tool::name).map(ToolName::toString).collect(Collectors.joining("\n    ")));
     }
 }

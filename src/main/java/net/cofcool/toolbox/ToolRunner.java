@@ -6,4 +6,8 @@ public interface ToolRunner {
 
     boolean run(Args args) throws Exception;
 
+    default String help() {
+        return null;
+    }
+
 }

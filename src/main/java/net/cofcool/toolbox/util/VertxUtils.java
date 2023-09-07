@@ -10,11 +10,16 @@ import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.jackson.DatabindCodec;
+import io.vertx.ext.auth.User;
+import io.vertx.ext.auth.authentication.Credentials;
 import io.vertx.ext.web.FileUpload;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.BasicAuthHandler;
 import io.vertx.ext.web.handler.BodyHandler;
+import io.vertx.ext.web.handler.SessionHandler;
+import io.vertx.ext.web.sstore.SessionStore;
 import java.util.ArrayList;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -100,6 +105,19 @@ public final class VertxUtils {
                 });
                 return Future.succeededFuture(JsonObject.of("result", files, "error", err));
             });
+    }
+
+    public static Route basicAuth(Router router, Vertx vertx, Credentials realCredentials) {
+        return router.route()
+            .handler(SessionHandler.create(SessionStore.create(vertx)))
+            .handler(BasicAuthHandler.create((credentials, resultHandler) -> resultHandler.handle(Future.future(p -> {
+                try {
+                    realCredentials.checkValid(credentials);
+                    p.complete(User.fromName(credentials.getString("username")));
+                } catch (Exception e) {
+                    p.fail(e);
+                }
+            })), "web-toolbox"));
     }
 
 }

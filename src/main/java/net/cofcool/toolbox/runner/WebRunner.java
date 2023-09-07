@@ -3,8 +3,12 @@ package net.cofcool.toolbox.runner;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
+import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.auth.authentication.CredentialValidationException;
+import io.vertx.ext.auth.authentication.Credentials;
+import io.vertx.ext.auth.authentication.UsernamePasswordCredentials;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.LoggerHandler;
 import java.io.FileOutputStream;
@@ -29,13 +33,18 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 
 /**
- * config listen port by system env: {@link #PORT_KEY}
+ * config listen port: {@link #PORT_KEY}
  */
 @CustomLog
 public class WebRunner extends AbstractVerticle implements ToolRunner, VertxDeployer {
 
     public static final String PORT_KEY = "web.port";
+    public static final String USER_KEY = "web.username";
+    public static final String PASSWD_KEY = "web.password";
     public static final int PORT_VAL = 38080;
+
+    private static Credentials usernamePasswordCredentials;
+    private int port = PORT_VAL;
 
     @Override
     public boolean run(Args args) throws Exception {
@@ -45,14 +54,43 @@ public class WebRunner extends AbstractVerticle implements ToolRunner, VertxDepl
     }
 
     @Override
+    public String help() {
+        return String.join(", ", USER_KEY, PASSWD_KEY);
+    }
+
+    @Override
+    public Future<String> deploy(Vertx vertx, Verticle verticle, Args args) {
+        args.getArgVal(USER_KEY).ifPresent(a -> {
+            usernamePasswordCredentials = new UsernamePasswordCredentials(
+                a,
+                args.readArg(PASSWD_KEY)
+                    .getRequiredVal("If username is not null, password must also not be null")
+            ) {
+                @Override
+                public <V> void checkValid(V arg) throws CredentialValidationException {
+                    super.checkValid(arg);
+                    if (arg instanceof JsonObject credentials) {
+                        if (!(getUsername().equals(credentials.getString("username"))
+                            && getPassword().equals(credentials.getString("password")))) {
+                            throw new CredentialValidationException("Username or password error");
+                        }
+                    }
+                }
+            };
+            log.info("Enable basicAuth");
+        });
+        args.getArgVal(PORT_KEY).ifPresent(a -> port = Integer.parseInt(a));
+        return VertxDeployer.super.deploy(vertx, verticle, args);
+    }
+
+    @Override
     public void start(Promise<Void> startPromise) throws Exception {
-        var port = System.getProperty(PORT_KEY, PORT_VAL + "");
         VertxUtils
             .initHttpServer(
                 vertx,
                 startPromise,
                 Routers.build(vertx),
-                Integer.parseInt(port),
+                port,
                 log
             );
     }
@@ -105,6 +143,10 @@ public class WebRunner extends AbstractVerticle implements ToolRunner, VertxDepl
 
             router.route().handler(VertxUtils.bodyHandler(null));
             router.route().handler(LoggerHandler.create());
+
+            if (usernamePasswordCredentials != null) {
+                VertxUtils.basicAuth(router, vertx, usernamePasswordCredentials);
+            }
 
             router.errorHandler(500, r -> {
                 log.error("Request error", r.failure());

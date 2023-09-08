@@ -55,7 +55,7 @@ public class WebRunner extends AbstractVerticle implements ToolRunner, VertxDepl
 
     @Override
     public String help() {
-        return String.join(", ", USER_KEY, PASSWD_KEY);
+        return String.join(", ", USER_KEY, PASSWD_KEY, PORT_KEY);
     }
 
     @Override

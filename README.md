@@ -4,7 +4,7 @@
 
 * `./mytool.sh` 查看程序信息，`--help={COMMAND}` 查看具体命令的帮助信息, 如 `--help=converts`
 * `--debug=true` 打开调试模式
-* `--native` 启动原生编译版本，如 `mytool.sh --native --tool=converts`
+* `--jar` 启动 Java 版本，默认为原生编译版本，如 `mytool.sh --jar --tool=converts`
 
 部分命令支持别名， 如 `--tool=converts --cmd=random --in=test` 的别名为 `--random=test`，具体可查看帮助文档
 

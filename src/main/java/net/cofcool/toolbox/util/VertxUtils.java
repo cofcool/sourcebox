@@ -23,7 +23,7 @@ import io.vertx.ext.web.sstore.SessionStore;
 import java.util.ArrayList;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
-import net.cofcool.toolbox.Logger;
+import net.cofcool.toolbox.logging.Logger;
 import org.apache.commons.io.FilenameUtils;
 
 public final class VertxUtils {

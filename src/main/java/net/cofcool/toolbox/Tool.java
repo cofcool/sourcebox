@@ -14,6 +14,8 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import net.cofcool.toolbox.logging.Logger;
+import net.cofcool.toolbox.logging.LoggerFactory;
 
 public interface Tool {
 

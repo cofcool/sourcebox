@@ -1,4 +1,4 @@
-package net.cofcool.toolbox;
+package net.cofcool.toolbox.logging;
 
 
 public interface Logger {

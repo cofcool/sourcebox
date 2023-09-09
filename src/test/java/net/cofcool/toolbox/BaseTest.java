@@ -10,8 +10,8 @@ public abstract class BaseTest {
 
     @BeforeEach
     public void setup() {
+        System.setProperty("logging.debug", "true");
         args = instance().config().context(new ConsoleToolContext());
-        LoggerFactory.setDebug(true);
         init();
     }
 

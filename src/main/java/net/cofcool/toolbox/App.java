@@ -10,6 +10,8 @@ import java.util.stream.Collectors;
 import net.cofcool.toolbox.Tool.Arg;
 import net.cofcool.toolbox.Tool.Args;
 import net.cofcool.toolbox.Tool.RunnerType;
+import net.cofcool.toolbox.logging.Logger;
+import net.cofcool.toolbox.logging.LoggerFactory;
 import net.cofcool.toolbox.runner.CLIRunner;
 import net.cofcool.toolbox.runner.WebRunner;
 import org.apache.commons.io.IOUtils;
@@ -41,7 +43,7 @@ public class App {
                     .arg(new Arg("tool", null, "", false, "converts"))
                     .arg(new Arg("mode", RunnerType.CLI.name(), "interface type", false, null))
             );
-        LoggerFactory.setDebug("true".equalsIgnoreCase(pArgs.readArg("debug").val()));
+        System.setProperty(LoggerFactory.LOGGING_DEBUG_TYPE, pArgs.readArg("debug").val());
 
         var logger = LoggerFactory.getLogger(App.class);
         logger.debug("Args:");

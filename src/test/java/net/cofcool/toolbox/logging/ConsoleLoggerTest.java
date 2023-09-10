@@ -9,6 +9,7 @@ class ConsoleLoggerTest {
     @Test
     void info() {
         logger.info("info");
+        logger.info("info {0} {1}", "console", new Object());
     }
 
     @Test

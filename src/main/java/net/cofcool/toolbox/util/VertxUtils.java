@@ -65,8 +65,8 @@ public final class VertxUtils {
                 http -> {
                     if (http.succeeded()) {
                         startPromise.complete();
-                        log.info(String.format("HTTP server started on port %s",
-                            http.result().actualPort()));
+                        log.info("HTTP server started on port {0}",
+                            http.result().actualPort());
                     } else {
                         log.error("HTTP server start error", http.cause());
                         startPromise.fail(http.cause());

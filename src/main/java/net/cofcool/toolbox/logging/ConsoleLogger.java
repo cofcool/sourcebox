@@ -1,5 +1,7 @@
 package net.cofcool.toolbox.logging;
 
+import java.text.MessageFormat;
+
 public record ConsoleLogger(Class<?> clazz) implements Logger {
 
     @Override
@@ -23,7 +25,7 @@ public record ConsoleLogger(Class<?> clazz) implements Logger {
 
     @Override
     public void info(String val, Object... arg) {
-        System.out.println(val);
+        System.out.println(MessageFormat.format(val, arg));
     }
 
     @Override

@@ -91,7 +91,7 @@ public class NoteService {
             if (!fileSystem.existsBlocking(path)) {
                 fileSystem.createFileBlocking(path);
             }
-            log.info(String.format("Init %s success", path));
+            log.info("Init {0} success", path);
 
             fileSystem.readFile(path, result -> {
                 if (result.succeeded()) {
@@ -110,7 +110,7 @@ public class NoteService {
                             .toList()
                     )
                 );
-                log.info(String.format("Update %s notes cache", noteCache.size()));
+                log.info("Update {0} notes cache", noteCache.size());
             });
         }
 

@@ -128,7 +128,7 @@ public class WebRunner extends AbstractVerticle implements ToolRunner, VertxDepl
                     log.error("Write zip file error", e);
                     throw new RuntimeException(e);
                 }
-                log.info("Generate file " + name + " ok");
+                log.info("Generate file {0} ok", name);
             }
             return JsonObject.of("result", name);
         }

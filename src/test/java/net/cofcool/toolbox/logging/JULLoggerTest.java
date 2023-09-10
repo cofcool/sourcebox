@@ -16,6 +16,7 @@ class JULLoggerTest {
     @Test
     void info() {
         logger.info("info");
+        logger.info("info {0}", "test");
     }
 
     @Test

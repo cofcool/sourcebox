@@ -98,8 +98,8 @@ public class App {
     private static void logAbout(Logger logger) {
         logger.info("About: " + ABOUT);
         logger.info("Example: --tool=demo --path=tmp");
-        logger.info("Help: --help={COMMAND}, like: --help=rename");
-        logger.info("Interface: --mode={CLI}, support: "
+        logger.info("Help: --help='{COMMAND}', like: --help=rename");
+        logger.info("Interface: --mode='{CLI}', support: "
             + RUNNER_MAP.entrySet().stream()
             .map(e -> {
                 String help = e.getValue().help();

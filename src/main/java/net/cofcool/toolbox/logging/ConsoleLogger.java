@@ -29,9 +29,9 @@ public record ConsoleLogger(Class<?> clazz) implements Logger {
     }
 
     @Override
-    public void debug(Object val) {
+    public void debug(String val, Object... args) {
         if (LoggerFactory.DEBUG) {
-            System.out.println(val);
+            System.out.println(MessageFormat.format(val, args));
         }
     }
 }

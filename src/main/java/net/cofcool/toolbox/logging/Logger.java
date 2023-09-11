@@ -8,6 +8,6 @@ public interface Logger {
 
     void info(String val, Object... arg);
 
-    void debug(Object val);
+    void debug(String val, Object... args);
 
 }

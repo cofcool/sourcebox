@@ -391,15 +391,6 @@
     "methods":[{"name":"setup","parameterTypes":[] }]
   },
   {
-    "name":"net.cofcool.toolbox.LoggerFactoryTest",
-    "allDeclaredFields":true,
-    "allDeclaredClasses":true,
-    "queryAllDeclaredMethods":true,
-    "queryAllPublicMethods":true,
-    "queryAllDeclaredConstructors":true,
-    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"error","parameterTypes":[] }, {"name":"info","parameterTypes":[] }, {"name":"setup","parameterTypes":[] }]
-  },
-  {
     "name":"net.cofcool.toolbox.ToolName",
     "allDeclaredFields":true,
     "queryAllDeclaredMethods":true
@@ -1040,6 +1031,50 @@
     "allDeclaredFields":true,
     "queryAllDeclaredMethods":true,
     "queryAllDeclaredConstructors":true
+  },
+  {
+    "name":"net.cofcool.toolbox.logging.ConsoleLogger",
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.Class"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.logging.ConsoleLoggerTest",
+    "allDeclaredFields":true,
+    "allDeclaredClasses":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllPublicMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"debug","parameterTypes":[] }, {"name":"error","parameterTypes":[] }, {"name":"info","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.logging.JULLogger",
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.Class"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.logging.JULLoggerTest",
+    "allDeclaredFields":true,
+    "allDeclaredClasses":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllPublicMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"debug","parameterTypes":[] }, {"name":"error","parameterTypes":[] }, {"name":"info","parameterTypes":[] }, {"name":"setup","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.logging.LoggerFactoryTest",
+    "allDeclaredFields":true,
+    "allDeclaredClasses":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllPublicMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"logger","parameterTypes":[] }, {"name":"setup","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.runner.WebRunnerAuthTest",
+    "allDeclaredFields":true,
+    "allDeclaredClasses":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllPublicMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"deployVerticle","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"run","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"runWithAuthFail","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }]
   },
   {
     "name":"net.cofcool.toolbox.runner.WebRunnerTest",

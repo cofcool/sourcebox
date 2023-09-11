@@ -11,7 +11,6 @@ class LoggerFactoryTest {
     @BeforeEach
     void setup() {
         System.setProperty("logging.debug", "true");
-        System.setProperty("logging.type", "net.cofcool.toolbox.logging.JULLogger");
         logger = LoggerFactory.getLogger(getClass());
     }
 

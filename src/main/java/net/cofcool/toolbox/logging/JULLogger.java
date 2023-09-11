@@ -22,31 +22,36 @@ public class JULLogger implements Logger {
         if (val instanceof Throwable ex) {
             error("ERROR", ex);
         } else {
-            logger.log(Level.SEVERE, Objects.toString(val));
+            logRecord(Level.SEVERE, Objects.toString(val), null);
         }
     }
 
     @Override
     public void error(String msg, Throwable throwable) {
-        logger.log(Level.SEVERE, msg, throwable);
+        logRecord(Level.SEVERE, msg, throwable);
     }
 
     @Override
     public void info(String val, Object... arg) {
-        logger.log(logRecord(Level.INFO, val, arg));
+        logRecord(Level.INFO, val, null, arg);
     }
 
     @Override
-    public void debug(Object val) {
-        logger.log(logRecord(Level.FINEST, Objects.toString(val)));
+    public void debug(String val, Object... args) {
+        if (LoggerFactory.DEBUG) {
+            logRecord(Level.INFO, val, null, args);
+        }
     }
 
-    private LogRecord logRecord(Level level, String msg, Object... arg) {
+    private void logRecord(Level level, String msg, Throwable throwable, Object... arg) {
         var record = new LogRecord(level, msg);
         record.setLoggerName(name);
         record.setSourceClassName(null);
         record.setParameters(arg);
+        if (throwable != null) {
+            record.setThrown(throwable);
+        }
 
-        return record;
+        logger.log(record);
     }
 }

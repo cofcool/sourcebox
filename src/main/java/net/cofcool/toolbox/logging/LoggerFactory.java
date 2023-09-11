@@ -35,6 +35,10 @@ public final class LoggerFactory {
         return DEBUG;
     }
 
+    public static void setDebug(boolean debug) {
+        DEBUG = debug;
+    }
+
     public static Logger getLogger(Class<?> clazz) {
         return loggers.computeIfAbsent(clazz, LoggerFactory::loggerInstance);
     }

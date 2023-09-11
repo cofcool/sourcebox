@@ -43,11 +43,10 @@ public class App {
                     .arg(new Arg("tool", null, "", false, "converts"))
                     .arg(new Arg("mode", RunnerType.CLI.name(), "interface type", false, null))
             );
-        System.setProperty(LoggerFactory.LOGGING_DEBUG_TYPE, pArgs.readArg("debug").val());
+        LoggerFactory.setDebug(Boolean.parseBoolean(pArgs.readArg("debug").val()));
 
         var logger = LoggerFactory.getLogger(App.class);
-        logger.debug("Args:");
-        logger.debug(pArgs);
+        logger.debug("Args: {0}", pArgs);
 
         var notRun = new AtomicBoolean(true);
 

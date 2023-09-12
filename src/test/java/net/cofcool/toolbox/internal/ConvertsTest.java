@@ -117,7 +117,7 @@ class ConvertsTest extends BaseTest {
             instance()
                 .runCommand(
                     args
-                        .arg("cmd", "url")
+                        .arg("cmd", "curl")
                         .arg("utype", "en")
                         .arg("in", "测试")
                 )
@@ -127,7 +127,7 @@ class ConvertsTest extends BaseTest {
             instance()
                 .runCommand(
                     args
-                        .arg("cmd", "url")
+                        .arg("cmd", "curl")
                         .arg("utype", "de")
                         .arg("in", "%E6%B5%8B%E8%AF%95")
                 )

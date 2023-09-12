@@ -151,7 +151,7 @@ public class JsonToPojo implements Tool {
     public Args config() {
         return new Args()
             .arg(new Arg("path", null, "json file path, if not set path or json, will read from stdin", false, "demo.json"))
-            .arg(new Arg("json", null, "json content", false, "{}"))
+            .arg(new Arg("json", null, "json content", false, "'{}'"))
             .arg(new Arg("out", "./pojo", "output path", false, null))
             .arg(new Arg("root", "Root", "root class name", false, null))
             .arg(new Arg("lang", Lang.JAVA_RECORD.getLang(), "language: " + Arrays.stream(Lang.values()).map(l -> l.getLang() + "-" + l.getVer()).collect(Collectors.joining(",")), false, null))

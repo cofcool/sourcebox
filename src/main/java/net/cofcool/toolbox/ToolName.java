@@ -5,6 +5,7 @@ import net.cofcool.toolbox.internal.Converts;
 import net.cofcool.toolbox.internal.DirWebServer;
 import net.cofcool.toolbox.internal.FileNameFormatter;
 import net.cofcool.toolbox.internal.GitCommitsToChangelog;
+import net.cofcool.toolbox.internal.HtmlDownloader;
 import net.cofcool.toolbox.internal.JsonFormatter;
 import net.cofcool.toolbox.internal.JsonToPojo;
 import net.cofcool.toolbox.internal.LinkCovertTool;
@@ -23,7 +24,8 @@ public enum ToolName {
     dirWebServer("start a simple web directory server", DirWebServer.class),
     rename("rename file conveniently", FileNameFormatter.class),
     note("simple web notebook", SimpleNote.class),
-    json("make json more readable", JsonFormatter.class);
+    json("make json more readable", JsonFormatter.class),
+    htmlDown("download html from links", HtmlDownloader.class);
 
     private final String desc;
     private final Class<? extends Tool> tool;

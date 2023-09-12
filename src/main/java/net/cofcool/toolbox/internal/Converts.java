@@ -222,7 +222,7 @@ public class Converts implements Tool {
         }
     }
 
-    private class Url implements Pipeline {
+    private class CUrl implements Pipeline {
 
         @Override
         public String run(Args args) throws Exception{

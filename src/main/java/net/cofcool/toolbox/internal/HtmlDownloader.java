@@ -2,8 +2,12 @@ package net.cofcool.toolbox.internal;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.Proxy.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import lombok.CustomLog;
 import net.cofcool.toolbox.Tool;
@@ -18,6 +22,7 @@ import org.jsoup.nodes.Element;
 public class HtmlDownloader implements Tool {
 
     private int depth;
+    private Proxy proxy;
 
     @Override
     public ToolName name() {
@@ -26,11 +31,32 @@ public class HtmlDownloader implements Tool {
 
     @Override
     public void run(Args args) throws Exception {
-        var url = args.readArg("url").val();
+        var urls = new ArrayList<String>();
+
+        args.readArg("urlFile").ifPresent(a -> {
+            try {
+                urls.addAll(FileUtils.readLines(new File(a.val()), StandardCharsets.UTF_8));
+            } catch (IOException e) {
+                throw new RuntimeException("Read url file error", e);
+            }
+        });
+        args.readArg("url").ifPresent(a -> urls.add(a.val()));
+
+        if (urls.isEmpty()) {
+            throw new IllegalArgumentException("Do not find any url");
+        }
+
         var out = args.readArg("out").val();
+        args.readArg("proxy").ifPresent(a -> {
+            var p = a.val().split(":");
+            proxy = new Proxy(Type.HTTP, new InetSocketAddress(p[0], Integer.parseInt(p[1])));
+            log.debug("Enable {0}", proxy);
+        });
         depth = Integer.parseInt(args.readArg("depth").val());
 
-        downloadUrl(out, url, depth);
+        for (String url : urls) {
+            downloadUrl(out, url, depth);
+        }
     }
 
     private void downloadUrl(String folder, String url, int depth) throws IOException {
@@ -38,7 +64,7 @@ public class HtmlDownloader implements Tool {
             return;
         }
 
-        var doc = Jsoup.connect(url).get();
+        var doc = Jsoup.connect(url).proxy(proxy).get();
         var title = doc.title();
 
         if (depth == this.depth) {
@@ -78,9 +104,10 @@ public class HtmlDownloader implements Tool {
     public Args config() {
         return new Args()
             .arg(new Arg("url", null, "link string", false, "'{}'"))
-            .arg(new Arg("path", null, "link file path", false, "./demo.txt"))
+            .arg(new Arg("urlFile", null, "link file path", false, "./demo.txt"))
             .arg(new Arg("depth", "1", "link depth", false, null))
+            .arg(new Arg("proxy", null, "request proxy", false, "127.0.0.1:8087"))
             .arg(new Arg("out", "./", "output folder", false, null))
-            .runnerTypes(EnumSet.of(RunnerType.CLI, RunnerType.WEB));
+            .runnerTypes(EnumSet.of(RunnerType.CLI));
     }
 }

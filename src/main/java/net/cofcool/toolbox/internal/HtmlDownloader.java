@@ -22,6 +22,7 @@ import org.jsoup.nodes.Element;
 public class HtmlDownloader implements Tool {
 
     private int depth;
+    private boolean clean;
     private Proxy proxy;
 
     @Override
@@ -41,6 +42,7 @@ public class HtmlDownloader implements Tool {
             }
         });
         args.readArg("url").ifPresent(a -> urls.add(a.val()));
+        clean = args.readArg("clean").test(Boolean::parseBoolean);
 
         if (urls.isEmpty()) {
             throw new IllegalArgumentException("Do not find any url");
@@ -78,6 +80,13 @@ public class HtmlDownloader implements Tool {
         if (file.exists()) {
             file = Paths.get(folder, title + RandomStringUtils.randomNumeric(2) + ".html").toFile();
         }
+
+        if (clean) {
+            doc.getElementsByTag("script").remove();
+            doc.getElementsByTag("style").remove();
+            doc.getElementsByTag("meta").remove();
+        }
+
         FileUtils.writeStringToFile(file, doc.outerHtml(), StandardCharsets.UTF_8);
         log.info("Download {0} from url: {1}", file, url);
 
@@ -108,6 +117,7 @@ public class HtmlDownloader implements Tool {
             .arg(new Arg("depth", "1", "link depth", false, null))
             .arg(new Arg("proxy", null, "request proxy", false, "127.0.0.1:8087"))
             .arg(new Arg("out", "./", "output folder", false, null))
+            .arg(new Arg("clean", "false", "remove css or javascript", false, null))
             .runnerTypes(EnumSet.of(RunnerType.CLI));
     }
 }

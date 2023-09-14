@@ -112,5 +112,9 @@ Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到
 
 使用: `./mytool.sh --tool=json [--json='{}'] [--path=dmeo.json]`
 
+# 网页下载
+
+使用: `./mytool.sh --tool=htmlDown --url="https://example.com"`
+
 # 致谢
 

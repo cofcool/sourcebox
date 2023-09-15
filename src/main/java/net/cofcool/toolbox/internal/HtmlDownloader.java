@@ -88,7 +88,7 @@ public class HtmlDownloader implements Tool {
         }
 
         FileUtils.writeStringToFile(file, doc.outerHtml(), StandardCharsets.UTF_8);
-        log.info("Download {0} from url: {1}", file, url);
+        log.info("Download {0} from url: {1}", file.getAbsolutePath(), url);
 
         var links = doc.select("a[href]");
 

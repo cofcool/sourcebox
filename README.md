@@ -114,6 +114,10 @@ Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到
 
 # 网页下载
 
+* 链接递归遍历
+* 代理
+* 批量下载
+
 使用: `./mytool.sh --tool=htmlDown --url="https://example.com"`
 
 # 致谢

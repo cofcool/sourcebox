@@ -18,6 +18,8 @@ class HtmlDownloaderTest extends BaseTest {
     @TempDir
     File file;
 
+    String url = Utils.getTestResourceUrlPath("/htmlDownloaderTest.html").toString();
+
     @Test
     void run() throws Exception {
         instance().run(args
@@ -30,9 +32,20 @@ class HtmlDownloaderTest extends BaseTest {
     }
 
     @Test
+    void runWithFile() throws Exception {
+        instance().run(args
+            .arg("url", url)
+            .arg("out", "./target/HtmlDownloaderTest")
+            .arg("img", "Multimedia_and_embedding")
+        );
+        File download = new File("./target/HtmlDownloaderTest/htmlDownloaderTest/imgs");
+        assertTrue(download.listFiles().length > 0);
+    }
+
+    @Test
     void runWithClean() throws Exception {
         instance().run(args
-            .arg("url", "https://www.bing.com")
+            .arg("url", url)
             .arg("out", file.getAbsolutePath())
             .arg("clean", "true")
         );
@@ -49,7 +62,7 @@ class HtmlDownloaderTest extends BaseTest {
     @Test
     void runWithUrlFile() throws Exception {
         var urlFile = Paths.get(file.getAbsolutePath(), "urlFile.txt");
-        Files.writeString(urlFile, "https://www.bing.com");
+        Files.writeString(urlFile, url);
         instance().run(args
             .arg("urlFile",urlFile.toString())
             .arg("out", file.getAbsolutePath())

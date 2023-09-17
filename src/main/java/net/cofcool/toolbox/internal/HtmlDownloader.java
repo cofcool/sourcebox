@@ -27,6 +27,7 @@ import org.jsoup.select.Elements;
 @CustomLog
 public class HtmlDownloader implements Tool {
 
+    private static final String IMGS_FOLDER = "imgs";
     private int depth;
     private boolean clean;
     private Proxy proxy;
@@ -110,12 +111,12 @@ public class HtmlDownloader implements Tool {
             doc.getElementsByTag("meta").remove();
         }
 
-        FileUtils.writeStringToFile(file, doc.outerHtml(), StandardCharsets.UTF_8);
-        log.info("Download {0} from url: {1}", file.getAbsolutePath(), url);
-
         if (!("false".equals(expression))) {
             downloadImages(doc.getElementsByTag("img"), folder, expression);
         }
+
+        FileUtils.writeStringToFile(file, doc.outerHtml(), StandardCharsets.UTF_8);
+        log.info("Download {0} from url: {1}", file.getAbsolutePath(), url);
 
         depth--;
 
@@ -136,7 +137,7 @@ public class HtmlDownloader implements Tool {
     }
 
     private void downloadImages(Elements imgs, String folder, String expression) throws IOException {
-        folder = FilenameUtils.concat(folder, "imgs");
+        folder = FilenameUtils.concat(folder, IMGS_FOLDER);
         FileUtils.forceMkdir(new File(folder));
 
         var idx = 0;
@@ -160,6 +161,7 @@ public class HtmlDownloader implements Tool {
                 name = StringUtils.isBlank(name) ? String.format("%03d", idx) : name;
                 File file = Paths.get(folder, name).toFile();
                 FileUtils.writeByteArrayToFile(file, imgData);
+                img.attr("src", String.join("/", ".", IMGS_FOLDER, name));
                 log.info("Download image from {0}", file);
             } catch (Exception e) {
                 log.error("Download " + src + " image error", e);

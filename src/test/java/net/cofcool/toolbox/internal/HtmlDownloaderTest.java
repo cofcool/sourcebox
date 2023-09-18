@@ -43,6 +43,15 @@ class HtmlDownloaderTest extends BaseTest {
     }
 
     @Test
+    void runWithMd() throws Exception {
+        instance().run(args
+            .arg("url", url)
+            .arg("out", "./target/HtmlDownloaderTest")
+            .arg("md", "true")
+        );
+    }
+
+    @Test
     void runWithClean() throws Exception {
         instance().run(args
             .arg("url", url)

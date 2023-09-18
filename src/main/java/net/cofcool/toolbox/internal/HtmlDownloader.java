@@ -10,6 +10,10 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.CustomLog;
 import net.cofcool.toolbox.Tool;
 import net.cofcool.toolbox.ToolName;
@@ -27,9 +31,12 @@ import org.jsoup.select.Elements;
 @CustomLog
 public class HtmlDownloader implements Tool {
 
+    private static final Map<String, Function<Element, String>> tagMap = new HashMap<>();
+
     private static final String IMGS_FOLDER = "imgs";
     private int depth;
     private boolean clean;
+    private boolean toMd;
     private Proxy proxy;
 
     private Connection connection;
@@ -52,6 +59,7 @@ public class HtmlDownloader implements Tool {
         });
         args.readArg("url").ifPresent(a -> urls.add(a.val()));
         clean = args.readArg("clean").test(Boolean::parseBoolean);
+        toMd = args.readArg("md").test(Boolean::parseBoolean);
         var img = args.readArg("img").val();
 
         if (urls.isEmpty()) {
@@ -77,6 +85,29 @@ public class HtmlDownloader implements Tool {
         }
 
         return connection;
+    }
+
+    private void toMarkdown(Element element, String folder, String title) throws IOException {
+        var md = new ArrayList<String>();
+        convertTagToMd(element, md);
+        FileUtils.writeLines(Paths.get(folder, title + ".md").toFile(), md);
+    }
+
+    private static void convertTagToMd(Element element, ArrayList<String> md) {
+        for (Element e : element.children()) {
+            if (tagMap.containsKey(e.tagName())) {
+                String out = tagMap.get(e.tagName()).apply(e);
+                if (!StringUtils.isEmpty(out)) {
+                    md.add(out);
+                    md.add("\n");
+                    continue;
+                }
+            }
+            if (e.childrenSize() > 0) {
+                convertTagToMd(e, md);
+            }
+        }
+
     }
 
     private void downloadUrl(String folder, String url, int depth, String expression) throws IOException {
@@ -117,6 +148,10 @@ public class HtmlDownloader implements Tool {
 
         FileUtils.writeStringToFile(file, doc.outerHtml(), StandardCharsets.UTF_8);
         log.info("Download {0} from url: {1}", file.getAbsolutePath(), url);
+
+        if (toMd) {
+            toMarkdown(doc.body(), folder, title);
+        }
 
         depth--;
 
@@ -175,10 +210,38 @@ public class HtmlDownloader implements Tool {
             .arg(new Arg("url", null, "link string", false, "'{}'"))
             .arg(new Arg("urlFile", null, "link file path", false, "./demo.txt"))
             .arg(new Arg("img", "false", "download images, false or path expression", false, null))
+            .arg(new Arg("md", "false", "convert to markdown", false, null))
             .arg(new Arg("depth", "1", "link depth", false, null))
             .arg(new Arg("proxy", null, "request proxy", false, "127.0.0.1:8087"))
             .arg(new Arg("out", "./", "output folder", false, null))
             .arg(new Arg("clean", "false", "remove css or javascript", false, null))
             .runnerTypes(EnumSet.of(RunnerType.CLI));
+    }
+
+    private static String checkText(Element e, String out) {
+        return StringUtils.isEmpty(e.text()) ? null :  out;
+    }
+
+    static {
+        tagMap.put("h1", a -> "#  " + a.text());
+        tagMap.put("h2", a -> "## " + a.text());
+        tagMap.put("h3", a -> "### " + a.text());
+        tagMap.put("h4", a -> "##### " + a.text());
+        tagMap.put("h5", a -> "##### " + a.text());
+        tagMap.put("b", a -> "**" + a.text() + "**");
+        tagMap.put("p", Element::text);
+        tagMap.put("span", Element::text);
+        tagMap.put("text", Element::text);
+        tagMap.put("code", a -> "```\n" + a.wholeText() + "\n```");
+        tagMap.put("a", a -> checkText(a, String.format("[%s](%s)", a.text(), a.attr("href"))));
+        tagMap.put("img", a -> String.format("![%s](%s)", a.attr("alt"), a.attr("src")));
+        tagMap.put("ul", a -> a.children().stream().map(l -> "* " + l.text()).collect(Collectors.joining("\n")));
+        tagMap.put("ol", a -> {
+            var str = new StringBuilder();
+            for (int i = 1; i <= a.children().size(); i++) {
+                str.append(i).append(". ").append(a.child(i - 1).text()).append("\n");
+            }
+            return str.toString();
+        });
     }
 }

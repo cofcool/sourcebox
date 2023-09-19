@@ -18,7 +18,9 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BasicAuthHandler;
 import io.vertx.ext.web.handler.BodyHandler;
+import io.vertx.ext.web.handler.FileSystemAccess;
 import io.vertx.ext.web.handler.SessionHandler;
+import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.sstore.SessionStore;
 import java.util.ArrayList;
 import java.util.function.BiConsumer;
@@ -28,11 +30,23 @@ import org.apache.commons.io.FilenameUtils;
 
 public final class VertxUtils {
 
-    public static final String GLOBAL_UPLOAD_DIR = System.getProperty("upload.dir", BodyHandler.DEFAULT_UPLOADS_DIRECTORY);
+    private static final String GLOBAL_UPLOAD_DIR = System.getProperty("upload.dir", BodyHandler.DEFAULT_UPLOADS_DIRECTORY);
+    private static final String GLOBAL_WEB_ROOT = System.getProperty("webroot.dir");
 
     static {
         JsonUtil.enableTimeModule(DatabindCodec.mapper());
         JsonUtil.enableTimeModule(DatabindCodec.prettyMapper());
+    }
+
+    public static String webrootPath() {
+        return GLOBAL_WEB_ROOT == null ? StaticHandler.DEFAULT_WEB_ROOT : GLOBAL_WEB_ROOT;
+    }
+
+    public static StaticHandler webrootHandler() {
+        if (GLOBAL_WEB_ROOT == null) {
+            return StaticHandler.create();
+        }
+        return StaticHandler.create(GLOBAL_WEB_ROOT.startsWith("/") ? FileSystemAccess.ROOT : FileSystemAccess.RELATIVE, GLOBAL_WEB_ROOT);
     }
 
     public static String resourcePath(String name) {

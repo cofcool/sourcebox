@@ -68,7 +68,7 @@ public class DirWebServer implements WebTool {
         router.get().handler(
             StaticHandler
                 .create(FileSystemAccess.ROOT, path)
-                .setDirectoryTemplate("webroot/vertx-web-directory.html")
+                .setDirectoryTemplate(VertxUtils.webrootPath() + "/vertx-web-directory.html")
                 .setDirectoryListing(true)
         );
         router.errorHandler(500, r -> {

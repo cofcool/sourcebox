@@ -20,7 +20,7 @@
 
 ## 常用字符串转换工具
 
-使用: `./mytool.sh --tool=converts --cmd="upper test"`
+使用: `./mytool.sh --tool=converts --cmd="now" --pipeline="md5 | base64"`
 
 支持功能（可通过 `|` 连接多个命令）:
 
@@ -120,6 +120,15 @@ Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到
 * 转换为 Markdown
 
 使用: `./mytool.sh --tool=htmlDown --url="https://example.com"`
+
+# 命令助手
+
+使用前需要把 `source .mytool_alias` 添加到 shell 配置中
+
+* 命令管理
+* 别名
+* 环境变量
+* 快速查询
 
 # 致谢
 

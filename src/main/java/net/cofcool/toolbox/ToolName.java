@@ -12,6 +12,7 @@ import net.cofcool.toolbox.internal.LinkCovertTool;
 import net.cofcool.toolbox.internal.ShellStarter;
 import net.cofcool.toolbox.internal.SimpleNote;
 import net.cofcool.toolbox.internal.TrelloToLogseqImporter;
+import net.cofcool.toolbox.internal.commandhelper.CommandHelper;
 
 public enum ToolName {
     trelloLogseqImporter("read trello backup json file and convert to logseq md file", TrelloToLogseqImporter.class),
@@ -25,7 +26,8 @@ public enum ToolName {
     rename("rename file conveniently", FileNameFormatter.class),
     note("simple web notebook", SimpleNote.class),
     json("make json more readable", JsonFormatter.class),
-    htmlDown("download html from links", HtmlDownloader.class);
+    htmlDown("download html from links", HtmlDownloader.class),
+    cHelper("manage commands, like alias, tag...", CommandHelper.class);
 
     private final String desc;
     private final Class<? extends Tool> tool;

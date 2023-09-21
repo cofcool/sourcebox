@@ -130,5 +130,7 @@ Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到
 * 环境变量
 * 快速查询
 
+使用: `./mytool.sh --tool=cHelper --add="@helper mytool --tool=cHelper #mytool #my"`
+
 # 致谢
 

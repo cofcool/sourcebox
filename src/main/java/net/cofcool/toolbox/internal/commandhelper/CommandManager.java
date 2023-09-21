@@ -3,7 +3,6 @@ package net.cofcool.toolbox.internal.commandhelper;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -13,11 +12,12 @@ import lombok.CustomLog;
 import net.cofcool.toolbox.util.BaseFileCrudRepository;
 import net.cofcool.toolbox.util.JsonUtil;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 
 @CustomLog
 public class CommandManager {
 
-    private static final String MY_TOOL_ALIAS = ".mytool_alias";
+    public static final String MY_TOOL_ALIAS = FilenameUtils.concat(System.getProperty("user.home"),  ".mytool_alias");
     private final CommandRepository repository;
 
     public CommandManager(String path) {
@@ -30,7 +30,7 @@ public class CommandManager {
 
         var split = command.split(" ");
         int sIdx = 0;
-        int eIdx = split.length - 1;
+        int eIdx = - 1;
         for (int i = 0; i < split.length; i++) {
             var s = split[i];
             if (s.startsWith("@")) {
@@ -38,9 +38,14 @@ public class CommandManager {
                 sIdx = 1;
             }
             if (s.startsWith("#")) {
-                eIdx = i - 1;
+                if (eIdx < 0) {
+                    eIdx = i;
+                }
                 tags.add(s);
             }
+        }
+        if (eIdx < 0) {
+            eIdx = split.length - 1;
         }
 
         repository.save(new Command(String.join(" ", Arrays.copyOfRange(split, sIdx, eIdx)), alias, tags));
@@ -55,6 +60,10 @@ public class CommandManager {
     }
 
     public List<Command> findByAT(String aliasTags) {
+        if (aliasTags == null || "ALL".equals(aliasTags)) {
+            return repository.find();
+        }
+
         String alias = null;
         List<String> tags = new ArrayList<>();
         for (String s : aliasTags.split(" ")) {
@@ -72,7 +81,7 @@ public class CommandManager {
     }
 
     public void store(String alias) {
-        var all = (alias == null ? repository.find() :findByAlias(alias))
+        var all = findByAT(alias)
             .stream()
             .map(a ->
                 "alias "
@@ -83,7 +92,7 @@ public class CommandManager {
             )
             .collect(Collectors.joining("\n"));
         try {
-            File file = Paths.get(System.getProperty("user.home"), MY_TOOL_ALIAS).toFile();
+            File file = new File(MY_TOOL_ALIAS);
             FileUtils.write(file, all, StandardCharsets.UTF_8);
             Runtime.getRuntime().exec(new String[] {"sh", "source", file.getAbsolutePath()});
             log.info("Update {0} alias to {1}", alias, file.getAbsolutePath());

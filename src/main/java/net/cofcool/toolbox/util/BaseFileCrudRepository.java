@@ -76,7 +76,7 @@ public abstract class BaseFileCrudRepository<T> implements CrudRepository<T> {
     protected void refreshDirtyData(Object data) {
         try {
             FileUtils.write(file, JsonUtil.toJson(dataCache.values()), StandardCharsets.UTF_8);
-            log.info("Update {0} data cache", dataCache.size());
+            log.debug("Update {0} data cache", dataCache.size());
         } catch (IOException e) {
             throw new RuntimeException("Write data error", e);
         }

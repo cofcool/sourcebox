@@ -150,7 +150,7 @@ class FileNameFormatterTest extends BaseTest {
     }
 
     @Override
-    protected void init() {
+    protected void init() throws Exception {
         super.init();
         args.arg("formatter", Formatter.order.name());
     }

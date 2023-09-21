@@ -57,6 +57,10 @@
     "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {
+    "name":"com.sun.crypto.provider.HmacCore$HmacSHA384",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
     "name":"com.sun.crypto.provider.TlsKeyMaterialGenerator",
     "methods":[{"name":"<init>","parameterTypes":[] }]
   },
@@ -462,6 +466,10 @@
     "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.Converts"] }]
   },
   {
+    "name":"net.cofcool.toolbox.internal.Converts$CUrl",
+    "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.Converts"] }]
+  },
+  {
     "name":"net.cofcool.toolbox.internal.Converts$Hdate",
     "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.Converts"] }]
   },
@@ -491,10 +499,6 @@
   },
   {
     "name":"net.cofcool.toolbox.internal.Converts$Upper",
-    "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.Converts"] }]
-  },
-  {
-    "name":"net.cofcool.toolbox.internal.Converts$CUrl",
     "methods":[{"name":"<init>","parameterTypes":["net.cofcool.toolbox.internal.Converts"] }]
   },
   {
@@ -556,7 +560,7 @@
     "queryAllDeclaredMethods":true,
     "queryAllPublicMethods":true,
     "queryAllDeclaredConstructors":true,
-    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"run","parameterTypes":[] }]
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"run","parameterTypes":[] }, {"name":"runWithClean","parameterTypes":[] }, {"name":"runWithFile","parameterTypes":[] }, {"name":"runWithMd","parameterTypes":[] }, {"name":"runWithUrlFile","parameterTypes":[] }]
   },
   {
     "name":"net.cofcool.toolbox.internal.JsonFormatter",
@@ -626,6 +630,35 @@
     "queryAllPublicMethods":true,
     "queryAllDeclaredConstructors":true,
     "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"run","parameterTypes":[] }, {"name":"runWithTitleToPage","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.commandhelper.Command",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","java.lang.String","java.util.List","java.time.LocalDateTime"] }, {"name":"alias","parameterTypes":[] }, {"name":"cTime","parameterTypes":[] }, {"name":"cmd","parameterTypes":[] }, {"name":"id","parameterTypes":[] }, {"name":"tags","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.commandhelper.CommandHelper",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.commandhelper.CommandHelperTest",
+    "allDeclaredFields":true,
+    "allDeclaredClasses":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllPublicMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"run","parameterTypes":[] }, {"name":"runWithAdd","parameterTypes":[] }, {"name":"runWithStore","parameterTypes":[] }, {"name":"runWithStoreALL","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.commandhelper.CommandManagerTest",
+    "allDeclaredFields":true,
+    "allDeclaredClasses":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllPublicMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"delete","parameterTypes":[] }, {"name":"findByAT","parameterTypes":[] }, {"name":"findByAlias","parameterTypes":[] }, {"name":"findByTag","parameterTypes":[] }, {"name":"init","parameterTypes":[] }, {"name":"initData","parameterTypes":[] }, {"name":"save","parameterTypes":[] }, {"name":"store","parameterTypes":[] }]
   },
   {
     "name":"net.cofcool.toolbox.internal.simplenote.NoteRepository$Note",
@@ -1247,6 +1280,10 @@
   },
   {
     "name":"sun.security.rsa.RSASignature$SHA256withRSA",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.rsa.RSASignature$SHA384withRSA",
     "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {

@@ -15,10 +15,15 @@ public record Command(
 ) {
 
     public Command(String cmd, String alias, List<String> tags) {
-        this(alias != null ? alias : Objects.hash(cmd) + "", cmd, alias, tags, LocalDateTime.now());
+        this(alias != null ? alias : Math.abs(Objects.hash(cmd)) + "", cmd, alias, tags, LocalDateTime.now());
     }
 
     public boolean tagContains(String tag) {
         return tags.contains(tag);
+    }
+
+    @Override
+    public String toString() {
+        return String.join(" ", id, cmd, Objects.toString(tags.toString(), "[]"));
     }
 }

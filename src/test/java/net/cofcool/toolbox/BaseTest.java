@@ -9,7 +9,7 @@ public abstract class BaseTest {
     protected Args args;
 
     @BeforeEach
-    public void setup() {
+    public void setup() throws Exception {
         System.setProperty("logging.debug", "true");
         args = instance().config().context(new ConsoleToolContext());
         init();
@@ -17,7 +17,7 @@ public abstract class BaseTest {
 
     protected abstract Tool instance();
 
-    protected void init() {
+    protected void init() throws Exception {
 
     }
 

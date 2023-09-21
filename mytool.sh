@@ -27,8 +27,8 @@ esac
 
 
 if [ "$NATIVE" = "true" ]; then
-  $PRGDIR/my-toolbox -Dwebroot.dir=$PRGDIR/webroot $@
+  $PRGDIR/my-toolbox -Dwebroot.dir=$PRGDIR/webroot "$@"
 else
 	echo "Start toolbox.jar"
-  java -jar $PRGDIR/lib/my-toolbox-fat.jar $@
+  java -jar $PRGDIR/lib/my-toolbox-fat.jar "$@"
 fi

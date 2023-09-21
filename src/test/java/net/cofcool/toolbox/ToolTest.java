@@ -15,7 +15,7 @@ class ToolTest {
 
     @Test
     void args() {
-        Args args = new Args(new String[]{"--tool=test", "--cmd=md5", "sas"});
+        Args args = new Args(new String[]{"--tool=test", "--cmd=md5 sas"});
         Assertions.assertEquals("test", args.readArg("tool").val());
         Assertions.assertEquals("md5 sas", args.readArg("cmd").val());
     }

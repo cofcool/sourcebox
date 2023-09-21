@@ -2,7 +2,6 @@ package net.cofcool.toolbox;
 
 import io.vertx.core.shareddata.Shareable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -88,15 +87,17 @@ public interface Tool {
 
         public Args(String[] args) {
             this();
-            for (String s : String.join(" ", args).split("--")) {
-                if (s.isEmpty()) {
+            for (String s : args) {
+                if (!s.startsWith("--")) {
                     continue;
                 }
-                String[] strings = s.split("=");
-                if (strings.length > 2) {
-                    strings[1] = String.join("=", Arrays.copyOfRange(strings, 1, strings.length)).trim();
+                int eIdx = s.indexOf("=");
+
+                if (eIdx != -1) {
+                    arg(s.substring(2, eIdx), s.substring(eIdx + 1));
+                } else {
+                    arg(s.substring(2), null);
                 }
-                arg(strings[0], strings.length == 1 ? null :strings[1].trim());
             }
         }
 

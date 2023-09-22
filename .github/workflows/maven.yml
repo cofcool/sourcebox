@@ -7,11 +7,9 @@ on:
 
 jobs:
   package:
-    name: MyToolbox on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v3
         with:
@@ -26,12 +24,16 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.m2
-          key: ${{ matrix.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ matrix.os }}-m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
       - name: Build Zip Package
         run: mvn clean test && mvn package -Pnative -DskipTests=true
-      - name: Upload binary
-        uses: actions/upload-artifact@v3
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        id: create_release
         with:
-          name: my-toolbox-${{ matrix.os }}.zip
-          path: ./target/my-toolbox-bin.zip
+          allowUpdates: true
+          draft: false
+          prerelease: false
+          artifacts: "./target/*.zip"
+          bodyFile: "./target/changelog.md"

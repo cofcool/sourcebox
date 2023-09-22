@@ -30,6 +30,15 @@ public class CommandHelper implements WebTool {
             return;
         }
 
+        var del = args.readArg("del");
+        if (del.isPresent()) {
+            cmg.findByAT(del.val()).forEach(c -> {
+                log.info("Delete {0}", c.id());
+                cmg.delete(c.id());
+            });
+            return;
+        }
+
         args.readArg("find").ifPresent(a -> args.getContext().write(toPrintStr(cmg.findByAT(a.val()))));
 
         args.readArg("store").ifPresent(a -> {
@@ -43,7 +52,7 @@ public class CommandHelper implements WebTool {
 
     CommandManager getCommandManager(String path) {
         if (commandManager == null) {
-            commandManager = new CommandManager(path);
+            commandManager = new CommandManager(path, null);
         }
 
         return commandManager;
@@ -55,6 +64,7 @@ public class CommandHelper implements WebTool {
             .arg(new Arg("add", null, "add new command",  false, "@my-md5 mytool --md5= #my"))
             .arg(new Arg("filepath", "./commands.json", "commands file path",  false, null))
             .arg(new Arg("find", "ALL", "find command, can be tag or alias, ALL will list all",  false, "#md5"))
+            .arg(new Arg("del", null, "delete command, can be tag or alias, ALL will delete all",  false, "#md5"))
             .arg(new Arg("store", null, "save alias into env, ALL will save all",  false, "ALL"));
     }
 

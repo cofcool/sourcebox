@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import lombok.CustomLog;
 import net.cofcool.toolbox.util.BaseFileCrudRepository;
@@ -19,9 +20,14 @@ public class CommandManager {
 
     public static final String MY_TOOL_ALIAS = FilenameUtils.concat(System.getProperty("user.home"),  ".mytool_alias");
     private final CommandRepository repository;
+    private final String aliasPath;
 
-    public CommandManager(String path) {
+    public CommandManager(String path, String aliasPath) {
         repository = new CommandRepository(path);
+        if (aliasPath == null) {
+            aliasPath = MY_TOOL_ALIAS;
+        }
+        this.aliasPath = aliasPath;
     }
 
     public void save(String command) {
@@ -30,7 +36,7 @@ public class CommandManager {
 
         var split = command.split(" ");
         int sIdx = 0;
-        int eIdx = - 1;
+        int eIdx = -1;
         for (int i = 0; i < split.length; i++) {
             var s = split[i];
             if (s.startsWith("@")) {
@@ -45,7 +51,7 @@ public class CommandManager {
             }
         }
         if (eIdx < 0) {
-            eIdx = split.length - 1;
+            eIdx = split.length;
         }
 
         repository.save(new Command(String.join(" ", Arrays.copyOfRange(split, sIdx, eIdx)), alias, tags));
@@ -71,6 +77,8 @@ public class CommandManager {
                 alias = s;
             } else if (s.startsWith("#")) {
                 tags.add(s);
+            } else {
+                alias = "@" + s;
             }
         }
         return repository.find(new Command(null, alias, tags));
@@ -83,17 +91,31 @@ public class CommandManager {
     public void store(String alias) {
         var all = findByAT(alias)
             .stream()
-            .map(a ->
-                "alias "
-                    + a.alias().substring(1)
-                    + "='"
-                    + a.cmd()
-                    + "'"
-            )
-            .collect(Collectors.joining("\n"));
+            .filter(Command::hasAlias)
+            .toList();
+        if (all.isEmpty()) {
+            log.debug("No alias to store");
+            return;
+        }
         try {
-            File file = new File(MY_TOOL_ALIAS);
-            FileUtils.write(file, all, StandardCharsets.UTF_8);
+            File file = new File(aliasPath);
+            var newAlias = new ArrayList<>(all);
+            if (file.exists()) {
+                var old = FileUtils.readLines(file, StandardCharsets.UTF_8)
+                    .stream()
+                    .map(a -> {
+                        var index = a.indexOf("=");
+                        return new Command(a.substring(index + 2, a.length() - 1), "@" + a.substring(6, index), Collections.emptyList());
+                    })
+                    .filter(a -> all.stream().noneMatch(c -> c.id().equals(a.id())))
+                    .toList();
+                newAlias.addAll(old);
+            }
+            FileUtils.write(
+                file,
+                newAlias.stream().map(Command::toAlias).collect(Collectors.joining("\n")),
+                StandardCharsets.UTF_8
+            );
             Runtime.getRuntime().exec(new String[] {"sh", "source", file.getAbsolutePath()});
             log.info("Update {0} alias to {1}", alias, file.getAbsolutePath());
         } catch (IOException e) {
@@ -121,13 +143,15 @@ public class CommandManager {
 
         @Override
         public List<Command> find(Command condition) {
+            Predicate<Command> predicate = a -> true;
             if (condition.alias() != null) {
-                return find().stream().filter(a -> condition.alias().equals(a.alias())).toList();
+                predicate = predicate.and(a -> condition.alias().equals(a.alias()));
             }
             if (condition.tags() != null && !condition.tags().isEmpty()) {
-                return find().stream().filter(a -> condition.tags().stream().anyMatch(a::tagContains)).toList();
+                predicate = predicate.and(a -> condition.tags().stream().anyMatch(a::tagContains));
             }
-            return Collections.emptyList();
+
+            return find().stream().filter(predicate).toList();
         }
     }
 

@@ -14,12 +14,26 @@ public record Command(
     LocalDateTime cTime
 ) {
 
+    public static final String NO_ALIAS = "NA_";
+
     public Command(String cmd, String alias, List<String> tags) {
-        this(alias != null ? alias : Math.abs(Objects.hash(cmd)) + "", cmd, alias, tags, LocalDateTime.now());
+        this(alias != null ? alias : NO_ALIAS + Math.abs(Objects.hash(cmd)), cmd, alias, tags, LocalDateTime.now());
     }
 
     public boolean tagContains(String tag) {
         return tags.contains(tag);
+    }
+
+    public boolean hasAlias() {
+        return !id.startsWith(NO_ALIAS);
+    }
+
+    public String toAlias() {
+        return "alias "
+            + alias.substring(1)
+            + "='"
+            + cmd
+            + "'";
     }
 
     @Override

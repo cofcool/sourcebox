@@ -649,7 +649,7 @@
     "queryAllDeclaredMethods":true,
     "queryAllPublicMethods":true,
     "queryAllDeclaredConstructors":true,
-    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"run","parameterTypes":[] }, {"name":"runWithAdd","parameterTypes":[] }, {"name":"runWithStore","parameterTypes":[] }, {"name":"runWithStoreALL","parameterTypes":[] }]
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"run","parameterTypes":[] }, {"name":"runWithAdd","parameterTypes":[] }]
   },
   {
     "name":"net.cofcool.toolbox.internal.commandhelper.CommandManagerTest",
@@ -658,7 +658,7 @@
     "queryAllDeclaredMethods":true,
     "queryAllPublicMethods":true,
     "queryAllDeclaredConstructors":true,
-    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"delete","parameterTypes":[] }, {"name":"findByAT","parameterTypes":[] }, {"name":"findByAlias","parameterTypes":[] }, {"name":"findByTag","parameterTypes":[] }, {"name":"init","parameterTypes":[] }, {"name":"initData","parameterTypes":[] }, {"name":"save","parameterTypes":[] }, {"name":"store","parameterTypes":[] }]
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"delete","parameterTypes":[] }, {"name":"findByAT","parameterTypes":[] }, {"name":"findByAlias","parameterTypes":[] }, {"name":"findByTag","parameterTypes":[] }, {"name":"hasAlias","parameterTypes":[] }, {"name":"init","parameterTypes":[] }, {"name":"initData","parameterTypes":[] }, {"name":"save","parameterTypes":[] }, {"name":"store","parameterTypes":[] }, {"name":"storeSingle","parameterTypes":[] }]
   },
   {
     "name":"net.cofcool.toolbox.internal.simplenote.NoteRepository$Note",
@@ -1177,6 +1177,14 @@
   {
     "name":"org.junit.jupiter.api.Test",
     "queryAllPublicMethods":true
+  },
+  {
+    "name":"org.junit.jupiter.api.condition.EnabledIfSystemProperty",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"org.junit.jupiter.api.condition.EnabledIfSystemPropertyCondition",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {
     "name":"org.junit.jupiter.api.extension.ExtendWith",

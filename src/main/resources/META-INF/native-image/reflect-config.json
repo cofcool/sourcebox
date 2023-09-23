@@ -321,10 +321,6 @@
     "methods":[{"name":"getInputArguments","parameterTypes":[] }]
   },
   {
-    "name":"java.lang.management.ThreadInfo",
-    "fields":[{"name":"virtual"}]
-  },
-  {
     "name":"java.lang.reflect.RecordComponent",
     "methods":[{"name":"getName","parameterTypes":[] }, {"name":"getType","parameterTypes":[] }]
   },
@@ -349,7 +345,7 @@
   },
   {
     "name":"java.nio.DirectByteBuffer",
-    "methods":[{"name":"<init>","parameterTypes":["long","int"] }]
+    "methods":[{"name":"<init>","parameterTypes":["long","long"] }]
   },
   {
     "name":"java.nio.channels.NetworkChannel",
@@ -398,10 +394,6 @@
   {
     "name":"java.util.concurrent.atomic.Striped64",
     "fields":[{"name":"base"}, {"name":"cellsBusy"}]
-  },
-  {
-    "name":"java.util.concurrent.atomic.Striped64$Cell",
-    "fields":[{"name":"value"}]
   },
   {
     "name":"javax.security.auth.x500.X500Principal",
@@ -649,7 +641,7 @@
     "queryAllDeclaredMethods":true,
     "queryAllPublicMethods":true,
     "queryAllDeclaredConstructors":true,
-    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"run","parameterTypes":[] }, {"name":"runWithAdd","parameterTypes":[] }]
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"run","parameterTypes":[] }, {"name":"runWithAdd","parameterTypes":[] }, {"name":"runWithDel","parameterTypes":[] }]
   },
   {
     "name":"net.cofcool.toolbox.internal.commandhelper.CommandManagerTest",
@@ -1173,6 +1165,9 @@
   {
     "name":"org.apiguardian.api.API",
     "queryAllPublicMethods":true
+  },
+  {
+    "name":"org.junit.internal.AssumptionViolatedException"
   },
   {
     "name":"org.junit.jupiter.api.Test",

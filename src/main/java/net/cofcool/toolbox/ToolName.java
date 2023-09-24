@@ -1,6 +1,7 @@
 package net.cofcool.toolbox;
 
 import net.cofcool.toolbox.internal.ClippingsToMd;
+import net.cofcool.toolbox.internal.CodeGenerator;
 import net.cofcool.toolbox.internal.Converts;
 import net.cofcool.toolbox.internal.DirWebServer;
 import net.cofcool.toolbox.internal.FileNameFormatter;
@@ -27,7 +28,8 @@ public enum ToolName {
     note("simple web notebook", SimpleNote.class),
     json("make json more readable", JsonFormatter.class),
     htmlDown("download html from links", HtmlDownloader.class),
-    cHelper("manage commands, like alias, tag...", CommandHelper.class);
+    cHelper("manage commands, like alias, tag...", CommandHelper.class),
+    generate("generate code from template", CodeGenerator .class);
 
     private final String desc;
     private final Class<? extends Tool> tool;

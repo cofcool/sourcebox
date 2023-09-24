@@ -1354,5 +1354,20 @@
   {
     "name":"sun.security.x509.SubjectKeyIdentifierExtension",
     "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.CodeGenerator",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.CodeGenerator$Config",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.util.Set"] }]
+  },
+  {
+    "name":"DemoTemplate",
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"generate","parameterTypes":["java.util.Map"] }]
   }
 ]

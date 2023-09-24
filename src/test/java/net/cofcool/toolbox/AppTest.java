@@ -1,6 +1,8 @@
 package net.cofcool.toolbox;
 
 import net.cofcool.toolbox.Tool.RunnerType;
+import net.cofcool.toolbox.logging.Logger;
+import net.cofcool.toolbox.logging.LoggerFactory;
 import org.junit.jupiter.api.Test;
 
 class AppTest {
@@ -33,4 +35,14 @@ class AppTest {
             System.out.println("-------");
         }
     }
+
+    @Test
+    void logAllHelp() {
+        Logger log = LoggerFactory.getLogger(this.getClass());
+        for (Tool tool : App.supportTools(RunnerType.CLI)) {
+            log.info(tool.config().toHelpString());
+        }
+    }
+
+
 }

@@ -50,6 +50,7 @@
             <includes>
                 <include>*.txt</include>
                 <include>*.properties</include>
+                <include>*.java</include>
             </includes>
         </fileSet>
         <fileSet>

@@ -113,6 +113,21 @@
           </archive>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <compilerArgs>--enable-preview</compilerArgs>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>
+            --enable-preview
+          </argLine>
+        </configuration>
+      </plugin>
     </plugins>
     <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
       <plugins>
@@ -132,7 +147,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.22.1</version>
+          <version>3.1.2</version>
         </plugin>
         <plugin>
           <artifactId>maven-jar-plugin</artifactId>
@@ -229,6 +244,7 @@
                 -H:ResourceConfigurationResources=META-INF/native-image/resource-config.json
                 --initialize-at-run-time=io.netty.handler.codec.compression.ZstdOptions
                 --enable-url-protocols=http --enable-url-protocols=https
+                --enable-preview
               </buildArgs>
             </configuration>
           </plugin>

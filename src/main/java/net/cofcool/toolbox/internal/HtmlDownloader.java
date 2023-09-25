@@ -11,7 +11,9 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.CustomLog;
@@ -34,6 +36,8 @@ public class HtmlDownloader implements Tool {
     private static final Map<String, Function<Element, String>> tagMap = new HashMap<>();
 
     private static final String IMGS_FOLDER = "imgs";
+    private final Set<String> history = new HashSet<>();
+
     private int depth;
     private boolean clean;
     private boolean toMd;
@@ -77,6 +81,8 @@ public class HtmlDownloader implements Tool {
         for (String url : urls) {
             downloadUrl(out, url, depth, img);
         }
+
+        history.clear();
     }
 
     private Connection getConnection() {
@@ -115,6 +121,11 @@ public class HtmlDownloader implements Tool {
             return;
         }
 
+        if (history.contains(url)) {
+            log.debug("Ignore downloaded {0}", url);
+            return;
+        }
+
         Document doc;
         if (url.startsWith("file")) {
             doc = Jsoup.parse(new File(url.substring(5)));
@@ -148,6 +159,7 @@ public class HtmlDownloader implements Tool {
 
         FileUtils.writeStringToFile(file, doc.outerHtml(), StandardCharsets.UTF_8);
         log.info("Download {0} from url: {1}", file.getAbsolutePath(), url);
+        history.add(url);
 
         if (toMd) {
             toMarkdown(doc.body(), folder, title);

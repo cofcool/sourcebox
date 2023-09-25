@@ -1,6 +1,6 @@
 # 常用小工具
 
-使用 Java(最低要求 JDK 20, 推荐使用 `GraalVM`), Python 等语言实现
+使用 Java(最低要求 JDK 21, 推荐使用 `GraalVM`), Python 等语言实现
 
 * `./mytool.sh` 查看程序信息，`--help={COMMAND}` 查看具体命令的帮助信息, 如 `--help=converts`
 * `--debug=true` 打开调试模式

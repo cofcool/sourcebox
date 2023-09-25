@@ -18,6 +18,20 @@
 * [ ] Web 页面
 * [ ] JavaFX
 
+
+## 命令助手
+
+使用前需要把 `source ～/.mytool_alias` 添加到 shell 配置中
+
+* 命令管理，方便管理日常使用的长命令，如查询，添加标签等
+* 别名管理，可针对长命令配置别名，并导出到当前环境
+
+使用:
+
+* 添加 `./mytool.sh --tool=cHelper --add="@helper mytool --tool=cHelper #mytool #my"`，`@`开头的为别名，可选参数；`#`开头的为标签，可以为多个，可选参数
+* 导出别名到当前环境 `./mytool.sh --tool=cHelper --save=ALL` ，`--save` 参数可指定需要导出的命令，支持别名和标签，如 `--save="#kafka"`
+* 查询 `./mytool.sh --tool=cHelper --find=ALL` 查询命令，支持别名和标签，可以多个，如 `--find="#my @helper"`
+
 ## 常用字符串转换工具
 
 使用: `./mytool.sh --tool=converts --cmd="now" --pipeline="md5 | base64"`
@@ -33,6 +47,15 @@
 * replace，字符串替换
 * base64, 编码和解码
 * ...
+
+## 网页下载
+
+* 链接递归遍历
+* 代理
+* 批量下载
+* 转换为 Markdown
+
+使用: `./mytool.sh --tool=htmlDown --url="https://example.com"`
 
 ## Git 提交记录生成更新日志
 
@@ -108,31 +131,9 @@ Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到
 * filename，文件名称，默认为 `note.json`
 * port，监听端口，默认为 `38080`
 
-# JSON 格式化
+## JSON 格式化
 
 使用: `./mytool.sh --tool=json [--json='{}'] [--path=dmeo.json]`
-
-# 网页下载
-
-* 链接递归遍历
-* 代理
-* 批量下载
-* 转换为 Markdown
-
-使用: `./mytool.sh --tool=htmlDown --url="https://example.com"`
-
-# 命令助手
-
-使用前需要把 `source ～/.mytool_alias` 添加到 shell 配置中
-
-* 命令管理，方便管理日常使用的长命令，如查询，添加标签等
-* 别名管理，可针对长命令配置别名，并导出到当前环境
-
-使用: 
-
-* 添加 `./mytool.sh --tool=cHelper --add="@helper mytool --tool=cHelper #mytool #my"`，`@`开头的为别名，可选参数；`#`开头的为标签，可以为多个，可选参数
-* 导出别名到当前环境 `./mytool.sh --tool=cHelper --save=ALL` ，`--save` 参数可指定需要导出的命令，支持别名和标签，如 `--save="#kafka"`
-* 查询 `./mytool.sh --tool=cHelper --find=ALL` 查询命令，支持别名和标签，可以多个，如 `--find="#my @helper"`
 
 # 致谢
 

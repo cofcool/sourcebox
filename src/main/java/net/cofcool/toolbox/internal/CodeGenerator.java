@@ -39,8 +39,11 @@ public class CodeGenerator implements Tool {
         File workDir = Paths.get(out, templates.getPkg().split("\\.")).toFile();
         FileUtils.forceMkdirParent(workDir);
         ret.forEach((k, v) -> {
+            var names = k.split("\\.");
+            names[names.length - 1] = names[names.length - 1] + ".java";
+
             try {
-                FileUtils.writeStringToFile(FileUtils.getFile(workDir, k + ".java"), v, StandardCharsets.UTF_8);
+                FileUtils.writeStringToFile(FileUtils.getFile(workDir, names), v, StandardCharsets.UTF_8);
                 log.info("Write class {0} ok", k);
             } catch (IOException e) {
                 throw new RuntimeException("Write class fil error", e);
@@ -159,6 +162,19 @@ public class CodeGenerator implements Tool {
                     @RestController
                     @RequestMapping(value = "/\{ s.toLowerCase() }")
                     public class \{ s }Controller {
+
+                    }
+                    """
+                );
+                ret.put(
+                    "service." + s + "Service",
+                    STR. """
+                    package \{ config.pkg() }.service;
+
+                    import org.springframework.stereotype.Service;
+
+                    @Service
+                    public class \{ s }Service {
 
                     }
                     """

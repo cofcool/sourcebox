@@ -1,1 +1,1 @@
-CofCool@ToolBox v1.0.7
+CofCool@ToolBox v1.1.0

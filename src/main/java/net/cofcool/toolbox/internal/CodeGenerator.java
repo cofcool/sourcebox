@@ -106,7 +106,7 @@ public class CodeGenerator implements Tool {
 
     static class Templates {
 
-        private static final Map<String, Templates> TEMPLATES_MAP = Map.of("spring", new Templates(new SpringTemplate()));
+        private static final Map<String, Templates> TEMPLATES_MAP = Map.of();
 
         private final Object tp;
         @Getter
@@ -145,45 +145,7 @@ public class CodeGenerator implements Tool {
         }
     }
 
-    private record SpringTemplate() implements Generator {
 
-        @Override
-        public Map<String,String> generate(Config config) {
-            var ret = new HashMap<String, String>();
-            for (String s : config.entities()) {
-                ret.put(
-                    s + "Controller",
-                    STR. """
-                    package \{ config.pkg() };
-
-                    import org.springframework.web.bind.annotation.RequestMapping;
-                    import org.springframework.web.bind.annotation.RestController;
-
-                    @RestController
-                    @RequestMapping(value = "/\{ s.toLowerCase() }")
-                    public class \{ s }Controller {
-
-                    }
-                    """
-                );
-                ret.put(
-                    "service." + s + "Service",
-                    STR. """
-                    package \{ config.pkg() }.service;
-
-                    import org.springframework.stereotype.Service;
-
-                    @Service
-                    public class \{ s }Service {
-
-                    }
-                    """
-                );
-            }
-
-            return ret;
-        }
-    }
 
     record Config(
         String pkg,

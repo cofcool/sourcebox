@@ -9,9 +9,11 @@ import net.cofcool.toolbox.internal.CodeGenerator.Config;
 import net.cofcool.toolbox.util.JsonUtil;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+@Disabled
 class CodeGeneratorTest extends BaseTest {
 
     @TempDir

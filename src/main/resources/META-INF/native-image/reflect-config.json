@@ -411,7 +411,7 @@
     "queryAllDeclaredMethods":true,
     "queryAllPublicMethods":true,
     "queryAllDeclaredConstructors":true,
-    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"printAllHelp","parameterTypes":[] }, {"name":"run","parameterTypes":[] }, {"name":"runWithHelp","parameterTypes":[] }, {"name":"runWithHelp1","parameterTypes":[] }, {"name":"runWithNoName","parameterTypes":[] }]
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"init","parameterTypes":[] }, {"name":"logAllHelp","parameterTypes":[] }, {"name":"printAllHelp","parameterTypes":[] }, {"name":"run","parameterTypes":[] }, {"name":"runWithCfg","parameterTypes":[] }, {"name":"runWithHelp","parameterTypes":[] }, {"name":"runWithHelp1","parameterTypes":[] }, {"name":"runWithNoName","parameterTypes":[] }]
   },
   {
     "name":"net.cofcool.toolbox.BaseTest",
@@ -419,7 +419,7 @@
     "allDeclaredClasses":true,
     "queryAllDeclaredMethods":true,
     "queryAllPublicMethods":true,
-    "methods":[{"name":"setup","parameterTypes":[] }]
+    "methods":[{"name":"config","parameterTypes":[] }, {"name":"setup","parameterTypes":[] }]
   },
   {
     "name":"net.cofcool.toolbox.ToolName",
@@ -433,7 +433,7 @@
     "queryAllDeclaredMethods":true,
     "queryAllPublicMethods":true,
     "queryAllDeclaredConstructors":true,
-    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"args","parameterTypes":[] }, {"name":"argsAlias","parameterTypes":[] }, {"name":"argsWithConfig","parameterTypes":[] }, {"name":"prefixArgs","parameterTypes":[] }, {"name":"toHelpString","parameterTypes":[] }]
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"args","parameterTypes":[] }, {"name":"argsAlias","parameterTypes":[] }, {"name":"argsWithConfig","parameterTypes":[] }, {"name":"fileArgs","parameterTypes":[] }, {"name":"prefixArgs","parameterTypes":[] }, {"name":"toHelpString","parameterTypes":[] }]
   },
   {
     "name":"net.cofcool.toolbox.internal.ClippingsToMd",
@@ -447,6 +447,18 @@
     "queryAllPublicMethods":true,
     "queryAllDeclaredConstructors":true,
     "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"run","parameterTypes":[] }, {"name":"runWithMrexpt","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.CodeGenerator",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.CodeGeneratorTest",
+    "allDeclaredFields":true,
+    "allDeclaredClasses":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllPublicMethods":true,
+    "queryAllDeclaredConstructors":true
   },
   {
     "name":"net.cofcool.toolbox.internal.Converts",
@@ -641,7 +653,7 @@
     "queryAllDeclaredMethods":true,
     "queryAllPublicMethods":true,
     "queryAllDeclaredConstructors":true,
-    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"run","parameterTypes":[] }, {"name":"runWithAdd","parameterTypes":[] }, {"name":"runWithDel","parameterTypes":[] }]
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"run","parameterTypes":[] }, {"name":"runWithAdd","parameterTypes":[] }, {"name":"runWithDel","parameterTypes":[] }, {"name":"runWithStore","parameterTypes":[] }, {"name":"runWithStoreALL","parameterTypes":[] }]
   },
   {
     "name":"net.cofcool.toolbox.internal.commandhelper.CommandManagerTest",
@@ -1160,7 +1172,7 @@
   },
   {
     "name":"org.apache.maven.surefire.junitplatform.JUnitPlatformProvider",
-    "methods":[{"name":"<init>","parameterTypes":["org.apache.maven.surefire.providerapi.ProviderParameters"] }]
+    "methods":[{"name":"<init>","parameterTypes":["org.apache.maven.surefire.api.provider.ProviderParameters"] }]
   },
   {
     "name":"org.apiguardian.api.API",
@@ -1170,16 +1182,12 @@
     "name":"org.junit.internal.AssumptionViolatedException"
   },
   {
+    "name":"org.junit.jupiter.api.Disabled",
+    "queryAllPublicMethods":true
+  },
+  {
     "name":"org.junit.jupiter.api.Test",
     "queryAllPublicMethods":true
-  },
-  {
-    "name":"org.junit.jupiter.api.condition.EnabledIfSystemProperty",
-    "queryAllPublicMethods":true
-  },
-  {
-    "name":"org.junit.jupiter.api.condition.EnabledIfSystemPropertyCondition",
-    "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {
     "name":"org.junit.jupiter.api.extension.ExtendWith",
@@ -1192,6 +1200,14 @@
   {
     "name":"org.junit.platform.commons.annotation.Testable",
     "queryAllPublicMethods":true
+  },
+  {
+    "name":"org.junit.platform.launcher.LauncherSession",
+    "methods":[{"name":"getLauncher","parameterTypes":[] }]
+  },
+  {
+    "name":"org.junit.platform.launcher.core.LauncherFactory",
+    "methods":[{"name":"openSession","parameterTypes":[] }]
   },
   {
     "name":"sun.misc.Unsafe",
@@ -1354,20 +1370,5 @@
   {
     "name":"sun.security.x509.SubjectKeyIdentifierExtension",
     "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
-  },
-  {
-    "name":"net.cofcool.toolbox.internal.CodeGenerator",
-    "methods":[{"name":"<init>","parameterTypes":[] }]
-  },
-  {
-    "name":"net.cofcool.toolbox.internal.CodeGenerator$Config",
-    "allDeclaredFields":true,
-    "queryAllDeclaredMethods":true,
-    "queryAllDeclaredConstructors":true,
-    "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.util.Set"] }]
-  },
-  {
-    "name":"DemoTemplate",
-    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"generate","parameterTypes":["java.util.Map"] }]
   }
 ]

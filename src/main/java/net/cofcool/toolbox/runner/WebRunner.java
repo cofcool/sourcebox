@@ -199,7 +199,7 @@ public class WebRunner extends AbstractVerticle implements ToolRunner, VertxDepl
                         r.body().asJsonObject().forEach(e -> args.arg(e.getKey(), (String) e.getValue()));
                         var webToolContext = new WebToolContext();
                         args.copyConfigFrom(tool.config())
-                            .copyConfigFrom(globalConfig)
+                            .copyConfigFrom(globalConfig.removePrefix(toolName))
                             .context(webToolContext);
 
                         try {

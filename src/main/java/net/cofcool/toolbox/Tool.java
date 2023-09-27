@@ -1,6 +1,10 @@
 package net.cofcool.toolbox;
 
 import io.vertx.core.shareddata.Shareable;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -24,12 +28,20 @@ public interface Tool {
 
     Args config();
 
+    default Args defaultConfig(String globalDir) {
+        return null;
+    }
+
     default Logger getLogger() {
         return LoggerFactory.getLogger(getClass());
     }
 
     record Arg(String key, String val, String desc, boolean required, String demo) implements
         Shareable {
+
+        public Arg(String key, String val) {
+            this(key, val, null, false, null);
+        }
 
         public boolean isPresent() {
             return val != null;
@@ -83,6 +95,16 @@ public interface Tool {
 
         public Args() {
             this(4);
+        }
+
+        public Args(File cfgFile) throws IOException {
+            this(
+                Files
+                    .readAllLines(cfgFile.toPath(), StandardCharsets.UTF_8)
+                    .stream()
+                    .map(s -> "--" + s)
+                    .toArray(String[]::new)
+            );
         }
 
         public Args(String[] args) {
@@ -191,6 +213,10 @@ public interface Tool {
 
         public Args removePrefix(String prefix) {
             var newRags =  new Args();
+            newRags.context = context;
+            newRags.runnerTypes = runnerTypes;
+            newRags.aliases.putAll(aliases);
+            newRags.aliasInterceptors.putAll(aliasInterceptors);
             forEach((k, v) -> {
                 if (k.startsWith(prefix)) {
                     newRags.arg(new Arg(k.substring(prefix.length() + 1), v.val, v.desc, v.required, v.demo));

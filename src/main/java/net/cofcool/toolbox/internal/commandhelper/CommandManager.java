@@ -13,20 +13,15 @@ import lombok.CustomLog;
 import net.cofcool.toolbox.util.BaseFileCrudRepository;
 import net.cofcool.toolbox.util.JsonUtil;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
 
 @CustomLog
 public class CommandManager {
 
-    public static final String MY_TOOL_ALIAS = FilenameUtils.concat(System.getProperty("user.home"),  ".mytool_alias");
     private final CommandRepository repository;
     private final String aliasPath;
 
     public CommandManager(String path, String aliasPath) {
         repository = new CommandRepository(path);
-        if (aliasPath == null) {
-            aliasPath = MY_TOOL_ALIAS;
-        }
         this.aliasPath = aliasPath;
     }
 
@@ -119,7 +114,7 @@ public class CommandManager {
             Runtime.getRuntime().exec(new String[] {"sh", "source", file.getAbsolutePath()});
             log.info("Update {0} alias to {1}", alias, file.getAbsolutePath());
         } catch (IOException e) {
-            throw new RuntimeException("Update " + MY_TOOL_ALIAS + " file error", e);
+            throw new RuntimeException("Update " + aliasPath + " file error", e);
         }
     }
 

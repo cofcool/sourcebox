@@ -23,11 +23,12 @@ public class CLIRunner implements ToolRunner {
 
         args.readArg("tool").ifPresent(a -> {
             for (Tool tool : App.supportTools(RunnerType.CLI)) {
-                if (tool.name().name().equals(a.val())) {
+                var name = tool.name().name();
+                if (name.equals(a.val())) {
                     run.set(true);
-                    log.info("Start run " + tool.name().name());
+                    log.info("Start run " + name);
                     try {
-                        tool.run(args.copyConfigFrom(tool.config()));
+                        tool.run(args.removePrefix(name).copyConfigFrom(tool.config()));
                     } catch (Throwable e) {
                         log.error(e);
                         log.info("Help");

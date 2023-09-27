@@ -1,5 +1,7 @@
 package net.cofcool.toolbox;
 
+import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
@@ -14,6 +16,8 @@ import net.cofcool.toolbox.logging.Logger;
 import net.cofcool.toolbox.logging.LoggerFactory;
 import net.cofcool.toolbox.runner.CLIRunner;
 import net.cofcool.toolbox.runner.WebRunner;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 
 
@@ -33,7 +37,11 @@ public class App {
 
     private static final String VERSION_TXT = "/version.txt";
 
-    public static void main(String[] args) {
+    static String GLOBAL_CFG_DIR = FilenameUtils.concat(System.getProperty("user.home"), ".mytool");
+    private static String GLOBAL_CFG;
+
+
+    public static void main(String[] args) throws Exception {
         var pArgs = new Tool.Args(args)
             .copyAliasFrom(ALIAS)
             .copyConfigFrom(
@@ -44,8 +52,34 @@ public class App {
                     .arg(new Arg("mode", RunnerType.CLI.name(), "interface type", false, null))
             );
         LoggerFactory.setDebug(Boolean.parseBoolean(pArgs.readArg("debug").val()));
-
         var logger = LoggerFactory.getLogger(App.class);
+
+        pArgs.getArgVal("cfg").ifPresentOrElse(
+            a -> GLOBAL_CFG = a,
+            () -> GLOBAL_CFG = FilenameUtils.concat(GLOBAL_CFG_DIR, "mytool.cfg")
+        );
+
+        var cfg = new File(GLOBAL_CFG);
+        if (!cfg.exists()) {
+            //noinspection ResultOfMethodCallIgnored
+            cfg.getParentFile().mkdirs();
+
+            var dcfg = new HashSet<Arg>();
+            for (Tool tool : ALL_TOOLS) {
+                var df = tool.defaultConfig(GLOBAL_CFG_DIR);
+                if (df != null) {
+                    df.forEach((k, v) -> dcfg.add(new Arg(tool.name().name() + "." + k, v.val())));
+                }
+            }
+            try {
+                FileUtils.writeLines(cfg, "utf-8", dcfg.stream().map(a -> a.key() + "=" + a.val()).toList());
+                logger.debug("Init config file {0}", cfg);
+            } catch (IOException e) {
+                logger.error("Create " + cfg + " file error", e);
+            }
+        }
+        pArgs.copyConfigFrom(new Args(cfg));
+
         logger.debug("Args: {0}", pArgs);
 
         var notRun = new AtomicBoolean(true);
@@ -84,6 +118,10 @@ public class App {
         }
     }
 
+    public static String globalCfgDir(String subPath) {
+        return FilenameUtils.concat(GLOBAL_CFG_DIR, subPath);
+    }
+
     private static Tool cacheClass(Class<? extends Tool> type) throws Exception {
         var tool = ((Constructor<Tool>) type.getConstructor()).newInstance();
         ALL_TOOLS.add(tool);
@@ -105,6 +143,7 @@ public class App {
                 return e.getKey() + (help != null ? (": arguments: [" + help + "]") : "");
             })
             .collect(Collectors.joining("; ")));
+        logger.info("Global config file path: --cfg={0}", GLOBAL_CFG);
         logger.info("Tools:\n    " + ALL_TOOLS.stream().map(Tool::name).map(ToolName::toString).collect(Collectors.joining("\n    ")));
     }
 }

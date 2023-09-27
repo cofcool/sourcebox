@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import lombok.CustomLog;
 import net.cofcool.toolbox.ToolName;
 import net.cofcool.toolbox.WebTool;
+import org.apache.commons.io.FilenameUtils;
 
 @CustomLog
 public class CommandHelper implements WebTool {
@@ -22,7 +23,7 @@ public class CommandHelper implements WebTool {
     public void run(Args args) throws Exception {
         var path = args.readArg("filepath").val();
 
-        var cmg = getCommandManager(path);
+        var cmg = getCommandManager(path, args.readArg("aliasPath").val());
 
         var command = args.readArg("add");
         if (command.isPresent()) {
@@ -50,9 +51,9 @@ public class CommandHelper implements WebTool {
         return commandList.stream().map(Command::toString).collect(Collectors.joining("\n"));
     }
 
-    CommandManager getCommandManager(String path) {
+    CommandManager getCommandManager(String path, String alias) {
         if (commandManager == null) {
-            commandManager = new CommandManager(path, null);
+            commandManager = new CommandManager(path, alias);
         }
 
         return commandManager;
@@ -63,9 +64,17 @@ public class CommandHelper implements WebTool {
         return new Args()
             .arg(new Arg("add", null, "add new command",  false, "@my-md5 mytool --md5= #my"))
             .arg(new Arg("filepath", "./commands.json", "commands file path",  false, null))
+            .arg(new Arg("aliasPath", "./alias", "alias file path",  false, null))
             .arg(new Arg("find", "ALL", "find command, can be tag or alias, ALL will list all",  false, "#md5"))
             .arg(new Arg("del", null, "delete command, can be tag or alias, ALL will delete all",  false, "#md5"))
             .arg(new Arg("store", null, "save alias into env, ALL will save all",  false, "ALL"));
+    }
+
+    @Override
+    public Args defaultConfig(String globalDir) {
+        return new Args()
+            .arg("filepath", FilenameUtils.concat(globalDir, "commands.json"))
+            .arg("aliasPath", FilenameUtils.concat(globalDir, "alias"));
     }
 
     @Override

@@ -47,6 +47,12 @@ public class SimpleNote implements WebTool {
     }
 
     @Override
+    public Args defaultConfig(String globalDir) {
+        return new Args()
+            .arg(NoteConfig.PATH_KEY, globalDir);
+    }
+
+    @Override
     public Router router(Vertx vertx) {
         return new NoteIndex(vertx).router();
     }

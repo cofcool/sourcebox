@@ -1,12 +1,20 @@
 package net.cofcool.toolbox;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import net.cofcool.toolbox.Tool.Arg;
 import net.cofcool.toolbox.Tool.Args;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
+import org.junit.jupiter.api.io.TempDir;
 
 class ToolTest {
+
+    @TempDir
+    File file;
 
     @Test
     void toHelpString() {
@@ -18,6 +26,21 @@ class ToolTest {
         Args args = new Args(new String[]{"--tool=test", "--cmd=md5 sas"});
         Assertions.assertEquals("test", args.readArg("tool").val());
         Assertions.assertEquals("md5 sas", args.readArg("cmd").val());
+    }
+
+    @Test
+    void fileArgs() throws IOException {
+        File cfgFile = new File(file, "mytool.cfg");
+        Files.write(
+            cfgFile.toPath(),
+            """
+            cfg1=val1
+            cfg2=val2 sdfs
+            """.getBytes(StandardCharsets.UTF_8)
+        );
+        Args args = new Args(cfgFile);
+        Assertions.assertEquals("val1", args.readArg("cfg1").val());
+        Assertions.assertEquals("val2 sdfs", args.readArg("cfg2").val());
     }
 
     @Test

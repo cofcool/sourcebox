@@ -82,17 +82,17 @@ public class App {
 
         logger.debug("Args: {0}", pArgs);
 
-        var notRun = new AtomicBoolean(true);
-
-        pArgs.readArg("help").ifPresent(a -> {
+        var help = pArgs.readArg("help");
+        if (help.isPresent()) {
             for (Tool tool : ALL_TOOLS) {
-                if (tool.name().name().equals(a.val())) {
-                    notRun.set(false);
+                if (tool.name().name().equals(help.val())) {
                     logger.info(tool.config().toHelpString());
                 }
             }
-        });
+            return;
+        }
 
+        var notRun = new AtomicBoolean(true);
         try {
             var runner = RUNNER_MAP.get(RunnerType.valueOf(pArgs.readArg("mode").val()));
             notRun.set(!runner.run(pArgs));

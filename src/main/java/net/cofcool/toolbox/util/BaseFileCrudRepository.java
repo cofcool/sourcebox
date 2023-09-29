@@ -32,11 +32,18 @@ public abstract class BaseFileCrudRepository<T> implements CrudRepository<T> {
 
     private void init() throws IOException {
         if (!file.exists()) {
-            FileUtils.write(file, "[]", StandardCharsets.UTF_8);
-            log.info("Init {0} success", file);
+            var data = initContent();
+            if (data != null) {
+                FileUtils.write(file, data, StandardCharsets.UTF_8);
+                log.info("Init {0} success", file);
+            }
         } else {
             loadData(FileUtils.readFileToByteArray(file));
         }
+    }
+
+    protected String initContent() {
+        return "[]";
     }
 
     protected abstract void loadData(byte[] data);

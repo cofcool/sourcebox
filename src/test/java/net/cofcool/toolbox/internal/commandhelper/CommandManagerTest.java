@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import net.cofcool.toolbox.logging.LoggerFactory;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.junit.jupiter.api.BeforeAll;
@@ -22,6 +23,7 @@ class CommandManagerTest {
 
     @BeforeAll
     static void init() {
+        LoggerFactory.setDebug(true);
         commandManager = new CommandManager(
             FilenameUtils.concat(file.getAbsolutePath(), "cmd.json"),
             FilenameUtils.concat(file.getAbsolutePath(), ".mytools")

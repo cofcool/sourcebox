@@ -75,7 +75,7 @@ public class Converts implements Tool {
             args.arg(INPUT, ret);
         }
         ret = pipelineCmd.run(args);
-        getLogger().debug(cmd + " args: " + args + "; ret: " + ret);
+        getLogger().debug("{0} args: {1}; ret: {2}", cmd, args, ret);
         return ret;
     }
 

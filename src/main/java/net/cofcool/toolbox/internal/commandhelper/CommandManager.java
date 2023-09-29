@@ -17,6 +17,21 @@ import org.apache.commons.io.FileUtils;
 @CustomLog
 public class CommandManager {
 
+    private static final List<Command> INIT_CMDS;
+
+    static {
+        List<String> tags = List.of("#mytool");
+        INIT_CMDS = List.of(
+            new Command("mytool --tool=converts --cmd=now", "@mnow", tags),
+            new Command("mytool --tool=cHelper", "@helper", tags),
+            new Command("mytool --tool=converts --cmd=md5", "@mmd5", tags),
+            new Command("mytool --tool=converts --cmd=hdate", "@mhdate", tags),
+            new Command("mytool --tool=converts --cmd=timesp", "@mtimesp", tags),
+            new Command("mytool --tool=converts --cmd=lower", "@mlower", tags),
+            new Command("mytool --tool=converts --cmd=upper", "@mupper", tags)
+        );
+    }
+
     private final CommandRepository repository;
     private final String aliasPath;
 
@@ -122,6 +137,12 @@ public class CommandManager {
 
         public CommandRepository(String path) {
             super(path);
+        }
+
+        @Override
+        protected String initContent() {
+            save(INIT_CMDS);
+            return null;
         }
 
         @Override

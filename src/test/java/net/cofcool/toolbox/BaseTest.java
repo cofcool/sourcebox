@@ -2,6 +2,7 @@ package net.cofcool.toolbox;
 
 import java.io.File;
 import net.cofcool.toolbox.Tool.Args;
+import net.cofcool.toolbox.logging.LoggerFactory;
 import net.cofcool.toolbox.runner.CLIRunner.ConsoleToolContext;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +23,7 @@ public abstract class BaseTest {
     @BeforeEach
     public void setup() throws Exception {
         System.setProperty("logging.debug", "true");
+        LoggerFactory.setDebug(true);
         args = instance().config().context(new ConsoleToolContext());
         init();
     }

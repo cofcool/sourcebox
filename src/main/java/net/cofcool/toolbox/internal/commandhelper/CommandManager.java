@@ -22,8 +22,8 @@ public class CommandManager {
     static {
         List<String> tags = List.of("#mytool");
         INIT_CMDS = List.of(
-            new Command("mytool --tool=converts --cmd=now", "@mnow", tags),
             new Command("mytool --tool=cHelper", "@helper", tags),
+            new Command("mytool --tool=converts --cmd=now", "@mnow", tags),
             new Command("mytool --tool=converts --cmd=md5", "@mmd5", tags),
             new Command("mytool --tool=converts --cmd=hdate", "@mhdate", tags),
             new Command("mytool --tool=converts --cmd=timesp", "@mtimesp", tags),

@@ -37,6 +37,18 @@
 * 导出别名到当前环境 `./mytool.sh --tool=cHelper --save=ALL` ，`--save` 参数可指定需要导出的命令，支持别名和标签，如 `--save="#kafka"`
 * 查询 `./mytool.sh --tool=cHelper --find=ALL` 查询命令，支持别名和标签，可以多个，如 `--find="#my @helper"`
 
+内置别名：
+
+```
+@helper mytool --tool=cHelper #mytool
+@mlower mytool --tool=converts --cmd=lower #mytool
+@mupper mytool --tool=converts --cmd=upper #mytool
+@mmd5 mytool --tool=converts --cmd=md5 #mytool
+@mtimesp mytool --tool=converts --cmd=timesp #mytool
+@mnow mytool --tool=converts --cmd=now #mytool
+@mhdate mytool --tool=converts --cmd=hdate #mytool
+```
+
 ## 常用字符串转换工具
 
 使用: `./mytool.sh --tool=converts --cmd="now" --pipeline="md5 | base64"`

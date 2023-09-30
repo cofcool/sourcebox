@@ -4,7 +4,6 @@ import java.lang.reflect.Modifier;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -19,6 +18,7 @@ import java.util.random.RandomGenerator;
 import java.util.stream.Collectors;
 import net.cofcool.toolbox.Tool;
 import net.cofcool.toolbox.ToolName;
+import net.cofcool.toolbox.util.Utils;
 
 @SuppressWarnings({"InnerClassMayBeStatic", "unused"})
 public class Converts implements Tool {
@@ -175,24 +175,8 @@ public class Converts implements Tool {
     private class Md5 implements Pipeline {
 
         @Override
-        public String run(Args args) throws Exception{
-            MessageDigest messageDigest = MessageDigest.getInstance("MD5");
-            messageDigest.reset();
-            messageDigest.update(args.readArg(INPUT).val().getBytes(StandardCharsets.UTF_8));
-
-            byte[] byteArray = messageDigest.digest();
-
-            StringBuilder md5StrBuff = new StringBuilder();
-
-            for (byte b : byteArray) {
-                if (Integer.toHexString(0xFF & b).length() == 1) {
-                    md5StrBuff.append("0").append(Integer.toHexString(0xFF & b));
-                } else {
-                    md5StrBuff.append(Integer.toHexString(0xFF & b));
-                }
-            }
-
-            return md5StrBuff.toString();
+        public String run(Args args) throws Exception {
+            return Utils.md5(args.readArg(INPUT).val());
         }
 
         @Override

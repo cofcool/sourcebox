@@ -10,7 +10,7 @@
 * `--debug=true` 打开调试模式
 * `--jar` 启动 Java 版本，默认为原生编译版本，如 `mytool.sh --jar --tool=converts`
 
-部分命令支持别名， 如 `--tool=converts --cmd=random --in=test` 的别名为 `--random=test`，具体可查看帮助文档
+部分命令支持别名， 如 `--tool=converts --cmd=random --in=test` 的别名为 `--random=test`，具体可查看帮助文档，也可借助命令助手配置别名
 
 项目构建:
 

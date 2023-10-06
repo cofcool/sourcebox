@@ -34,7 +34,7 @@
 使用:
 
 * 添加 `./mytool.sh --tool=cHelper --add="@helper mytool --tool=cHelper #mytool #my"`，`@`开头的为别名，可选参数；`#`开头的为标签，可以为多个，可选参数
-* 导出到环境变量 `./mytool.sh --tool=cHelper --save=ALL` ，`--save` 参数可指定需要导出的命令，支持别名和标签，如 `--save="#kafka"`
+* 导出到环境变量 `./mytool.sh --tool=cHelper --store=ALL` ，`--store` 参数可指定需要导出的命令，支持别名和标签，如 `--store="#kafka"`
 * 查询 `./mytool.sh --tool=cHelper --find=ALL` 查询命令，支持别名和标签，可以多个，如 `--find="#my @helper"`
 
 内置别名：

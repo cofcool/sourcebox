@@ -223,6 +223,7 @@ public class HtmlDownloader implements Tool {
             .arg(new Arg("urlFile", null, "link file path", false, "./demo.txt"))
             .arg(new Arg("img", "false", "download images, false or path expression", false, null))
             .arg(new Arg("md", "false", "convert to markdown", false, null))
+            .arg(new Arg("txt", "false", "convert to plain text", false, null))
             .arg(new Arg("depth", "1", "link depth", false, null))
             .arg(new Arg("proxy", null, "request proxy", false, "127.0.0.1:8087"))
             .arg(new Arg("out", "./", "output folder", false, null))

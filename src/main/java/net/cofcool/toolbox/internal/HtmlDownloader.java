@@ -28,6 +28,8 @@ import org.jsoup.Connection.Method;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.safety.Cleaner;
+import org.jsoup.safety.Safelist;
 import org.jsoup.select.Elements;
 
 @CustomLog
@@ -41,6 +43,7 @@ public class HtmlDownloader implements Tool {
     private int depth;
     private boolean clean;
     private boolean toMd;
+    private boolean toTxt;
     private Proxy proxy;
 
     private Connection connection;
@@ -64,6 +67,7 @@ public class HtmlDownloader implements Tool {
         args.readArg("url").ifPresent(a -> urls.add(a.val()));
         clean = args.readArg("clean").test(Boolean::parseBoolean);
         toMd = args.readArg("md").test(Boolean::parseBoolean);
+        toTxt = args.readArg("txt").test(Boolean::parseBoolean);
         var img = args.readArg("img").val();
 
         if (urls.isEmpty()) {
@@ -97,6 +101,15 @@ public class HtmlDownloader implements Tool {
         var md = new ArrayList<String>();
         convertTagToMd(element, md);
         FileUtils.writeLines(Paths.get(folder, title + ".md").toFile(), md);
+    }
+
+    private void toPlainText(Document body, String folder, String title) throws IOException {
+        var cleaner = new Cleaner(Safelist.none());
+        FileUtils.writeStringToFile(
+            Paths.get(folder, title + ".txt").toFile(),
+            cleaner.clean(body).wholeText(),
+            StandardCharsets.UTF_8
+        );
     }
 
     private static void convertTagToMd(Element element, ArrayList<String> md) {
@@ -163,6 +176,9 @@ public class HtmlDownloader implements Tool {
 
         if (toMd) {
             toMarkdown(doc.body(), folder, title);
+        }
+        if (toTxt) {
+            toPlainText(doc, folder, title);
         }
 
         depth--;

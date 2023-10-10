@@ -56,6 +56,15 @@ class HtmlDownloaderTest extends BaseTest {
     }
 
     @Test
+    void runWithTxt() throws Exception {
+        instance().run(args
+            .arg("url", url)
+            .arg("out", "./target/HtmlDownloaderTest")
+            .arg("txt", "true")
+        );
+    }
+
+    @Test
     void runWithClean() throws Exception {
         instance().run(args
             .arg("url", url)

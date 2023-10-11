@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import net.cofcool.toolbox.BaseTest;
 import net.cofcool.toolbox.Tool;
+import net.cofcool.toolbox.internal.HtmlDownloader.OutputType;
 import org.jsoup.Jsoup;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -51,7 +52,7 @@ class HtmlDownloaderTest extends BaseTest {
         instance().run(args
             .arg("url", url)
             .arg("out", "./target/HtmlDownloaderTest")
-            .arg("md", "true")
+            .arg("outType", OutputType.markdown.name())
         );
     }
 
@@ -60,7 +61,7 @@ class HtmlDownloaderTest extends BaseTest {
         instance().run(args
             .arg("url", url)
             .arg("out", "./target/HtmlDownloaderTest")
-            .arg("txt", "true")
+            .arg("outType", OutputType.txt.name())
         );
     }
 

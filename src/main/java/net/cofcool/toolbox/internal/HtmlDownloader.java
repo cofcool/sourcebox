@@ -1,6 +1,7 @@
 package net.cofcool.toolbox.internal;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
@@ -8,14 +9,19 @@ import java.net.Proxy.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.zip.CRC32;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import lombok.CustomLog;
 import net.cofcool.toolbox.Tool;
 import net.cofcool.toolbox.ToolName;
@@ -42,8 +48,7 @@ public class HtmlDownloader implements Tool {
 
     private int depth;
     private boolean clean;
-    private boolean toMd;
-    private boolean toTxt;
+    private Set<OutputType> outputTypes = EnumSet.of(OutputType.html);
     private Proxy proxy;
 
     private Connection connection;
@@ -66,8 +71,10 @@ public class HtmlDownloader implements Tool {
         });
         args.readArg("url").ifPresent(a -> urls.add(a.val()));
         clean = args.readArg("clean").test(Boolean::parseBoolean);
-        toMd = args.readArg("md").test(Boolean::parseBoolean);
-        toTxt = args.readArg("txt").test(Boolean::parseBoolean);
+        outputTypes = Arrays
+            .stream(args.readArg("outType").val().split(","))
+            .map(OutputType::valueOf)
+            .collect(Collectors.toSet());
         var img = args.readArg("img").val();
 
         if (urls.isEmpty()) {
@@ -87,6 +94,10 @@ public class HtmlDownloader implements Tool {
         }
 
         history.clear();
+
+        for (OutputType type : outputTypes) {
+            type.finished();
+        }
     }
 
     private Connection getConnection() {
@@ -97,13 +108,13 @@ public class HtmlDownloader implements Tool {
         return connection;
     }
 
-    private void toMarkdown(Element element, String folder, String title) throws IOException {
+    private static void toMarkdown(Document body, String folder, String title) throws IOException {
         var md = new ArrayList<String>();
-        convertTagToMd(element, md);
+        convertTagToMd(body.body(), md);
         FileUtils.writeLines(Paths.get(folder, title + ".md").toFile(), md);
     }
 
-    private void toPlainText(Document body, String folder, String title) throws IOException {
+    private static void toPlainText(Document body, String folder, String title) throws IOException {
         var cleaner = new Cleaner(Safelist.none());
         FileUtils.writeStringToFile(
             Paths.get(folder, title + ".txt").toFile(),
@@ -155,11 +166,6 @@ public class HtmlDownloader implements Tool {
             log.info("Create dir {0}", dir);
         }
 
-        File file = Paths.get(folder, title + ".html").toFile();
-        if (file.exists()) {
-            file = Paths.get(folder, title + RandomStringUtils.randomNumeric(2) + ".html").toFile();
-        }
-
         if (clean) {
             doc.getElementsByTag("script").remove();
             doc.getElementsByTag("style").remove();
@@ -170,16 +176,12 @@ public class HtmlDownloader implements Tool {
             downloadImages(doc.getElementsByTag("img"), folder, expression);
         }
 
-        FileUtils.writeStringToFile(file, doc.outerHtml(), StandardCharsets.UTF_8);
-        log.info("Download {0} from url: {1}", file.getAbsolutePath(), url);
-        history.add(url);
+        for (OutputType type : outputTypes) {
+            type.applyOutput(doc, folder, title);
+            log.info("Save {0} file to {1} from url {1}", type, folder, url);
+        }
 
-        if (toMd) {
-            toMarkdown(doc.body(), folder, title);
-        }
-        if (toTxt) {
-            toPlainText(doc, folder, title);
-        }
+        history.add(url);
 
         depth--;
 
@@ -238,8 +240,7 @@ public class HtmlDownloader implements Tool {
             .arg(new Arg("url", null, "link string", false, "'{}'"))
             .arg(new Arg("urlFile", null, "link file path", false, "./demo.txt"))
             .arg(new Arg("img", "false", "download images, false or path expression", false, null))
-            .arg(new Arg("md", "false", "convert to markdown", false, null))
-            .arg(new Arg("txt", "false", "convert to plain text", false, null))
+            .arg(new Arg("outType", OutputType.html.name(), "output file type: " + Arrays.toString(OutputType.values()), false, null))
             .arg(new Arg("depth", "1", "link depth", false, null))
             .arg(new Arg("proxy", null, "request proxy", false, "127.0.0.1:8087"))
             .arg(new Arg("out", "./", "output folder", false, null))
@@ -249,6 +250,89 @@ public class HtmlDownloader implements Tool {
 
     private static String checkText(Element e, String out) {
         return StringUtils.isEmpty(e.text()) ? null :  out;
+    }
+
+    enum OutputType {
+        html((d, f, t) -> {
+            File file = Paths.get(f, t + ".html").toFile();
+            if (file.exists()) {
+                file = Paths.get(f, t + RandomStringUtils.randomNumeric(2) + ".html").toFile();
+            }
+            FileUtils.writeStringToFile(file, d.outerHtml(), StandardCharsets.UTF_8);
+        }),
+        txt(HtmlDownloader::toPlainText),
+        markdown(HtmlDownloader::toMarkdown),
+        epub(new ToEpub());
+
+        private final Output output;
+
+        OutputType(Output output) {
+            this.output = output;
+        }
+
+        private void applyOutput(Document body, String folder, String title) throws IOException {
+            output.write(body, folder, title);
+        }
+
+        private void finished() {
+            output.finished();
+        }
+
+    }
+
+    private interface Output {
+
+        void write(Document body, String folder, String title) throws IOException;
+
+        default void finished() {
+
+        }
+    }
+
+    private static class ToEpub implements Output {
+
+        public static final byte[] MINE_TYPE = "".getBytes(StandardCharsets.UTF_8);
+
+        private ZipOutputStream zos;
+        private List<String> files;
+
+        @Override
+        public void write(Document body, String folder, String title) throws IOException {
+            if (zos == null) {
+                zos = new ZipOutputStream(new FileOutputStream(Paths.get(folder, title + ".epub").toFile()));
+                files = new ArrayList<>();
+
+                var entry = new ZipEntry("mimetype");
+                entry.setMethod(ZipEntry.STORED);
+                entry.setSize(MINE_TYPE.length);
+                entry.setCrc(crc(MINE_TYPE));
+                zos.putNextEntry(entry);
+                zos.write(MINE_TYPE);
+                log.debug("Init epub file");
+            }
+
+            zos.putNextEntry(new ZipEntry("OEBPS/" + title + ".html"));
+            zos.write(body.outerHtml().getBytes(StandardCharsets.UTF_8));
+            files.add(title);
+            log.debug("Write {0}", title);
+        }
+
+        private long crc(byte[] data) {
+            var crc = new CRC32();
+            crc.update(data);
+            return crc.getValue();
+        }
+
+        @Override
+        public void finished() {
+
+            try {
+                zos.close();
+            } catch (IOException e) {
+                log.error("Save epub file error",  e);
+            }
+            files =  null;
+        }
     }
 
     static {

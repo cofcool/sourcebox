@@ -1,5 +1,7 @@
 package net.cofcool.toolbox.internal;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -22,11 +24,16 @@ import java.util.stream.Collectors;
 import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import lombok.CustomLog;
 import net.cofcool.toolbox.Tool;
 import net.cofcool.toolbox.ToolName;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Connection;
@@ -172,9 +179,7 @@ public class HtmlDownloader implements Tool {
             doc.getElementsByTag("meta").remove();
         }
 
-        if (!("false".equals(expression))) {
-            downloadImages(doc.getElementsByTag("img"), folder, expression);
-        }
+        downloadImages(doc.getElementsByTag("img"), folder, expression);
 
         for (OutputType type : outputTypes) {
             type.applyOutput(doc, folder, title);
@@ -202,11 +207,18 @@ public class HtmlDownloader implements Tool {
     }
 
     private void downloadImages(Elements imgs, String folder, String expression) throws IOException {
-        folder = FilenameUtils.concat(folder, IMGS_FOLDER);
-        FileUtils.forceMkdir(new File(folder));
+        boolean removeImg = "false".equals(expression);
+        if (!removeImg) {
+            folder = FilenameUtils.concat(folder, IMGS_FOLDER);
+            FileUtils.forceMkdir(new File(folder));
+        }
 
         var idx = 0;
         for (Element img : imgs) {
+            if (removeImg) {
+                img.remove();
+                continue;
+            }
             var name = img.attr("alt");
             var src = img.attr("abs:src");
             try {
@@ -289,18 +301,97 @@ public class HtmlDownloader implements Tool {
         }
     }
 
+    // calibre formatter
+    // epub 2
     private static class ToEpub implements Output {
 
-        public static final byte[] MINE_TYPE = "".getBytes(StandardCharsets.UTF_8);
+        private static final byte[] MINE_TYPE = "application/epub+zip".getBytes(StandardCharsets.UTF_8);
+
+        private static final byte[] CONTAINER = """
+            <?xml version="1.0"?>
+            <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+               <rootfiles>
+                  <rootfile full-path="metadata.opf" media-type="application/oebps-package+xml"/>
+               </rootfiles>
+            </container>
+            """.getBytes(StandardCharsets.UTF_8);
+
+        private static final String METADATA = """
+            <?xml version='1.0' encoding='utf-8'?>
+            <package xmlns="http://www.idpf.org/2007/opf" unique-identifier="uuid_id" version="2.0">
+              <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
+                <dc:title>%s</dc:title>
+                <dc:creator opf:file-as="Unknown" opf:role="aut">HtmlDownloader</dc:creator>
+                <dc:contributor opf:file-as="Unknown" opf:role="bkp">HtmlDownloader</dc:contributor>
+                <dc:language>zho</dc:language>
+              </metadata>
+              <manifest>
+                <item href="start.xhtml" id="start" media-type="application/xhtml+xml"/>
+                <item href="toc.ncx" id="ncx" media-type="application/x-dtbncx+xml"/>
+              </manifest>
+              <spine toc="ncx">
+                <itemref idref="start"/>
+              </spine>
+              <guide/>
+            </package>
+            """;
+
+        private static final String TOC = """
+            <?xml version='1.0' encoding='utf-8'?>
+            <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1" xml:lang="zh">
+              <head>
+                <meta name="dtb:depth" content="2"/>
+                <meta name="dtb:generator" content="HtmlDownloader"/>
+                <meta name="dtb:totalPageCount" content="0"/>
+                <meta name="dtb:maxPageNumber" content="0"/>
+              </head>
+              <docTitle>
+                <text>%s</text>
+              </docTitle>
+              <navMap>
+                <navPoint id="num_1" playOrder="1">
+                  <navLabel>
+                    <text>Start</text>
+                  </navLabel>
+                  <content src="start.xhtml"/>
+                </navPoint>
+                <navPoint id="num_2" playOrder="2">
+                  <navLabel>
+                    <text>%s</text>
+                  </navLabel>
+                  <content src="start.xhtml#toc_1"/>
+                </navPoint>
+              </navMap>
+            </ncx>
+            """;
+
+        private static final String START_HTML = """
+            <?xml version='1.0' encoding='utf-8'?>
+            <html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+                        
+            <head>
+              <title id="toc_1">%s</title>
+            </head>
+                        
+            <body>
+                        
+              <h1>%s</h1>
+                        
+            </body>
+                        
+            </html>
+            """;
 
         private ZipOutputStream zos;
         private List<String> files;
+        private String title;
 
         @Override
         public void write(Document body, String folder, String title) throws IOException {
             if (zos == null) {
                 zos = new ZipOutputStream(new FileOutputStream(Paths.get(folder, title + ".epub").toFile()));
                 files = new ArrayList<>();
+                this.title = title;
 
                 var entry = new ZipEntry("mimetype");
                 entry.setMethod(ZipEntry.STORED);
@@ -308,11 +399,28 @@ public class HtmlDownloader implements Tool {
                 entry.setCrc(crc(MINE_TYPE));
                 zos.putNextEntry(entry);
                 zos.write(MINE_TYPE);
+
+                var container = new ZipEntry("META-INF/container.xml");
+                zos.putNextEntry(container);
+                zos.write(CONTAINER);
+
+                var start = new ZipEntry("start.xhtml");
+                zos.putNextEntry(start);
+                zos.write(START_HTML.formatted(title, title).getBytes(StandardCharsets.UTF_8));
+
                 log.debug("Init epub file");
             }
 
-            zos.putNextEntry(new ZipEntry("OEBPS/" + title + ".html"));
-            zos.write(body.outerHtml().getBytes(StandardCharsets.UTF_8));
+            var cloned = body.clone();
+
+            var titleTag = cloned.getElementsByTag("title");
+            if (titleTag.isEmpty()) {
+                titleTag.add(new Element("title").text(title));
+            }
+            titleTag.attr("id", "toc_1");
+
+            zos.putNextEntry(new ZipEntry(title + ".html"));
+            zos.write(cloned.outerHtml().getBytes(StandardCharsets.UTF_8));
             files.add(title);
             log.debug("Write {0}", title);
         }
@@ -325,13 +433,61 @@ public class HtmlDownloader implements Tool {
 
         @Override
         public void finished() {
-
+            var mata = METADATA.formatted(title);
             try {
-                zos.close();
-            } catch (IOException e) {
+                var factory = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+
+                var doc = factory.parse(new ByteArrayInputStream(mata.getBytes(StandardCharsets.UTF_8)));
+                var manifest = doc.getElementsByTagName("manifest").item(0);
+                var spine = doc.getElementsByTagName("spine").item(0);
+
+                var toc = factory.parse(new ByteArrayInputStream(TOC.formatted(title, title).getBytes(
+                    StandardCharsets.UTF_8)));
+                var navMap = toc.getElementsByTagName("navMap").item(0);
+
+                for (int i = 0; i < files.size(); i++) {
+                    var item = doc.createElement("item");
+                    item.setAttribute("media-type", "application/xhtml+xml");
+                    item.setAttribute("id", "id" + i);
+                    item.setAttribute("href", title + ".html");
+                    manifest.appendChild(item);
+
+
+                    var itemref = doc.createElement("itemref");
+                    itemref.setAttribute("idref", "id" + i);
+                    spine.appendChild(itemref);
+
+                    var navPoint = toc.createElement("navPoint");
+                    navPoint.setAttribute("id", "num_" + (i + 3));
+                    navPoint.setAttribute("playOrder", (i + 3) + "");
+                    var navLabel = toc.createElement("navLabel");
+                    navLabel.appendChild(toc.createTextNode(title));
+                    navPoint.appendChild(navLabel);
+                    var content = toc.createElement("content");
+                    content.setAttribute("src", title + ".html" + "#toc_1");
+                    navPoint.appendChild(content);
+                    navMap.appendChild(navPoint);
+                }
+
+                var transformer = TransformerFactory.newInstance().newTransformer();
+
+                var outputStream = new ByteArrayOutputStream();
+                transformer.transform(new DOMSource(doc), new StreamResult(outputStream));
+                zos.putNextEntry(new ZipEntry("metadata.opf"));
+                zos.write(outputStream.toByteArray());
+
+                var tocStream = new ByteArrayOutputStream();
+                transformer.transform(new DOMSource(toc), new StreamResult(tocStream));
+                zos.putNextEntry(new ZipEntry("toc.ncx"));
+                zos.write(tocStream.toByteArray());
+
+                IOUtils.closeQuietly(zos);
+            } catch (Exception e) {
                 log.error("Save epub file error",  e);
             }
+            zos = null;
             files =  null;
+            title = null;
         }
     }
 

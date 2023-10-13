@@ -70,7 +70,7 @@
 * 链接递归遍历
 * 代理
 * 批量下载
-* 转换为 Markdown、Text
+* 转换为 Markdown、Text、EPUB
 
 使用: `./mytool.sh --tool=htmlDown --url="https://example.com"`
 

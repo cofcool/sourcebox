@@ -48,6 +48,15 @@ class HtmlDownloaderTest extends BaseTest {
     }
 
     @Test
+    void runWithimg() throws Exception {
+        instance().run(args
+            .arg("url", url)
+            .arg("out", "./target/HtmlDownloaderTest")
+            .arg("img", "false")
+        );
+    }
+
+    @Test
     void runWithMd() throws Exception {
         instance().run(args
             .arg("url", url)
@@ -62,6 +71,15 @@ class HtmlDownloaderTest extends BaseTest {
             .arg("url", url)
             .arg("out", "./target/HtmlDownloaderTest")
             .arg("outType", OutputType.txt.name())
+        );
+    }
+
+    @Test
+    void runWithEpub() throws Exception {
+        instance().run(args
+            .arg("url", url)
+            .arg("out", "./target/HtmlDownloaderTest")
+            .arg("outType", OutputType.epub.name())
         );
     }
 

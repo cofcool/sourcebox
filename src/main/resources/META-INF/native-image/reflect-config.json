@@ -564,7 +564,7 @@
     "queryAllDeclaredMethods":true,
     "queryAllPublicMethods":true,
     "queryAllDeclaredConstructors":true,
-    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"run","parameterTypes":[] }, {"name":"runWithClean","parameterTypes":[] }, {"name":"runWithFile","parameterTypes":[] }, {"name":"runWithMd","parameterTypes":[] }, {"name":"runWithTxt","parameterTypes":[] }, {"name":"runWithUrlFile","parameterTypes":[] }]
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"run","parameterTypes":[] }, {"name":"runWithClean","parameterTypes":[] }, {"name":"runWithEpub","parameterTypes":[] }, {"name":"runWithFile","parameterTypes":[] }, {"name":"runWithMd","parameterTypes":[] }, {"name":"runWithTxt","parameterTypes":[] }, {"name":"runWithUrlFile","parameterTypes":[] }, {"name":"runWithimg","parameterTypes":[] }]
   },
   {
     "name":"net.cofcool.toolbox.internal.JsonFormatter",

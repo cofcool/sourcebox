@@ -88,7 +88,7 @@ class WebRunnerTest {
     @Test
     void reqJson(Vertx vertx, VertxTestContext testContext) {
         WebClient.create(vertx)
-            .post( WebRunner.PORT_VAL, "127.0.0.1", "/" + ToolName.json.name())
+            .post(WebRunner.PORT_VAL, "127.0.0.1", "/" + ToolName.json.name())
             .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
             .sendJson(JsonObject.of("json", JsonFormatterTest.JSON_STR).toBuffer())
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {

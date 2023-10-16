@@ -43,7 +43,7 @@ public class WebRunner extends AbstractVerticle implements ToolRunner, VertxDepl
     public static final String PASSWD_KEY = "web.password";
     public static final int PORT_VAL = 38080;
 
-    private static Credentials usernamePasswordCredentials;
+    private Credentials usernamePasswordCredentials;
     private int port = PORT_VAL;
 
     @Override
@@ -89,7 +89,7 @@ public class WebRunner extends AbstractVerticle implements ToolRunner, VertxDepl
             .initHttpServer(
                 vertx,
                 startPromise,
-                Routers.build(vertx),
+                Routers.build(vertx, usernamePasswordCredentials),
                 port,
                 log
             );
@@ -137,15 +137,15 @@ public class WebRunner extends AbstractVerticle implements ToolRunner, VertxDepl
 
     private static class Routers {
 
-        public static Router build(Vertx vertx) {
+        public static Router build(Vertx vertx, Credentials credentials) {
             var router = Router.router(vertx);
             var tools = App.supportTools(RunnerType.WEB);
 
             router.route().handler(VertxUtils.bodyHandler(null));
             router.route().handler(LoggerHandler.create());
 
-            if (usernamePasswordCredentials != null) {
-                VertxUtils.basicAuth(router, vertx, usernamePasswordCredentials);
+            if (credentials != null) {
+                VertxUtils.basicAuth(router, vertx, credentials);
             }
 
             router.errorHandler(500, r -> {

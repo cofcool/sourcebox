@@ -43,7 +43,7 @@ class HtmlDownloaderTest extends BaseTest {
             .arg("out", "./target/HtmlDownloaderTest")
             .arg("img", "Multimedia_and_embedding")
         );
-        File download = new File("./target/HtmlDownloaderTest/htmlDownloaderTest/imgs");
+        File download = new File("./target/HtmlDownloaderTest/HtmlDownloaderTest/imgs");
         assertTrue(download.listFiles().length > 0);
     }
 

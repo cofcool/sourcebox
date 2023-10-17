@@ -6,7 +6,7 @@
 
   <groupId>net.cofcool</groupId>
   <artifactId>my-toolbox</artifactId>
-  <version>1.1.0</version>
+  <version>1.1.1</version>
 
   <name>my-toolbox</name>
   <url>https://github.com/cofcool/my-toolbox</url>
@@ -109,6 +109,7 @@
           <archive>
             <manifest>
               <mainClass>net.cofcool.toolbox.App</mainClass>
+              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
             </manifest>
           </archive>
         </configuration>
@@ -178,6 +179,7 @@
             <archive>
               <manifest>
                 <mainClass>net.cofcool.toolbox.App</mainClass>
+                <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
               </manifest>
             </archive>
             <descriptors>

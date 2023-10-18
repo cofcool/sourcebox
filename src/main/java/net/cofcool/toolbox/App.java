@@ -3,7 +3,6 @@ package net.cofcool.toolbox;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -18,7 +17,6 @@ import net.cofcool.toolbox.runner.CLIRunner;
 import net.cofcool.toolbox.runner.WebRunner;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.IOUtils;
 
 
 @SuppressWarnings({"unchecked", "ConstantConditions"})
@@ -109,7 +107,7 @@ public class App {
 
     static {
         try {
-            ABOUT = IOUtils.toString(App.class.getResource(VERSION_TXT), StandardCharsets.UTF_8);
+            ABOUT = "CofCool@ToolBox " + App.class.getPackage().getImplementationVersion();
             for (ToolName tool : ToolName.values()) {
                 ALIAS.copyAliasFrom(cacheClass(tool.getTool()).config());
             }

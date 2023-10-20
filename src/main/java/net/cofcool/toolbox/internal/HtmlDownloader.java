@@ -57,6 +57,7 @@ public class HtmlDownloader implements Tool {
     private boolean clean;
     private Set<OutputType> outputTypes = EnumSet.of(OutputType.html);
     private Proxy proxy;
+    private String filter;
 
     private Connection connection;
 
@@ -83,6 +84,7 @@ public class HtmlDownloader implements Tool {
             .map(OutputType::valueOf)
             .collect(Collectors.toSet());
         var img = args.readArg("img").val();
+        filter = args.readArg("filter").getVal().orElse(null);
 
         if (urls.isEmpty()) {
             throw new IllegalArgumentException("Do not find any url");
@@ -181,9 +183,11 @@ public class HtmlDownloader implements Tool {
 
         downloadImages(doc.getElementsByTag("img"), folder, expression);
 
-        for (OutputType type : outputTypes) {
-            type.applyOutput(doc, folder, title);
-            log.info("Save {0} file to {1} from url {2}", type, folder, url);
+        if (filter == null || title.contains(filter)) {
+            for (OutputType type : outputTypes) {
+                type.applyOutput(doc, folder, title);
+                log.info("Save {0} file to {1} from url {2}", type, folder, url);
+            }
         }
 
         history.add(url);
@@ -253,6 +257,7 @@ public class HtmlDownloader implements Tool {
             .arg(new Arg("urlFile", null, "link file path", false, "./demo.txt"))
             .arg(new Arg("img", "false", "download images, false or path expression", false, null))
             .arg(new Arg("outType", OutputType.html.name(), "output file type: " + Arrays.toString(OutputType.values()), false, null))
+            .arg(new Arg("filter", null, "title filter", false, "demo"))
             .arg(new Arg("depth", "1", "link depth", false, null))
             .arg(new Arg("proxy", null, "request proxy", false, "127.0.0.1:8087"))
             .arg(new Arg("out", "./", "output folder", false, null))

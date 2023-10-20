@@ -48,6 +48,20 @@ class HtmlDownloaderTest extends BaseTest {
     }
 
     @Test
+    void runWithFilter() throws Exception {
+        instance().run(args
+            .arg("url", url)
+            .arg("out", new File(file, "runWithFilter").getAbsolutePath())
+            .arg("filter", "test")
+        );
+        assertEquals(0,
+            Paths.get(file.getAbsolutePath(), "runWithFilter", "HtmlDownloaderTest")
+                .toFile()
+                .listFiles().length
+        );
+    }
+
+    @Test
     void runWithimg() throws Exception {
         instance().run(args
             .arg("url", url)

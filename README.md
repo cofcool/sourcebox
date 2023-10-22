@@ -129,5 +129,9 @@ Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到
 
 使用: `./mytool.sh --tool=json [--json='{}'] [--path=dmeo.json]`
 
-# 致谢
+## 参与开发
+
+执行流程：
+
+![my-toolbox-flow](./imgs/mytoolbox-flow.svg)
 

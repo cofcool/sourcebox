@@ -89,6 +89,8 @@ public interface Tool {
 
         private ToolContext context;
 
+        private String[] raw = new String[]{};
+
         public Args(int initialCapacity) {
             super(initialCapacity);
         }
@@ -109,6 +111,7 @@ public interface Tool {
 
         public Args(String[] args) {
             this();
+            this.raw = args;
             for (String s : args) {
                 if (!s.startsWith("--")) {
                     continue;
@@ -247,6 +250,10 @@ public interface Tool {
             }
 
             return this;
+        }
+
+        public String[] toRawArgs() {
+            return raw;
         }
 
         @Override

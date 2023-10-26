@@ -10,15 +10,25 @@ public class ConvertsController extends GUIController {
 
     @FXML
     protected TextField md5;
+    @FXML
+    protected TextField hdate;
 
     @FXML
     protected void runNow(MouseEvent event) {
-        runner.accept(new EventArgs(event, new Args().arg("cmd", "now").arg("tool", ToolName.converts.name()), this));
+        callRunner(event, defaultArgs("now"));
+    }
+
+    @FXML
+    protected void runHdate(MouseEvent event) {
+        callRunner(event, defaultArgs("hdate").arg("in", hdate.getText()));
     }
 
     @FXML
     protected void runMd5(MouseEvent event) {
-        runner.accept(new EventArgs(event, new Args().arg("cmd", "md5").arg("tool", ToolName.converts.name()).arg("in", md5.getText()), this));
+        callRunner(event, defaultArgs("md5").arg("in", md5.getText()));
     }
 
+    protected Args defaultArgs(String cmd) {
+        return super.defaultArgs().arg("tool", ToolName.converts.name()).arg("cmd", cmd);
+    }
 }

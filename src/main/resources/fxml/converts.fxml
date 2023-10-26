@@ -4,18 +4,23 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextField?>
-<?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
-<VBox xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="net.cofcool.toolbox.gui.ConvertsController">
-    <HBox>
+<VBox xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="net.cofcool.toolbox.gui.ConvertsController" alignment="CENTER">
+
+    <HBox alignment="CENTER">
         <Label>md5</Label>
         <TextField fx:id="md5"/>
         <Button text="run" onMouseReleased="#runMd5"/>
     </HBox>
-    <HBox>
+    <HBox alignment="CENTER">
         <Label>now</Label>
         <Button text="run" onMouseReleased="#runNow"/>
     </HBox>
-    <TextField fx:id="output" BorderPane.alignment="CENTER" text="output" editable="false" style="-fx-background-color: transparent" />
+    <HBox alignment="CENTER">
+        <Label>hdate</Label>
+        <TextField fx:id="hdate"/>
+        <Button text="run" onMouseReleased="#runHdate"/>
+    </HBox>
+    <TextField fx:id="output" alignment="CENTER" text="output" editable="false" style="-fx-background-color: transparent" />
 </VBox>

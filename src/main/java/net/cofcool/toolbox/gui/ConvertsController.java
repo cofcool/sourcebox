@@ -12,6 +12,8 @@ public class ConvertsController extends GUIController {
     protected TextField md5;
     @FXML
     protected TextField hdate;
+    @FXML
+    protected TextField timesp;
 
     @FXML
     protected void runNow(MouseEvent event) {
@@ -26,6 +28,11 @@ public class ConvertsController extends GUIController {
     @FXML
     protected void runMd5(MouseEvent event) {
         callRunner(event, defaultArgs("md5").arg("in", md5.getText()));
+    }
+
+    @FXML
+    protected void runTimesp(MouseEvent event) {
+        callRunner(event, defaultArgs("timesp").arg("in", timesp.getText()));
     }
 
     protected Args defaultArgs(String cmd) {

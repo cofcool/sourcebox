@@ -22,5 +22,10 @@
         <TextField fx:id="hdate"/>
         <Button text="run" onMouseReleased="#runHdate"/>
     </HBox>
+    <HBox alignment="CENTER">
+        <Label>timesp</Label>
+        <TextField fx:id="timesp"/>
+        <Button text="run" onMouseReleased="#runTimesp"/>
+    </HBox>
     <TextField fx:id="output" alignment="CENTER" text="output" editable="false" style="-fx-background-color: transparent" />
 </VBox>

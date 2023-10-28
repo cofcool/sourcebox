@@ -12,6 +12,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.jackson.DatabindCodec;
 import io.vertx.ext.auth.User;
 import io.vertx.ext.auth.authentication.Credentials;
+import io.vertx.ext.jdbc.JDBCClient;
 import io.vertx.ext.web.FileUpload;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
@@ -22,7 +23,9 @@ import io.vertx.ext.web.handler.FileSystemAccess;
 import io.vertx.ext.web.handler.SessionHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.sstore.SessionStore;
+import io.vertx.jdbcclient.JDBCPool;
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import net.cofcool.toolbox.logging.Logger;
@@ -32,6 +35,7 @@ public final class VertxUtils {
 
     private static final String GLOBAL_UPLOAD_DIR = System.getProperty("upload.dir", BodyHandler.DEFAULT_UPLOADS_DIRECTORY);
     private static final String GLOBAL_WEB_ROOT = System.getProperty("webroot.dir");
+    private static final Object mutex = new Object();
 
     static {
         JsonUtil.enableTimeModule(DatabindCodec.mapper());
@@ -132,6 +136,33 @@ public final class VertxUtils {
                     p.fail(e);
                 }
             })), "web-toolbox"));
+    }
+
+
+    private static volatile JDBCPool globalPool;
+    private static volatile JDBCClient globalClient;
+
+    public static JDBCPool getJDBCPool() {
+        return Objects.requireNonNull(globalPool);
+    }
+
+    public static JDBCPool getJDBCPool(Vertx vertx, String url, String user, String pwd) {
+        if (globalPool == null) {
+            synchronized (mutex) {
+                if (globalPool == null) {
+                    globalPool = JDBCPool.pool(
+                        vertx,
+                        new JsonObject()
+                            .put("url", url)
+                            .put("username", user)
+                            .put("password", pwd)
+                            .put("max_pool_size", 10)
+                    );
+                }
+            }
+        }
+
+        return globalPool;
     }
 
 }

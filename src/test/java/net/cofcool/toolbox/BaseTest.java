@@ -24,11 +24,16 @@ public abstract class BaseTest {
     public void setup() throws Exception {
         System.setProperty("logging.debug", "true");
         LoggerFactory.setDebug(true);
-        args = instance().config().context(new ConsoleToolContext());
+        var tool = instance();
+        if (tool != null) {
+            args = instance().config().context(new ConsoleToolContext());
+        }
         init();
     }
 
-    protected abstract Tool instance();
+    protected Tool instance() {
+        return null;
+    }
 
     protected void init() throws Exception {
 

@@ -1,5 +1,6 @@
 package net.cofcool.toolbox.util;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -39,6 +40,19 @@ class SqlRepositoryTest extends BaseTest {
             .onComplete(a -> repository.find("2"))
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 assertNotNull(r);
+                testContext.completeNow();
+            })));
+    }
+
+    @Test
+    void save1(Vertx vertx, VertxTestContext testContext) {
+        repository
+            .save(new User("1", "test21", "12345"))
+            .onComplete(a -> repository.find("1"))
+            .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
+                assertNotNull(r);
+                System.out.println(r);
+                assertEquals("test21", r.name());
                 testContext.completeNow();
             })));
     }

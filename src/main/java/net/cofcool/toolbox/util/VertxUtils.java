@@ -12,7 +12,6 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.jackson.DatabindCodec;
 import io.vertx.ext.auth.User;
 import io.vertx.ext.auth.authentication.Credentials;
-import io.vertx.ext.jdbc.JDBCClient;
 import io.vertx.ext.web.FileUpload;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
@@ -140,7 +139,6 @@ public final class VertxUtils {
 
 
     private static volatile JDBCPool globalPool;
-    private static volatile JDBCClient globalClient;
 
     public static JDBCPool getJDBCPool() {
         return Objects.requireNonNull(globalPool);

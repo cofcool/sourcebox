@@ -14,6 +14,7 @@ import java.sql.JDBCType;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -86,6 +87,20 @@ public class TableInfoHelper {
             }
         }
 
+        @SuppressWarnings("unchecked")
+        public <T> Optional<T> getIdVal(Object obj) {
+            if (id != null) {
+                return (Optional<T>) Optional.ofNullable(id.getVal(obj));
+            }
+            return Optional.empty();
+        }
+
+        public void setIdVal(Object obj, Object val) {
+            if (id != null) {
+                id.setVal(obj, val);
+            }
+        }
+
         public String ddl() {
             return "CREATE TABLE IF NOT EXISTS " + name
                 + " ("
@@ -95,6 +110,8 @@ public class TableInfoHelper {
                         + " "
                         + a.type().getName()
                         + (a.length() > 0 ? "(" + a.length() + ")" : "")
+                        + (a.nullable ? " null " : " not null ")
+                        + (a.isId() ? " PRIMARY KEY " : "")
                 )
                 .collect(Collectors.joining(","))
                 + ")";
@@ -157,6 +174,7 @@ public class TableInfoHelper {
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.FIELD)
     public @interface ID {
+        boolean generated() default false;
     }
 
     @Retention(RetentionPolicy.RUNTIME)

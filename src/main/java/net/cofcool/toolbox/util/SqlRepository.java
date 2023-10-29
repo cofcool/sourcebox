@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -20,6 +21,8 @@ import lombok.CustomLog;
 import net.cofcool.toolbox.App;
 import net.cofcool.toolbox.util.TableInfoHelper.TableInfo;
 
+
+// do not support composite entity
 @CustomLog
 public final class SqlRepository<T> implements AsyncCrudRepository<T> {
 
@@ -61,6 +64,33 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
 
     @Override
     public Future<T> save(T entity) {
+        Optional<String> id = tableInfo.getIdVal(entity);
+        if (id.isEmpty()) {
+            return insert(entity);
+        } else {
+            return find(id.get()).compose(
+                n -> update(id.get(), n, entity),
+                e -> insert(entity)
+            );
+        }
+    }
+
+    private Future<T> update(Object id, T old, T entity) {
+        var columns = readProperties(entity);
+        var args = new ArrayList<>(columns.values());
+        args.add(id);
+        return getPool()
+            .preparedQuery(
+                "UPDATE " + tableInfo.name()
+                    + " SET "
+                    + columns.keySet().stream().map(k -> " " + k + "=?").collect(Collectors.joining(","))
+                + " WHERE id = ? "
+            )
+            .execute(Tuple.wrap(args.toArray()))
+            .compose(rows -> rows.rowCount() > 0 ? Future.succeededFuture(entity) : Future.failedFuture("No data update"));
+    }
+
+    private Future<T> insert(T entity) {
         var columns = readProperties(entity);
         return getPool()
             .preparedQuery(
@@ -71,9 +101,18 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
                     + ")"
             )
             .execute(Tuple.wrap(columns.values().toArray()))
-            .compose(rows -> rows.rowCount() > 0 ? Future.succeededFuture(entity) : Future.failedFuture("No data save"));
-//        var lastInsertId = ret.property(JDBCPool.GENERATED_KEYS);
-//        var newId = lastInsertId.getLong(0);
+            .compose(rows -> {
+                if (rows.rowCount() > 0) {
+                    var lastInsertId = rows.property(JDBCPool.GENERATED_KEYS);
+                    if (lastInsertId != null) {
+                        var newId = lastInsertId.getString(0);
+                        tableInfo.setIdVal(entity, newId);
+                    }
+                    return Future.succeededFuture(entity);
+                } else {
+                    return Future.failedFuture("No data save");
+                }
+            });
     }
 
     @Override

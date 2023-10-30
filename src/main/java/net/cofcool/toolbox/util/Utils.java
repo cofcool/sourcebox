@@ -4,6 +4,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 
 public abstract class Utils {
 
@@ -35,6 +36,15 @@ public abstract class Utils {
     public static <T> T instance(Class<T> clazz) {
         try {
             return clazz.getConstructor().newInstance();
+        } catch (InstantiationException | IllegalAccessException |
+                 InvocationTargetException | NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static <T> T instance(Class<T> clazz, Object... args) {
+        try {
+            return clazz.getDeclaredConstructor(Arrays.stream(args).map(Object::getClass).toArray(Class[]::new)).newInstance(args);
         } catch (InstantiationException | IllegalAccessException |
                  InvocationTargetException | NoSuchMethodException e) {
             throw new RuntimeException(e);

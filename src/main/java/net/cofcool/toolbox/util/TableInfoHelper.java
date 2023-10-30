@@ -13,6 +13,7 @@ import java.lang.reflect.Modifier;
 import java.sql.JDBCType;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -71,13 +72,15 @@ public class TableInfoHelper {
         }
 
         @SuppressWarnings("unchecked")
-        public <T> T newInstance(Row row) {
+        public <T> T newInstance(Row row, List<String> columnNames) {
             if (defaultMapper == null) {
-                var a = (T) Utils.instance(type);
-                columns.forEach((k, v) -> {
-                    v.setVal(a, row.getValue(v.name()));
-                });
-                return a;
+                if (Record.class.isAssignableFrom(type)) {
+                    return  (T) Utils.instance(type, columnNames.stream().map(row::getValue).toArray());
+                } else {
+                    var a = (T) Utils.instance(type);
+                    columns.forEach((k, v) -> v.setVal(a, row.getValue(v.name())));
+                    return a;
+                }
             } else {
                 try {
                     return (T) defaultMapper.invoke(null, row);
@@ -168,7 +171,7 @@ public class TableInfoHelper {
         String name();
         JDBCType type();
         int length() default -1;
-        boolean nullable() default true;
+        boolean nullable() default false;
     }
 
     @Retention(RetentionPolicy.RUNTIME)

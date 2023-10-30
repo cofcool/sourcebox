@@ -7,13 +7,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import io.vertx.core.Vertx;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
-import io.vertx.sqlclient.Row;
 import java.sql.JDBCType;
 import java.util.List;
 import net.cofcool.toolbox.BaseTest;
 import net.cofcool.toolbox.logging.LoggerFactory;
 import net.cofcool.toolbox.util.TableInfoHelper.Column;
-import net.cofcool.toolbox.util.TableInfoHelper.DefaultMapper;
 import net.cofcool.toolbox.util.TableInfoHelper.Entity;
 import net.cofcool.toolbox.util.TableInfoHelper.ID;
 import org.junit.jupiter.api.BeforeAll;
@@ -105,22 +103,13 @@ class SqlRepositoryTest extends BaseTest {
     @Entity(name = "user")
     record User(
         @ID
-        @Column(name = "id", type = JDBCType.CHAR,length = 5)
+        @Column(name = "id", type = JDBCType.CHAR, length = 5)
         String id,
         @Column(name = "name", type = JDBCType.CHAR, length = 30)
         String name,
         @Column(name = "pwd", type = JDBCType.CHAR, length = 50)
         String pwd
     ) {
-
-        public User(String name, String pwd) {
-            this(null, name, pwd);
-        }
-
-        @DefaultMapper
-        public static User of(Row row) {
-            return new User(row.getString("ID"), row.getString("NAME"), row.getString("PWD"));
-        }
 
     }
 }

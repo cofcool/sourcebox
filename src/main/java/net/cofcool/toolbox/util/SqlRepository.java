@@ -170,7 +170,7 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
     private List<T> extractRow(RowSet<Row> ret) {
         var list = new ArrayList<T>();
         for (Row row : ret) {
-            list.add(tableInfo.newInstance(row));
+            list.add(tableInfo.newInstance(row, ret.columnsNames()));
         }
         return list;
     }

@@ -5,7 +5,7 @@ import io.vertx.core.json.Json;
 import io.vertx.ext.web.Router;
 import lombok.CustomLog;
 import net.cofcool.toolbox.internal.simplenote.NoteConfig.NoteCodec;
-import net.cofcool.toolbox.internal.simplenote.NoteRepository.Note;
+import net.cofcool.toolbox.internal.simplenote.entity.Note;
 import net.cofcool.toolbox.util.JsonUtil;
 import net.cofcool.toolbox.util.VertxUtils;
 

@@ -20,6 +20,7 @@ import java.util.stream.IntStream;
 import lombok.CustomLog;
 import net.cofcool.toolbox.App;
 import net.cofcool.toolbox.util.TableInfoHelper.TableInfo;
+import net.cofcool.toolbox.util.TableInfoHelper.TableProperty;
 
 
 // do not support composite entity
@@ -121,7 +122,7 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
         return getPool()
             .preparedQuery(
                 "INSERT INTO " + tableInfo.name()
-                    + " (" + String.join(",", columns.keySet()) + ") "
+                    + " (" + String.join(",", columns.values().stream().map(TableProperty::name).toList()) + ") "
                     + " VALUES "
                     + "(" + IntStream.range(0, columns.size()).mapToObj(i -> "?").collect(Collectors.joining(","))+ ")"
             )
@@ -203,7 +204,7 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
             try {
                 Object invoke = v.getVal(entity);
                 if (!ignoreNull || invoke != null) {
-                    columns.put(k, invoke);
+                    columns.put(v.name(), invoke);
                 }
             } catch (Exception e) {
                 log.debug("Build where condition error", e);

@@ -3,7 +3,7 @@ package net.cofcool.toolbox.internal.simplenote;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.eventbus.MessageCodec;
 import io.vertx.core.json.Json;
-import net.cofcool.toolbox.internal.simplenote.NoteRepository.Note;
+import net.cofcool.toolbox.internal.simplenote.entity.Note;
 import net.cofcool.toolbox.runner.WebRunner;
 
 public interface NoteConfig {

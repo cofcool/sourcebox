@@ -1,10 +1,8 @@
 package net.cofcool.toolbox.internal.simplenote;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
+import net.cofcool.toolbox.internal.simplenote.entity.Note;
 
 public interface NoteRepository {
 
@@ -20,21 +18,6 @@ public interface NoteRepository {
 
     Optional<Note> find(String id);
 
-    record Note(
-        String id,
-        String content,
-        @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-        LocalDateTime date,
-        NoteState state
-    ) {
 
-        public static Note init(String content) {
-            return new Note(UUID.randomUUID().toString(), content, LocalDateTime.now(), NoteState.NORMAL);
-        }
 
-    }
-
-    enum NoteState {
-        NORMAL, DELETED, DELETE_FLAG, MEMORY
-    }
 }

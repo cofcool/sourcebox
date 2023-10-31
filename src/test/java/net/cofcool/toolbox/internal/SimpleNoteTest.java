@@ -9,21 +9,22 @@ import io.vertx.core.json.Json;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import java.io.File;
+import net.cofcool.toolbox.BaseTest;
 import net.cofcool.toolbox.Tool.Args;
 import net.cofcool.toolbox.internal.simplenote.NoteConfig;
-import net.cofcool.toolbox.internal.simplenote.NoteRepository;
+import net.cofcool.toolbox.internal.simplenote.entity.Note;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(VertxExtension.class)
-class SimpleNoteTest {
+class SimpleNoteTest extends BaseTest {
 
     static final String PATH = "./target/";
 
-    @BeforeEach
-    void deployVerticle(Vertx vertx, VertxTestContext testContext) throws Exception {
+    @BeforeAll
+    static void deployVerticle(Vertx vertx, VertxTestContext testContext) throws Exception {
         var note = new SimpleNote();
         note.deploy(vertx, null, new Args().copyConfigFrom(note.config()).arg(NoteConfig.PATH_KEY, PATH))
             .onComplete(testContext.succeeding(t -> testContext.completeNow()));
@@ -53,7 +54,7 @@ class SimpleNoteTest {
     void addNote(Vertx vertx, VertxTestContext testContext) {
         vertx.createHttpClient()
             .request(HttpMethod.POST, NoteConfig.PORT_VAL, "127.0.0.1", "/note")
-            .compose(h -> h.send(Json.encodeToBuffer(NoteRepository.Note.init("test content"))))
+            .compose(h -> h.send(Json.encodeToBuffer(Note.init("test content"))))
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertEquals(200, r.statusCode());
                 Assertions.assertEquals("application/json", r.getHeader("Content-Type"));

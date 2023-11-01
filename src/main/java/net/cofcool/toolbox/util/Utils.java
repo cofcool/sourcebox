@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.UUID;
 
 public abstract class Utils {
 
@@ -31,6 +32,10 @@ public abstract class Utils {
         }
 
         return md5StrBuff.toString();
+    }
+
+    public static String generateShorUUID() {
+        return UUID.randomUUID().toString().replace("-", "");
     }
 
     public static <T> T instance(Class<T> clazz) {

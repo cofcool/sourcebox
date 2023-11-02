@@ -2,6 +2,7 @@ package net.cofcool.toolbox.internal.simplenote.entity;
 
 import io.vertx.sqlclient.Row;
 import java.sql.JDBCType;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import net.cofcool.toolbox.util.TableInfoHelper.Column;
@@ -46,7 +47,28 @@ public record ActionRecord(
     LocalDateTime updateTime
 ) {
 
-
+    public ActionRecord(String id, String name, String icon, String index, String device,
+        String type,
+        String state, LocalDateTime start, LocalDateTime end, Integer duration, Integer rating,
+        List<String> comments, String labels, String refs, LocalDateTime createTime,
+        LocalDateTime updateTime) {
+        this.id = id;
+        this.name = name;
+        this.icon = icon;
+        this.index = index;
+        this.device = device;
+        this.type = type;
+        this.state = state;
+        this.start = start;
+        this.end = end;
+        this.duration = (duration == null && start != null && end != null) ? Integer.valueOf(Math.toIntExact(Duration.between(start, end).toSeconds())) : duration;
+        this.rating = rating;
+        this.comments = comments;
+        this.labels = labels;
+        this.refs = refs;
+        this.createTime = createTime;
+        this.updateTime = updateTime;
+    }
 
     public ActionRecord(String name, String icon, String index, String device, String type,
         String state, LocalDateTime start, LocalDateTime end, Integer duration, Integer rating,
@@ -55,7 +77,7 @@ public record ActionRecord(
     }
 
     public static ActionRecord copy(ActionRecord record) {
-        return new ActionRecord(Utils.md5(record.name + record.type), record.name, record.icon,
+        return new ActionRecord(record.id, record.name, record.icon,
             record.index, record.device, record.type, record.state, record.start, record.end,
             record.duration, record.rating, record.comments, record.labels, record.refs,
             record.createTime == null ? LocalDateTime.now() : record.createTime,

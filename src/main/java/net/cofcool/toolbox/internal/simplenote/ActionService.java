@@ -54,6 +54,10 @@ public class ActionService {
         return actionRecordSqlRepository.find();
     }
 
+    public Future<ActionRecord> find(String id) {
+        return actionRecordSqlRepository.find(id);
+    }
+
     private record Log(
         String msg
     ) implements Handler<Throwable> {

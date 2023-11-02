@@ -18,6 +18,8 @@ class ActionServiceTest extends BaseTest {
 
     static ActionService actionService;
 
+    static ActionRecord defaultRecord;
+
     @BeforeAll
     static void setup(Vertx vertx, VertxTestContext testContext) {
         LoggerFactory.setDebug(true);
@@ -38,7 +40,10 @@ class ActionServiceTest extends BaseTest {
                 null,
                 LocalDateTime.now()
             ))
-            .onComplete(testContext.succeeding(r -> testContext.verify(testContext::completeNow)));
+            .onComplete(testContext.succeeding(r -> {
+                defaultRecord = r;
+                testContext.verify(testContext::completeNow);
+            }));
     }
 
     @Test
@@ -50,5 +55,38 @@ class ActionServiceTest extends BaseTest {
                 Assertions.assertFalse(r.isEmpty());
                 testContext.completeNow();
             })));
+    }
+
+    @Test
+    void saveMultiProperties(Vertx vertx, VertxTestContext testContext) {
+        ActionRecord newR = new ActionRecord(
+            defaultRecord.id(),
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            LocalDateTime.now().plusDays(5),
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            LocalDateTime.now()
+        );
+        actionService
+            .saveAction(newR)
+            .onComplete(testContext.succeeding(r -> {
+                actionService
+                    .find(newR.id())
+                    .onComplete(testContext.succeeding(r1 -> testContext.verify(() -> {
+                        System.out.println(r1);
+                        Assertions.assertEquals(newR.end(), r1.end());
+                        testContext.completeNow();
+                    })));
+            }));
     }
 }

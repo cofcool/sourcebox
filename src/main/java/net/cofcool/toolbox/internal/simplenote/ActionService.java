@@ -58,6 +58,10 @@ public class ActionService {
         return actionRecordSqlRepository.find(id);
     }
 
+    public Future<List<String>> findAllType() {
+        return actionTypeSqlRepository.find().compose(a -> Future.succeededFuture(a.stream().map(ActionType::name).toList()));
+    }
+
     private record Log(
         String msg
     ) implements Handler<Throwable> {

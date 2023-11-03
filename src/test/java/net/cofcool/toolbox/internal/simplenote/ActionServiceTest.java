@@ -58,6 +58,17 @@ class ActionServiceTest extends BaseTest {
     }
 
     @Test
+    void findAllType(Vertx vertx, VertxTestContext testContext) {
+        actionService
+            .findAllType()
+            .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
+                System.out.println(r);
+                Assertions.assertFalse(r.isEmpty());
+                testContext.completeNow();
+            })));
+    }
+
+    @Test
     void saveMultiProperties(Vertx vertx, VertxTestContext testContext) {
         ActionRecord newR = new ActionRecord(
             defaultRecord.id(),
@@ -79,14 +90,11 @@ class ActionServiceTest extends BaseTest {
         );
         actionService
             .saveAction(newR)
-            .onComplete(testContext.succeeding(r -> {
-                actionService
-                    .find(newR.id())
-                    .onComplete(testContext.succeeding(r1 -> testContext.verify(() -> {
-                        System.out.println(r1);
-                        Assertions.assertEquals(newR.end(), r1.end());
-                        testContext.completeNow();
-                    })));
-            }));
+            .compose(r -> actionService.find(r.id()))
+            .onComplete(testContext.succeeding(r1 -> testContext.verify(() -> {
+                System.out.println(r1);
+                Assertions.assertEquals(newR.end(), r1.end());
+                testContext.completeNow();
+            })));
     }
 }

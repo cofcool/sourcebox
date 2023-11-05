@@ -848,7 +848,8 @@
     "name":"net.cofcool.toolbox.internal.trello.HeroImageUrl",
     "allDeclaredFields":true,
     "queryAllDeclaredMethods":true,
-    "queryAllDeclaredConstructors":true
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","java.lang.String"] }]
   },
   {
     "name":"net.cofcool.toolbox.internal.trello.Icon",
@@ -910,7 +911,8 @@
     "name":"net.cofcool.toolbox.internal.trello.Listing",
     "allDeclaredFields":true,
     "queryAllDeclaredMethods":true,
-    "queryAllDeclaredConstructors":true
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","java.lang.String","java.lang.String"] }]
   },
   {
     "name":"net.cofcool.toolbox.internal.trello.Lists",
@@ -1035,7 +1037,8 @@
     "name":"net.cofcool.toolbox.internal.trello.Plugin",
     "allDeclaredFields":true,
     "queryAllDeclaredMethods":true,
-    "queryAllDeclaredConstructors":true
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.util.List","java.lang.String","java.lang.String","net.cofcool.toolbox.internal.trello.Icon","java.util.List","net.cofcool.toolbox.internal.trello.HeroImageUrl","java.lang.String","net.cofcool.toolbox.internal.trello.UsageBrackets","java.util.List","java.lang.String","boolean","java.util.List","java.lang.String","java.lang.Object","java.lang.String","java.util.List","java.lang.String","java.lang.Object","net.cofcool.toolbox.internal.trello.Listing"] }]
   },
   {
     "name":"net.cofcool.toolbox.internal.trello.Prefs",
@@ -1118,7 +1121,8 @@
     "name":"net.cofcool.toolbox.internal.trello.UsageBrackets",
     "allDeclaredFields":true,
     "queryAllDeclaredMethods":true,
-    "queryAllDeclaredConstructors":true
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["int"] }]
   },
   {
     "name":"net.cofcool.toolbox.logging.ConsoleLogger",

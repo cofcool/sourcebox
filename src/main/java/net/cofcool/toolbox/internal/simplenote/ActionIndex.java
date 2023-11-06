@@ -17,15 +17,15 @@ public class ActionIndex {
         this.vertx = vertx;
     }
 
-    public Router router() {
+    public void mountRoute(Router parentRouter) {
         var router = Router.router(vertx);
 
         router.route().handler(VertxUtils.bodyHandler(null));
 
-        router.get("/").respond(r -> actionService.find());
+        router.get().respond(r -> actionService.find());
 
-        router.post("/").respond(r -> actionService.saveAction(r.body().asPojo(ActionRecord.class)));
+        router.post().respond(r -> actionService.saveAction(r.body().asPojo(ActionRecord.class)));
 
-        return router;
+        parentRouter.route("/action/*").subRouter(router);
     }
 }

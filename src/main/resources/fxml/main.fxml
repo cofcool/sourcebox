@@ -12,8 +12,14 @@
     </MenuBar>
 
     <TabPane tabClosingPolicy="UNAVAILABLE">
-        <Tab text="converts">
+        <Tab text="Converts">
             <fx:include source="converts.fxml"/>
+        </Tab>
+        <Tab text="Action Note">
+            <fx:include source="note-action.fxml"/>
+        </Tab>
+        <Tab text="Note">
+            <fx:include source="note.fxml"/>
         </Tab>
     </TabPane>
 </VBox>

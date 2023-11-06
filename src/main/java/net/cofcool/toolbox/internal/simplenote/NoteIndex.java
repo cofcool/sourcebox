@@ -14,10 +14,12 @@ public class NoteIndex {
 
     private final Vertx vertx;
     private final NoteService noteService;
+    private final ActionIndex actionIndex;
 
     public NoteIndex(Vertx vertx) {
         this.vertx = vertx;
         this.noteService = new NoteService(vertx);
+        this.actionIndex = new ActionIndex(vertx);
         vertx.eventBus().registerDefaultCodec(Note.class, new NoteCodec());
     }
 
@@ -53,6 +55,8 @@ public class NoteIndex {
             },
             (e, f) -> log.error("Parsing note file error", e)
         );
+
+        actionIndex.mountRoute(router);
 
         return router;
     }

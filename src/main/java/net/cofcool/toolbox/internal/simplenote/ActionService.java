@@ -5,6 +5,9 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.CustomLog;
 import net.cofcool.toolbox.internal.simplenote.entity.ActionRecord;
 import net.cofcool.toolbox.internal.simplenote.entity.ActionType;
@@ -54,12 +57,33 @@ public class ActionService {
         return actionRecordSqlRepository.find();
     }
 
+    public Future<List<Comment>> findComment(String actionId) {
+        return commentSqlRepository.find(new Comment(actionId));
+    }
+
     public Future<ActionRecord> find(String id) {
         return actionRecordSqlRepository.find(id);
     }
 
     public Future<List<String>> findAllType() {
         return actionTypeSqlRepository.find().compose(a -> Future.succeededFuture(a.stream().map(ActionType::name).toList()));
+    }
+
+    public Future<String> deleteActions(Set<String> ids) {
+        return delete(ids, actionRecordSqlRepository::delete);
+    }
+
+    public Future<String> deleteComments(Set<String> ids) {
+        return delete(ids, commentSqlRepository::delete);
+    }
+
+    private Future<String> delete(Set<String> ids, Function<String, Future<Void>> deleteFunc) {
+        var ret = ids.stream()
+            .map(deleteFunc)
+            .filter(Future::failed)
+            .map(a -> a.cause().getMessage())
+            .collect(Collectors.joining("\n"));
+        return ret.isEmpty() ? Future.succeededFuture() : Future.failedFuture(ret);
     }
 
     private record Log(

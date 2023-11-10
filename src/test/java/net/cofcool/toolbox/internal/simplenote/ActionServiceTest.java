@@ -4,9 +4,12 @@ import io.vertx.core.Vertx;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import net.cofcool.toolbox.BaseTest;
 import net.cofcool.toolbox.internal.simplenote.entity.ActionRecord;
+import net.cofcool.toolbox.internal.simplenote.entity.Comment;
 import net.cofcool.toolbox.logging.LoggerFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -53,6 +56,36 @@ class ActionServiceTest extends BaseTest {
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 System.out.println(r);
                 Assertions.assertFalse(r.isEmpty());
+                testContext.completeNow();
+            })));
+    }
+    @Test
+    void delete(Vertx vertx, VertxTestContext testContext) {
+        ActionRecord newR = new ActionRecord(
+            "test",
+            "asdasda",
+            null,
+            "mac",
+            "xxx",
+            "init",
+            LocalDateTime.now(),
+            LocalDateTime.now().plusDays(5),
+            null,
+            null,
+            List.of("xx1", "xx2"),
+            null,
+            null,
+            LocalDateTime.now()
+        );
+        actionService
+            .saveAction(newR)
+            .compose(r -> actionService.deleteActions(Collections.singleton(r.id())))
+            .compose(r -> actionService
+                .findComment(newR.id())
+                .compose(r1 -> actionService.deleteComments(r1.stream().map(Comment::id).collect(Collectors.toSet())))
+            )
+            .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
+                Assertions.assertNull(r);
                 testContext.completeNow();
             })));
     }

@@ -21,4 +21,7 @@ public record Comment(
     LocalDateTime updateTime
 ) {
 
+    public Comment(String actionId) {
+        this(null, actionId, null, null, null);
+    }
 }

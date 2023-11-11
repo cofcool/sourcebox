@@ -13,6 +13,7 @@ import net.cofcool.toolbox.Tool.Args;
 import net.cofcool.toolbox.Tool.RunnerType;
 import net.cofcool.toolbox.ToolContext;
 import net.cofcool.toolbox.ToolRunner;
+import net.cofcool.toolbox.WebTool;
 import net.cofcool.toolbox.gui.EventArgs;
 import net.cofcool.toolbox.gui.GUIController;
 import net.cofcool.toolbox.util.Utils;
@@ -26,6 +27,7 @@ public class GUIRunner extends Application implements ToolRunner {
     @Override
     public boolean run(Args args) throws Exception {
         GUIRunner.GLOBAL_ARGS = args;
+        App.getRunner(RunnerType.WEB).run(args);
         launch();
         return true;
     }
@@ -51,16 +53,26 @@ public class GUIRunner extends Application implements ToolRunner {
         primaryStage.show();
     }
 
+    @Override
+    public void stop() throws Exception {
+        super.stop();
+    }
+
     private void runTool(EventArgs event) {
         var name = event.args().readArg("tool").val();
         log.debug("Run {0}", name);
-        App.supportTools(RunnerType.GUI).stream().filter(t -> t.name().name().equals(name)).forEach(t -> {
-            try {
-                t.run(new Args().copyConfigFrom(event.args()).copyConfigFrom(GLOBAL_ARGS).copyConfigFrom(t.config()).context(new GUIContext(event.controller())));
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
+        App.supportTools(RunnerType.GUI)
+            .stream()
+            .filter(t -> t.name().name().equals(name))
+            .filter(t -> !(t instanceof WebTool))
+            .forEach(t -> {
+                try {
+                    t.run(new Args().copyConfigFrom(event.args()).copyConfigFrom(GLOBAL_ARGS)
+                        .copyConfigFrom(t.config()).context(new GUIContext(event.controller())));
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
     }
 
     private class ActionNotify implements Consumer<EventArgs> {

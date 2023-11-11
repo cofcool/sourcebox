@@ -122,6 +122,10 @@ public class App {
         return FilenameUtils.concat(GLOBAL_CFG_DIR, subPath);
     }
 
+    public static ToolRunner getRunner(RunnerType runnerType) {
+        return RUNNER_MAP.get(runnerType);
+    }
+
     private static Tool cacheClass(Class<? extends Tool> type) throws Exception {
         var tool = ((Constructor<Tool>) type.getConstructor()).newInstance();
         ALL_TOOLS.add(tool);

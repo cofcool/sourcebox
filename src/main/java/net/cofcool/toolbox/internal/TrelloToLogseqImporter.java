@@ -58,8 +58,13 @@ public class TrelloToLogseqImporter implements Tool {
                         if (cardDate.isPresent()) {
                             date = cardDate.get().date();
                         } else {
-                            date = a.dateLastActivity();
+                            date = actionList(trello, a.id())
+                                .stream()
+                                .findFirst()
+                                .map(i -> i.date())
+                                .orElse(a.dateLastActivity());
                         }
+
                         LocalDateTime time = LocalDateTime.parse(date, OutStr.FORMATTER);
                         return new CreateTime(time.getYear(), time);
                     }))
@@ -116,10 +121,13 @@ public class TrelloToLogseqImporter implements Tool {
     }
 
     private List<ActionsItem> actionList(Trello trello, String id) {
-        return trello.actions().stream()
-                .filter(Objects::nonNull).filter(a -> a.data().card() != null)
-                .filter(a -> a.data().card().id().equals(id))
-                .sorted(Comparator.comparing(ActionsItem::date)).toList();
+        return trello
+            .actions()
+            .stream()
+            .filter(Objects::nonNull).filter(a -> a.data().card() != null)
+            .filter(a -> a.data().card().id().equals(id))
+            .sorted(Comparator.comparing(ActionsItem::date))
+            .toList();
     }
 
     private ListsItem cardList(Trello trello, String id) {

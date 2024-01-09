@@ -221,7 +221,7 @@ public interface Tool {
             newRags.aliases.putAll(aliases);
             newRags.aliasInterceptors.putAll(aliasInterceptors);
             forEach((k, v) -> {
-                if (k.startsWith(prefix)) {
+                if (k.startsWith(prefix) && !k.equals(prefix)) {
                     newRags.arg(new Arg(k.substring(prefix.length() + 1), v.val, v.desc, v.required, v.demo));
                 } else {
                     newRags.arg(v);

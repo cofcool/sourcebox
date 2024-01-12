@@ -15,7 +15,7 @@ public record Note(
     @ID
     @Column(name = "id", type = JDBCType.VARCHAR, length = 64)
     String id,
-    @Column(name = "content", type = JDBCType.VARCHAR, length = 500)
+    @Column(name = "content", type = JDBCType.VARCHAR, length = 5000)
     String content,
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @Column(name = "date", type = JDBCType.TIMESTAMP)

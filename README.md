@@ -107,6 +107,12 @@
 * urlencoded, 解码 URL 编码
 * replace, 字符串替换
 
+## Git diff 分析
+
+* 根据 diff 信息抽取对应行的变更记录
+
+使用: `git diff --unified=0 --diff-filter=M . | ./mytool.sh --tool=analysisDiff --path=./ > diff.csv`
+
 ## 阅读软件笔记、高亮导出为 markdown 文件
 
 支持 Kindle、Moon+ Reader

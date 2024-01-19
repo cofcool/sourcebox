@@ -186,7 +186,7 @@ public class HtmlDownloader implements Tool {
         if (filter == null || title.contains(filter)) {
             for (OutputType type : outputTypes) {
                 type.applyOutput(doc, folder, title);
-                log.info("Save {0} file to {1} from url {2}", type, folder, url);
+                log.info("Save {0} file to {1} from <<{2}>>: {3}", type, folder, title, url);
             }
         }
 

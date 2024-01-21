@@ -3,8 +3,10 @@ package net.cofcool.toolbox;
 import net.cofcool.toolbox.internal.ClippingsToMd;
 import net.cofcool.toolbox.internal.CodeGenerator;
 import net.cofcool.toolbox.internal.Converts;
+import net.cofcool.toolbox.internal.DiffAnalysis;
 import net.cofcool.toolbox.internal.DirWebServer;
 import net.cofcool.toolbox.internal.FileNameFormatter;
+import net.cofcool.toolbox.internal.FileTools;
 import net.cofcool.toolbox.internal.GitCommitsToChangelog;
 import net.cofcool.toolbox.internal.HtmlDownloader;
 import net.cofcool.toolbox.internal.JsonFormatter;
@@ -31,7 +33,9 @@ public enum ToolName {
     json("make json more readable", JsonFormatter.class),
     htmlDown("download html from links", HtmlDownloader.class),
     cHelper("manage commands, like alias, tag...", CommandHelper.class),
-    generate("generate code from template", CodeGenerator .class);
+    generate("generate code from template", CodeGenerator.class),
+    analysisDiff("analysis diff file", DiffAnalysis.class),
+    fileTools("some utils about file", FileTools.class);
 
     private final String desc;
     private final Class<? extends Tool> tool;

@@ -12,7 +12,6 @@ import net.cofcool.toolbox.internal.HtmlDownloader;
 import net.cofcool.toolbox.internal.JsonFormatter;
 import net.cofcool.toolbox.internal.JsonToPojo;
 import net.cofcool.toolbox.internal.LinkCovertTool;
-import net.cofcool.toolbox.internal.NoteClient;
 import net.cofcool.toolbox.internal.ShellStarter;
 import net.cofcool.toolbox.internal.SimpleNote;
 import net.cofcool.toolbox.internal.TrelloToLogseqImporter;
@@ -28,8 +27,7 @@ public enum ToolName {
     json2POJO("convert json structure to POJO class", JsonToPojo.class),
     dirWebServer("start a simple web directory server", DirWebServer.class),
     rename("rename file conveniently", FileNameFormatter.class),
-    note("simple web notebook", SimpleNote.class),
-    noteCli("notebook cli client", NoteClient.class),
+    note("simple web notebook, routes: /note, /action", SimpleNote.class),
     json("make json more readable", JsonFormatter.class),
     htmlDown("download html from links", HtmlDownloader.class),
     cHelper("manage commands, like alias, tag...", CommandHelper.class),

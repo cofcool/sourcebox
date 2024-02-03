@@ -8,7 +8,7 @@
 
 * `./mytool.sh` 查看程序信息，`--help={COMMAND}` 查看具体命令的帮助信息, 如 `--help=converts`
 * `--debug=true` 打开调试模式
-* `--jar` 启动 Java 版本，默认为原生编译版本，如 `mytool.sh --jar --tool=converts`
+* `--native` 启动原生编译版本版本，默认启动 jar，如 `mytool.sh --native --tool=converts`
 
 部分命令支持别名， 如 `--tool=converts --cmd=random --in=test` 的别名为 `--random=test`，具体可查看帮助文档，也可借助命令助手配置别名
 
@@ -19,10 +19,10 @@
 
 **TODO**
 
-* [ ] Web 页面，接口基本完成，暂缺前端页面
-* [ ] JavaFX
+* [ ] Web 页面，接口基本完成，暂缺前端页
+* [ ] 使用 Go 重写
 
-⚠️ 原生版本目前只提供 Linux 版，其它平台需执行 `./mytool.sh --jar` 运行 jar 版，也可修改脚本默认启动 jar 版或下载源码构建
+⚠️ 原生版本目前只提供 Linux 版，其它平台需下载源码构建
 
 ## 命令助手
 

@@ -14,11 +14,11 @@ done
 
 PRGDIR=`dirname "$PRG"`
 
-NATIVE="true"
+NATIVE="false"
 COMMAND=$1
 case $COMMAND in
-  --jar)
-    NATIVE="false"
+  --native)
+    NATIVE="true"
     shift
     ;;
   *)

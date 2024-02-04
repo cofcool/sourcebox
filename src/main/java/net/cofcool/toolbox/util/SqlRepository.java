@@ -3,6 +3,7 @@ package net.cofcool.toolbox.util;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.jdbcclient.JDBCPool;
+import io.vertx.sqlclient.PreparedQuery;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.Tuple;
@@ -84,12 +85,16 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
         }
     }
 
+    private PreparedQuery<RowSet<Row>> preparedQuery(String sql) {
+        log.debug("SQL: {0}", sql);
+        return getPool().preparedQuery(sql);
+    }
+
     private Future<T> update(Object id, T old, T entity) {
         var columns = readProperties(entity);
         var args = new ArrayList<>(columns.values());
         args.add(id);
-        return getPool()
-            .preparedQuery(
+        return preparedQuery(
                 "UPDATE " + tableInfo.name()
                     + " SET "
                     + columns.keySet().stream().map(k -> " " + k + "=?").collect(Collectors.joining(","))
@@ -101,8 +106,7 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
 
     private Future<T> insert(T entity) {
         var columns = readProperties(entity);
-        return getPool()
-            .preparedQuery(
+        return preparedQuery(
                 "INSERT INTO " + tableInfo.name()
                     + "(" + String.join(",", columns.keySet()) + ")"
                     + " VALUES "
@@ -127,8 +131,7 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
     @Override
     public Future<Void> save(List<T> entities) {
         var columns = tableInfo.columns();
-        return getPool()
-            .preparedQuery(
+        return preparedQuery(
                 "INSERT INTO " + tableInfo.name()
                     + " (" + String.join(",", columns.values().stream().map(TableProperty::name).toList()) + ") "
                     + " VALUES "
@@ -144,8 +147,7 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
 
     @Override
     public Future<Void> delete(String id) {
-        return getPool()
-                .preparedQuery(
+        return preparedQuery(
                     "delete from "
                         + tableInfo.name()
                         + " where "
@@ -160,8 +162,7 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
     @Override
     public Future<List<T>> find(T condition) {
         var p = readProperties(condition);
-        return getPool()
-            .preparedQuery(
+        return preparedQuery(
                 "select * from " + tableInfo.name() + WHERE_SQL_GENERATOR.apply(p.keySet()))
             .execute(p.isEmpty() ? Tuple.tuple() : Tuple.wrap(p.values().toArray()))
             .compose(r -> Future.succeededFuture(extractRow(r)));
@@ -169,9 +170,7 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
 
     @Override
     public Future<List<T>> find() {
-        return
-            getPool()
-                .preparedQuery("select * from " + tableInfo.name())
+        return preparedQuery("select * from " + tableInfo.name())
                 .execute()
                 .compose(r -> Future.succeededFuture(extractRow(r)));
     }
@@ -186,8 +185,7 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
 
     @Override
     public Future<T> find(String id) {
-        return getPool()
-                .preparedQuery(
+        return preparedQuery(
                     "select * from " + tableInfo.name() + " where " + tableInfo.id().name()
                         + " = ?")
                 .execute(Tuple.of(id))

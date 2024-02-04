@@ -12,6 +12,7 @@ import net.cofcool.toolbox.ToolName;
 import net.cofcool.toolbox.WebTool;
 import net.cofcool.toolbox.internal.simplenote.NoteConfig;
 import net.cofcool.toolbox.internal.simplenote.NoteIndex;
+import net.cofcool.toolbox.util.SqlRepository;
 import net.cofcool.toolbox.util.VertxDeployer;
 import net.cofcool.toolbox.util.VertxUtils;
 
@@ -33,7 +34,8 @@ public class SimpleNote implements WebTool {
         if (verticle == null) {
             verticle = new NoteVerticle();
         }
-        return WebTool.super.deploy(vertx, verticle, args);
+        SqlRepository.init(vertx);
+        return WebTool.super.deploy(vertx, verticle, args).onComplete(VertxUtils.logResult(log, e -> vertx.close()));
     }
 
     @Override

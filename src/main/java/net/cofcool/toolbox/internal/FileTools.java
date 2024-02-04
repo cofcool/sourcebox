@@ -147,7 +147,7 @@ public class FileTools implements Tool {
     @Override
     public Args config() {
         return new Args()
-            .arg(new Arg("util", null, "util name, support: " + utilMap.keySet(), true, "cut"))
+            .arg(new Arg("util", null, "util name, support: " + utilMap.keySet(), true, "count"))
             .arg(new Arg("path", null, "input file path", true, "./demo.csv"))
             .arg(new Arg("out", null, "output file path, if none will use stdout", false, "./output.csv"))
             .arg(new Arg("samplePath", null, "sample file path, when using count, this parameter should be set", false, "./sample.csv"))

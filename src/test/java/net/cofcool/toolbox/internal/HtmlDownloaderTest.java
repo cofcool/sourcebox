@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import net.cofcool.toolbox.BaseTest;
 import net.cofcool.toolbox.Tool;
+import net.cofcool.toolbox.Utils;
 import net.cofcool.toolbox.internal.HtmlDownloader.OutputType;
 import org.jsoup.Jsoup;
 import org.junit.jupiter.api.Test;

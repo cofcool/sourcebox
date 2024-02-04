@@ -1,6 +1,7 @@
 package net.cofcool.toolbox.runner;
 
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Verticle;
@@ -27,6 +28,7 @@ import net.cofcool.toolbox.Tool.RunnerType;
 import net.cofcool.toolbox.ToolContext;
 import net.cofcool.toolbox.ToolRunner;
 import net.cofcool.toolbox.WebTool;
+import net.cofcool.toolbox.util.SqlRepository;
 import net.cofcool.toolbox.util.VertxDeployer;
 import net.cofcool.toolbox.util.VertxUtils;
 import org.apache.commons.io.IOUtils;
@@ -81,6 +83,12 @@ public class WebRunner extends AbstractVerticle implements ToolRunner, VertxDepl
         });
         args.getArgVal(PORT_KEY).ifPresent(a -> port = Integer.parseInt(a));
         return VertxDeployer.super.deploy(vertx, verticle, args);
+    }
+
+    @Override
+    public void init(Vertx vertx, Context context) {
+        super.init(vertx, context);
+        SqlRepository.init(vertx);
     }
 
     @Override

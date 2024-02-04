@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import net.cofcool.toolbox.BaseTest;
 import net.cofcool.toolbox.Tool.Args;
+import net.cofcool.toolbox.Utils;
 import net.cofcool.toolbox.internal.simplenote.NoteConfig;
 import net.cofcool.toolbox.internal.simplenote.entity.ActionRecord;
 import net.cofcool.toolbox.internal.simplenote.entity.Note;
@@ -22,18 +23,22 @@ import org.junit.jupiter.api.extension.ExtendWith;
 class SimpleNoteTest extends BaseTest {
 
     static final String PATH = "./target/";
+    static String port = Utils.randomPort();
 
     @BeforeAll
     static void deployVerticle(Vertx vertx, VertxTestContext testContext) throws Exception {
         var note = new SimpleNote();
-        note.deploy(vertx, null, new Args().copyConfigFrom(note.config()).arg(NoteConfig.PATH_KEY, PATH))
+        note.deploy(vertx, null, new Args().copyConfigFrom(note.config())
+                .arg(NoteConfig.PATH_KEY, PATH)
+                .arg(NoteConfig.PORT_KEY, port)
+            )
             .onComplete(testContext.succeeding(t -> testContext.completeNow()));
     }
 
     @Test
     void list(Vertx vertx, VertxTestContext testContext) {
         vertx.createHttpClient()
-            .request(HttpMethod.GET, NoteConfig.PORT_VAL, "127.0.0.1", "/list")
+            .request(HttpMethod.GET, Integer.parseInt(port), "127.0.0.1", "/list")
             .compose(HttpClientRequest::send)
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertEquals(200, r.statusCode());
@@ -45,7 +50,7 @@ class SimpleNoteTest extends BaseTest {
     @Test
     void addNote(Vertx vertx, VertxTestContext testContext) {
         vertx.createHttpClient()
-            .request(HttpMethod.POST, NoteConfig.PORT_VAL, "127.0.0.1", "/note")
+            .request(HttpMethod.POST, Integer.parseInt(port), "127.0.0.1", "/note")
             .compose(h -> h.send(Json.encodeToBuffer(Note.init("test content"))))
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertEquals(200, r.statusCode());
@@ -73,7 +78,7 @@ class SimpleNoteTest extends BaseTest {
             LocalDateTime.now()
         );
         vertx.createHttpClient()
-            .request(HttpMethod.POST, NoteConfig.PORT_VAL, "127.0.0.1", "/action")
+            .request(HttpMethod.POST, Integer.parseInt(port), "127.0.0.1", "/action")
             .compose(h -> h.send(Json.encodeToBuffer(param)))
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertEquals(200, r.statusCode());
@@ -83,9 +88,36 @@ class SimpleNoteTest extends BaseTest {
     }
 
     @Test
+    void addActions(Vertx vertx, VertxTestContext testContext) {
+        var param = new ActionRecord(
+            "test video",
+            null,
+            null,
+            "mac",
+            "video",
+            "init",
+            LocalDateTime.now(),
+            null,
+            null,
+            5,
+            List.of("first"),
+            "test, demo",
+            null,
+            LocalDateTime.now()
+        );
+        vertx.createHttpClient()
+            .request(HttpMethod.POST, Integer.parseInt(port), "127.0.0.1", "/action/actions")
+            .compose(h -> h.send(Json.encodeToBuffer(List.of(param))))
+            .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
+                Assertions.assertEquals(204, r.statusCode());
+                testContext.completeNow();
+            })));
+    }
+
+    @Test
     void listAction(Vertx vertx, VertxTestContext testContext) {
         vertx.createHttpClient()
-            .request(HttpMethod.GET, NoteConfig.PORT_VAL, "127.0.0.1", "/action")
+            .request(HttpMethod.GET, Integer.parseInt(port), "127.0.0.1", "/action")
             .compose(HttpClientRequest::send)
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertEquals(200, r.statusCode());

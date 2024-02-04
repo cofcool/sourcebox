@@ -31,7 +31,7 @@ public class DirWebServer implements WebTool {
 
     @Override
     public void run(Args args) throws Exception {
-        deploy(args).onComplete(VertxUtils.logResult(log));
+        deploy(args);
     }
 
     @Override
@@ -39,7 +39,7 @@ public class DirWebServer implements WebTool {
         if (verticle == null) {
             verticle = new DirVerticle();
         }
-        return WebTool.super.deploy(vertx, verticle, args);
+        return WebTool.super.deploy(vertx, verticle, args).onComplete(VertxUtils.logResult(log, e -> vertx.close()));
     }
 
     @Override

@@ -13,21 +13,24 @@ import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import net.cofcool.toolbox.Tool.Args;
 import net.cofcool.toolbox.ToolName;
+import net.cofcool.toolbox.Utils;
 import net.cofcool.toolbox.internal.JsonFormatterTest;
 import net.cofcool.toolbox.internal.JsonToPojoTest;
 import net.cofcool.toolbox.internal.TrelloToLogseqImporterTest;
 import net.cofcool.toolbox.internal.simplenote.NoteConfig;
 import net.cofcool.toolbox.util.VertxUtils;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(VertxExtension.class)
 class WebRunnerTest {
 
-    @BeforeEach
-    void deployVerticle(Vertx vertx, VertxTestContext testContext) throws Exception {
+    static String port = Utils.randomPort();
+
+    @BeforeAll
+    static void deployVerticle(Vertx vertx, VertxTestContext testContext) throws Exception {
         System.setProperty("logging.debug", "true");
         System.setProperty("upload.dir", "target/file-uploads");
         new WebRunner()
@@ -36,6 +39,7 @@ class WebRunnerTest {
                 null,
                 new Args()
                     .arg(ToolName.note.name() + "." + NoteConfig.PATH_KEY, "./target/")
+                    .arg(WebRunner.PORT_KEY, port)
             )
             .onComplete(testContext.succeeding(t -> testContext.completeNow()));
     }
@@ -48,7 +52,7 @@ class WebRunnerTest {
     @Test
     void tools(Vertx vertx, VertxTestContext testContext) {
         vertx.createHttpClient()
-            .request(HttpMethod.GET, WebRunner.PORT_VAL, "127.0.0.1", "/")
+            .request(HttpMethod.GET, Integer.parseInt(port), "127.0.0.1", "/")
             .compose(HttpClientRequest::send)
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertEquals(200, r.statusCode());
@@ -61,7 +65,7 @@ class WebRunnerTest {
     @Test
     void reqConverts(Vertx vertx, VertxTestContext testContext) {
         vertx.createHttpClient()
-            .request(HttpMethod.POST, WebRunner.PORT_VAL, "127.0.0.1", "/" + ToolName.converts.name())
+            .request(HttpMethod.POST, Integer.parseInt(port), "127.0.0.1", "/" + ToolName.converts.name())
             .compose(r -> r.send(Buffer.buffer("{\"cmd\": \"now\"}")))
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertEquals(200, r.statusCode());
@@ -74,7 +78,7 @@ class WebRunnerTest {
     @Test
     void reqJson2POJO(Vertx vertx, VertxTestContext testContext) {
         WebClient.create(vertx)
-            .post( WebRunner.PORT_VAL, "127.0.0.1", "/" + ToolName.json2POJO.name())
+            .post(Integer.parseInt(port), "127.0.0.1", "/" + ToolName.json2POJO.name())
             .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
             .sendJson(JsonObject.of("json", JsonToPojoTest.JSON_STR).toBuffer())
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
@@ -88,7 +92,7 @@ class WebRunnerTest {
     @Test
     void reqJson(Vertx vertx, VertxTestContext testContext) {
         WebClient.create(vertx)
-            .post(WebRunner.PORT_VAL, "127.0.0.1", "/" + ToolName.json.name())
+            .post(Integer.parseInt(port), "127.0.0.1", "/" + ToolName.json.name())
             .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
             .sendJson(JsonObject.of("json", JsonFormatterTest.JSON_STR).toBuffer())
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
@@ -102,14 +106,14 @@ class WebRunnerTest {
     @Test
     void reqTrelloLogseqImporter(Vertx vertx, VertxTestContext testContext) {
         WebClient.create(vertx)
-            .post(WebRunner.PORT_VAL, "127.0.0.1", "/upload")
+            .post(Integer.parseInt(port), "127.0.0.1", "/upload")
             .sendMultipartForm(
                 MultipartForm.create()
                     .textFileUpload("file", "test.txt", TrelloToLogseqImporterTest.RESOURCE_PATH, "multipart/form-data"))
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 var name = r.bodyAsJsonObject().getJsonArray("result").getString(0);
                 WebClient.create(vertx)
-                    .post( WebRunner.PORT_VAL, "127.0.0.1", "/" + ToolName.trelloLogseqImporter.name())
+                    .post(Integer.parseInt(port), "127.0.0.1", "/" + ToolName.trelloLogseqImporter.name())
                     .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
                     .sendJson(JsonObject.of("path", name).toBuffer())
                     .onComplete(testContext.succeeding(response -> testContext.verify(() -> {
@@ -124,7 +128,7 @@ class WebRunnerTest {
     @Test
     void reqHelp(Vertx vertx, VertxTestContext testContext) {
         vertx.createHttpClient()
-            .request(HttpMethod.GET, WebRunner.PORT_VAL, "127.0.0.1", "/help")
+            .request(HttpMethod.GET, Integer.parseInt(port), "127.0.0.1", "/help")
             .compose(HttpClientRequest::send)
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertEquals(200, r.statusCode());
@@ -137,7 +141,7 @@ class WebRunnerTest {
     @Test
     void reqUpload(Vertx vertx, VertxTestContext testContext) {
         WebClient.create(vertx)
-            .post(WebRunner.PORT_VAL, "127.0.0.1", "/upload")
+            .post(Integer.parseInt(port), "127.0.0.1", "/upload")
             .sendMultipartForm(
                 MultipartForm.create()
                     .textFileUpload("file", "test.txt", Buffer.buffer("demo test txt"), "multipart/form-data"))
@@ -161,7 +165,7 @@ class WebRunnerTest {
             vertx.fileSystem().createFileBlocking(path);
         }
         WebClient.create(vertx)
-            .get(WebRunner.PORT_VAL, "127.0.0.1", "/resource/reqResource.txt")
+            .get(Integer.parseInt(port), "127.0.0.1", "/resource/reqResource.txt")
             .send()
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertEquals(200, r.statusCode());

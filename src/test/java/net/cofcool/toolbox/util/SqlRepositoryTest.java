@@ -26,6 +26,7 @@ class SqlRepositoryTest extends BaseTest {
     @BeforeAll
     static void create(Vertx vertx, VertxTestContext testContext) {
         LoggerFactory.setDebug(true);
+        SqlRepository.init(vertx);
         repository = SqlRepository.create(vertx, User.class);
         repository.save(new User("1", "test1", "12345"))
             .onComplete(testContext.succeeding(t -> testContext.completeNow()));

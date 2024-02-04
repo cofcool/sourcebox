@@ -24,9 +24,9 @@ import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.sstore.SessionStore;
 import io.vertx.jdbcclient.JDBCPool;
 import java.util.ArrayList;
-import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import lombok.Getter;
 import net.cofcool.toolbox.logging.Logger;
 import org.apache.commons.io.FilenameUtils;
 
@@ -34,7 +34,6 @@ public final class VertxUtils {
 
     private static final String GLOBAL_UPLOAD_DIR = System.getProperty("upload.dir", BodyHandler.DEFAULT_UPLOADS_DIRECTORY);
     private static final String GLOBAL_WEB_ROOT = System.getProperty("webroot.dir");
-    private static final Object mutex = new Object();
 
     static {
         JsonUtil.enableTimeModule(DatabindCodec.mapper());
@@ -136,30 +135,24 @@ public final class VertxUtils {
             })), "web-toolbox"));
     }
 
+    @Getter
+    public static class JDBCPoolConfig {
 
-    private static volatile JDBCPool globalPool;
+        private final JDBCPool globalPool;
+        private final String url;
 
-    public static JDBCPool getJDBCPool() {
-        return Objects.requireNonNull(globalPool);
-    }
-
-    public static JDBCPool getJDBCPool(Vertx vertx, String url, String user, String pwd) {
-        if (globalPool == null) {
-            synchronized (mutex) {
-                if (globalPool == null) {
-                    globalPool = JDBCPool.pool(
-                        vertx,
-                        new JsonObject()
-                            .put("url", url)
-                            .put("username", user)
-                            .put("password", pwd)
-                            .put("max_pool_size", 10)
-                    );
-                }
-            }
+        public JDBCPoolConfig(Vertx vertx, String url, String user, String pwd) {
+            this.url = url;
+            globalPool = JDBCPool.pool(
+                vertx,
+                new JsonObject()
+                    .put("url", url)
+                    .put("username", user)
+                    .put("password", pwd)
+                    .put("max_pool_size", 10)
+            );
         }
 
-        return globalPool;
     }
 
 }

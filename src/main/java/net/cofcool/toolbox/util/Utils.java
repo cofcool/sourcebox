@@ -1,11 +1,14 @@
 package net.cofcool.toolbox.util;
 
+import io.vertx.core.Future;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import lombok.SneakyThrows;
 
 public abstract class Utils {
 
@@ -34,7 +37,7 @@ public abstract class Utils {
         return md5StrBuff.toString();
     }
 
-    public static String generateShorUUID() {
+    public static String generateShortUUID() {
         return UUID.randomUUID().toString().replace("-", "");
     }
 
@@ -56,4 +59,8 @@ public abstract class Utils {
         }
     }
 
+    @SneakyThrows
+    public static <T> T getFutureResult(Future<T> future) {
+        return future.toCompletionStage().toCompletableFuture().get(10, TimeUnit.SECONDS);
+    }
 }

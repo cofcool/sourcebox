@@ -2,6 +2,7 @@ package net.cofcool.toolbox.internal;
 
 import net.cofcool.toolbox.BaseTest;
 import net.cofcool.toolbox.Tool;
+import net.cofcool.toolbox.Utils;
 import net.cofcool.toolbox.internal.GitCommitsToChangelog.Style;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

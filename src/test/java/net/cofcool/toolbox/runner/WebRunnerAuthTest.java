@@ -9,7 +9,7 @@ import net.cofcool.toolbox.ToolName;
 import net.cofcool.toolbox.internal.simplenote.NoteConfig;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -18,8 +18,8 @@ public class WebRunnerAuthTest {
 
     static int port = RandomUtils.nextInt(38000, WebRunner.PORT_VAL);
 
-    @BeforeEach
-    void deployVerticle(Vertx vertx, VertxTestContext testContext) throws Exception {
+    @BeforeAll
+    static void deployVerticle(Vertx vertx, VertxTestContext testContext) throws Exception {
         System.setProperty("logging.debug", "true");
         System.setProperty("upload.dir", "target/file-uploads");
         new WebRunner()

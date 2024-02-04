@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -21,29 +22,36 @@ import lombok.CustomLog;
 import net.cofcool.toolbox.App;
 import net.cofcool.toolbox.util.TableInfoHelper.TableInfo;
 import net.cofcool.toolbox.util.TableInfoHelper.TableProperty;
+import net.cofcool.toolbox.util.VertxUtils.JDBCPoolConfig;
 
 
 // do not support composite entity
 @CustomLog
 public final class SqlRepository<T> implements AsyncCrudRepository<T> {
 
-    public static <T> SqlRepository<T> create(Vertx vertx, Class<T> entity) {
+    private static VertxUtils.JDBCPoolConfig poolConfig;
+
+    public static synchronized void init(Vertx vertx) {
+//        if (poolConfig != null) {
+//            throw new IllegalStateException("poolConfig has be init");
+//        }
         var dir = App.globalCfgDir("data.db");
         var url = "jdbc:hsqldb:file:" + dir;
-        VertxUtils.getJDBCPool(vertx, url, "sa", "");
+        poolConfig = new JDBCPoolConfig(vertx, url, "sa", "");
+        log.debug("Init {0}", url);
+    }
+
+    public static <T> SqlRepository<T> create(Vertx vertx, Class<T> entity) {
+        Objects.requireNonNull(poolConfig, "poolConfig must be init");
         var repository = new SqlRepository<>(entity);
 
         var ddl = repository.tableInfo.ddl();
-        vertx.executeBlocking(() -> {
-                try (var conn = DriverManager.getConnection(url);
-                    var s = conn.createStatement()) {
-                    return Future.succeededFuture(s.execute(ddl));
-                } catch (SQLException e) {
-                    return Future.failedFuture(e);
-                }
-            })
-            .onSuccess(a -> log.debug("Create {0} table: {1}", dir, ddl))
-            .onFailure(e -> log.error("Init table" + ddl + " error", e));
+        try (var conn = DriverManager.getConnection(poolConfig.getUrl());
+            var s = conn.createStatement()) {
+            log.debug("Create {0} table: {1}; result: {2}", poolConfig.getUrl(), ddl, s.execute(ddl));
+        } catch (SQLException e) {
+            throw new IllegalStateException(e);
+        }
 
         return repository;
     }
@@ -60,7 +68,7 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
     }
 
     private JDBCPool getPool() {
-        return VertxUtils.getJDBCPool();
+        return poolConfig.getGlobalPool();
     }
 
     @Override

@@ -1,6 +1,7 @@
 package net.cofcool.toolbox.util;
 
 import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.jdbcclient.JDBCPool;
 import io.vertx.sqlclient.PreparedQuery;
@@ -70,6 +71,20 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
 
     private JDBCPool getPool() {
         return poolConfig.getGlobalPool();
+    }
+
+    public Future<RowSet<Row>> executeQuery(String sql) {
+        return executeQuery(sql, null);
+    }
+
+    public Future<RowSet<Row>> executeQuery(String sql, Tuple args) {
+        Promise<RowSet<Row>> p = Promise.promise();
+        if (args == null) {
+            preparedQuery(sql).execute(p);
+        } else {
+            preparedQuery(sql).execute(args, p);
+        }
+        return p.future();
     }
 
     @Override

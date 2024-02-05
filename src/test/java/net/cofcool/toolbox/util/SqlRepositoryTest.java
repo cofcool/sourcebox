@@ -101,6 +101,18 @@ class SqlRepositoryTest extends BaseTest {
             })));
     }
 
+    @Test
+    void executeQuery(Vertx vertx, VertxTestContext testContext) {
+        repository
+            .executeQuery("select count(*) from user")
+            .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
+                assertEquals(1, r.size());
+                var row = r.iterator().next();
+                assertEquals(1, row.getInteger(0));
+                testContext.completeNow();
+            })));
+    }
+
     @Entity(name = "user")
     record User(
         @ID

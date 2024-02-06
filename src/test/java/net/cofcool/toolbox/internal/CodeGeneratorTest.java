@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import net.cofcool.toolbox.BaseTest;
 import net.cofcool.toolbox.Tool;
+import net.cofcool.toolbox.Utils;
 import net.cofcool.toolbox.internal.CodeGenerator.Config;
 import net.cofcool.toolbox.util.JsonUtil;
 import org.apache.commons.io.FileUtils;
@@ -13,7 +14,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-@Disabled
 class CodeGeneratorTest extends BaseTest {
 
     @TempDir
@@ -32,6 +32,7 @@ class CodeGeneratorTest extends BaseTest {
         Assertions.assertTrue(new File("./target/code-generate/com/example/DemoController.java").exists());
     }
     @Test
+    @Disabled
     void runWithTemplate() throws Exception {
         var configPath = FileUtils.getFile(file, "cfg.json");
         FileUtils.writeStringToFile(configPath, JsonUtil.toJson(config), StandardCharsets.UTF_8);

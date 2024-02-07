@@ -113,6 +113,11 @@
 
 使用: `git diff --unified=0 --diff-filter=M . | ./mytool.sh --tool=analysisDiff --path=./ > diff.csv`
 
+## 文件处理工具
+
+* 统计一个文件内容在另一个文件中的数量，使用: `./mytool.sh --tool=fileTools --type=count --samplePath=sample.csv --path=data.csv`
+* 根据传入的字符或索引切割文件内容，使用: `./mytool.sh --tool=fileTools --type=split --path=data.csv --splitIdx=2`
+
 ## 阅读软件笔记、高亮导出为 markdown 文件
 
 支持 Kindle、Moon+ Reader

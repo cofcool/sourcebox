@@ -125,4 +125,17 @@ class SimpleNoteTest extends BaseTest {
                 testContext.completeNow();
             })));
     }
+
+    @Test
+    void listRoute(Vertx vertx, VertxTestContext testContext) {
+        vertx.createHttpClient()
+            .request(HttpMethod.GET, Integer.parseInt(port), "127.0.0.1", "/develop/routes")
+            .compose(HttpClientRequest::send)
+            .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
+                Assertions.assertEquals(200, r.statusCode());
+                Assertions.assertEquals("application/json", r.getHeader("Content-Type"));
+                r.body(res -> System.out.println(res.map(Json::decodeValue).result()));
+                testContext.completeNow();
+            })));
+    }
 }

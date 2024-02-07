@@ -1,8 +1,12 @@
 package net.cofcool.toolbox.internal.simplenote;
 
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
+import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
+import java.util.List;
+import java.util.Map;
 import lombok.CustomLog;
 import net.cofcool.toolbox.internal.simplenote.NoteConfig.NoteCodec;
 import net.cofcool.toolbox.internal.simplenote.entity.Note;
@@ -19,7 +23,7 @@ public class NoteIndex {
     public NoteIndex(Vertx vertx) {
         this.vertx = vertx;
         this.noteService = new NoteService(vertx);
-        this.actionIndex = new ActionIndex(vertx);
+        this.actionIndex = new ActionIndex(vertx, noteService);
         vertx.eventBus().registerDefaultCodec(Note.class, new NoteCodec());
     }
 
@@ -56,8 +60,19 @@ public class NoteIndex {
             (e, f) -> log.error("Parsing note file error", e)
         );
 
-        actionIndex.mountRoute(router);
+        var actionRouter = actionIndex.mountRoute(router);
+
+        router.get("/develop/routes").respond(r ->
+            Future.succeededFuture(Map.of(
+                "/", readRouteNames(router),
+                "action", readRouteNames(actionRouter)
+            ))
+        );
 
         return router;
+    }
+
+    private static List<String> readRouteNames(Router router) {
+        return router.getRoutes().stream().map(Route::getName).toList();
     }
 }

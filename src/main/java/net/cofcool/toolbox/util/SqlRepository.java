@@ -95,7 +95,10 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
         } else {
             return find(id.get()).compose(
                 n -> update(id.get(), n, entity),
-                e -> insert(entity)
+                e -> {
+                    log.debug(e.getMessage());
+                    return insert(entity);
+                }
             );
         }
     }

@@ -28,6 +28,10 @@ public record Note(
         return new Note(UUID.randomUUID().toString(), content, LocalDateTime.now(), NoteState.NORMAL.name());
     }
 
+    public Note(String id) {
+        this(id, null, null, null);
+    }
+
     @DefaultMapper
     public static Note of(Row row) {
         return new Note(row.getString("ID"), row.getString("CONTENT"), row.getLocalDateTime("DATE"), row.getString("STATE"));

@@ -10,7 +10,9 @@ import java.util.stream.Collectors;
 import net.cofcool.toolbox.BaseTest;
 import net.cofcool.toolbox.internal.simplenote.entity.ActionRecord;
 import net.cofcool.toolbox.internal.simplenote.entity.Comment;
+import net.cofcool.toolbox.internal.simplenote.entity.RefType;
 import net.cofcool.toolbox.logging.LoggerFactory;
+import net.cofcool.toolbox.util.SqlRepository;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -26,27 +28,47 @@ class ActionServiceTest extends BaseTest {
     @BeforeAll
     static void setup(Vertx vertx, VertxTestContext testContext) {
         LoggerFactory.setDebug(true);
-        actionService = new ActionService(vertx);
+        SqlRepository.init(vertx);
+        actionService = new ActionService(vertx, new NoteService(vertx));
         actionService.saveAction(new ActionRecord(
                 "test video",
                 null,
                 null,
                 "mac",
                 "video",
-                "init",
+                "doing",
                 LocalDateTime.now(),
                 null,
                 null,
                 5,
                 List.of("first"),
-                "test, demo",
+                "test,demo",
                 null,
                 LocalDateTime.now()
             ))
-            .onComplete(testContext.succeeding(r -> {
+            .compose(r -> {
                 defaultRecord = r;
+                return actionService.saveAction(new ActionRecord(
+                    "test video1",
+                    null,
+                    null,
+                    "mac",
+                    "video",
+                    "doing",
+                    LocalDateTime.now(),
+                    null,
+                    null,
+                    5,
+                    null,
+                    null,
+                    RefType.action.refStr(r.id()),
+                    LocalDateTime.now()
+                ));
+            })
+            .onComplete(testContext.succeeding(r -> {
                 testContext.verify(testContext::completeNow);
             }));
+
     }
 
     @Test
@@ -59,6 +81,29 @@ class ActionServiceTest extends BaseTest {
                 testContext.completeNow();
             })));
     }
+
+    @Test
+    void findById(Vertx vertx, VertxTestContext testContext) {
+        actionService
+            .find(defaultRecord.id())
+            .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
+                Assertions.assertNotNull(r);
+                System.out.println(r);
+                testContext.completeNow();
+            })));
+    }
+
+    @Test
+    void findAllRefs(Vertx vertx, VertxTestContext testContext) {
+        actionService
+            .findAllRefs(defaultRecord.id())
+            .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
+                Assertions.assertNotNull(r);
+                Assertions.assertFalse(r.refs().isEmpty());
+                testContext.completeNow();
+            })));
+    }
+
     @Test
     void delete(Vertx vertx, VertxTestContext testContext) {
         ActionRecord newR = new ActionRecord(
@@ -85,7 +130,7 @@ class ActionServiceTest extends BaseTest {
                 .compose(r1 -> actionService.deleteComments(r1.stream().map(Comment::id).collect(Collectors.toSet())))
             )
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
-                Assertions.assertNull(r);
+                Assertions.assertNotNull(r);
                 testContext.completeNow();
             })));
     }
@@ -97,6 +142,27 @@ class ActionServiceTest extends BaseTest {
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 System.out.println(r);
                 Assertions.assertFalse(r.isEmpty());
+                testContext.completeNow();
+            })));
+    }
+
+    @Test
+    void example(Vertx vertx, VertxTestContext testContext) {
+        actionService
+            .example()
+            .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
+                Assertions.assertNotNull(r);
+                testContext.completeNow();
+            })));
+    }
+
+    @Test
+    void toMarkdown(Vertx vertx, VertxTestContext testContext) {
+        actionService
+            .export2Md()
+            .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
+                Assertions.assertNotNull(r);
+                System.out.println(r);
                 testContext.completeNow();
             })));
     }
@@ -126,7 +192,7 @@ class ActionServiceTest extends BaseTest {
             .compose(r -> actionService.find(r.id()))
             .onComplete(testContext.succeeding(r1 -> testContext.verify(() -> {
                 System.out.println(r1);
-                Assertions.assertEquals(newR.end(), r1.end());
+                Assertions.assertEquals(newR.end(), r1.record().end());
                 testContext.completeNow();
             })));
     }

@@ -1,5 +1,6 @@
 package net.cofcool.toolbox.internal.simplenote.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import java.sql.JDBCType;
 import java.time.LocalDateTime;
 import net.cofcool.toolbox.util.TableInfoHelper.Column;
@@ -16,8 +17,10 @@ public record Comment(
     @Column(name = "content", type = JDBCType.VARCHAR, length = 1024)
     String content,
     @Column(name = "create_time", type = JDBCType.TIMESTAMP)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     LocalDateTime createTime,
     @Column(name = "update_time", type = JDBCType.TIMESTAMP)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     LocalDateTime updateTime
 ) {
 

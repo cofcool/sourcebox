@@ -3,6 +3,21 @@
     "name":"[B"
   },
   {
+    "name":"[C"
+  },
+  {
+    "name":"[D"
+  },
+  {
+    "name":"[F"
+  },
+  {
+    "name":"[I"
+  },
+  {
+    "name":"[J"
+  },
+  {
     "name":"[Lcom.fasterxml.jackson.databind.deser.Deserializers;"
   },
   {
@@ -15,10 +30,37 @@
     "name":"[Lcom.fasterxml.jackson.databind.ser.Serializers;"
   },
   {
+    "name":"[Ljava.lang.Object;"
+  },
+  {
     "name":"[Ljava.lang.String;"
   },
   {
     "name":"[Lsun.security.pkcs.SignerInfo;"
+  },
+  {
+    "name":"[Ljavax.management.openmbean.CompositeData;"
+  },
+  {
+    "name":"[Lorg.hsqldb.Constraint;"
+  },
+  {
+    "name":"[Lorg.hsqldb.Expression;"
+  },
+  {
+    "name":"[Lorg.hsqldb.RangeGroup;"
+  },
+  {
+    "name":"[Lorg.hsqldb.Routine;"
+  },
+  {
+    "name":"[Lorg.hsqldb.index.Index;"
+  },
+  {
+    "name":"[S"
+  },
+  {
+    "name":"[Z"
   },
   {
     "name":"apple.security.AppleProvider",
@@ -26,6 +68,181 @@
   },
   {
     "name":"com.fasterxml.jackson.databind.ext.Java7SupportImpl",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.mchange.v1.cachedstore.CachedStore",
+    "methods":[{"name":"find","parameterTypes":["java.lang.Object"] }]
+  },
+  {
+    "name":"com.mchange.v2.c3p0.AbstractComboPooledDataSource",
+    "queryAllPublicMethods":true,
+    "methods":[{"name":"getAcquireIncrement","parameterTypes":[] }, {"name":"getAcquireRetryAttempts","parameterTypes":[] }, {"name":"getAcquireRetryDelay","parameterTypes":[] }, {"name":"getAutomaticTestTable","parameterTypes":[] }, {"name":"getCheckoutTimeout","parameterTypes":[] }, {"name":"getConnectionCustomizerClassName","parameterTypes":[] }, {"name":"getConnectionTesterClassName","parameterTypes":[] }, {"name":"getContextClassLoaderSource","parameterTypes":[] }, {"name":"getDescription","parameterTypes":[] }, {"name":"getDriverClass","parameterTypes":[] }, {"name":"getFactoryClassLocation","parameterTypes":[] }, {"name":"getIdleConnectionTestPeriod","parameterTypes":[] }, {"name":"getInitialPoolSize","parameterTypes":[] }, {"name":"getJdbcUrl","parameterTypes":[] }, {"name":"getMaxAdministrativeTaskTime","parameterTypes":[] }, {"name":"getMaxConnectionAge","parameterTypes":[] }, {"name":"getMaxIdleTime","parameterTypes":[] }, {"name":"getMaxIdleTimeExcessConnections","parameterTypes":[] }, {"name":"getMaxPoolSize","parameterTypes":[] }, {"name":"getMaxStatements","parameterTypes":[] }, {"name":"getMaxStatementsPerConnection","parameterTypes":[] }, {"name":"getMinPoolSize","parameterTypes":[] }, {"name":"getPreferredTestQuery","parameterTypes":[] }, {"name":"getProperties","parameterTypes":[] }, {"name":"getPropertyCycle","parameterTypes":[] }, {"name":"getStatementCacheNumDeferredCloseThreads","parameterTypes":[] }, {"name":"getUnreturnedConnectionTimeout","parameterTypes":[] }, {"name":"getUserOverrides","parameterTypes":[] }, {"name":"isAutoCommitOnClose","parameterTypes":[] }, {"name":"isBreakAfterAcquireFailure","parameterTypes":[] }, {"name":"isDebugUnreturnedConnectionStackTraces","parameterTypes":[] }, {"name":"isForceIgnoreUnresolvedTransactions","parameterTypes":[] }, {"name":"isForceSynchronousCheckins","parameterTypes":[] }, {"name":"isForceUseNamedDriverClass","parameterTypes":[] }, {"name":"isPrivilegeSpawnedThreads","parameterTypes":[] }, {"name":"isTestConnectionOnCheckin","parameterTypes":[] }, {"name":"isTestConnectionOnCheckout","parameterTypes":[] }, {"name":"isUsesTraditionalReflectiveProxies","parameterTypes":[] }]
+  },
+  {
+    "name":"com.mchange.v2.c3p0.AbstractComboPooledDataSourceBeanInfo"
+  },
+  {
+    "name":"com.mchange.v2.c3p0.AbstractComboPooledDataSourceCustomizer"
+  },
+  {
+    "name":"com.mchange.v2.c3p0.ComboPooledDataSource",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"com.mchange.v2.c3p0.ComboPooledDataSourceBeanInfo"
+  },
+  {
+    "name":"com.mchange.v2.c3p0.ComboPooledDataSourceCustomizer"
+  },
+  {
+    "name":"com.mchange.v2.c3p0.DriverManagerDataSource",
+    "queryAllPublicMethods":true,
+    "methods":[{"name":"getPassword","parameterTypes":[] }, {"name":"getUser","parameterTypes":[] }]
+  },
+  {
+    "name":"com.mchange.v2.c3p0.DriverManagerDataSourceBeanInfo"
+  },
+  {
+    "name":"com.mchange.v2.c3p0.DriverManagerDataSourceCustomizer"
+  },
+  {
+    "name":"com.mchange.v2.c3p0.PooledDataSource",
+    "queryAllPublicMethods":true,
+    "methods":[{"name":"close","parameterTypes":["boolean"] }, {"name":"getLastAcquisitionFailure","parameterTypes":["java.lang.String","java.lang.String"] }, {"name":"getLastCheckinFailure","parameterTypes":["java.lang.String","java.lang.String"] }, {"name":"getLastCheckoutFailure","parameterTypes":["java.lang.String","java.lang.String"] }, {"name":"getLastConnectionTestFailure","parameterTypes":["java.lang.String","java.lang.String"] }, {"name":"getLastIdleTestFailure","parameterTypes":["java.lang.String","java.lang.String"] }]
+  },
+  {
+    "name":"com.mchange.v2.c3p0.WrapperConnectionPoolDataSource",
+    "queryAllPublicMethods":true,
+    "methods":[{"name":"getPassword","parameterTypes":[] }, {"name":"getUser","parameterTypes":[] }]
+  },
+  {
+    "name":"com.mchange.v2.c3p0.WrapperConnectionPoolDataSourceBeanInfo"
+  },
+  {
+    "name":"com.mchange.v2.c3p0.WrapperConnectionPoolDataSourceCustomizer"
+  },
+  {
+    "name":"com.mchange.v2.c3p0.cfg.C3P0ConfigXmlUtils"
+  },
+  {
+    "name":"com.mchange.v2.c3p0.impl.AbstractIdentityTokenized",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"com.mchange.v2.c3p0.impl.AbstractIdentityTokenizedBeanInfo"
+  },
+  {
+    "name":"com.mchange.v2.c3p0.impl.AbstractIdentityTokenizedCustomizer"
+  },
+  {
+    "name":"com.mchange.v2.c3p0.impl.AbstractPoolBackedDataSource",
+    "queryAllPublicMethods":true,
+    "methods":[{"name":"getDataSourceName","parameterTypes":[] }]
+  },
+  {
+    "name":"com.mchange.v2.c3p0.impl.AbstractPoolBackedDataSourceBeanInfo"
+  },
+  {
+    "name":"com.mchange.v2.c3p0.impl.AbstractPoolBackedDataSourceCustomizer"
+  },
+  {
+    "name":"com.mchange.v2.c3p0.impl.C3P0Defaults",
+    "queryAllPublicMethods":true,
+    "methods":[{"name":"acquireIncrement","parameterTypes":[] }, {"name":"acquireRetryAttempts","parameterTypes":[] }, {"name":"acquireRetryDelay","parameterTypes":[] }, {"name":"autoCommitOnClose","parameterTypes":[] }, {"name":"automaticTestTable","parameterTypes":[] }, {"name":"breakAfterAcquireFailure","parameterTypes":[] }, {"name":"checkoutTimeout","parameterTypes":[] }, {"name":"connectionCustomizerClassName","parameterTypes":[] }, {"name":"connectionTesterClassName","parameterTypes":[] }, {"name":"contextClassLoaderSource","parameterTypes":[] }, {"name":"dataSourceName","parameterTypes":[] }, {"name":"debugUnreturnedConnectionStackTraces","parameterTypes":[] }, {"name":"driverClass","parameterTypes":[] }, {"name":"extensions","parameterTypes":[] }, {"name":"factoryClassLocation","parameterTypes":[] }, {"name":"forceIgnoreUnresolvedTransactions","parameterTypes":[] }, {"name":"forceSynchronousCheckins","parameterTypes":[] }, {"name":"forceUseNamedDriverClass","parameterTypes":[] }, {"name":"idleConnectionTestPeriod","parameterTypes":[] }, {"name":"initialPoolSize","parameterTypes":[] }, {"name":"jdbcUrl","parameterTypes":[] }, {"name":"maxAdministrativeTaskTime","parameterTypes":[] }, {"name":"maxConnectionAge","parameterTypes":[] }, {"name":"maxIdleTime","parameterTypes":[] }, {"name":"maxIdleTimeExcessConnections","parameterTypes":[] }, {"name":"maxPoolSize","parameterTypes":[] }, {"name":"maxStatements","parameterTypes":[] }, {"name":"maxStatementsPerConnection","parameterTypes":[] }, {"name":"minPoolSize","parameterTypes":[] }, {"name":"numHelperThreads","parameterTypes":[] }, {"name":"overrideDefaultPassword","parameterTypes":[] }, {"name":"overrideDefaultUser","parameterTypes":[] }, {"name":"password","parameterTypes":[] }, {"name":"preferredTestQuery","parameterTypes":[] }, {"name":"privilegeSpawnedThreads","parameterTypes":[] }, {"name":"propertyCycle","parameterTypes":[] }, {"name":"statementCacheNumDeferredCloseThreads","parameterTypes":[] }, {"name":"testConnectionOnCheckin","parameterTypes":[] }, {"name":"testConnectionOnCheckout","parameterTypes":[] }, {"name":"unreturnedConnectionTimeout","parameterTypes":[] }, {"name":"user","parameterTypes":[] }, {"name":"userOverridesAsString","parameterTypes":[] }, {"name":"usesTraditionalReflectiveProxies","parameterTypes":[] }]
+  },
+  {
+    "name":"com.mchange.v2.c3p0.impl.DefaultConnectionTester",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.mchange.v2.c3p0.impl.DriverManagerDataSourceBase",
+    "queryAllPublicMethods":true,
+    "methods":[{"name":"getDescription","parameterTypes":[] }, {"name":"getDriverClass","parameterTypes":[] }, {"name":"getFactoryClassLocation","parameterTypes":[] }, {"name":"getIdentityToken","parameterTypes":[] }, {"name":"getJdbcUrl","parameterTypes":[] }]
+  },
+  {
+    "name":"com.mchange.v2.c3p0.impl.DriverManagerDataSourceBaseBeanInfo"
+  },
+  {
+    "name":"com.mchange.v2.c3p0.impl.DriverManagerDataSourceBaseCustomizer"
+  },
+  {
+    "name":"com.mchange.v2.c3p0.impl.IdentityTokenResolvable",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"com.mchange.v2.c3p0.impl.IdentityTokenResolvableBeanInfo"
+  },
+  {
+    "name":"com.mchange.v2.c3p0.impl.IdentityTokenResolvableCustomizer"
+  },
+  {
+    "name":"com.mchange.v2.c3p0.impl.IdentityTokenized",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"com.mchange.v2.c3p0.impl.PoolBackedDataSourceBase",
+    "queryAllPublicMethods":true,
+    "methods":[{"name":"getExtensions","parameterTypes":[] }, {"name":"getIdentityToken","parameterTypes":[] }, {"name":"getNumHelperThreads","parameterTypes":[] }]
+  },
+  {
+    "name":"com.mchange.v2.c3p0.impl.PoolBackedDataSourceBaseBeanInfo"
+  },
+  {
+    "name":"com.mchange.v2.c3p0.impl.PoolBackedDataSourceBaseCustomizer"
+  },
+  {
+    "name":"com.mchange.v2.c3p0.impl.WrapperConnectionPoolDataSourceBase",
+    "queryAllPublicMethods":true,
+    "methods":[{"name":"getAcquireIncrement","parameterTypes":[] }, {"name":"getAcquireRetryAttempts","parameterTypes":[] }, {"name":"getAcquireRetryDelay","parameterTypes":[] }, {"name":"getAutomaticTestTable","parameterTypes":[] }, {"name":"getCheckoutTimeout","parameterTypes":[] }, {"name":"getConnectionCustomizerClassName","parameterTypes":[] }, {"name":"getConnectionTesterClassName","parameterTypes":[] }, {"name":"getContextClassLoaderSource","parameterTypes":[] }, {"name":"getFactoryClassLocation","parameterTypes":[] }, {"name":"getIdentityToken","parameterTypes":[] }, {"name":"getIdleConnectionTestPeriod","parameterTypes":[] }, {"name":"getInitialPoolSize","parameterTypes":[] }, {"name":"getMaxAdministrativeTaskTime","parameterTypes":[] }, {"name":"getMaxConnectionAge","parameterTypes":[] }, {"name":"getMaxIdleTime","parameterTypes":[] }, {"name":"getMaxIdleTimeExcessConnections","parameterTypes":[] }, {"name":"getMaxPoolSize","parameterTypes":[] }, {"name":"getMaxStatements","parameterTypes":[] }, {"name":"getMaxStatementsPerConnection","parameterTypes":[] }, {"name":"getMinPoolSize","parameterTypes":[] }, {"name":"getOverrideDefaultPassword","parameterTypes":[] }, {"name":"getOverrideDefaultUser","parameterTypes":[] }, {"name":"getPreferredTestQuery","parameterTypes":[] }, {"name":"getPropertyCycle","parameterTypes":[] }, {"name":"getStatementCacheNumDeferredCloseThreads","parameterTypes":[] }, {"name":"getUnreturnedConnectionTimeout","parameterTypes":[] }, {"name":"getUserOverridesAsString","parameterTypes":[] }, {"name":"isBreakAfterAcquireFailure","parameterTypes":[] }, {"name":"isDebugUnreturnedConnectionStackTraces","parameterTypes":[] }, {"name":"isForceSynchronousCheckins","parameterTypes":[] }, {"name":"isPrivilegeSpawnedThreads","parameterTypes":[] }, {"name":"isTestConnectionOnCheckin","parameterTypes":[] }, {"name":"isTestConnectionOnCheckout","parameterTypes":[] }]
+  },
+  {
+    "name":"com.mchange.v2.c3p0.impl.WrapperConnectionPoolDataSourceBaseBeanInfo"
+  },
+  {
+    "name":"com.mchange.v2.c3p0.impl.WrapperConnectionPoolDataSourceBaseCustomizer"
+  },
+  {
+    "name":"com.mchange.v2.c3p0.management.ActiveManagementCoordinator",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.mchange.v2.c3p0.management.C3P0RegistryManager",
+    "queryAllPublicConstructors":true
+  },
+  {
+    "name":"com.mchange.v2.c3p0.management.C3P0RegistryManagerMBean",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"com.mchange.v2.c3p0.management.DynamicPooledDataSourceManagerMBean",
+    "methods":[{"name":"<init>","parameterTypes":["com.mchange.v2.c3p0.PooledDataSource","java.lang.String","javax.management.MBeanServer"] }]
+  },
+  {
+    "name":"com.mchange.v2.cfg.DelayedLogItem"
+  },
+  {
+    "name":"com.mchange.v2.cfg.MConfig",
+    "methods":[{"name":"dumpToLogger","parameterTypes":["com.mchange.v2.cfg.DelayedLogItem","com.mchange.v2.log.MLogger"] }]
+  },
+  {
+    "name":"com.mchange.v2.log.MLevel",
+    "fields":[{"name":"ALL"}, {"name":"CONFIG"}, {"name":"FINE"}, {"name":"FINER"}, {"name":"FINEST"}, {"name":"INFO"}, {"name":"OFF"}, {"name":"SEVERE"}, {"name":"WARNING"}]
+  },
+  {
+    "name":"com.mchange.v2.log.jdk14logging.Jdk14MLog",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.mchange.v2.log.log4j.Log4jMLog",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.mchange.v2.log.log4j2.Log4j2MLog",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.mchange.v2.log.slf4j.Slf4jMLog",
     "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {
@@ -71,6 +288,57 @@
   {
     "name":"com.sun.crypto.provider.TlsPrfGenerator$V12",
     "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.sun.management.GarbageCollectorMXBean",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"com.sun.management.GcInfo",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"com.sun.management.HotSpotDiagnosticMXBean",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"com.sun.management.ThreadMXBean",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"com.sun.management.UnixOperatingSystemMXBean",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"com.sun.management.VMOption",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"com.sun.management.internal.GarbageCollectorExtImpl",
+    "queryAllPublicConstructors":true
+  },
+  {
+    "name":"com.sun.management.internal.HotSpotDiagnostic",
+    "queryAllPublicConstructors":true
+  },
+  {
+    "name":"com.sun.management.internal.HotSpotThreadImpl",
+    "queryAllPublicConstructors":true
+  },
+  {
+    "name":"com.sun.management.internal.OperatingSystemImpl",
+    "queryAllPublicConstructors":true
+  },
+  {
+    "name":"com.sun.org.apache.xalan.internal.xsltc.trax.TransformerFactoryImpl",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"com.typesafe.config.Config"
   },
   {
     "name":"io.netty.bootstrap.ServerBootstrap$1"
@@ -281,6 +549,10 @@
     "methods":[{"name":"channelInactive","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"channelRead","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] }, {"name":"channelReadComplete","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"channelWritabilityChanged","parameterTypes":["io.netty.channel.ChannelHandlerContext"] }, {"name":"close","parameterTypes":["io.netty.channel.ChannelHandlerContext","io.netty.channel.ChannelPromise"] }, {"name":"exceptionCaught","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Throwable"] }, {"name":"userEventTriggered","parameterTypes":["io.netty.channel.ChannelHandlerContext","java.lang.Object"] }]
   },
   {
+    "name":"io.vertx.ext.jdbc.spi.impl.C3P0DataSourceProvider",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
     "name":"io.vertx.ext.web.impl.RoutingContextImpl",
     "fields":[{"name":"handlerSeq"}]
   },
@@ -293,8 +565,61 @@
     "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {
+    "name":"java.beans.PropertyChangeListener",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"java.beans.PropertyVetoException"
+  },
+  {
+    "name":"java.beans.VetoableChangeListener",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"java.lang.Boolean",
+    "fields":[{"name":"TYPE"}]
+  },
+  {
+    "name":"java.lang.Byte",
+    "fields":[{"name":"TYPE"}]
+  },
+  {
+    "name":"java.lang.Character",
+    "fields":[{"name":"TYPE"}]
+  },
+  {
     "name":"java.lang.Class",
     "methods":[{"name":"getRecordComponents","parameterTypes":[] }]
+  },
+  {
+    "name":"java.lang.Deprecated",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"java.lang.Double",
+    "fields":[{"name":"TYPE"}]
+  },
+  {
+    "name":"java.lang.Float",
+    "fields":[{"name":"TYPE"}]
+  },
+  {
+    "name":"java.lang.Integer",
+    "fields":[{"name":"TYPE"}]
+  },
+  {
+    "name":"java.lang.Long",
+    "fields":[{"name":"TYPE"}]
+  },
+  {
+    "name":"java.lang.Object",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"java.lang.ObjectBeanInfo"
+  },
+  {
+    "name":"java.lang.ObjectCustomizer"
   },
   {
     "name":"java.lang.ProcessHandle",
@@ -306,23 +631,92 @@
     "queryAllDeclaredMethods":true
   },
   {
-    "name":"java.lang.String"
+    "name":"java.lang.Short",
+    "fields":[{"name":"TYPE"}]
+  },
+  {
+    "name":"java.lang.StackTraceElement",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"java.lang.String",
+    "fields":[{"name":"TYPE"}]
   },
   {
     "name":"java.lang.Thread",
     "fields":[{"name":"threadLocalRandomProbe"}]
   },
   {
+    "name":"java.lang.Void",
+    "fields":[{"name":"TYPE"}]
+  },
+  {
+    "name":"java.lang.management.BufferPoolMXBean",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"java.lang.management.ClassLoadingMXBean",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"java.lang.management.CompilationMXBean",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"java.lang.management.LockInfo",
+    "queryAllPublicMethods":true
+  },
+  {
     "name":"java.lang.management.ManagementFactory",
     "methods":[{"name":"getRuntimeMXBean","parameterTypes":[] }]
   },
   {
+    "name":"java.lang.management.ManagementPermission",
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.String"] }]
+  },
+  {
+    "name":"java.lang.management.MemoryMXBean",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"java.lang.management.MemoryManagerMXBean",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"java.lang.management.MemoryPoolMXBean",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"java.lang.management.MemoryUsage",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"java.lang.management.MonitorInfo",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"java.lang.management.PlatformLoggingMXBean",
+    "queryAllPublicMethods":true,
+    "methods":[{"name":"getLoggerLevel","parameterTypes":["java.lang.String"] }, {"name":"getLoggerNames","parameterTypes":[] }, {"name":"getParentLoggerName","parameterTypes":["java.lang.String"] }, {"name":"setLoggerLevel","parameterTypes":["java.lang.String","java.lang.String"] }]
+  },
+  {
     "name":"java.lang.management.RuntimeMXBean",
+    "queryAllPublicMethods":true,
     "methods":[{"name":"getInputArguments","parameterTypes":[] }]
+  },
+  {
+    "name":"java.lang.management.ThreadInfo",
+    "queryAllPublicMethods":true
   },
   {
     "name":"java.lang.reflect.RecordComponent",
     "methods":[{"name":"getName","parameterTypes":[] }, {"name":"getType","parameterTypes":[] }]
+  },
+  {
+    "name":"java.math.BigDecimal"
+  },
+  {
+    "name":"java.math.BigInteger"
   },
   {
     "name":"java.net.SocketOption"
@@ -377,7 +771,35 @@
     "name":"java.security.interfaces.RSAPublicKey"
   },
   {
+    "name":"java.sql.DriverManager"
+  },
+  {
+    "name":"java.sql.SQLException",
+    "fields":[{"name":"next"}]
+  },
+  {
+    "name":"java.sql.Timestamp"
+  },
+  {
     "name":"java.util.Date"
+  },
+  {
+    "name":"java.util.EventListener",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"java.util.HashSet",
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"java.util.PropertyPermission",
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.lang.String"] }]
+  },
+  {
+    "name":"java.util.ResourceBundle",
+    "methods":[{"name":"getBundle","parameterTypes":["java.lang.String","java.util.Locale","java.lang.ClassLoader"] }]
   },
   {
     "name":"java.util.concurrent.ForkJoinTask",
@@ -396,13 +818,91 @@
     "fields":[{"name":"base"}, {"name":"cellsBusy"}]
   },
   {
+    "name":"java.util.logging.Level",
+    "fields":[{"name":"ALL"}, {"name":"CONFIG"}, {"name":"FINE"}, {"name":"FINER"}, {"name":"FINEST"}, {"name":"INFO"}, {"name":"OFF"}, {"name":"SEVERE"}, {"name":"WARNING"}]
+  },
+  {
+    "name":"java.util.logging.LogManager",
+    "methods":[{"name":"getLoggingMXBean","parameterTypes":[] }]
+  },
+  {
+    "name":"java.util.logging.Logger"
+  },
+  {
+    "name":"java.util.logging.LoggingMXBean",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"javax.management.MBeanOperationInfo",
+    "queryAllPublicMethods":true,
+    "methods":[{"name":"getSignature","parameterTypes":[] }]
+  },
+  {
+    "name":"javax.management.MBeanServerBuilder",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"javax.management.ObjectName"
+  },
+  {
+    "name":"javax.management.StandardEmitterMBean",
+    "methods":[{"name":"cacheMBeanInfo","parameterTypes":["javax.management.MBeanInfo"] }, {"name":"getCachedMBeanInfo","parameterTypes":[] }, {"name":"getMBeanInfo","parameterTypes":[] }]
+  },
+  {
+    "name":"javax.management.openmbean.CompositeData"
+  },
+  {
+    "name":"javax.management.openmbean.OpenMBeanOperationInfoSupport"
+  },
+  {
+    "name":"javax.management.openmbean.TabularData"
+  },
+  {
+    "name":"javax.naming.Referenceable",
+    "queryAllPublicMethods":true
+  },
+  {
     "name":"javax.security.auth.x500.X500Principal",
     "fields":[{"name":"thisX500Name"}],
     "methods":[{"name":"<init>","parameterTypes":["sun.security.x509.X500Name"] }]
   },
   {
+    "name":"javax.sql.ConnectionPoolDataSource",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"javax.sql.DataSource",
+    "queryAllPublicMethods":true,
+    "methods":[{"name":"getConnection","parameterTypes":["java.lang.String","java.lang.String"] }]
+  },
+  {
     "name":"jdk.internal.misc.Unsafe",
     "methods":[{"name":"getUnsafe","parameterTypes":[] }]
+  },
+  {
+    "name":"jdk.management.jfr.ConfigurationInfo",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"jdk.management.jfr.EventTypeInfo",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"jdk.management.jfr.FlightRecorderMXBean",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"jdk.management.jfr.FlightRecorderMXBeanImpl",
+    "queryAllPublicConstructors":true,
+    "methods":[{"name":"cacheMBeanInfo","parameterTypes":["javax.management.MBeanInfo"] }, {"name":"getCachedMBeanInfo","parameterTypes":[] }, {"name":"getMBeanInfo","parameterTypes":[] }, {"name":"getNotificationInfo","parameterTypes":[] }]
+  },
+  {
+    "name":"jdk.management.jfr.RecordingInfo",
+    "queryAllPublicMethods":true
+  },
+  {
+    "name":"jdk.management.jfr.SettingDescriptorInfo",
+    "queryAllPublicMethods":true
   },
   {
     "name":"net.cofcool.toolbox.AppTest",
@@ -453,12 +953,20 @@
     "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {
+    "name":"net.cofcool.toolbox.internal.CodeGenerator$Config",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.util.Set"] }, {"name":"entities","parameterTypes":[] }, {"name":"pkg","parameterTypes":[] }]
+  },
+  {
     "name":"net.cofcool.toolbox.internal.CodeGeneratorTest",
     "allDeclaredFields":true,
     "allDeclaredClasses":true,
     "queryAllDeclaredMethods":true,
     "queryAllPublicMethods":true,
-    "queryAllDeclaredConstructors":true
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"run","parameterTypes":[] }]
   },
   {
     "name":"net.cofcool.toolbox.internal.Converts",
@@ -515,6 +1023,19 @@
     "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"base64","parameterTypes":[] }, {"name":"exception","parameterTypes":[] }, {"name":"hdate","parameterTypes":[] }, {"name":"lower","parameterTypes":[] }, {"name":"md5","parameterTypes":[] }, {"name":"now","parameterTypes":[] }, {"name":"random","parameterTypes":[] }, {"name":"replace","parameterTypes":[] }, {"name":"runPipeline","parameterTypes":[] }, {"name":"timesp","parameterTypes":[] }, {"name":"upper","parameterTypes":[] }, {"name":"url","parameterTypes":[] }]
   },
   {
+    "name":"net.cofcool.toolbox.internal.DiffAnalysis",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.DiffAnalysisTest",
+    "allDeclaredFields":true,
+    "allDeclaredClasses":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllPublicMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"run","parameterTypes":[] }, {"name":"runWithUnCommit","parameterTypes":[] }]
+  },
+  {
     "name":"net.cofcool.toolbox.internal.DirWebServer",
     "methods":[{"name":"<init>","parameterTypes":[] }]
   },
@@ -541,6 +1062,19 @@
     "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"printInnerHelp","parameterTypes":[] }, {"name":"run","parameterTypes":[] }, {"name":"runWithDate","parameterTypes":[] }, {"name":"runWithDeepDirectories","parameterTypes":[] }, {"name":"runWithDelete","parameterTypes":[] }, {"name":"runWithDest","parameterTypes":[] }, {"name":"runWithIgnore","parameterTypes":[] }, {"name":"runWithReplace","parameterTypes":[] }, {"name":"runWithReplaceExt","parameterTypes":[] }, {"name":"runWithStart","parameterTypes":[] }, {"name":"runWithUrlencoded","parameterTypes":[] }]
   },
   {
+    "name":"net.cofcool.toolbox.internal.FileTools",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.FileToolsTest",
+    "allDeclaredFields":true,
+    "allDeclaredClasses":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllPublicMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"runWithCount","parameterTypes":[] }, {"name":"runWithCount1","parameterTypes":[] }, {"name":"runWithSplit","parameterTypes":[] }]
+  },
+  {
     "name":"net.cofcool.toolbox.internal.GitCommitsToChangelog",
     "methods":[{"name":"<init>","parameterTypes":[] }]
   },
@@ -564,7 +1098,7 @@
     "queryAllDeclaredMethods":true,
     "queryAllPublicMethods":true,
     "queryAllDeclaredConstructors":true,
-    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"run","parameterTypes":[] }, {"name":"runWithClean","parameterTypes":[] }, {"name":"runWithEpub","parameterTypes":[] }, {"name":"runWithFile","parameterTypes":[] }, {"name":"runWithMd","parameterTypes":[] }, {"name":"runWithTxt","parameterTypes":[] }, {"name":"runWithUrlFile","parameterTypes":[] }, {"name":"runWithimg","parameterTypes":[] }]
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"run","parameterTypes":[] }, {"name":"runWithClean","parameterTypes":[] }, {"name":"runWithEpub","parameterTypes":[] }, {"name":"runWithFile","parameterTypes":[] }, {"name":"runWithFilter","parameterTypes":[] }, {"name":"runWithMd","parameterTypes":[] }, {"name":"runWithTxt","parameterTypes":[] }, {"name":"runWithUrlFile","parameterTypes":[] }, {"name":"runWithimg","parameterTypes":[] }]
   },
   {
     "name":"net.cofcool.toolbox.internal.JsonFormatter",
@@ -620,7 +1154,7 @@
     "queryAllDeclaredMethods":true,
     "queryAllPublicMethods":true,
     "queryAllDeclaredConstructors":true,
-    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"addNote","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"deployVerticle","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"list","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"run","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }]
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"addAction","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"addNote","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"deployVerticle","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"list","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"listAction","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }]
   },
   {
     "name":"net.cofcool.toolbox.internal.TrelloToLogseqImporter",
@@ -665,16 +1199,39 @@
     "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"delete","parameterTypes":[] }, {"name":"findByAT","parameterTypes":[] }, {"name":"findByAlias","parameterTypes":[] }, {"name":"findByTag","parameterTypes":[] }, {"name":"hasAlias","parameterTypes":[] }, {"name":"init","parameterTypes":[] }, {"name":"initData","parameterTypes":[] }, {"name":"save","parameterTypes":[] }, {"name":"store","parameterTypes":[] }, {"name":"storeSingle","parameterTypes":[] }]
   },
   {
-    "name":"net.cofcool.toolbox.internal.simplenote.NoteRepository$Note",
+    "name":"net.cofcool.toolbox.internal.simplenote.ActionServiceTest",
+    "allDeclaredFields":true,
+    "allDeclaredClasses":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllPublicMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"delete","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"example","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"find","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"findAllType","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"findById","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"saveMultiProperties","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"setup","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"toMarkdown","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.simplenote.entity.ActionRecord",
     "allDeclaredFields":true,
     "queryAllDeclaredMethods":true,
     "queryAllDeclaredConstructors":true,
-    "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","java.time.LocalDateTime","net.cofcool.toolbox.internal.simplenote.NoteRepository$NoteState"] }, {"name":"content","parameterTypes":[] }, {"name":"date","parameterTypes":[] }, {"name":"id","parameterTypes":[] }, {"name":"state","parameterTypes":[] }]
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.lang.String","java.time.LocalDateTime","java.time.LocalDateTime","java.lang.Integer","java.lang.Integer","java.util.List","java.lang.String","java.lang.String","java.time.LocalDateTime","java.time.LocalDateTime"] }, {"name":"comments","parameterTypes":[] }, {"name":"createTime","parameterTypes":[] }, {"name":"device","parameterTypes":[] }, {"name":"duration","parameterTypes":[] }, {"name":"end","parameterTypes":[] }, {"name":"from","parameterTypes":["io.vertx.sqlclient.Row"] }, {"name":"icon","parameterTypes":[] }, {"name":"id","parameterTypes":[] }, {"name":"index","parameterTypes":[] }, {"name":"labels","parameterTypes":[] }, {"name":"name","parameterTypes":[] }, {"name":"rating","parameterTypes":[] }, {"name":"refs","parameterTypes":[] }, {"name":"start","parameterTypes":[] }, {"name":"state","parameterTypes":[] }, {"name":"type","parameterTypes":[] }, {"name":"updateTime","parameterTypes":[] }]
   },
   {
-    "name":"net.cofcool.toolbox.internal.simplenote.NoteRepository$NoteState",
+    "name":"net.cofcool.toolbox.internal.simplenote.entity.ActionType",
     "allDeclaredFields":true,
-    "queryAllDeclaredMethods":true
+    "queryAllDeclaredMethods":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","java.time.LocalDateTime"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.simplenote.entity.Comment",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","java.lang.String","java.time.LocalDateTime","java.time.LocalDateTime"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.internal.simplenote.entity.Note",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","java.time.LocalDateTime","java.lang.String"] }, {"name":"content","parameterTypes":[] }, {"name":"date","parameterTypes":[] }, {"name":"id","parameterTypes":[] }, {"name":"of","parameterTypes":["io.vertx.sqlclient.Row"] }, {"name":"state","parameterTypes":[] }]
   },
   {
     "name":"net.cofcool.toolbox.internal.trello.ActionsItem",
@@ -1178,12 +1735,74 @@
     "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"deployVerticle","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"reqConverts","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"reqHelp","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"reqJson","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"reqJson2POJO","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"reqResource","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"reqTrelloLogseqImporter","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"reqUpload","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"run","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"tools","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }]
   },
   {
+    "name":"net.cofcool.toolbox.util.SqlRepositoryTest",
+    "allDeclaredFields":true,
+    "allDeclaredClasses":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllPublicMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"create","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"delete","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"find","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"find1","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"save","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"save1","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"saveAll","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }, {"name":"testFind1","parameterTypes":["io.vertx.core.Vertx","io.vertx.junit5.VertxTestContext"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.util.SqlRepositoryTest$User",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.lang.String","java.lang.String"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.util.TableInfoHelperTest",
+    "allDeclaredFields":true,
+    "allDeclaredClasses":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllPublicMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"tableInfo1","parameterTypes":[] }, {"name":"tableInfo2","parameterTypes":[] }, {"name":"tableInfo3","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.util.TableInfoHelperTest$Demo1",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "methods":[{"name":"<init>","parameterTypes":["java.lang.String"] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.util.TableInfoHelperTest$Demo2",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"net.cofcool.toolbox.util.TableInfoHelperTest$Demo3",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "methods":[{"name":"of","parameterTypes":["io.vertx.sqlclient.Row"] }]
+  },
+  {
+    "name":"org.apache.log4j.Logger"
+  },
+  {
+    "name":"org.apache.logging.log4j.LogManager"
+  },
+  {
+    "name":"org.apache.logging.log4j.Logger"
+  },
+  {
     "name":"org.apache.maven.surefire.junitplatform.JUnitPlatformProvider",
     "methods":[{"name":"<init>","parameterTypes":["org.apache.maven.surefire.api.provider.ProviderParameters"] }]
   },
   {
     "name":"org.apiguardian.api.API",
     "queryAllPublicMethods":true
+  },
+  {
+    "name":"org.hsqldb.dbinfo.DatabaseInformationFull",
+    "methods":[{"name":"<init>","parameterTypes":["org.hsqldb.Database"] }]
+  },
+  {
+    "name":"org.hsqldb.jdbc.JDBCConnection",
+    "methods":[{"name":"setHoldability","parameterTypes":["int"] }, {"name":"setReadOnly","parameterTypes":["boolean"] }, {"name":"setTypeMap","parameterTypes":["java.util.Map"] }]
+  },
+  {
+    "name":"org.hsqldb.jdbc.JDBCDriver"
   },
   {
     "name":"org.junit.internal.AssumptionViolatedException"
@@ -1217,6 +1836,44 @@
     "methods":[{"name":"openSession","parameterTypes":[] }]
   },
   {
+    "name":"org.slf4j.LoggerFactory"
+  },
+  {
+    "name":"org.w3c.dom.Node"
+  },
+  {
+    "name":"sun.management.ClassLoadingImpl",
+    "queryAllPublicConstructors":true
+  },
+  {
+    "name":"sun.management.CompilationImpl",
+    "queryAllPublicConstructors":true
+  },
+  {
+    "name":"sun.management.ManagementFactoryHelper$1",
+    "queryAllPublicConstructors":true
+  },
+  {
+    "name":"sun.management.ManagementFactoryHelper$PlatformLoggingImpl",
+    "queryAllPublicConstructors":true
+  },
+  {
+    "name":"sun.management.MemoryImpl",
+    "queryAllPublicConstructors":true
+  },
+  {
+    "name":"sun.management.MemoryManagerImpl",
+    "queryAllPublicConstructors":true
+  },
+  {
+    "name":"sun.management.MemoryPoolImpl",
+    "queryAllPublicConstructors":true
+  },
+  {
+    "name":"sun.management.RuntimeImpl",
+    "queryAllPublicConstructors":true
+  },
+  {
     "name":"sun.misc.Unsafe",
     "fields":[{"name":"theUnsafe"}],
     "methods":[{"name":"copyMemory","parameterTypes":["java.lang.Object","long","java.lang.Object","long","long"] }, {"name":"getAndAddLong","parameterTypes":["java.lang.Object","long","long"] }, {"name":"getAndSetObject","parameterTypes":["java.lang.Object","long","java.lang.Object"] }, {"name":"invokeCleaner","parameterTypes":["java.nio.ByteBuffer"] }, {"name":"storeFence","parameterTypes":[] }]
@@ -1242,6 +1899,14 @@
   },
   {
     "name":"sun.security.provider.DSA$SHA256withDSA",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.provider.JavaKeyStore$DualFormatJKS",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"sun.security.provider.JavaKeyStore$JKS",
     "methods":[{"name":"<init>","parameterTypes":[] }]
   },
   {

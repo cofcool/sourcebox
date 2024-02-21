@@ -34,8 +34,12 @@ public class SimpleNote implements WebTool {
         if (verticle == null) {
             verticle = new NoteVerticle();
         }
-        SqlRepository.init(vertx);
-        return WebTool.super.deploy(vertx, verticle, args).onComplete(VertxUtils.logResult(log, e -> vertx.close()));
+        if (vertx == null) {
+            vertx = Vertx.vertx();
+        }
+        var v = vertx;
+        SqlRepository.init(v);
+        return WebTool.super.deploy(v, verticle, args).onComplete(VertxUtils.logResult(log, e -> v.close()));
     }
 
     @Override

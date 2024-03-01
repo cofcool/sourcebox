@@ -6,9 +6,9 @@
 
 使用 Java（要求 JDK 21, 推荐使用 `GraalVM`）、Python、Go 等语言实现
 
-* `./mytool.sh` 查看程序信息，`--help={COMMAND}` 查看具体命令的帮助信息, 如 `--help=converts`
+* `./sourcebox.sh` 查看程序信息，`--help={COMMAND}` 查看具体命令的帮助信息, 如 `--help=converts`
 * `--debug=true` 打开调试模式
-* `--native` 启动原生编译版本版本，默认启动 jar，如 `mytool.sh --native --tool=converts`
+* `--native` 启动原生编译版本版本，默认启动 jar，如 `sourcebox.sh --native --tool=converts`
 
 部分命令支持别名， 如 `--tool=converts --cmd=random --in=test` 的别名为 `--random=test`，具体可查看帮助文档，也可借助命令助手配置别名
 
@@ -19,40 +19,38 @@
 
 **TODO**
 
-* [ ] Web 页面，接口基本完成，暂缺前端页
+* [ ] Web 页面
 * [ ] 使用 Go 重写
-
-⚠️ 原生版本目前只提供 Linux 版，其它平台需下载源码构建
 
 ## 命令助手
 
-使用前需要把 `source ～/.mytool/alias` 添加到 shell 配置中
+使用前需要把 `source ～/.sourcebox/alias` 添加到 shell 配置中
 
 * 命令管理，方便管理日常使用的长命令，如查询，添加标签等
 * 别名管理，可针对长命令配置别名，并导出到当前环境
 
 使用:
 
-* 添加 `./mytool.sh --tool=cHelper --add="@helper mytool --tool=cHelper #mytool #my"`，`@`开头的为别名，可选参数；`#`开头的为标签，可以为多个，可选参数
-* 导出到环境变量 `./mytool.sh --tool=cHelper --store=ALL` ，`--store` 参数可指定需要导出的命令，支持别名和标签，如 `--store="#kafka"`，只会导出有别名的命令
-* 查询 `./mytool.sh --tool=cHelper --find=ALL` 查询命令，支持别名和标签，可以多个，如 `--find="#my @helper"`
-* 删除 `./mytool.sh --tool=cHelper --del=ALL` 删除命令，支持别名和标签，可以多个，如 `--del="#my @helper"`
+* 添加 `./sourcebox.sh --tool=cHelper --add="@helper sourcebox --tool=cHelper #sourcebox #my"`，`@`开头的为别名，可选参数；`#`开头的为标签，可以为多个，可选参数
+* 导出到环境变量 `./sourcebox.sh --tool=cHelper --store=ALL` ，`--store` 参数可指定需要导出的命令，支持别名和标签，如 `--store="#kafka"`，只会导出有别名的命令
+* 查询 `./sourcebox.sh --tool=cHelper --find=ALL` 查询命令，支持别名和标签，可以多个，如 `--find="#my @helper"`
+* 删除 `./sourcebox.sh --tool=cHelper --del=ALL` 删除命令，支持别名和标签，可以多个，如 `--del="#my @helper"`
 
 内置别名：
 
 ```
-@helper mytool --tool=cHelper #mytool
-@mlower mytool --tool=converts --cmd=lower #mytool
-@mupper mytool --tool=converts --cmd=upper #mytool
-@mmd5 mytool --tool=converts --cmd=md5 #mytool
-@mtimesp mytool --tool=converts --cmd=timesp #mytool
-@mnow mytool --tool=converts --cmd=now #mytool
-@mhdate mytool --tool=converts --cmd=hdate #mytool
+@helper sourcebox --tool=cHelper #sourcebox
+@mlower sourcebox --tool=converts --cmd=lower #sourcebox
+@mupper sourcebox --tool=converts --cmd=upper #sourcebox
+@mmd5 sourcebox --tool=converts --cmd=md5 #sourcebox
+@mtimesp sourcebox --tool=converts --cmd=timesp #sourcebox
+@mnow sourcebox --tool=converts --cmd=now #sourcebox
+@mhdate sourcebox --tool=converts --cmd=hdate #sourcebox
 ```
 
 ## 常用字符串转换工具
 
-使用: `./mytool.sh --tool=converts --cmd="now" --pipeline="md5 | base64"`
+使用: `./sourcebox.sh --tool=converts --cmd="now" --pipeline="md5 | base64"`
 
 支持功能（可通过 `|` 连接多个命令）:
 
@@ -73,19 +71,19 @@
 * 批量下载
 * 转换为 markdown、text、epub
 
-使用: `./mytool.sh --tool=htmlDown --url="https://example.com"`
+使用: `./sourcebox.sh --tool=htmlDown --url="https://example.com"`
 
 ## Git 提交记录生成更新日志
 
-使用: `./mytool.sh --tool=gitCommits2Log --path=./`
+使用: `./sourcebox.sh --tool=gitCommits2Log --path=./`
 
 ## 简单 Web 文件服务器
 
-使用 `./mytool.sh --tool=dirWebServer`
+使用 `./sourcebox.sh --tool=dirWebServer`
 
 ## JSON 生成对象
 
-使用: `./mytool.sh --tool=json2POJO --path=./`
+使用: `./sourcebox.sh --tool=json2POJO --path=./`
 
 支持:
 
@@ -97,7 +95,7 @@
 
 ##  文件重命名
 
-使用: `./mytool.sh --tool=rename --path=./`
+使用: `./sourcebox.sh --tool=rename --path=./`
 
 支持:
 
@@ -111,12 +109,12 @@
 
 * 根据 diff 信息抽取对应行的变更记录
 
-使用: `git diff --unified=0 --diff-filter=M . | ./mytool.sh --tool=analysisDiff --path=./ > diff.csv`
+使用: `git diff --unified=0 --diff-filter=M . | ./sourcebox.sh --tool=analysisDiff --path=./ > diff.csv`
 
 ## 文件处理工具
 
-* 统计一个文件内容在另一个文件中的数量，使用: `./mytool.sh --tool=fileTools --type=count --samplePath=sample.csv --path=data.csv`
-* 根据传入的字符或索引切割文件内容，使用: `./mytool.sh --tool=fileTools --type=split --path=data.csv --splitIdx=2`
+* 统计一个文件内容在另一个文件中的数量，使用: `./sourcebox.sh --tool=fileTools --type=count --samplePath=sample.csv --path=data.csv`
+* 根据传入的字符或索引切割文件内容，使用: `./sourcebox.sh --tool=fileTools --type=split --path=data.csv --splitIdx=2`
 
 ## 阅读软件笔记、高亮导出为 markdown 文件
 
@@ -138,11 +136,11 @@ Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到
 
 ## JSON 格式化
 
-使用: `./mytool.sh --tool=json [--json='{}'] [--path=dmeo.json]`
+使用: `./sourcebox.sh --tool=json [--json='{}'] [--path=dmeo.json]`
 
 ## 参与开发
 
 执行流程：
 
-![my-toolbox-flow](./imgs/mytoolbox-flow.svg)
+![sourcebox-flow](./imgs/mytoolbox-flow.svg)
 

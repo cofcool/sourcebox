@@ -33,7 +33,7 @@
         <fileSet>
             <outputDirectory>/</outputDirectory>
             <includes>
-                <include>mytool.sh</include>
+                <include>sourcebox.sh</include>
             </includes>
         </fileSet>
         <fileSet>
@@ -41,7 +41,7 @@
             <outputDirectory>/</outputDirectory>
             <includes>
                 <include>changelog.md</include>
-                <include>my-toolbox</include>
+                <include>sourcebox</include>
             </includes>
         </fileSet>
         <fileSet>

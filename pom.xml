@@ -5,11 +5,11 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>net.cofcool</groupId>
-  <artifactId>my-toolbox</artifactId>
+  <artifactId>sourcebox</artifactId>
   <version>1.2.0</version>
 
-  <name>my-toolbox</name>
-  <url>https://github.com/cofcool/my-toolbox</url>
+  <name>The Source Box</name>
+  <url>https://github.com/cofcool/sourcebox</url>
 
   <licenses>
     <license>
@@ -116,10 +116,9 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
         <configuration>
-          <finalName>${project.name}</finalName>
           <archive>
             <manifest>
-              <mainClass>net.cofcool.toolbox.App</mainClass>
+              <mainClass>net.cofcool.sourcebox.App</mainClass>
               <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
             </manifest>
           </archive>
@@ -189,7 +188,7 @@
             <finalName>${project.artifactId}</finalName>
             <archive>
               <manifest>
-                <mainClass>net.cofcool.toolbox.App</mainClass>
+                <mainClass>net.cofcool.sourcebox.App</mainClass>
                 <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
               </manifest>
             </archive>
@@ -249,7 +248,7 @@
               <agent>
                 <enabled>true</enabled>
               </agent>
-              <imageName>my-toolbox</imageName>
+              <imageName>sourcebox</imageName>
               <buildArgs>
                 --no-fallback
                 -H:ReflectionConfigurationResources=META-INF/native-image/reflect-config.json

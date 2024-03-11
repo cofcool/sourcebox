@@ -141,6 +141,22 @@ class ConvertsTest extends BaseTest {
     }
 
     @Test
+    void morseCode() throws Exception {
+        var en = instance().runCommand(args
+            .arg("cmd", "morsecode")
+            .arg("in", "i love you")
+            .arg("mtype", "en")
+        );
+        Assertions.assertEquals("..  .-.. --- ...- .  -.-- --- ..-", en);
+        var de = instance().runCommand(args
+            .arg("cmd", "morsecode")
+            .arg("in", ".... . .-.. .-.. ---  .-- --- .-. .-.. -..")
+            .arg("mtype", "de")
+        );
+        Assertions.assertEquals("HELLO WORLD", de);
+    }
+
+    @Test
     void exception() throws Exception {
         Assertions.assertThrows(IllegalArgumentException.class, () -> instance().run(args.arg("cmd", "base64 urlen adasd.com/%4asd;")));
     }

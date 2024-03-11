@@ -11,6 +11,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TimeZone;
@@ -210,8 +211,8 @@ public class Converts implements Tool {
 
         @Override
         public String run(Args args) throws Exception{
-            var type = args.readArg("utype").val();;
-            var val = args.readArg(INPUT).val();;
+            var type = args.readArg("utype").val();
+            var val = args.readArg(INPUT).val();
             if (type.equalsIgnoreCase("en")) {
                 return URLEncoder.encode(val, StandardCharsets.UTF_8);
             } else if (type.equalsIgnoreCase("de"))  {
@@ -224,6 +225,92 @@ public class Converts implements Tool {
         @Override
         public Arg demo() {
             return new Arg(getClass().getSimpleName().toLowerCase(), null, "url encoder(en) or decoder(de)", false, "demo --utype=en/de");
+        }
+    }
+
+    private class MorseCode implements Pipeline {
+
+        private static final Map<Character, String> TABLE = Map.<Character, String>ofEntries(
+            Map.entry('A', ".-"),
+            Map.entry('B', "-..."),
+            Map.entry('C', "-.-."),
+            Map.entry('D', "-.."),
+            Map.entry('E', "."),
+            Map.entry('F', "..-."),
+            Map.entry('G', "--."),
+            Map.entry('H', "...."),
+            Map.entry('I', ".."),
+            Map.entry('J', ".---"),
+            Map.entry('K', "-.-"),
+            Map.entry('L', ".-.."),
+            Map.entry('M', "--"),
+            Map.entry('N', "-."),
+            Map.entry('O', "---"),
+            Map.entry('P', ".--."),
+            Map.entry('Q', "--.-"),
+            Map.entry('R', ".-."),
+            Map.entry('S', "..."),
+            Map.entry('T', "-"),
+            Map.entry('U', "..-"),
+            Map.entry('V', "...-"),
+            Map.entry('W', ".--"),
+            Map.entry('X', "-..-"),
+            Map.entry('Y', "-.--"),
+            Map.entry('Z', "--.."),
+            Map.entry('1', ".----"),
+            Map.entry('2', "..---"),
+            Map.entry('3', "...--"),
+            Map.entry('4', "....-"),
+            Map.entry('5', "....."),
+            Map.entry('6', "-...."),
+            Map.entry('7', "--..."),
+            Map.entry('8', "---.."),
+            Map.entry('9', "----."),
+            Map.entry('0', "-----"),
+            Map.entry(',', "--..--"),
+            Map.entry(';', "-.-.-."),
+            Map.entry(':', "---..."),
+            Map.entry('.', ".-.-.-"),
+            Map.entry('\'', ".----."),
+            Map.entry('"', ".-..-."),
+            Map.entry('?', "..--.."),
+            Map.entry('/', "-..-."),
+            Map.entry('-', "-....-"),
+            Map.entry('(', "-.--."),
+            Map.entry(')', "-.--.-"),
+            Map.entry('!', "-.-.--"),
+            Map.entry('$', "...-..-"),
+            Map.entry('@', ".--.-."),
+            Map.entry('=', "-...-")
+        );
+        private static final Map<String, String> TABLE_R = new HashMap<>(TABLE.size());
+
+        static {
+            TABLE.forEach((k, v) -> TABLE_R.put(v, String.valueOf(k)));
+        }
+
+        @Override
+        public String run(Args args) throws Exception{
+            var type = args.readArg("mtype").val();
+            var val = args.readArg(INPUT).val();
+            if (type.equalsIgnoreCase("en")) {
+                return val.chars().mapToObj(a -> TABLE.getOrDefault(Character.toUpperCase((char) a), "")).collect(Collectors.joining(" "));
+            } else if (type.equalsIgnoreCase("de"))  {
+                return Arrays.stream(val.split(" {2}"))
+                    .map(a -> Arrays
+                        .stream(a.split(" "))
+                        .map(TABLE_R::get)
+                        .collect(Collectors.joining())
+                    )
+                    .collect(Collectors.joining(" "));
+            } else {
+                throw new IllegalArgumentException("MorseCode first argument must be en or de");
+            }
+        }
+
+        @Override
+        public Arg demo() {
+            return new Arg(getClass().getSimpleName().toLowerCase(), null, "MorseCode encoder(en) or decoder(de), two space split word, single space split letter", false, "demo --mtype=en/de");
         }
     }
 

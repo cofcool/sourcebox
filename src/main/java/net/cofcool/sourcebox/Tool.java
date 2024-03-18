@@ -151,7 +151,7 @@ public interface Tool {
         public Arg readArg(String key) {
             var arg = get(key);
             if (arg == null) {
-                throw new IllegalStateException("Do not support argument " + key + ", please see the help");
+                throw new IllegalStateException(STR."Do not support argument \{key}, please see the help");
             }
 
             return arg;

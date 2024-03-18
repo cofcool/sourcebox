@@ -12,6 +12,7 @@ import net.cofcool.sourcebox.internal.HtmlDownloader;
 import net.cofcool.sourcebox.internal.JsonFormatter;
 import net.cofcool.sourcebox.internal.JsonToPojo;
 import net.cofcool.sourcebox.internal.LinkCovertTool;
+import net.cofcool.sourcebox.internal.NetworkUtils;
 import net.cofcool.sourcebox.internal.ShellStarter;
 import net.cofcool.sourcebox.internal.SimpleNote;
 import net.cofcool.sourcebox.internal.TrelloToLogseqImporter;
@@ -33,7 +34,8 @@ public enum ToolName {
     cHelper("manage commands, like alias, tag...", CommandHelper.class),
     generate("generate code from template", CodeGenerator.class),
     analysisDiff("analysis diff file", DiffAnalysis.class),
-    fileTools("some utils about file", FileTools.class);
+    fileTools("some utils about file", FileTools.class),
+    netUtils("some utils about network", NetworkUtils.class);
 
     private final String desc;
     private final Class<? extends Tool> tool;

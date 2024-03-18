@@ -36,7 +36,7 @@ public abstract class BaseTest {
     }
 
     protected void init() throws Exception {
-
+        System.setProperty("logging.debug", "true");
     }
 
 }

@@ -114,8 +114,13 @@
 
 ## 文件处理工具
 
-* 统计一个文件内容在另一个文件中的数量，使用: `./sourcebox.sh --tool=fileTools --type=count --samplePath=sample.csv --path=data.csv`
-* 根据传入的字符或索引切割文件内容，使用: `./sourcebox.sh --tool=fileTools --type=split --path=data.csv --splitIdx=2`
+* 统计一个文件内容在另一个文件中的数量，使用: `./sourcebox.sh --tool=fileTools --util=count --samplePath=sample.csv --path=data.csv`
+* 根据传入的字符或索引切割文件内容，使用: `./sourcebox.sh --tool=fileTools --util=split --path=data.csv --splitIdx=2`
+
+## 网络工具
+
+* IP 信息查询，`./sourcebox.sh --tool=netUtils --util=ip --in=127.0.0.1`
+* DNS 查询，`./sourcebox.sh --tool=netUtils --util=dns --in=127.0.0.1`
 
 ## 阅读软件笔记、高亮导出为 markdown 文件
 
@@ -144,4 +149,8 @@ Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到
 执行流程：
 
 ![sourcebox-flow](./imgs/mytoolbox-flow.svg)
+
+## 致谢
+
+<a href="https://jb.gg/OpenSourceSupport"><img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.png" alt="JetBrains Logo (Main) logo."></a>
 

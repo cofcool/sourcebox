@@ -152,5 +152,5 @@ Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到
 
 ## 致谢
 
-<a href="https://jb.gg/OpenSourceSupport"><img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.png" alt="JetBrains Logo (Main) logo."></a>
+<a href="https://jb.gg/OpenSourceSupport"><img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.png" alt="JetBrains Logo (Main) logo." width="20%" height="20%"></a>
 

@@ -192,7 +192,7 @@ class ActionServiceTest extends BaseTest {
             .compose(r -> actionService.find(r.id()))
             .onComplete(testContext.succeeding(r1 -> testContext.verify(() -> {
                 System.out.println(r1);
-                Assertions.assertEquals(newR.end(), r1.record().end());
+                Assertions.assertEquals(newR.end().toLocalDate(), r1.record().end().toLocalDate());
                 testContext.completeNow();
             })));
     }

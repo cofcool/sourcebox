@@ -3,9 +3,10 @@ package tool
 import "fmt"
 
 type ConsoleContext struct {
-	ToolContext
+	Context
 }
 
-func (*ConsoleContext) Write(key string, val interface{}) {
+func (*ConsoleContext) Write(key string, val any) error {
 	fmt.Printf("%s: %v", key, val)
+	return nil
 }

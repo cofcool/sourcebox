@@ -1,6 +1,8 @@
 package tool
 
-import "errors"
+import (
+	"fmt"
+)
 
 type Runner int
 
@@ -10,33 +12,32 @@ const (
 	GUI
 )
 
-const FLAG_Default = "fd_nil"
-
 type Tool interface {
-	Run(args *Config) error
-	Config() Config
+	Run() error
+	Config() *Config
 }
 
-type ToolContext interface {
-	Write(key string, val interface{})
+type Context interface {
+	Write(key string, val any) error
 }
 
 type Config struct {
-	Config  []Arg
-	Context ToolContext
+	Args    map[string]*Arg
+	Context Context
 	Runner  Runner
 	Name    string
+	Desc    string
 }
 
 func (c *Config) ReadArg(key string) (Arg, error) {
-	for _, v := range c.Config {
-		if v.Key == key {
-			return v, nil
-		}
+	a, ok := c.Args[key]
+	if ok {
+		return *a, nil
 	}
-	return Arg{}, errors.New("do not find")
+	return Arg{}, fmt.Errorf("can not find %s arg", key)
 }
 
+// Arg argument
 type Arg struct {
 	Key      string
 	Val      string

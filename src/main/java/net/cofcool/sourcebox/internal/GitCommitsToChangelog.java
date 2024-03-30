@@ -40,7 +40,7 @@ public class GitCommitsToChangelog implements Tool {
         String out = args.readArg("out").val();
         var logFile = args.readArg("log");
         var requiredTag = args.readArg("tag");
-        var noTag = args.readArg("no-tag").val().equalsIgnoreCase("true");
+        var noTag = args.readArg("noTag").val().equalsIgnoreCase("true");
         var full = requiredTag.isPresent() || noTag || args.readArg("full").val().equalsIgnoreCase("true");
         var style = Style.valueOf(args.readArg("style").val());
         var logId = args.readArg("logId");
@@ -126,7 +126,7 @@ public class GitCommitsToChangelog implements Tool {
             .arg(new Arg("out", "./target/changelog.md", "generate file output path", false, null))
             .arg(new Arg("user", null, "username filter", false, "cofcool"))
             .arg(new Arg("tag", null, "read commit log to the tag", false, "1.0.0"))
-            .arg(new Arg("no-tag", "false", "if true, read all commit log and write into file", false, null))
+            .arg(new Arg("noTag", "false", "if true, read all commit log and write into file", false, null))
             .arg(new Arg("logId", null, "mark the commit history as the changelog", false, "#log"))
             .arg(new Arg("full", "false", "if true, read all tags and commit log, then write into file", false, null))
             .arg(new Arg("style", Style.simple.name(), "changelog file format, like " + Arrays.toString(Style.values()), false, null))

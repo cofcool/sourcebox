@@ -43,7 +43,7 @@ class GitCommitsToChangelogTest extends BaseTest {
     void runWithNoTag() throws Exception {
         new GitCommitsToChangelog().run(args.arg("path", Utils.getTestResourcePath("/"))
                 .arg("out", "./target/changelog-runWithNoTag.md")
-                .arg("no-tag", "true")
+                .arg("noTag", "true")
         );
     }
 

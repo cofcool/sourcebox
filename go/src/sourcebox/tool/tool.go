@@ -2,23 +2,30 @@ package tool
 
 import (
 	"fmt"
+	"io"
 )
 
 type Runner int
 
 const (
-	WEB Runner = iota
-	CLI
+	CLI Runner = iota
+	WEB
 	GUI
 )
 
 type Tool interface {
 	Run() error
 	Config() *Config
+	Init()
 }
 
 type Context interface {
+	// Write val kind: string, ContextWriteAction
 	Write(key string, val any) error
+}
+
+type ContextWriteAction struct {
+	Action func(writer io.Writer) error
 }
 
 type Config struct {
@@ -35,6 +42,14 @@ func (c *Config) ReadArg(key string) (Arg, error) {
 		return *a, nil
 	}
 	return Arg{}, fmt.Errorf("can not find %s arg", key)
+}
+
+func (c *Config) TestArg(key string, checkAction func(arg Arg) bool) bool {
+	a, ok := c.Args[key]
+	if ok {
+		return checkAction(*a)
+	}
+	return false
 }
 
 // Arg argument

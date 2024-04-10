@@ -119,7 +119,7 @@
 ## 网络工具
 
 * IP 信息查询，`./sourcebox.sh --tool=netUtils --util=ip --in=127.0.0.1`
-* DNS 查询，`./sourcebox.sh --tool=netUtils --util=dns --in=127.0.0.1`
+* DNS 查询，`./sourcebox.sh --tool=netUtils --util=dns --in=github.com`
 
 ## 阅读软件笔记、高亮导出为 markdown 文件
 

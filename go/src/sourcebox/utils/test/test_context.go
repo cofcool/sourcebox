@@ -2,13 +2,16 @@ package test
 
 import (
 	"fmt"
+	"maps"
 	"sourcebox/tool"
+	"sourcebox/utils"
 )
 
 const BuildDir = "./../../../build/"
 
 type Context struct {
-	delegate    tool.ConsoleContext
+	delegate tool.ConsoleContext
+	// test class must call Write to invoke this function
 	checkAction func(ctx Context) error
 	Want        string
 	Key         string
@@ -39,6 +42,20 @@ func (c *Context) Write(key string, val any) error {
 		return c.checkAction(*c)
 	}
 
+	return nil
+}
+
+func InitTool[T tool.Tool](t T, parameter Parameter) *T {
+	t.Init()
+	t.Config().Context = parameter.Config.Context
+	maps.Copy(t.Config().Args, parameter.Config.Args)
+	return &t
+}
+
+var CheckFileAction = func(ctx Context) error {
+	if !utils.FileExists(ctx.Key) {
+		return fmt.Errorf("file %v dose not exist", ctx.Key)
+	}
 	return nil
 }
 

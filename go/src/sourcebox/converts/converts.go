@@ -1,46 +1,61 @@
 package converts
 
 import (
-	"errors"
-	"flag"
+	"fmt"
 	"sourcebox/tool"
 )
 
 type Converts struct {
-	tool.Tool
+	config *tool.Config
 }
 
-type pipeline interface {
-	run(args tool.Config) string
-	name() string
+type commander func(args tool.Config) string
+
+var cmds = map[string]commander{
+	"now":       runNow,
+	"morsecode": runMorseCode,
+	"lower":     runLower,
+	"upper":     runUpper,
 }
 
-var cmds = map[string]pipeline{
-	"now": &now{},
-}
-
-func (*Converts) Run(args *tool.Config) error {
-	f := flag.String("cmd", tool.FLAG_Default, "--cmd=now")
-	flag.Parse()
-	cmd := *f
-	pipeline := cmds[cmd]
-	if pipeline == nil {
-		return errors.New("cmd error")
+func (c *Converts) Run() error {
+	cmd, e := c.config.ReadArg("cmd")
+	if e != nil {
+		return e
+	}
+	pipeline, ok := cmds[cmd.Val]
+	if !ok {
+		return fmt.Errorf("cmd %s error", cmd.Val)
 	}
 
-	args.Context.Write(cmd, pipeline.run(*args))
-
-	return nil
+	return c.config.Context.Write("", pipeline(*c.config))
 }
 
-func (*Converts) Config() tool.Config {
-	return tool.Config{
+func (c *Converts) Init() {
+	c.config = &tool.Config{
 		Name: "converts",
-		Config: []tool.Arg{
-			{
+		Desc: "some simple utilities about string, like base64 encode",
+		Args: map[string]*tool.Arg{
+			"cmd": {
 				Key:      "cmd",
+				Desc:     "cmd=now",
+				Required: true,
+			},
+			"in": {
+				Key:      "in",
+				Desc:     "in=demo",
+				Required: false,
+			},
+			// morse code
+			"mtype": {
+				Key:      "mtype",
+				Desc:     "mtype=en/de",
 				Required: false,
 			},
 		},
 	}
+}
+
+func (c *Converts) Config() *tool.Config {
+	return c.config
 }

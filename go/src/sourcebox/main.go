@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"sourcebox/converts"
+	"sourcebox/file"
 	"sourcebox/git"
 	"sourcebox/tool"
 	"strings"
@@ -13,6 +14,7 @@ import (
 var tools = map[string]tool.Tool{
 	"converts":       &converts.Converts{},
 	"gitCommits2Log": &git.CommitLog{},
+	"mobileBackup":   &file.MobileBackup{},
 }
 
 var globalCfg = make(map[string]string)

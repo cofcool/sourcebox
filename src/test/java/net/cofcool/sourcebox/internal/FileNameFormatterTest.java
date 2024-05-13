@@ -140,6 +140,20 @@ class FileNameFormatterTest extends BaseTest {
     }
 
     @Test
+    void runWithExpression() throws Exception {
+        var path = file.getPath();
+        System.out.println(path);
+        FileUtils.writeStringToFile(new File(path + File.separator + URLEncoder.encode("demo.txt", StandardCharsets.UTF_8)), "test", StandardCharsets.UTF_8);
+        instance().run(
+            args
+                .arg("formatter", Formatter.expression.name())
+                .arg("path", path)
+                .arg("expression", "{idx}{suffix}")
+        );
+        Assertions.assertTrue(new File(path + File.separator  +  "001.txt").exists());
+    }
+
+    @Test
     void printInnerHelp() {
         System.out.println(Arrays.toString(Formatter.values()));
     }

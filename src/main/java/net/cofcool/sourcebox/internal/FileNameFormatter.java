@@ -13,8 +13,10 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.cofcool.sourcebox.Tool;
 import net.cofcool.sourcebox.ToolName;
@@ -120,7 +122,8 @@ public class FileNameFormatter implements Tool {
         datetime(() -> new DateGenerator(DATE_TIME_FORMATTER)),
         urlencoded(UrlNameDecoder::new),
         replace(Replace::new),
-        delete(Delete::new);
+        delete(Delete::new),
+        expression(ExpressionGenerator::new);
 
         private final Supplier<NameGenerator> supplier;
 
@@ -139,7 +142,7 @@ public class FileNameFormatter implements Tool {
         }
     }
 
-    private interface NameGenerator {
+    interface NameGenerator {
 
         String name(String old, String ext, Args args);
 
@@ -157,7 +160,7 @@ public class FileNameFormatter implements Tool {
         static final int DEFAULT = 1;
 
         private int i = DEFAULT;
-        private Integer start;
+        protected Integer start;
 
         @Override
         public String name(String old, String ext, Args args) {
@@ -188,6 +191,45 @@ public class FileNameFormatter implements Tool {
             } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("Decode " + old + " error: " + e.getMessage());
             }
+        }
+    }
+
+    private static class ExpressionGenerator extends OrderGenerator {
+
+        @Override
+        public String name(String old, String ext, Args args) {
+            if (start == null) {
+                start = DEFAULT;
+            }
+            Map<String, Supplier<String>> exps = Map.of(
+                "{old}", () -> old,
+                "{suffix}",() -> ext,
+                "{idx}",() -> String.format("%03d", start),
+                "{padding}", () -> String.format("%03d", Integer.parseInt(old))
+            );
+
+            var expression = args.readArg("expression").val();
+            Pattern pattern = Pattern.compile("\\{([^}]*)}");
+            Matcher matcher = pattern.matcher(expression);
+
+            while (matcher.find()) {
+                var m = matcher.group(1);
+                var key = STR."{\{m}}";
+                System.out.println(key);
+                var f = exps.get(key);
+                if (f != null) {
+                    expression = expression.replace(key, String.valueOf(f.get()));
+                }
+
+            }
+
+            start++;
+            return expression;
+        }
+
+        @Override
+        public String help() {
+            return "--expression='{old}'-'{idx}{suffix}'";
         }
     }
 

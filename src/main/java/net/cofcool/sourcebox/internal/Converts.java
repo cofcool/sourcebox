@@ -332,6 +332,31 @@ public class Converts implements Tool {
         }
     }
 
+    private class Security implements Pipeline {
+
+        @Override
+        public String run(Args args) throws Exception {
+            var type = args.readArg("stype").val();
+            var val = args.readArg(INPUT).val();
+            var key = args.readArg("key").val();
+            if (key.length() < 24) {
+                key = "0".repeat(24-key.length()) + key;
+            }
+            if (type.equalsIgnoreCase("en")) {
+                return Utils.desdeEncrypt(key, val);
+            } else if (type.equalsIgnoreCase("de"))  {
+                return Utils.desdeDecrypt(key, val);
+            } else {
+                throw new IllegalArgumentException("Security first argument must be en or de");
+            }
+        }
+
+        @Override
+        public Arg demo() {
+            return new Arg(getClass().getSimpleName().toLowerCase(), null, "encrypt or decrypt with giving key, default algorithm is Triple DES", false, "demo --stype=en/de --key=test");
+        }
+    }
+
     @Override
     public Args config() {
         var args = new Args()

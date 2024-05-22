@@ -157,6 +157,24 @@ class ConvertsTest extends BaseTest {
     }
 
     @Test
+    void desdeSecurity() throws Exception {
+        var en = instance().runCommand(args
+            .arg("cmd", "security")
+            .arg("in", "12345")
+            .arg("stype", "en")
+            .arg("key", "1234")
+        );
+        Assertions.assertEquals("TppeTj5n2iU=", en);
+        var de = instance().runCommand(args
+            .arg("cmd", "security")
+            .arg("in", "TppeTj5n2iU=")
+            .arg("stype", "de")
+            .arg("key", "1234")
+        );
+        Assertions.assertEquals("12345", de);
+    }
+
+    @Test
     void exception() throws Exception {
         Assertions.assertThrows(IllegalArgumentException.class, () -> instance().run(args.arg("cmd", "base64 urlen adasd.com/%4asd;")));
     }

@@ -15,6 +15,10 @@ public class JsonFormatterTest extends BaseTest {
     public static String JSON_STR = """
         {"key": "val", "key1": "val1"}
         """;
+    public static String JSON_LINE = """
+        key1
+        {"key": "val", "key1": "val1"}
+        """;
 
     @TempDir
     Path dir;
@@ -39,6 +43,14 @@ public class JsonFormatterTest extends BaseTest {
         var file = dir.resolve("jsonRunWithPath.json").toFile();
         FileUtils.write(file, JSON_STR);
         instance().run(args.arg("path", file.getPath()));
+        assertTrue(FileUtils.readLines(file, StandardCharsets.UTF_8).size() > 1);
+    }
+
+    @Test
+    void runWithJsonLine() throws Exception {
+        var file = dir.resolve("jsonRunWithPath.json").toFile();
+        FileUtils.write(file, JSON_LINE);
+        instance().run(args.arg("path", file.getPath()).arg("jsonl", "idline"));
         assertTrue(FileUtils.readLines(file, StandardCharsets.UTF_8).size() > 1);
     }
 

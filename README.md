@@ -62,6 +62,7 @@
 * replace，字符串替换
 * base64，编码和解码
 * morsecode，摩尔斯电码转换
+* security，加密/解密
 * ...
 
 ## 网页下载

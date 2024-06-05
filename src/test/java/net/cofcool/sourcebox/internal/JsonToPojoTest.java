@@ -3,6 +3,7 @@ package net.cofcool.sourcebox.internal;
 import java.io.ByteArrayInputStream;
 import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.Tool;
+import net.cofcool.sourcebox.internal.JsonToPojo.Lang;
 import org.junit.jupiter.api.Test;
 
 public class JsonToPojoTest extends BaseTest {
@@ -60,6 +61,18 @@ public class JsonToPojoTest extends BaseTest {
                 .arg("json", JSON_STR)
                 .arg("ver", JsonToPojo.Lang.JAVA_CLASS.getVer())
                 .arg("out", "./target/pojo/runToClass")
+                .arg("pkg", "json.demo")
+        );
+    }
+
+    @Test
+    void runToKotlin() throws Exception {
+        instance().run(
+            args
+                .arg("json", JSON_STR)
+                .arg("lang", Lang.Kotlin.getLang())
+                .arg("ver", Lang.Kotlin.getVer())
+                .arg("out", "./target/pojo/runToKotlin")
                 .arg("pkg", "json.demo")
         );
     }

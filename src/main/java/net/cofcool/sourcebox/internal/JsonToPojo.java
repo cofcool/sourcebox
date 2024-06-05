@@ -13,6 +13,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import net.cofcool.sourcebox.App;
 import net.cofcool.sourcebox.Tool;
@@ -100,7 +101,7 @@ public class JsonToPojo implements Tool {
             } else {
                 type = v.getClass().getName();
             }
-
+            type = lang.typeMapping(type);
             contents.add(type.replace("java.lang.", "") + " " + k);
         });
         writeFile(context, pkg, lang, pathname, root, contents);
@@ -163,7 +164,7 @@ public class JsonToPojo implements Tool {
 
 
     enum Lang {
-        JAVA_CLASS("java", "legacy", """
+        JAVA_CLASS("java", "legacy", Map.of(), """
                 package %s;
                 
                 // Generate by %s
@@ -171,23 +172,58 @@ public class JsonToPojo implements Tool {
                 %s
                 }
                 """),
-        JAVA_RECORD("java", "17", """
+        JAVA_RECORD("java", "17", Map.of(), """
                 package %s;
                 
                 // Generate by %s
                 public record %s (
                 %s
                 ) {}
+                """),
+        Kotlin("kt", "1",
+            Map.of(
+                "java.lang.String", "String",
+                "java.lang.Integer", "Int",
+                "java.lang.Long", "Long",
+                "java.lang.Boolean", "Boolean",
+                "java.util.Map", "Map",
+                "java.util.List", "List",
+                "java.util.LinkedHashMap", "Map"
+            ),
+            """
+                package %s;
+                
+                // Generate by %s
+                data class %s (
+                %s
+                )
+                
                 """);
 
         private final String lang;
         private final String ver;
         private final String template;
+        private final Map<String, String> mapping;
 
-        Lang(String lang, String ver, String template) {
+        Lang(String lang, String ver, Map<String, String> mapping, String template) {
             this.lang = lang;
             this.ver = ver;
             this.template = template;
+            this.mapping = mapping;
+        }
+
+        public String typeMapping(String type) {
+            AtomicReference<String> newtype = new AtomicReference<>(type);
+            mapping.forEach((k, v) -> {
+                if (type.contains(k)) {
+                    newtype.set(type.replace(k, v));
+                }
+            });
+            if (!newtype.get().equals(type)) {
+                return typeMapping(newtype.get());
+            }
+
+            return newtype.get();
         }
 
         public String render(String pkg, String className, Set<String> fields) {
@@ -195,12 +231,15 @@ public class JsonToPojo implements Tool {
                 fields.stream()
                     .map(a -> {
                         if (this == JAVA_CLASS) {
-                            return "private " + a + ";";
+                            return STR."private \{a};";
+                        } else if (this == Kotlin) {
+                            var t = a.split(" ");
+                            return STR."val \{t[1]}: \{t[0]}";
                         } else {
                             return a;
                         }
                     })
-                    .map(a -> "    " + a)
+                    .map(a -> STR."    \{a}")
                     .collect(Collectors.joining(this == JAVA_CLASS ? "\n" : ",\n"))
             );
         }

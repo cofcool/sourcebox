@@ -15,6 +15,7 @@ var tools = map[string]tool.Tool{
 	"converts":       &converts.Converts{},
 	"gitCommits2Log": &git.CommitLog{},
 	"mobileBackup":   &file.MobileBackup{},
+	"task":           &file.Task{},
 }
 
 var globalCfg = make(map[string]string)

@@ -3,16 +3,16 @@
 PRG="$0"
 
 while [ -h "$PRG" ]; do
-  ls=`ls -ld "$PRG"`
-  link=`expr "$ls" : '.*-> \(.*\)$'`
+  ls=$(ls -ld "$PRG")
+  link=$(expr "$ls" : '.*-> \(.*\)$')
   if expr "$link" : '/.*' > /dev/null; then
     PRG="$link"
   else
-    PRG=`dirname "$PRG"`/"$link"
+    PRG=$(dirname "$PRG")/"$link"
   fi
 done
 
-PRGDIR=`dirname "$PRG"`
+PRGDIR=$(dirname "$PRG")
 
 NATIVE="false"
 COMMAND=$1
@@ -27,8 +27,7 @@ esac
 
 
 if [ "$NATIVE" = "true" ]; then
-  $PRGDIR/sourcebox -Dwebroot.dir=$PRGDIR/webroot "$@"
+  "$PRGDIR"/sourcebox -Dwebroot.dir=$PRGDIR/webroot "$@"
 else
-	echo "Start The Source Box"
-  java --enable-preview -jar $PRGDIR/lib/sourcebox-fat.jar "$@"
+  java --enable-preview -jar "$PRGDIR"/lib/sourcebox-fat.jar "$@"
 fi

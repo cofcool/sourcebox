@@ -26,7 +26,7 @@ public class CLIRunner implements ToolRunner {
                 var name = tool.name().name();
                 if (name.equals(a.val())) {
                     run.set(true);
-                    log.info("Start run " + name);
+                    log.debug("Start run " + name);
                     try {
                         tool.run(args.removePrefix(name).copyConfigFrom(tool.config()));
                     } catch (Throwable e) {

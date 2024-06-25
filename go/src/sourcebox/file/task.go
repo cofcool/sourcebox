@@ -2,10 +2,11 @@ package file
 
 import (
 	"fmt"
+	"mvdan.cc/sh/v3/shell"
+	"os"
 	"os/exec"
 	"sourcebox/tool"
 	"strconv"
-	"strings"
 )
 
 type Task struct {
@@ -33,13 +34,24 @@ func (m *Task) Run() error {
 	for i := 0; i < level; i++ {
 		for j := 0; j < count; j++ {
 			s := cmdIn.Val
-			s = strings.ReplaceAll(s, "{level}", fmt.Sprintf("%d", i))
-			s = strings.ReplaceAll(s, "{count}", fmt.Sprintf("%d", j))
-			cmds := strings.SplitN(s, " ", 2)
+			cmds, err := shell.Fields(s, func(s string) string {
+				switch s {
+				case "level":
+					return fmt.Sprintf("%d", i)
+				case "count":
+					return fmt.Sprintf("%d", j)
+				default:
+					return os.Getenv(s)
+				}
+			})
+			if err != nil {
+				return err
+			}
+			fmt.Println(cmds)
 			cmd := exec.Command(cmds[0], cmds[1:]...)
 			o, err := cmd.Output()
 			if err != nil {
-				fmt.Println(err)
+				fmt.Println(err.Error())
 				continue
 			}
 			fmt.Printf("result is: %s\n", o)
@@ -61,7 +73,7 @@ func (m *Task) Init() {
 			"cmd": {
 				Key:      "cmd",
 				Required: true,
-				Desc:     "wait to execute command, like curl https://demo.com/{idx}/{level}",
+				Desc:     "wait to execute command, like curl https://demo.com/$idx/$level",
 			},
 			"level": {
 				Key:  "level",

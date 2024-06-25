@@ -15,7 +15,7 @@ func TestTask_Run(t *testing.T) {
 				Args: map[string]*tool.Arg{
 					"cmd": {
 						Key: "cmd",
-						Val: "echo '{level}-{count}'",
+						Val: "echo $level-$count-$HOME",
 					},
 					"count": {
 						Key: "count",

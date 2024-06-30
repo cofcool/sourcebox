@@ -19,6 +19,7 @@ import java.util.random.RandomGenerator;
 import java.util.stream.Collectors;
 import net.cofcool.sourcebox.Tool;
 import net.cofcool.sourcebox.ToolName;
+import net.cofcool.sourcebox.util.DataSize;
 import net.cofcool.sourcebox.util.Utils;
 
 @SuppressWarnings({"InnerClassMayBeStatic", "unused"})
@@ -170,6 +171,19 @@ public class Converts implements Tool {
         @Override
         public Arg demo() {
             return new Arg(getClass().getSimpleName().toLowerCase(), null, "format timestamp", false, "1231312321");
+        }
+    }
+
+    private class DataUnit implements Pipeline {
+
+        @Override
+        public String run(Args args) {
+            return DataSize.of(args.readArg(INPUT).val()).toString();
+        }
+
+        @Override
+        public Arg demo() {
+            return new Arg(getClass().getSimpleName().toLowerCase(), null, "display data size for human", false, "1231312321k");
         }
     }
 

@@ -141,6 +141,12 @@ class ConvertsTest extends BaseTest {
     }
 
     @Test
+    void dataUnit() throws Exception {
+        System.out.println(instance().runCommand(args.arg("cmd", "dataunit").arg("in", "1131313k")));
+        System.out.println(instance().runCommand(args.arg("cmd", "dataunit").arg("in", "113131321")));
+    }
+
+    @Test
     void morseCode() throws Exception {
         var en = instance().runCommand(args
             .arg("cmd", "morsecode")

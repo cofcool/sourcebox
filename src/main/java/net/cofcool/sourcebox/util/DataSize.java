@@ -44,6 +44,9 @@ public record DataSize(double size) {
         Matcher matcher = pattern.matcher(value.trim());
 
         if (!matcher.matches()) {
+            try {
+                return new DataSize(Double.parseDouble(value));
+            } catch (NumberFormatException ignore) {}
             throw new IllegalArgumentException(STR."Invalid format: \{value}");
         }
 

@@ -14,12 +14,13 @@
 
 项目构建:
 
-* `mvn package` 构建 jar 包
+* `mvn package` 构建 jar 包，同时构建 Go 版实现
 * `mvn package -Pnative` 构建本地代码
 
 **TODO**
 
-* [ ] Web 页面
+* [ ] Web
+* [ ] Desktop
 
 ## 命令助手
 
@@ -63,6 +64,7 @@
 * base64，编码和解码
 * morsecode，摩尔斯电码转换
 * security，加密/解密
+* dataunit，字节显示更易读
 * ...
 
 ## 网页下载
@@ -142,7 +144,11 @@ Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到
 
 ## JSON 格式化
 
-使用: `./sourcebox.sh --tool=json [--json='{}'] [--path=dmeo.json]`
+使用: `./sourcebox.sh --tool=json [--json='{}'] [--path=dmeo.json]`，支持 JSON Line
+
+## 重复执行 SHELL 命令
+
+使用: `./sourcebox.sh --tool=task --count=10 --cmd='echo $count'`
 
 ## 参与开发
 

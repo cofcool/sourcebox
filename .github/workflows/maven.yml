@@ -20,6 +20,10 @@ jobs:
           distribution: 'graalvm'
           github-token: ${{ secrets.GITHUB_TOKEN }}
           native-image-job-reports: 'true'
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+            go-version: '1.22'
       - name: Cache Maven packages
         uses: actions/cache@v2
         with:

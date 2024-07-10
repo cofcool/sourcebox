@@ -25,4 +25,9 @@ class NetworkUtilsTest extends BaseTest {
     void runWithIpInfo() throws Exception {
         instance().run(args.arg("util", "ip").arg("in", "39.156.66.10"));
     }
+
+    @Test
+    void runWithMyIpInfo() throws Exception {
+        instance().run(args.arg("util", "ip").arg("in", "my"));
+    }
 }

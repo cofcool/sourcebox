@@ -33,7 +33,7 @@ public class NetworkUtils implements Tool {
     public Args config() {
         return new Args()
             .arg(new Arg("util", null, STR."util name, support: \{utilMap.keySet()}, note: ip info from ip-api.com", true, "count"))
-            .arg(new Arg("in", null, "input string", true, "localhost"));
+            .arg(new Arg("in", null, "input string, if the in is 'my' will get current public ip", true, "localhost"));
     }
 
     private interface Util {
@@ -52,7 +52,11 @@ public class NetworkUtils implements Tool {
                     .setDefaultPort(80)
                     .setConnectTimeout(10_000)
             );
-            var resp = client.get(STR."/json/\{in}").send();
+            var url = switch (in) {
+                case "my" -> STR."/json";
+                default -> STR."/json/\{in}";
+            };
+            var resp = client.get(url).send();
             while (!resp.isComplete()) {
                 TimeUnit.MILLISECONDS.sleep(500);
             }

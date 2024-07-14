@@ -31,7 +31,9 @@ public class ClippingsToMd implements Tool {
     @Override
     public void run(Args args) throws Exception {
         var path = args.readArg("path").val();
-        var out = args.readArg("out").val();
+        var out = args.readArg("out").getVal().orElse(
+            STR."\{FilenameUtils.getFullPath(path)}\{FilenameUtils.getBaseName(path)}.md"
+        );
         var type = ClipType.valueOf(args.readArg("type").val());
 
         var fileContent = FileUtils.readFileToString(new File(path), StandardCharsets.UTF_8);
@@ -126,7 +128,7 @@ public class ClippingsToMd implements Tool {
         return new Args()
             .arg(new Arg("path", null, "clipboard file path or content", true, "./kindle.txt"))
             .arg(new Arg("type", ClipType.kindle.name(), "support: " + Arrays.toString(ClipType.values()), false, null))
-            .arg(new Arg("out", "./kindle.md", "output path", false, null))
+            .arg(new Arg("out", null, "output path", false, "./book.md"))
             .runnerTypes(EnumSet.of(RunnerType.WEB, RunnerType.CLI));
     }
 

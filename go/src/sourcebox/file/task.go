@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"sourcebox/tool"
 	"strconv"
+	"time"
 )
 
 type Task struct {
@@ -31,15 +32,23 @@ func (m *Task) Run() error {
 		level = 1
 	}
 	fmt.Printf("task execute times: %d x %d\n", level, count)
+	idx := 0
 	for i := 0; i < level; i++ {
 		for j := 0; j < count; j++ {
 			s := cmdIn.Val
+			idx++
 			cmds, err := shell.Fields(s, func(s string) string {
 				switch s {
 				case "level":
 					return fmt.Sprintf("%d", i)
 				case "count":
 					return fmt.Sprintf("%d", j)
+				case "idx":
+					return fmt.Sprintf("%d", idx)
+				case "timestamp":
+					return fmt.Sprintf("%d", time.Now().Unix())
+				case "timestamp_milli":
+					return fmt.Sprintf("%d", time.Now().UnixMilli())
 				default:
 					return os.Getenv(s)
 				}
@@ -73,7 +82,7 @@ func (m *Task) Init() {
 			"cmd": {
 				Key:      "cmd",
 				Required: true,
-				Desc:     "wait to execute command, like curl https://demo.com/$idx/$level",
+				Desc:     "wait to execute command, like curl https://demo.com/$idx/$level, variables: count, level, idx, timestamp",
 			},
 			"level": {
 				Key:  "level",

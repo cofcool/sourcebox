@@ -45,8 +45,9 @@ public class NetworkUtils implements Tool {
 
         @Override
         public String run(String in) throws Exception {
+            var vertx = Vertx.vertx();
             var client = WebClient.create(
-                Vertx.vertx(),
+                vertx,
                 new WebClientOptions()
                     .setDefaultHost("ip-api.com")
                     .setDefaultPort(80)
@@ -61,6 +62,7 @@ public class NetworkUtils implements Tool {
                 TimeUnit.MILLISECONDS.sleep(500);
             }
             client.close();
+            vertx.close();
 
             if (resp.failed()) {
                 throw new IllegalStateException(resp.cause());
@@ -74,7 +76,8 @@ public class NetworkUtils implements Tool {
 
         @Override
         public String run(String in) throws Exception {
-            var client = Vertx.vertx().createDnsClient();
+            var vertx = Vertx.vertx();
+            var client = vertx.createDnsClient();
             var f = Future.all(
                 client.resolveA(in),
                 client.resolveCNAME(in),
@@ -89,6 +92,7 @@ public class NetworkUtils implements Tool {
             }
 
             client.close();
+            vertx.close();
 
             return STR."""
                 A: \{f.resultAt(0)}

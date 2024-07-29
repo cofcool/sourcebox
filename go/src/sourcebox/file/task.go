@@ -58,7 +58,7 @@ func (m *Task) Run() error {
 			}
 			fmt.Println(cmds)
 			cmd := exec.Command(cmds[0], cmds[1:]...)
-			o, err := cmd.Output()
+			o, err := cmd.CombinedOutput()
 			if err != nil {
 				fmt.Println(err.Error())
 				continue

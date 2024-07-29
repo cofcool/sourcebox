@@ -8,14 +8,12 @@
 
 * `./sourcebox.sh` 查看程序信息，`--help={COMMAND}` 查看具体命令的帮助信息, 如 `--help=converts`
 * `--debug=true` 打开调试模式
-* `--native` 启动原生编译版本版本，默认启动 jar，如 `sourcebox.sh --native --tool=converts`
 
 部分命令支持别名， 如 `--tool=converts --cmd=random --in=test` 的别名为 `--random=test`，具体可查看帮助文档，也可借助命令助手配置别名
 
 项目构建:
 
 * `mvn package` 构建 jar 包，同时构建 Go 版实现
-* `mvn package -Pnative` 构建本地代码
 
 **TODO**
 

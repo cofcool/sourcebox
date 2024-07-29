@@ -67,5 +67,12 @@
                 <include>*</include>
             </includes>
         </fileSet>
+        <fileSet>
+            <directory>go/build/</directory>
+            <outputDirectory>/lib</outputDirectory>
+            <includes>
+                <include>the-source-box</include>
+            </includes>
+        </fileSet>
     </fileSets>
 </assembly>  

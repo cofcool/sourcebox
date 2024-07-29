@@ -139,6 +139,27 @@
           </argLine>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.3.0</version>
+        <executions>
+          <execution>
+            <phase>compile</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <executable>make</executable>
+          <workingDirectory>${project.basedir}/go/src/sourcebox</workingDirectory>
+          <arguments>
+            <argument>VERSION=${project.version}</argument>
+          </arguments>
+        </configuration>
+      </plugin>
+
     </plugins>
     <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
       <plugins>

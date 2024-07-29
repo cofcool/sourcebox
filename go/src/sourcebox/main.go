@@ -11,6 +11,10 @@ import (
 	"strings"
 )
 
+var (
+	Version = ""
+)
+
 var tools = map[string]tool.Tool{
 	"converts":       &converts.Converts{},
 	"gitCommits2Log": &git.CommitLog{},
@@ -57,7 +61,11 @@ func readGlobalCfg(path string) error {
 
 func main() {
 	app := cli.NewApp()
-	app.Name = "The Source Box"
+	app.Name = "TheSourceBox"
+	app.Authors = []*cli.Author{
+		&cli.Author{Name: "CofCool"},
+	}
+	app.Version = Version
 	app.Usage = "Some CLI utils"
 	app.Flags = []cli.Flag{
 		&cli.StringFlag{

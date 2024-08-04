@@ -8,6 +8,7 @@ import net.cofcool.sourcebox.internal.DirWebServer;
 import net.cofcool.sourcebox.internal.FileNameFormatter;
 import net.cofcool.sourcebox.internal.FileTools;
 import net.cofcool.sourcebox.internal.GitCommitsToChangelog;
+import net.cofcool.sourcebox.internal.GoAdapter;
 import net.cofcool.sourcebox.internal.HtmlDownloader;
 import net.cofcool.sourcebox.internal.JsonFormatter;
 import net.cofcool.sourcebox.internal.JsonToPojo;
@@ -35,7 +36,9 @@ public enum ToolName {
     generate("generate code from template", CodeGenerator.class),
     analysisDiff("analysis diff file", DiffAnalysis.class),
     fileTools("some utils about file", FileTools.class),
-    netUtils("some utils about network", NetworkUtils.class);
+    netUtils("some utils about network", NetworkUtils.class),
+    task("repeat execute task(go)", GoAdapter.Task.class),
+    mobileBackup("backup android phone files by adb(go)", GoAdapter.MobileBackup.class);
 
     private final String desc;
     private final Class<? extends Tool> tool;

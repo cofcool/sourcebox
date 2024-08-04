@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 PRG="$0"
+go_tasks=("mobileBackup" "task")
 
 while [ -h "$PRG" ]; do
   ls=$(ls -ld "$PRG")
@@ -13,21 +14,15 @@ while [ -h "$PRG" ]; do
 done
 
 PRGDIR=$(dirname "$PRG")
-
-NATIVE="false"
-COMMAND=$1
-case $COMMAND in
-  --native)
-    NATIVE="true"
-    shift
-    ;;
-  *)
-    ;;
-esac
+command=$1
+run_go="false"
+if printf '%s\n' "${go_tasks[@]}" | grep -q "^$command$"; then
+    run_go="true"
+fi
 
 
-if [ "$NATIVE" = "true" ]; then
-  "$PRGDIR"/sourcebox -Dwebroot.dir=$PRGDIR/webroot "$@"
+if [ "$run_go" = "true" ]; then
+  "$PRGDIR"/lib/the-source-box "$@"
 else
   java --enable-preview -jar "$PRGDIR"/lib/sourcebox-fat.jar "$@"
 fi

@@ -39,6 +39,10 @@ class ConvertsTest extends BaseTest {
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS").format(val),
             instance().runCommand(args.arg("cmd", "hdate").arg("in", val.toInstant().toEpochMilli() + ""))
         );
+        Assertions.assertEquals(
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(val) + ".000",
+            instance().runCommand(args.arg("cmd", "hdate").arg("in", val.toInstant().getEpochSecond() + ""))
+        );
     }
 
     @Test

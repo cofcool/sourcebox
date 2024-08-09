@@ -164,8 +164,15 @@ public class Converts implements Tool {
 
         @Override
         public String run(Args args) {
+            var v = Long.parseLong(args.readArg(INPUT).val());
+            Instant instant;
+            if (v >= Integer.MAX_VALUE) {
+                instant = Instant.ofEpochMilli(v);
+            } else {
+                instant = Instant.ofEpochSecond(v);
+            }
             return DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
-                    .format(LocalDateTime.ofInstant(Instant.ofEpochMilli(Long.parseLong(args.readArg(INPUT).val())), TimeZone.getDefault().toZoneId()));
+                    .format(LocalDateTime.ofInstant(instant, TimeZone.getDefault().toZoneId()));
         }
 
         @Override

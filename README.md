@@ -146,7 +146,7 @@ Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到
 
 ## 重复执行 SHELL 命令
 
-使用: `./sourcebox.sh --tool=task --count=10 --cmd='echo $count'`
+支持指定执行次数，循环次数，执行频率等，使用: `./sourcebox.sh --tool=task --count=10 --cmd='echo $count'`
 
 ## 参与开发
 

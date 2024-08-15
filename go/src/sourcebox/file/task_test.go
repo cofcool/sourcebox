@@ -24,6 +24,26 @@ func TestTask_Run(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name: "runWithPerMs",
+			Config: &tool.Config{
+				Context: test.NewContext("", nil),
+				Args: map[string]*tool.Arg{
+					"cmd": {
+						Key: "cmd",
+						Val: "echo $level-$count-$HOME-$timestamp-$idx-$timestamp_milli",
+					},
+					"count": {
+						Key: "count",
+						Val: "10",
+					},
+					"perMs": {
+						Key: "perMs",
+						Val: "100",
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {

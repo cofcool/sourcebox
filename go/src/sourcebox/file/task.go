@@ -31,43 +31,64 @@ func (m *Task) Run() error {
 	if level <= 0 {
 		level = 1
 	}
-	fmt.Printf("task execute times: %d x %d\n", level, count)
+
+	perMsIn, err := m.config.ReadArg("perMs")
+	sleepDuration := time.Duration(0)
+	if err == nil && perMsIn.Val != "" {
+		perMs, err := strconv.Atoi(perMsIn.Val)
+		if err != nil {
+			return err
+		}
+		sleepDuration = time.Millisecond * time.Duration(perMs)
+		level = 1
+	}
+
 	idx := 0
 	for i := 0; i < level; i++ {
 		for j := 0; j < count; j++ {
-			s := cmdIn.Val
 			idx++
-			cmds, err := shell.Fields(s, func(s string) string {
-				switch s {
-				case "level":
-					return fmt.Sprintf("%d", i)
-				case "count":
-					return fmt.Sprintf("%d", j)
-				case "idx":
-					return fmt.Sprintf("%d", idx)
-				case "timestamp":
-					return fmt.Sprintf("%d", time.Now().Unix())
-				case "timestamp_milli":
-					return fmt.Sprintf("%d", time.Now().UnixMilli())
-				default:
-					return os.Getenv(s)
-				}
-			})
-			if err != nil {
+			ok, err := executeTask(cmdIn.Val, i, j, idx)
+			if !ok && err != nil {
 				return err
 			}
-			fmt.Println(cmds)
-			cmd := exec.Command(cmds[0], cmds[1:]...)
-			o, err := cmd.CombinedOutput()
-			if err != nil {
-				fmt.Println(err.Error())
-				continue
+			if sleepDuration > 0 {
+				time.Sleep(sleepDuration)
 			}
-			fmt.Printf("result is: %s\n", o)
 		}
 	}
 
 	return nil
+}
+
+func executeTask(s string, level, count, idx int) (bool, error) {
+	cmds, err := shell.Fields(s, func(s string) string {
+		switch s {
+		case "level":
+			return fmt.Sprintf("%d", level)
+		case "count":
+			return fmt.Sprintf("%d", count)
+		case "idx":
+			return fmt.Sprintf("%d", idx)
+		case "timestamp":
+			return fmt.Sprintf("%d", time.Now().Unix())
+		case "timestamp_milli":
+			return fmt.Sprintf("%d", time.Now().UnixMilli())
+		default:
+			return os.Getenv(s)
+		}
+	})
+	if err != nil {
+		return false, err
+	}
+	fmt.Println(cmds)
+	cmd := exec.Command(cmds[0], cmds[1:]...)
+	o, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println(err.Error())
+		return true, nil
+	}
+	fmt.Printf("result is: %s\n", o)
+	return true, nil
 }
 
 func (m *Task) Config() *tool.Config {
@@ -92,7 +113,12 @@ func (m *Task) Init() {
 			"count": {
 				Key:      "count",
 				Required: true,
-				Desc:     "single loop count",
+				Desc:     "single loop count or execute count",
+			},
+			"perMs": {
+				Key:      "perMs",
+				Required: false,
+				Desc:     "frequency of execution",
 			},
 		},
 	}

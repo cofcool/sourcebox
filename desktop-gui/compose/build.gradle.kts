@@ -20,6 +20,19 @@ dependencies {
     // (in a separate module for demo project and in testMain).
     // With compose.desktop.common you will also lose @Preview functionality
     implementation(compose.desktop.currentOs)
+
+    implementation("io.ktor:ktor-client-core:${project.extra["ktor.version"]}")
+    implementation("io.ktor:ktor-client-okhttp:${project.extra["ktor.version"]}")
+    implementation("io.ktor:ktor-client-content-negotiation:${project.extra["ktor.version"]}")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:${project.extra["ktor.version"]}")
+    implementation("io.ktor:ktor-client-auth:${project.extra["ktor.version"]}")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${project.extra["coroutines.version"]}")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${project.extra["json.version"]}")
+    implementation("org.slf4j:slf4j-jdk14:${project.extra["slfj.version"]}")
+
+    testImplementation("junit:junit:${project.extra["junit.version"]}")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:${project.extra["kotlin.version"]}")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:${project.extra["kotlin.version"]}")
 }
 
 compose.desktop {

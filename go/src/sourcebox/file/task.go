@@ -20,6 +20,8 @@ func (m *Task) Run() error {
 		return err
 	}
 
+	after, afterErr := m.config.ReadArg("after")
+
 	levelIn, _ := m.config.ReadArg("level")
 	countIn, _ := m.config.ReadArg("count")
 
@@ -53,6 +55,12 @@ func (m *Task) Run() error {
 			}
 			if sleepDuration > 0 {
 				time.Sleep(sleepDuration)
+			}
+		}
+		if afterErr == nil && after.Val != "" {
+			_, err := executeTask(after.Val, i, count-1, idx)
+			if err != nil {
+				m.config.Context.Write("executeAfterAction", err.Error())
 			}
 		}
 	}
@@ -119,6 +127,11 @@ func (m *Task) Init() {
 				Key:      "perMs",
 				Required: false,
 				Desc:     "frequency of execution",
+			},
+			"after": {
+				Key:      "after",
+				Required: false,
+				Desc:     "execute action when finished one loop",
 			},
 		},
 	}

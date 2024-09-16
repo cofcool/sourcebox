@@ -3,6 +3,19 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 plugins {
     kotlin("jvm")
     id("org.jetbrains.compose")
+    kotlin("plugin.serialization")
+}
+
+tasks.test {
+    useJUnitPlatform()
+}
+
+kotlin {
+    sourceSets {
+        main {
+            kotlin.srcDir("src/main/kotlin")
+        }
+    }
 }
 
 group = "net.cofcool.sourcebox.compose"
@@ -29,10 +42,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${project.extra["coroutines.version"]}")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${project.extra["json.version"]}")
     implementation("org.slf4j:slf4j-jdk14:${project.extra["slfj.version"]}")
+    implementation("io.ktor:ktor-client-cio-jvm:2.3.11")
 
-    testImplementation("junit:junit:${project.extra["junit.version"]}")
-    testImplementation("org.jetbrains.kotlin:kotlin-test:${project.extra["kotlin.version"]}")
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:${project.extra["kotlin.version"]}")
+    testImplementation("org.junit.jupiter:junit-jupiter:${project.extra["junit5.version"]}")
 }
 
 compose.desktop {

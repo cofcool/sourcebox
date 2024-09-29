@@ -1,4 +1,7 @@
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -12,11 +15,26 @@ fun App() {
     var text by remember { mutableStateOf("Hello, World!") }
 
     MaterialTheme {
-        Button(onClick = {
-            text = "Hello, Desktop!"
-        }) {
-            Text(text)
+        Row {
+            Column {
+                Row {
+                    Text("Tools")
+                }
+                Row {
+                    LazyColumn {
+                        items(5) {
+                            Row { Button(onClick = { println("$it") }) {
+                                Text("Hello, $it")
+                            } }
+                        }
+                    }
+                }
+            }
+            Column {
+                Text("Contents")
+            }
         }
+
     }
 }
 

@@ -44,6 +44,14 @@ class AppTest {
     }
 
     @Test
+    void runWithArchive() throws Exception {
+        App.main(new String[]{"--archive=true"});
+        var file1 = new File(App.ZIP_FILE);
+        Assertions.assertTrue(file1.exists());
+        file1.delete();
+    }
+
+    @Test
     void runWithHelp1() throws Exception {
         App.main(new String[]{"--help=" + ToolName.converts.name()});
     }

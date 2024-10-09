@@ -1,8 +1,11 @@
 package net.cofcool.sourcebox.util;
 
 import io.vertx.core.Future;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.KeySpec;
@@ -10,11 +13,14 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.DESedeKeySpec;
 import lombok.SneakyThrows;
+import org.apache.commons.io.FilenameUtils;
 
 public abstract class Utils {
 
@@ -110,5 +116,29 @@ public abstract class Utils {
     @SneakyThrows
     public static <T> T getFutureResult(Future<T> future) {
         return future.toCompletionStage().toCompletableFuture().get(10, TimeUnit.SECONDS);
+    }
+
+    public static void zipDir(String sourceDirPath, String zipFilePath) throws IOException {
+        try (ZipOutputStream zipOut = new ZipOutputStream(Files.newOutputStream(Paths.get(zipFilePath)))) {
+            var sourceDir = Paths.get(sourceDirPath);
+            var p = FilenameUtils.getName(sourceDirPath).replace(".", "");
+            var dir = p + "/" + p + "/";
+            zipOut.putNextEntry(new ZipEntry(dir));
+            zipOut.closeEntry();
+            try (var s = Files.walk(sourceDir)) {
+                s.forEach(path -> {
+                    try {
+                        var relativePath = sourceDir.relativize(path);
+                        if (!Files.isDirectory(path)) {
+                            zipOut.putNextEntry(new ZipEntry(dir + relativePath));
+                            Files.copy(path, zipOut);
+                            zipOut.closeEntry();
+                        }
+                    } catch (IOException e) {
+                        throw new RuntimeException("Error reading file: " + path + " -> " + e.getMessage(), e);
+                    }
+                });
+            }
+        }
     }
 }

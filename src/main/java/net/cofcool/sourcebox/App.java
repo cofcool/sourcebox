@@ -15,6 +15,7 @@ import net.cofcool.sourcebox.logging.Logger;
 import net.cofcool.sourcebox.logging.LoggerFactory;
 import net.cofcool.sourcebox.runner.CLIRunner;
 import net.cofcool.sourcebox.runner.WebRunner;
+import net.cofcool.sourcebox.util.Utils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 
@@ -22,6 +23,7 @@ import org.apache.commons.io.FilenameUtils;
 @SuppressWarnings({"unchecked", "ConstantConditions"})
 public class App {
 
+    static final String ZIP_FILE = "sourcebox-config.zip";
     public static String ABOUT;
 
     private static final Set<Tool> ALL_TOOLS = new HashSet<>();
@@ -43,6 +45,7 @@ public class App {
             .copyConfigFrom(
                 new Args()
                     .arg(new Arg("debug", "false", "", false, null))
+                    .arg(new Arg("archive", null, "archive config", false, "true"))
                     .arg(new Arg("help", null, "", false, null))
                     .arg(new Arg("tool", null, "", false, "converts"))
                     .arg(new Arg("mode", RunnerType.CLI.name(), "interface type", false, null))
@@ -85,6 +88,13 @@ public class App {
                     logger.info(tool.config().toHelpString());
                 }
             }
+            return;
+        }
+
+        var archive = pArgs.readArg("archive");
+        if (archive.isPresent() && archive.test(a -> a.equalsIgnoreCase("true"))) {
+            Utils.zipDir(GLOBAL_CFG_DIR, ZIP_FILE);
+            logger.info("Create archive file {0} ok", ZIP_FILE);
             return;
         }
 
@@ -136,6 +146,7 @@ public class App {
         logger.info(STR."About: \{ABOUT}");
         logger.info("Example: --tool=demo --path=tmp");
         logger.info("Help: --help='{COMMAND}', like: --help=rename");
+        logger.info("Archive: --archive=true, archive config");
         logger.info(STR."Interface: --mode='{CLI}', support: \{RUNNER_MAP.entrySet().stream()
             .map(e -> {
                 String help = e.getValue().help();

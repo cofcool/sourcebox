@@ -20,15 +20,15 @@ public class CommandManager {
     private static final List<Command> INIT_CMDS;
 
     static {
-        List<String> tags = List.of("#mytool");
+        List<String> tags = List.of("#sourcebox");
         INIT_CMDS = List.of(
-            new Command("mytool --tool=cHelper", "@helper", tags),
-            new Command("mytool --tool=converts --cmd=now", "@mnow", tags),
-            new Command("mytool --tool=converts --cmd=md5", "@mmd5", tags),
-            new Command("mytool --tool=converts --cmd=hdate", "@mhdate", tags),
-            new Command("mytool --tool=converts --cmd=timesp", "@mtimesp", tags),
-            new Command("mytool --tool=converts --cmd=lower", "@mlower", tags),
-            new Command("mytool --tool=converts --cmd=upper", "@mupper", tags)
+            new Command("sourcebox --tool=cHelper", "@helper", tags),
+            new Command("sourcebox --tool=converts --cmd=now", "@mnow", tags),
+            new Command("sourcebox --tool=converts --cmd=md5", "@mmd5", tags),
+            new Command("sourcebox --tool=converts --cmd=hdate", "@mhdate", tags),
+            new Command("sourcebox --tool=converts --cmd=timesp", "@mtimesp", tags),
+            new Command("sourcebox --tool=converts --cmd=lower", "@mlower", tags),
+            new Command("sourcebox --tool=converts --cmd=upper", "@mupper", tags)
         );
     }
 

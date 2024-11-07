@@ -34,7 +34,6 @@ import net.cofcool.sourcebox.ToolName;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Connection;
 import org.jsoup.Connection.Method;
@@ -273,7 +272,7 @@ public class HtmlDownloader implements Tool {
         html((d, f, t) -> {
             File file = Paths.get(f, t + ".html").toFile();
             if (file.exists()) {
-                file = Paths.get(f, t + RandomStringUtils.randomNumeric(2) + ".html").toFile();
+                return;
             }
             FileUtils.writeStringToFile(file, d.outerHtml(), StandardCharsets.UTF_8);
         }),

@@ -6,7 +6,6 @@ import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
-import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
@@ -55,9 +54,9 @@ class Request {
         }
     }
 
-    suspend fun getAllTools(): Set<String> {
+    suspend fun getAllTools(): List<String> {
         val r = client.get("/")
-        return r.body<Set<String>>()
+        return r.body<List<String>>()
     }
 
     suspend fun invokeTool(tools: Tools, input: Params): String {

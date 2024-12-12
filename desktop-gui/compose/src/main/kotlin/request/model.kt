@@ -1,7 +1,6 @@
 package request
 
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonNames
 
 enum class Tools(val tool: Tools?, val cmd: String) {
     C(null, "converts"),
@@ -11,3 +10,6 @@ enum class Tools(val tool: Tools?, val cmd: String) {
 
 @Serializable
 data class Params(val cmd: String, val input: String)
+
+@Serializable
+data class CommandItem(val id: String, val cmd: String, val tags: List<String>?)

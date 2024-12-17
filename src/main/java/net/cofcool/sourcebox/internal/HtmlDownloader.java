@@ -261,7 +261,7 @@ public class HtmlDownloader implements Tool {
             .arg(new Arg("proxy", null, "request proxy", false, "127.0.0.1:8087"))
             .arg(new Arg("out", "./", "output folder", false, null))
             .arg(new Arg("clean", "false", "remove css or javascript", false, null))
-            .runnerTypes(EnumSet.of(RunnerType.CLI));
+            .runnerTypes(EnumSet.allOf(RunnerType.class));
     }
 
     private static String checkText(Element e, String out) {

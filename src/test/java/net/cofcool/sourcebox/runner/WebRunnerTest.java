@@ -12,12 +12,15 @@ import io.vertx.ext.web.multipart.MultipartForm;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import net.cofcool.sourcebox.Tool.Args;
+import net.cofcool.sourcebox.Tool.RunnerType;
 import net.cofcool.sourcebox.ToolName;
 import net.cofcool.sourcebox.Utils;
 import net.cofcool.sourcebox.internal.JsonFormatterTest;
 import net.cofcool.sourcebox.internal.JsonToPojoTest;
 import net.cofcool.sourcebox.internal.TrelloToLogseqImporterTest;
 import net.cofcool.sourcebox.internal.simplenote.NoteConfig;
+import net.cofcool.sourcebox.runner.WebRunner.WebToolContext;
+import net.cofcool.sourcebox.runner.WebRunner.WebVerticle;
 import net.cofcool.sourcebox.util.VertxUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -33,7 +36,7 @@ class WebRunnerTest {
     static void deployVerticle(Vertx vertx, VertxTestContext testContext) throws Exception {
         System.setProperty("logging.debug", "true");
         System.setProperty("upload.dir", "target/file-uploads");
-        new WebRunner()
+        new WebVerticle(RunnerType.WEB, WebToolContext::new)
             .deploy(
                 vertx,
                 null,

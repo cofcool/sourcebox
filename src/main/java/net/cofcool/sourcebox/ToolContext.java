@@ -14,6 +14,10 @@ public interface ToolContext {
 
     RunnerType runnerType();
 
+    default Object toObject() {
+        return null;
+    }
+
     static String randomName() {
         return RandomStringUtils.randomAlphabetic(6);
     }

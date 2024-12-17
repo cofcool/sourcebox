@@ -5,8 +5,11 @@ import io.vertx.ext.web.client.WebClient;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import net.cofcool.sourcebox.Tool.Args;
+import net.cofcool.sourcebox.Tool.RunnerType;
 import net.cofcool.sourcebox.ToolName;
 import net.cofcool.sourcebox.internal.simplenote.NoteConfig;
+import net.cofcool.sourcebox.runner.WebRunner.WebToolContext;
+import net.cofcool.sourcebox.runner.WebRunner.WebVerticle;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -22,7 +25,7 @@ public class WebRunnerAuthTest {
     static void deployVerticle(Vertx vertx, VertxTestContext testContext) throws Exception {
         System.setProperty("logging.debug", "true");
         System.setProperty("upload.dir", "target/file-uploads");
-        new WebRunner()
+        new WebVerticle(RunnerType.WEB, WebToolContext::new)
             .deploy(
                 vertx,
                 null,

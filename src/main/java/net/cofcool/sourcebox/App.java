@@ -14,6 +14,7 @@ import net.cofcool.sourcebox.Tool.RunnerType;
 import net.cofcool.sourcebox.logging.Logger;
 import net.cofcool.sourcebox.logging.LoggerFactory;
 import net.cofcool.sourcebox.runner.CLIRunner;
+import net.cofcool.sourcebox.runner.GUIRunner;
 import net.cofcool.sourcebox.runner.WebRunner;
 import net.cofcool.sourcebox.util.Utils;
 import org.apache.commons.io.FileUtils;
@@ -30,7 +31,8 @@ public class App {
 
     private static final Map<RunnerType, ToolRunner> RUNNER_MAP = Map.of(
         RunnerType.WEB, new WebRunner(),
-        RunnerType.CLI, new CLIRunner()
+        RunnerType.CLI, new CLIRunner(),
+        RunnerType.GUI, new GUIRunner()
     );
 
     static final Args ALIAS = new Args();

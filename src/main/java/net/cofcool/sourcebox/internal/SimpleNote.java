@@ -48,7 +48,7 @@ public class SimpleNote implements WebTool {
             .arg(new Arg(NoteConfig.FILE_KEY, NoteConfig.FILE_NAME, "note filename", false, null))
             .arg(new Arg(NoteConfig.PATH_KEY, NoteConfig.PATH_VAL, "note file path", false, null))
             .arg(new Arg(NoteConfig.PORT_KEY, NoteConfig.PORT_VAL + "", "note web server listen port", false, null))
-            .runnerTypes(EnumSet.of(RunnerType.CLI, RunnerType.WEB))
+            .runnerTypes(EnumSet.allOf(RunnerType.class))
             .alias("note", name(), NoteConfig.PATH_KEY,  null);
     }
 

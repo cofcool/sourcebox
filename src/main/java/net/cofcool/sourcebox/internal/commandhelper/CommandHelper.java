@@ -1,16 +1,15 @@
 package net.cofcool.sourcebox.internal.commandhelper;
 
-import io.vertx.core.Vertx;
-import io.vertx.ext.web.Router;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.CustomLog;
+import net.cofcool.sourcebox.Tool;
 import net.cofcool.sourcebox.ToolName;
-import net.cofcool.sourcebox.WebTool;
 import org.apache.commons.io.FilenameUtils;
 
 @CustomLog
-public class CommandHelper implements WebTool {
+public class CommandHelper implements Tool {
 
     private CommandManager commandManager;
 
@@ -67,7 +66,8 @@ public class CommandHelper implements WebTool {
             .arg(new Arg("aliasPath", "./alias", "alias file path",  false, null))
             .arg(new Arg("find", "ALL", "find command, can be tag or alias, ALL will list all",  false, "#md5"))
             .arg(new Arg("del", null, "delete command, can be tag or alias, ALL will delete all",  false, "#md5"))
-            .arg(new Arg("store", null, "save alias into env, ALL will save all",  false, "ALL"));
+            .arg(new Arg("store", null, "save alias into env, ALL will save all",  false, "ALL"))
+            .runnerTypes(EnumSet.of(RunnerType.CLI, RunnerType.GUI));
     }
 
     @Override
@@ -75,11 +75,6 @@ public class CommandHelper implements WebTool {
         return new Args()
             .arg("filepath", FilenameUtils.concat(globalDir, "commands.json"))
             .arg("aliasPath", FilenameUtils.concat(globalDir, "alias"));
-    }
-
-    @Override
-    public Router router(Vertx vertx) {
-        return null;
     }
 
 

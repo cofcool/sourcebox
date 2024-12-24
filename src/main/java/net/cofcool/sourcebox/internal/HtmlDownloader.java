@@ -30,6 +30,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import lombok.CustomLog;
 import net.cofcool.sourcebox.Tool;
+import net.cofcool.sourcebox.ToolContext;
 import net.cofcool.sourcebox.ToolName;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -57,6 +58,7 @@ public class HtmlDownloader implements Tool {
     private Set<OutputType> outputTypes = EnumSet.of(OutputType.html);
     private Proxy proxy;
     private String filter;
+    private ToolContext context;
 
     private Connection connection;
 
@@ -68,6 +70,7 @@ public class HtmlDownloader implements Tool {
     @Override
     public void run(Args args) throws Exception {
         var urls = new ArrayList<String>();
+        context = args.getContext();
 
         args.readArg("urlFile").ifPresent(a -> {
             try {
@@ -171,7 +174,7 @@ public class HtmlDownloader implements Tool {
             var dir = Paths.get(folder, title).toFile();
             folder = dir.toString();
             FileUtils.forceMkdir(dir);
-            log.info("Create dir {0}", dir);
+            context.write(String.format("Create dir %s", dir));
         }
 
         if (clean) {
@@ -185,7 +188,7 @@ public class HtmlDownloader implements Tool {
         if (filter == null || title.contains(filter)) {
             for (OutputType type : outputTypes) {
                 type.applyOutput(doc, folder, title);
-                log.info("Save {0} file to {1} from <<{2}>>: {3}", type, folder, title, url);
+                context.write(String.format("Save %s file to %s from <<%s>>: %s", type, folder, title, url));
             }
         }
 
@@ -204,7 +207,7 @@ public class HtmlDownloader implements Tool {
             try {
                 downloadUrl(folder, href, depth, "false");
             } catch (Exception e) {
-                log.error("Download " + href, e);
+                context.write(String.format("Download %s error: %s", href, e.getMessage()));
             }
         }
     }
@@ -233,7 +236,7 @@ public class HtmlDownloader implements Tool {
                     var splitIdx = src.indexOf(",");
                     imgData = Base64.getDecoder().decode(src.substring(splitIdx + 1));
                 } else {
-                    log.info("Image url {0} is invalid", src);
+                    context.write(String.format("Image url %s is invalid", src));
                     continue;
                 }
 
@@ -242,9 +245,9 @@ public class HtmlDownloader implements Tool {
                 File file = Paths.get(folder, name).toFile();
                 FileUtils.writeByteArrayToFile(file, imgData);
                 img.attr("src", String.join("/", ".", IMGS_FOLDER, name));
-                log.info("Download image from {0}", file);
+                context.write(String.format("Download image from %s", file));
             } catch (Exception e) {
-                log.error("Download " + src + " image error", e);
+                context.write(String.format("Download %s image error: %s", src, e.getMessage()));
             }
         }
     }
@@ -372,17 +375,17 @@ public class HtmlDownloader implements Tool {
         private static final String START_HTML = """
             <?xml version='1.0' encoding='utf-8'?>
             <html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
-                        
+
             <head>
               <title id="toc_1">%s</title>
             </head>
-                        
+            
             <body>
-                        
+            
               <h1>%s</h1>
-                        
+            
             </body>
-                        
+            
             </html>
             """;
 
@@ -473,6 +476,7 @@ public class HtmlDownloader implements Tool {
                     navMap.appendChild(navPoint);
                 }
 
+
                 var transformer = TransformerFactory.newInstance().newTransformer();
 
                 var outputStream = new ByteArrayOutputStream();
@@ -487,7 +491,7 @@ public class HtmlDownloader implements Tool {
 
                 IOUtils.closeQuietly(zos);
             } catch (Exception e) {
-                log.error("Save epub file error",  e);
+                throw new RuntimeException("Save epub file error",  e);
             }
             zos = null;
             files =  null;

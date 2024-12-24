@@ -9,7 +9,6 @@ import net.cofcool.sourcebox.Tool.RunnerType;
 import net.cofcool.sourcebox.ToolName;
 import net.cofcool.sourcebox.internal.simplenote.NoteConfig;
 import net.cofcool.sourcebox.runner.WebRunner.WebToolContext;
-import net.cofcool.sourcebox.runner.WebRunner.WebVerticle;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -25,15 +24,15 @@ public class WebRunnerAuthTest {
     static void deployVerticle(Vertx vertx, VertxTestContext testContext) throws Exception {
         System.setProperty("logging.debug", "true");
         System.setProperty("upload.dir", "target/file-uploads");
-        new WebVerticle(RunnerType.WEB, WebToolContext::new)
+        new WebVerticle(RunnerType.WEB, a -> new WebToolContext())
             .deploy(
                 vertx,
                 null,
                 new Args()
                     .arg(ToolName.note.name() + "." + NoteConfig.PATH_KEY, "./target/")
-                    .arg(WebRunner.USER_KEY, "demo")
-                    .arg(WebRunner.PASSWD_KEY, "demo")
-                    .arg(WebRunner.PORT_KEY, port + "")
+                    .arg(WebVerticle.USER_KEY, "demo")
+                    .arg(WebVerticle.PASSWD_KEY, "demo")
+                    .arg(WebVerticle.PORT_KEY, port + "")
             )
             .onComplete(testContext.succeeding(t -> testContext.completeNow()));
     }

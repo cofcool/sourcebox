@@ -18,6 +18,10 @@ public interface ToolContext {
         return null;
     }
 
+    default Tool owner() {
+        return null;
+    }
+
     static String randomName() {
         return RandomStringUtils.randomAlphabetic(6);
     }

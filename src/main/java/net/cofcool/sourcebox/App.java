@@ -102,7 +102,11 @@ public class App {
 
         var notRun = new AtomicBoolean(true);
         try {
-            var runner = RUNNER_MAP.get(RunnerType.valueOf(pArgs.readArg("mode").val()));
+            var mode = pArgs.readArg("mode").val();
+            var runner = RUNNER_MAP.get(RunnerType.valueOf(mode));
+            if (runner == null) {
+                throw new IllegalArgumentException("Unknown mode: " + mode);
+            }
             notRun.set(!runner.run(pArgs));
         } catch (Exception e) {
             notRun.set(false);

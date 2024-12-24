@@ -1,5 +1,6 @@
 package net.cofcool.sourcebox.runner;
 
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientRequest;
@@ -11,6 +12,7 @@ import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.multipart.MultipartForm;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
+import java.util.Queue;
 import net.cofcool.sourcebox.Tool.Args;
 import net.cofcool.sourcebox.Tool.RunnerType;
 import net.cofcool.sourcebox.ToolName;
@@ -20,7 +22,6 @@ import net.cofcool.sourcebox.internal.JsonToPojoTest;
 import net.cofcool.sourcebox.internal.TrelloToLogseqImporterTest;
 import net.cofcool.sourcebox.internal.simplenote.NoteConfig;
 import net.cofcool.sourcebox.runner.WebRunner.WebToolContext;
-import net.cofcool.sourcebox.runner.WebRunner.WebVerticle;
 import net.cofcool.sourcebox.util.VertxUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -36,13 +37,13 @@ class WebRunnerTest {
     static void deployVerticle(Vertx vertx, VertxTestContext testContext) throws Exception {
         System.setProperty("logging.debug", "true");
         System.setProperty("upload.dir", "target/file-uploads");
-        new WebVerticle(RunnerType.WEB, WebToolContext::new)
+        new WebVerticle(RunnerType.WEB, a -> new WebToolContext())
             .deploy(
                 vertx,
                 null,
                 new Args()
                     .arg(ToolName.note.name() + "." + NoteConfig.PATH_KEY, "./target/")
-                    .arg(WebRunner.PORT_KEY, port)
+                    .arg(WebVerticle.PORT_KEY, port)
             )
             .onComplete(testContext.succeeding(t -> testContext.completeNow()));
     }
@@ -68,7 +69,8 @@ class WebRunnerTest {
     @Test
     void reqConverts(Vertx vertx, VertxTestContext testContext) {
         vertx.createHttpClient()
-            .request(HttpMethod.POST, Integer.parseInt(port), "127.0.0.1", "/" + ToolName.converts.name())
+            .request(HttpMethod.POST, Integer.parseInt(port), "127.0.0.1",
+                "/" + ToolName.converts.name())
             .compose(r -> r.send(Buffer.buffer("{\"cmd\": \"now\"}")))
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertEquals(200, r.statusCode());
@@ -85,11 +87,15 @@ class WebRunnerTest {
             .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
             .sendJson(JsonObject.of("json", JsonToPojoTest.JSON_STR).toBuffer())
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
+                queryEvents("writeFile").onSuccess(event -> {
                 Assertions.assertEquals(200, r.statusCode());
                 Assertions.assertEquals("application/json", r.getHeader("Content-Type"));
-                Assertions.assertTrue(vertx.fileSystem().existsBlocking(r.bodyAsJsonObject().getString("result")));
+                Assertions.assertTrue(
+                    vertx.fileSystem().existsBlocking((String) event.source()));
                 testContext.completeNow();
-            })));
+            })
+                    .onComplete(c ->testContext.completeNow());
+    })));
     }
 
     @Test
@@ -112,18 +118,24 @@ class WebRunnerTest {
             .post(Integer.parseInt(port), "127.0.0.1", "/upload")
             .sendMultipartForm(
                 MultipartForm.create()
-                    .textFileUpload("file", "test.txt", TrelloToLogseqImporterTest.RESOURCE_PATH, "multipart/form-data"))
+                    .textFileUpload("file", "test.txt", TrelloToLogseqImporterTest.RESOURCE_PATH,
+                        "multipart/form-data"))
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 var name = r.bodyAsJsonObject().getJsonArray("result").getString(0);
                 WebClient.create(vertx)
-                    .post(Integer.parseInt(port), "127.0.0.1", "/" + ToolName.trelloLogseqImporter.name())
+                    .post(Integer.parseInt(port), "127.0.0.1",
+                        "/" + ToolName.trelloLogseqImporter.name())
                     .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
                     .sendJson(JsonObject.of("path", name).toBuffer())
                     .onComplete(testContext.succeeding(response -> testContext.verify(() -> {
-                        Assertions.assertEquals(200, response.statusCode());
-                        Assertions.assertEquals("application/json", response.getHeader("Content-Type"));
-                        Assertions.assertTrue(vertx.fileSystem().existsBlocking(response.bodyAsJsonObject().getString("result")));
-                        testContext.completeNow();
+                        queryEvents("writeFile").onSuccess(event -> {
+                                Assertions.assertEquals(200, response.statusCode());
+                                Assertions.assertEquals("application/json",
+                                    response.getHeader("Content-Type"));
+                                Assertions.assertTrue(
+                                    vertx.fileSystem().existsBlocking((String) event.source()));
+                            })
+                            .onComplete(c -> testContext.completeNow());
                     })));
             })));
     }
@@ -147,7 +159,8 @@ class WebRunnerTest {
             .post(Integer.parseInt(port), "127.0.0.1", "/upload")
             .sendMultipartForm(
                 MultipartForm.create()
-                    .textFileUpload("file", "test.txt", Buffer.buffer("demo test txt"), "multipart/form-data"))
+                    .textFileUpload("file", "test.txt", Buffer.buffer("demo test txt"),
+                        "multipart/form-data"))
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertEquals(200, r.statusCode());
                 Assertions.assertEquals("application/json", r.getHeader("Content-Type"));
@@ -176,4 +189,41 @@ class WebRunnerTest {
                 testContext.completeNow();
             })));
     }
+
+    @Test
+    void reqEvent(Vertx vertx, VertxTestContext testContext) {
+        for (int i = 0; i < 10; i++) {
+            WebVerticle.EVENT_QUEUE.offer(new ActionEvent("id:" + i, "", "test"));
+        }
+        WebClient.create(vertx)
+            .get(Integer.parseInt(port), "127.0.0.1", "/event")
+            .send()
+            .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
+                Assertions.assertEquals(200, r.statusCode());
+                Assertions.assertNotNull(r.bodyAsJsonArray());
+                testContext.completeNow();
+            })));
+    }
+
+    private Future<ActionEvent> queryEvents(String key) {
+        Queue<ActionEvent> queue = WebVerticle.EVENT_QUEUE;
+        var i = 0;
+        while (i < 10) {
+            i++;
+            var e = queue.poll();
+            if (e == null) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException ex) {
+                    throw new RuntimeException(ex);
+                }
+                continue;
+            }
+            if (e.action().equals(key)) {
+                return Future.succeededFuture(e);
+            }
+        }
+        return Future.failedFuture(new IllegalStateException("no events found"));
+    }
+
 }

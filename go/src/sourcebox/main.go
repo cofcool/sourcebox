@@ -91,10 +91,12 @@ func main() {
 		var flags []cli.Flag
 		for s, arg := range config.Args {
 			gCfg, _ := GetGlobalCfgVal(k, arg.Key)
-			arg.Val = gCfg
+			if gCfg != "" {
+				arg.Val = gCfg
+			}
 			flags = append(flags, &cli.StringFlag{
 				Name:     s,
-				Usage:    arg.Demo,
+				Usage:    arg.Desc + " " + arg.Demo,
 				Value:    arg.Val,
 				Required: arg.Required,
 			})

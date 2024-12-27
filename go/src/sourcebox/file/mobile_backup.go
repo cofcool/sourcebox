@@ -26,8 +26,8 @@ func (m *MobileBackup) Run() error {
 
 	var typeStr []string
 	if typeArg.Val == all {
-		for _, val := range types {
-			typeStr = append(typeStr, val)
+		for k := range types {
+			typeStr = append(typeStr, k)
 		}
 	} else {
 		typeStr = strings.Split(typeArg.Val, ",")
@@ -43,7 +43,7 @@ func (m *MobileBackup) Run() error {
 			return e
 		}
 
-		e = m.config.Context.Write(path.Join(outDir, typeVal, "csv"), string(ret))
+		e = m.config.Context.Write(path.Join(outDir, typeVal+".csv"), string(ret))
 		if e != nil {
 			return e
 		}
@@ -68,7 +68,7 @@ func (m *MobileBackup) Init() {
 			},
 			"out": {
 				Key:  "out",
-				Val:  "./sms.csv",
+				Val:  "./",
 				Desc: "backup file path",
 			},
 		},

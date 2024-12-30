@@ -172,16 +172,17 @@ class WebVerticle extends AbstractVerticle implements VertxDeployer {
                         .context(webToolContext);
 
                     vertx.executeBlocking(() -> {
-                        try {
                             tool.run(args);
-                            EVENT_QUEUE.offer(new ActionEvent("success", toolName, "finished"));
                             return Future.succeededFuture(webToolContext.toObject());
-                        } catch (Exception e) {
-                            EVENT_QUEUE.offer(new ActionEvent("fail", toolName, "finished"));
-                            return Future.failedFuture(e);
-                        }
-                    });
-
+                        })
+                        .onSuccess(a ->
+                            EVENT_QUEUE.offer(new ActionEvent(a.result(), toolName, "finished")))
+                        .onFailure(a -> {
+                            EVENT_QUEUE.offer(
+                                new ActionEvent("fail: " + a.getMessage(), toolName,
+                                    "finished", false));
+                            log.error("run tool error", a);
+                        });
                     return Future.succeededFuture(webToolContext.toObject());
                 });
             }

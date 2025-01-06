@@ -29,6 +29,7 @@ class FileToolsTest extends BaseTest {
         instance().run(args.arg("util", "split")
             .arg("path", INPUT_PATH)
             .arg("splitIdx", "2")
+            .arg("splitDirection", "back")
         );
     }
 

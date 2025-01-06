@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 import net.cofcool.sourcebox.Tool;
 import net.cofcool.sourcebox.ToolName;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 
 public class FileTools implements Tool {
@@ -59,17 +58,23 @@ public class FileTools implements Tool {
             var path = args.readArg("path").val();
             var splitIdx = args.readArg("splitIdx");
             var splitChar = args.readArg("splitChar");
+            var splitDirection = args.readArg("splitDirection");
             if (!splitChar.isPresent() && !splitIdx.isPresent()) {
                 throw new IllegalArgumentException("splitIdx or splitChar must be specified");
             }
 
             return FileUtils.readLines(new File(path), StandardCharsets.UTF_8)
-                .stream()
-                .map(s ->
-                    splitIdx.isPresent() ?
-                        s.substring(Integer.parseInt(splitIdx.val()))
-                        : s.substring(s.indexOf(splitChar.val()))
-                )
+                .parallelStream()
+                .map(s -> {
+                    var i = splitIdx.isPresent() ?
+                        Integer.parseInt(splitIdx.val()) : s.indexOf(splitChar.val());
+                    if (i < 0 || i >= s.length()) {
+                        return s;
+                    } else {
+                        var f = splitDirection.test(t -> t.equalsIgnoreCase("forward"));
+                        return f ? s.substring(0, i) : s.substring(i);
+                    }
+                })
                 .collect(Collectors.joining("\n"));
         }
     }
@@ -85,7 +90,6 @@ public class FileTools implements Tool {
             var strs = FileUtils.readLines(new File(samplePath), StandardCharsets.UTF_8);
             var countMap = new LinkedHashMap<String, AtomicInteger>(strs.size());
             for (String s : strs) {
-                s = checkExists(countMap, s);
                 countMap.put(s, new AtomicInteger());
             }
 
@@ -107,21 +111,12 @@ public class FileTools implements Tool {
                     getLogger().debug("Close thread poll ok");
                 }
 
-                return countMap.entrySet().stream()
+                return countMap.entrySet().parallelStream()
                     .map(e -> e.getKey() + ": " + e.getValue().longValue())
                     .collect(Collectors.joining("\n"));
             } catch (IOException e) {
                 throw new IllegalStateException("Count file error", e);
             }
-        }
-
-        private String checkExists(Map<String, ?> val, String key) {
-            if (val.containsKey(key)) {
-                key = key + RandomStringUtils.randomAlphabetic(6);
-                key = checkExists(val, key);
-            }
-
-            return key;
         }
     }
 
@@ -151,8 +146,9 @@ public class FileTools implements Tool {
             .arg(new Arg("path", null, "input file path", true, "./demo.csv"))
             .arg(new Arg("out", null, "output file path, if none will use stdout", false, "./output.csv"))
             .arg(new Arg("samplePath", null, "sample file path, when using count, this parameter should be set", false, "./sample.csv"))
-            .arg(new Arg("threadSize", "2", "count thread size, when using count, this parameter can be set", false, null))
+            .arg(new Arg("threadSize", "1", "count thread size, when using count, this parameter can be set", false, null))
             .arg(new Arg("splitIdx", null, "split by index, when using split, this parameter can be set", false, "2"))
-            .arg(new Arg("splitChar", null, "split by character, when using split, this parameter can be set", false, "foo"));
+            .arg(new Arg("splitChar", null, "split by character, when using split, this parameter can be set", false, "foo"))
+            .arg(new Arg("splitDirection", "forward", "split direction, when using split, this parameter can be set, forward or back", false, "forward"));
     }
 }

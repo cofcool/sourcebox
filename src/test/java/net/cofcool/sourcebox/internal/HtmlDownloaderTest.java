@@ -90,6 +90,32 @@ class HtmlDownloaderTest extends BaseTest {
     }
 
     @Test
+    void runWithReplace() throws Exception {
+        instance().run(args
+            .arg("url", url)
+            .arg("out", "./target/HtmlDownloaderTest")
+            .arg("replace", "<img.+*>")
+            .arg("outType", OutputType.html.name())
+        );
+    }
+
+    @Test
+    void testParseExp() throws Exception {
+        var a = HtmlDownloader.parseExp("tag:a,attr:ref=1&ref1=2;tag:b,attr:ref=1&ref1=2;");
+        System.out.println(a);
+    }
+
+    @Test
+    void runWithCleanexp() throws Exception {
+        instance().run(args
+            .arg("url", url)
+            .arg("out", "./target/HtmlDownloaderTest")
+            .arg("cleanexp", "img")
+            .arg("outType", OutputType.html.name())
+        );
+    }
+
+    @Test
     void runWithEpub() throws Exception {
         instance().run(args
             .arg("url", url)

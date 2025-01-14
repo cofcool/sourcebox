@@ -51,10 +51,12 @@ public class HtmlDownloader implements Tool {
     private static final Map<String, Function<Element, String>> tagMap = new HashMap<>();
 
     private static final String IMGS_FOLDER = "imgs";
+    private static Replacer REPLACER;
     private final Set<String> history = new HashSet<>();
 
     private int depth;
     private boolean clean;
+    private String cleanexp;
     private Set<OutputType> outputTypes = EnumSet.of(OutputType.html);
     private Proxy proxy;
     private String filter;
@@ -87,6 +89,8 @@ public class HtmlDownloader implements Tool {
             .collect(Collectors.toSet());
         var img = args.readArg("img").val();
         filter = args.readArg("filter").getVal().orElse(null);
+        REPLACER = new Replacer(args.readArg("replace").getVal().orElse(null));
+        cleanexp = args.readArg("cleanexp").getVal().orElse(null);
 
         if (urls.isEmpty()) {
             throw new IllegalArgumentException("Do not find any url");
@@ -122,14 +126,18 @@ public class HtmlDownloader implements Tool {
     private static void toMarkdown(Document body, String folder, String title) throws IOException {
         var md = new ArrayList<String>();
         convertTagToMd(body.body(), md);
-        FileUtils.writeLines(Paths.get(folder, title + ".md").toFile(), md);
+        FileUtils.writeStringToFile(
+            Paths.get(folder, title + ".md").toFile(),
+            REPLACER.replace(String.join("\n", md)),
+            StandardCharsets.UTF_8
+        );
     }
 
     private static void toPlainText(Document body, String folder, String title) throws IOException {
         var cleaner = new Cleaner(Safelist.none());
         FileUtils.writeStringToFile(
             Paths.get(folder, title + ".txt").toFile(),
-            cleaner.clean(body).wholeText(),
+            REPLACER.replace(cleaner.clean(body).wholeText()),
             StandardCharsets.UTF_8
         );
     }
@@ -177,17 +185,21 @@ public class HtmlDownloader implements Tool {
             context.write(String.format("Create dir %s", dir));
         }
 
-        if (clean) {
-            doc.getElementsByTag("script").remove();
-            doc.getElementsByTag("style").remove();
-            doc.getElementsByTag("meta").remove();
-        }
-
         downloadImages(doc.getElementsByTag("img"), folder, expression);
 
         if (filter == null || title.contains(filter)) {
+            var out = doc.clone();
+            if (clean) {
+                out.getElementsByTag("script").remove();
+                out.getElementsByTag("style").remove();
+                out.getElementsByTag("link").remove();
+                out.getElementsByTag("meta").remove();
+            }
+            if (StringUtils.isNotBlank(cleanexp)) {
+                out.select(cleanexp).remove();
+            }
             for (OutputType type : outputTypes) {
-                type.applyOutput(doc, folder, title);
+                type.applyOutput(out, folder, title);
                 context.write(String.format("Save %s file to %s from <<%s>>: %s", type, folder, title, url));
             }
         }
@@ -264,7 +276,46 @@ public class HtmlDownloader implements Tool {
             .arg(new Arg("proxy", null, "request proxy", false, "127.0.0.1:8087"))
             .arg(new Arg("out", "./", "output folder", false, null))
             .arg(new Arg("clean", "false", "remove css or javascript", false, null))
+            .arg(new Arg("cleanexp", null, "clean element by CSS-like element selector", false, "a[href]"))
+            .arg(new Arg("replace", null, "replace some text", false, "test+"))
             .runnerTypes(EnumSet.allOf(RunnerType.class));
+    }
+
+    private record Expression(String tag, Map<String, String> attributes) { }
+
+    // tag:a,attr:ref=1&ref1=2;
+    static List<Map<String, Expression>> parseExp(String args) {
+        List<Map<String, Expression>> result = new ArrayList<>();
+        for (String input : args.split(";")) {
+            String[] keyValuePairs = input.split(",");
+            var pars = new HashMap<String, Expression>();
+            for (String pair : keyValuePairs) {
+                String[] keyValue = pair.split(":");
+                if (keyValue.length == 2) {
+                    String key = keyValue[0];
+                    pars.put(pair, new Expression(key, parseAttr(keyValue[1])));
+                } else {
+                    throw new IllegalArgumentException("Invalid expression: " + input);
+                }
+            }
+            result.add(pars);
+        }
+
+        return result;
+    }
+
+    private static Map<String, String> parseAttr(String value) {
+        Map<String, String> subMap = new HashMap<>();
+        String[] subPairs = value.split("&");
+        for (String subPair : subPairs) {
+            String[] subKeyValue = subPair.split("=");
+            if (subKeyValue.length == 2) {
+                subMap.put(subKeyValue[0], subKeyValue[1]);
+            } else {
+                subMap.put(subPair, subPair);
+            }
+        }
+        return subMap;
     }
 
     private static String checkText(Element e, String out) {
@@ -277,7 +328,7 @@ public class HtmlDownloader implements Tool {
             if (file.exists()) {
                 return;
             }
-            FileUtils.writeStringToFile(file, d.outerHtml(), StandardCharsets.UTF_8);
+            FileUtils.writeStringToFile(file, REPLACER.replace(d.outerHtml()), StandardCharsets.UTF_8);
         }),
         txt(HtmlDownloader::toPlainText),
         markdown(HtmlDownloader::toMarkdown),
@@ -295,6 +346,17 @@ public class HtmlDownloader implements Tool {
 
         private void finished() {
             output.finished();
+        }
+
+    }
+
+    private record Replacer(String regex) {
+
+        String replace(String text) {
+            if (StringUtils.isEmpty(regex)) {
+                return text;
+            }
+            return text.replaceAll(regex, "");
         }
 
     }

@@ -6,6 +6,7 @@ import java.util.List;
 import lombok.CustomLog;
 import net.cofcool.sourcebox.internal.simplenote.entity.Note;
 import net.cofcool.sourcebox.util.SqlRepository;
+import org.apache.commons.lang3.StringUtils;
 
 @CustomLog
 public class NoteService {
@@ -18,7 +19,7 @@ public class NoteService {
 
     public Future<Note> save(Note note)  {
         var n = note;
-        if (n.id() == null) {
+        if (StringUtils.isBlank(n.id())) {
             n = Note.init(n.content());
         }
         return noteRepository.save(n);

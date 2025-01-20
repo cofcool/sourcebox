@@ -167,13 +167,13 @@ class WebVerticle extends AbstractVerticle implements VertxDeployer {
                     r.body().asJsonObject()
                         .forEach(e -> args.arg(e.getKey(), (String) e.getValue()));
                     var webToolContext = contextSupplier.apply(tool);
-                    args.copyConfigFrom(tool.config())
-                        .copyConfigFrom(globalConfig.removePrefix(toolName))
+                    args.copyConfigFrom(globalConfig.removePrefix(toolName))
+                        .copyConfigFrom(tool.config())
                         .context(webToolContext);
 
                     vertx.executeBlocking(() -> {
                             tool.run(args);
-                            return Future.succeededFuture(webToolContext.toObject());
+                            return Future.succeededFuture("success");
                         })
                         .onSuccess(a ->
                             EVENT_QUEUE.offer(new ActionEvent(a.result(), toolName, "finished")))

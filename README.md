@@ -14,11 +14,11 @@
 项目构建:
 
 * `mvn package` 构建 jar 包，同时构建 Go 版实现
+* 桌面版使用 KMP 实现
 
 **TODO**
 
 * [ ] Web
-* [ ] Desktop
 
 ***Java 实现支持全平台（需预先安装 JRE 21）, 由 Go 实现的功能只提供 Linux 平台的软件包***
 

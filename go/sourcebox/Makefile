@@ -3,9 +3,9 @@ GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test
 GOGET=$(GOCMD) get
-GO_BUILD=$(realpath ./../../build)
+GO_BUILD=$(realpath ../build)
 VERSION=1.0.0
-$(shell mkdir -p ./../../build)
+$(shell mkdir -p ../build)
 
 BINARY_NAME=$(GO_BUILD)/the-source-box
 

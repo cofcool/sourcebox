@@ -32,7 +32,7 @@
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>2.11.0</version>
+      <version>2.14.0</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
@@ -139,26 +139,7 @@
           </argLine>
         </configuration>
       </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <version>3.3.0</version>
-        <executions>
-          <execution>
-            <phase>compile</phase>
-            <goals>
-              <goal>exec</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <executable>make</executable>
-          <workingDirectory>${project.basedir}/go/src/sourcebox</workingDirectory>
-          <arguments>
-            <argument>VERSION=${project.version}</argument>
-          </arguments>
-        </configuration>
-      </plugin>
+
 
     </plugins>
     <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
@@ -171,7 +152,7 @@
         <!-- default lifecycle, jar packaging: see https://maven.apache.org/ref/current/maven-core/default-bindings.html#Plugin_bindings_for_jar_packaging -->
         <plugin>
           <artifactId>maven-resources-plugin</artifactId>
-          <version>3.0.2</version>
+          <version>3.3.1</version>
         </plugin>
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
@@ -228,6 +209,42 @@
             </execution>
           </executions>
         </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>exec-maven-plugin</artifactId>
+          <version>3.5.0</version>
+          <executions>
+            <execution>
+              <id>build-go</id>
+              <phase>compile</phase>
+              <goals>
+                <goal>exec</goal>
+              </goals>
+              <configuration>
+                <executable>make</executable>
+                <workingDirectory>${project.basedir}/go/sourcebox</workingDirectory>
+                <arguments>
+                  <argument>VERSION=${project.version}</argument>
+                </arguments>
+              </configuration>
+            </execution>
+            <execution>
+              <id>cp-fat</id>
+              <phase>package</phase>
+              <goals>
+                <goal>exec</goal>
+              </goals>
+              <configuration>
+                <executable>cp</executable>
+                <workingDirectory>${project.basedir}</workingDirectory>
+                <arguments>
+                  <argument>${project.build.directory}/sourcebox-fat.jar</argument>
+                  <argument>${project.basedir}/desktop-gui/compose/libs</argument>
+                </arguments>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
       </plugins>
     </pluginManagement>
   </build>
@@ -242,6 +259,10 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-assembly-plugin</artifactId>
+          </plugin>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
           </plugin>
         </plugins>
       </build>

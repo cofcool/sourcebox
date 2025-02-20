@@ -43,6 +43,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${project.extra["json.version"]}")
     implementation("org.slf4j:slf4j-jdk14:${project.extra["slfj.version"]}")
     implementation("io.ktor:ktor-client-cio-jvm:2.3.11")
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
+
+    implementation(files("libs/sourcebox-fat.jar"))
 
     testImplementation("org.junit.jupiter:junit-jupiter:${project.extra["junit5.version"]}")
 }
@@ -53,8 +56,12 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "SourceBox"
+            packageName = "TheSourceBox"
             packageVersion = "1.0.0"
+            description = "The Source Box client"
+            modules("java.sql", "java.naming")
         }
+
+        jvmArgs ("--enable-preview")
     }
 }

@@ -1,16 +1,25 @@
 package request
 
+import globalJson
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
+import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.selects.select
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 val logger = LoggerFactory.getLogger("request.network")
+val actionEvents = Channel<Action>(Channel.UNLIMITED)
+val trigger = Channel<Boolean>(Channel.RENDEZVOUS)
 
 class Request {
 
@@ -56,7 +65,92 @@ class Request {
 
     suspend fun getAllTools(): List<String> {
         val r = client.get("/")
-        return r.body<List<String>>()
+        return r.body<List<String>>().sorted()
+    }
+
+    fun listNote(note: Note): List<Note> {
+        return runBlocking {
+            val r = client.get("/note/list")
+            return@runBlocking r.body<List<Note>>()
+        }.filter { it.state == note.state }.sortedByDescending { it.date }
+    }
+
+    fun saveNote(note: Note) {
+        return runBlocking {
+            client.post("/note/note") {
+                contentType(ContentType.Application.Json)
+                setBody(note)
+            }
+        }
+    }
+    fun deleteNote(note: Note) {
+        if (note.id.isNotBlank()) {
+            runBlocking {
+                client.delete("/note/note/${note.id}")
+            }
+        }
+    }
+
+    fun runTool(tool: String, data: Any) {
+        runBlocking {
+            client.post("/$tool") {
+                contentType(ContentType.Application.Json)
+                setBody(data)
+            }
+        }
+    }
+
+    fun readEvents(onBefore: () -> Unit = {}, onReceived: (event: Action, json: Json) -> Unit) {
+        val result = trigger.trySend(true)
+        if (result.isFailure) {
+            logger.warn("Other action is running")
+            return
+        }
+        onBefore()
+        CoroutineScope(Dispatchers.IO).launch {
+            delay(100.milliseconds)
+            while (!trigger.receive()) {
+                select<Unit> {
+                    actionEvents.onReceive {
+                        onReceived(it, globalJson)
+                    }
+                }
+                return@launch
+            }
+        }
+    }
+
+    suspend fun getActionEvents(): List<Action> {
+        val r = client.get("/event")
+        return r.body<List<Action>>()
+    }
+
+    fun checkEvent() {
+        CoroutineScope(Dispatchers.IO).launch {
+            while (true) {
+                var flag = trigger.receive()
+                var count = 0
+                while (flag) {
+                    val a = getActionEvents()
+                    if (a.isNotEmpty()) {
+                        a.forEach {
+                            if (it.action == "finished") {
+                                flag = false
+                                trigger.send(false)
+                                return@forEach
+                            }
+                            actionEvents.send(it)
+                        }
+                    }
+                    delay(1.seconds)
+                    count++
+                    if (count == 20) {
+                        flag = false
+                        count = 0
+                    }
+                }
+            }
+        }
     }
 
     suspend fun invokeTool(tools: Tools, input: Params): String {

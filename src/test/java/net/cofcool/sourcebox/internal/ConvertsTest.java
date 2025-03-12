@@ -167,6 +167,23 @@ class ConvertsTest extends BaseTest {
     }
 
     @Test
+    void hex() throws Exception {
+        var en = instance().runCommand(args
+            .arg("cmd", "hex")
+            .arg("in", "1970")
+            .arg("radix", "10")
+            .arg("nradix", "2")
+        );
+        var de = instance().runCommand(args
+            .arg("cmd", "hex")
+            .arg("in", en)
+            .arg("radix", "2")
+            .arg("nradix", "10")
+        );
+        Assertions.assertEquals("1970", de);
+    }
+
+    @Test
     void desdeSecurity() throws Exception {
         var en = instance().runCommand(args
             .arg("cmd", "security")

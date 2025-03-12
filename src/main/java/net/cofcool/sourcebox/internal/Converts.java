@@ -147,6 +147,23 @@ public class Converts implements Tool {
         }
     }
 
+    private class Hex implements Pipeline {
+
+        @Override
+        public String run(Args args) throws Exception {
+            var radix = args.readArg("radix").getVal().map(Integer::parseUnsignedInt).orElse(10);
+            var newRadix = args.readArg("nradix").getVal().map(Integer::parseUnsignedInt).orElse(2);
+            var val = Long.valueOf(args.readArg(INPUT).val(), radix);
+
+            return Long.toString(val, newRadix);
+        }
+
+        @Override
+        public Arg demo() {
+            return new Arg(getClass().getSimpleName().toLowerCase(), null, "number base conversion", false, "1970 --radix=10 --nradix=2");
+        }
+    }
+
     private class Lower implements Pipeline {
 
         @Override

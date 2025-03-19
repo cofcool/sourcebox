@@ -5,6 +5,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import request.Request
+import request.Tools
 import view.ContentView
 import view.ToolsView
 import view.viewLogger
@@ -16,7 +17,7 @@ val G_REQUEST = Request()
 @Composable
 @Preview
 fun App() {
-    var currentTool by remember { mutableStateOf("") }
+    var currentTool by remember { mutableStateOf(Tools.None) }
     MaterialTheme {
         Row {
             ToolsView {

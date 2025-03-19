@@ -154,8 +154,8 @@ class Request {
     }
 
     suspend fun invokeTool(tools: Tools, input: Params): String {
-        val r = client.post("/${tools.tool!!.cmd}") {
-            setBody(Params(tools.cmd, input.input))
+        val r = client.post("/${tools.tool!!.toolName()}") {
+            setBody(Params(tools.toolName(), input.input))
         }
         return r.body<String>()
     }

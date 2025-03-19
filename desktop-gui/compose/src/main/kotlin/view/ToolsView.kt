@@ -10,17 +10,16 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import org.slf4j.LoggerFactory
+import request.Tools
 
 val logger = LoggerFactory.getLogger("tools")
 
 @Composable
 @Preview
-fun ToolsView() {
+fun ToolsView(changeTool: (Tools) -> Unit) {
     var tools by remember  { mutableStateOf(listOf<String>()) }
     val scope = rememberCoroutineScope()
     LaunchedEffect(true) {
@@ -37,14 +36,7 @@ fun ToolsView() {
         Row {
             Row {
                 Column(modifier = Modifier.width(150.dp)) {
-                    Row {
-                        Text(
-                            "Tools",
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.height(Dp(30F)).fillMaxWidth()
-                        )
-
-                    }
+                    topBar("Tools")
                     grayDivider()
                     Row {
                         LazyColumn {
@@ -54,7 +46,7 @@ fun ToolsView() {
                                     Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceEvenly
                                 ) {
-                                    Button(onClick = { println("$it") }) {
+                                    Button(onClick = { changeTool(Tools.from(d))}) {
                                         Text(d)
                                     }
                                 }

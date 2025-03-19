@@ -13,8 +13,18 @@ import kotlinx.serialization.encoding.Encoder
 
 enum class Tools(val tool: Tools?, val cmd: String) {
     C(null, "converts"),
-    C_MD5(C, "md5"), C_NOW(C, "now"), C_HDATE(C, "hdate");
+    C_MD5(C, "md5"), C_NOW(C, "now"), C_HDATE(C, "hdate"),
+    HtmlDown(null, "htmlDown"),
+    Helper(null, "cHelper"),
+    Note(null, "note"),
+    None(null, "");
+    ;
 
+    fun toolName() = if (this.tool == null) cmd else this.tool.cmd
+
+    companion object {
+        fun from(cmd: String) : Tools = Tools.entries.find { it.toolName() == cmd } ?: None
+    }
 }
 
 @Serializable

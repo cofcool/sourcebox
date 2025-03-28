@@ -12,6 +12,7 @@ import net.cofcool.sourcebox.Tool;
 import net.cofcool.sourcebox.Utils;
 import net.cofcool.sourcebox.internal.HtmlDownloader.OutputType;
 import org.jsoup.Jsoup;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -152,6 +153,16 @@ class HtmlDownloaderTest extends BaseTest {
         var files = file.listFiles();
         assertNotNull(files);
         assertTrue(files.length > 0);
+    }
+
+    @Disabled
+    @Test
+    void runWithWebDriver() throws Exception {
+        instance().run(args
+            .arg("url", "https://bing.com")
+                .arg("webDriver", "/usr/local/bin/chromedriver")
+            .arg("out", "/tmp/aa")
+        );
     }
 
     @Override

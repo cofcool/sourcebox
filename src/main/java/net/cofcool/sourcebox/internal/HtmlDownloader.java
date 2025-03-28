@@ -6,10 +6,13 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.Proxy.Type;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -18,6 +21,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -44,6 +49,12 @@ import org.jsoup.nodes.Element;
 import org.jsoup.safety.Cleaner;
 import org.jsoup.safety.Safelist;
 import org.jsoup.select.Elements;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 @CustomLog
 public class HtmlDownloader implements Tool {
@@ -60,9 +71,13 @@ public class HtmlDownloader implements Tool {
     private Set<OutputType> outputTypes = EnumSet.of(OutputType.html);
     private Proxy proxy;
     private String filter;
+    private Optional<String> webDriver;
     private ToolContext context;
+    private Args args;
 
     private Connection connection;
+    private WebDriver driver;
+
 
     @Override
     public ToolName name() {
@@ -73,6 +88,7 @@ public class HtmlDownloader implements Tool {
     public void run(Args args) throws Exception {
         var urls = new ArrayList<String>();
         context = args.getContext();
+        this.args = args;
 
         args.readArg("urlFile").ifPresent(a -> {
             try {
@@ -89,6 +105,7 @@ public class HtmlDownloader implements Tool {
             .collect(Collectors.toSet());
         var img = args.readArg("img").val();
         filter = args.readArg("filter").getVal().orElse(null);
+        webDriver = args.readArg("webDriver").getVal().filter(a -> !a.isBlank());
         REPLACER = new Replacer(args.readArg("replace").getVal().orElse(null));
         cleanexp = args.readArg("cleanexp").getVal().orElse(null);
 
@@ -104,14 +121,25 @@ public class HtmlDownloader implements Tool {
         });
         depth = Integer.parseInt(args.readArg("depth").val());
 
-        for (String url : urls) {
-            downloadUrl(out, url, depth, img);
+        try {
+            for (String url : urls) {
+                downloadUrl(out, url, depth, img);
+            }
+        } finally {
+            release();
         }
+
 
         history.clear();
 
         for (OutputType type : outputTypes) {
             type.finished();
+        }
+    }
+
+    private void release() {
+        if (driver != null) {
+            driver.quit();
         }
     }
 
@@ -159,6 +187,33 @@ public class HtmlDownloader implements Tool {
 
     }
 
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
+    private Document loadDynamicWeb(String url) {
+        System.setProperty("webdriver.chrome.driver", webDriver.get());
+        var options = new ChromeOptions();
+        options.addArguments("--headless")
+            .addArguments("--disable-gpu")
+            .addArguments("--window-size=1920,1080")
+            .addArguments("--disable-dev-shm-usage");
+        if (proxy != null) {
+            options.addArguments("--proxy-server=http://" + proxy.address().toString().substring(1));
+        }
+
+        if (driver == null) {
+            driver = new ChromeDriver(options);
+        }
+
+        driver.get(url);
+
+        var waitEleId = args.readArg("waitexp");
+        if (waitEleId.isPresent()) {
+            var wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+            wait.until(
+                ExpectedConditions.visibilityOfElementLocated(By.cssSelector(waitEleId.val())));
+        }
+        return Jsoup.parse(driver.getPageSource());
+    }
+
     private void downloadUrl(String folder, String url, int depth, String expression) throws IOException {
         if (StringUtils.isBlank(url)) {
             return;
@@ -172,6 +227,8 @@ public class HtmlDownloader implements Tool {
         Document doc;
         if (url.startsWith("file")) {
             doc = Jsoup.parse(new File(url.substring(5)));
+        } else if (webDriver.isPresent()) {
+            doc = loadDynamicWeb(url);
         } else {
             doc = getConnection().url(url).get();
         }
@@ -213,15 +270,58 @@ public class HtmlDownloader implements Tool {
             return;
         }
 
-        var links = doc.select("a[href]");
-        for (Element link : links) {
-            var href = link.attr("abs:href");
+        var links = doc.select("a[href]")
+            .stream()
+            .map(a -> cleanHref(url, a.attr("href")))
+            .filter(Objects::nonNull)
+            .filter(a -> Objects.equals(baseUrl(a), baseUrl(url)))
+            .filter(f -> args.readArg("hrefFilter").test(f::contains))
+            .collect(Collectors.toSet());
+        for (String href : links) {
             try {
                 downloadUrl(folder, href, depth, "false");
             } catch (Exception e) {
                 context.write(String.format("Download %s error: %s", href, e.getMessage()));
             }
         }
+    }
+
+    private String cleanHref(String url, String relativeUrl) {
+        if (relativeUrl != null && !relativeUrl.isBlank()) {
+            var baseUrl = baseUrl(url);
+            if (relativeUrl.startsWith("http") || relativeUrl.startsWith("https")) {
+                return relativeUrl;
+            } else if (relativeUrl.startsWith("/")) {
+                return baseUrl + relativeUrl;
+            } else {
+                return baseUrl + "/" + relativeUrl;
+            }
+        }
+        return  null;
+    }
+
+    private String baseUrl(String fullUrl) {
+        URL url;
+        try {
+            url = new URL(fullUrl);
+        } catch (MalformedURLException e) {
+            return null;
+        }
+        var protocol = url.getProtocol();
+        var host = url.getHost();
+        int port = url.getPort();
+        if (port == -1) {
+            port = protocol.equals("https") ? 443 : 80;
+        }
+        var path = url.getPath();
+        if (path != null) {
+            var ps = path.split("/");
+            if (ps.length > 1) {
+                ps = Arrays.copyOfRange(ps, 0, ps.length-1);
+            }
+            path = String.join("/", ps);
+        }
+        return STR."\{protocol}://\{host}\{port == 80 || port == 443 ? "" : STR.":\{port}"}\{path}";
     }
 
     private void downloadImages(Elements imgs, String folder, String expression) throws IOException {
@@ -278,6 +378,9 @@ public class HtmlDownloader implements Tool {
             .arg(new Arg("clean", "false", "remove css or javascript", false, null))
             .arg(new Arg("cleanexp", null, "clean element by CSS-like element selector", false, "a[href]"))
             .arg(new Arg("replace", null, "replace some text", false, "test+"))
+            .arg(new Arg("webDriver", null, "web driver path", false, "/usr/local/bin/chromedriver"))
+            .arg(new Arg("waitexp", null, "wait element by CSS-like element selector", false, "a[href]"))
+            .arg(new Arg("hrefFilter", null, "sub-link filter", false, "demo"))
             .runnerTypes(EnumSet.allOf(RunnerType.class));
     }
 

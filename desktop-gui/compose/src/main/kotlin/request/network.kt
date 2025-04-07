@@ -91,9 +91,9 @@ class Request {
         }
     }
 
-    fun runTool(tool: String, data: Any) {
+    fun runTool(tool: Tools, data: Any) {
         runBlocking {
-            client.post("/$tool") {
+            client.post("/${tool.toolName()}") {
                 contentType(ContentType.Application.Json)
                 setBody(data)
             }
@@ -129,7 +129,6 @@ class Request {
         CoroutineScope(Dispatchers.IO).launch {
             while (true) {
                 var flag = trigger.receive()
-                var count = 0
                 while (flag) {
                     val a = getActionEvents()
                     if (a.isNotEmpty()) {
@@ -143,11 +142,6 @@ class Request {
                         }
                     }
                     delay(1.seconds)
-                    count++
-                    if (count == 20) {
-                        flag = false
-                        count = 0
-                    }
                 }
             }
         }

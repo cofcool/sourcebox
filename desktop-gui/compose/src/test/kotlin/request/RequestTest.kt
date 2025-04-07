@@ -1,7 +1,8 @@
 package request
 
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class RequestTest {
@@ -14,6 +15,14 @@ class RequestTest {
             request.getAllTools()
         }
         assertTrue(a.isNotEmpty())
+    }
+
+    @Test
+    fun testActionEvents() {
+        val a = runBlocking {
+            request.getActionEvents()
+        }
+        assertNotNull(a.isNotEmpty())
     }
 
     @Test

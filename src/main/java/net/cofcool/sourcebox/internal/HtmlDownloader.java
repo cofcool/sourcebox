@@ -71,7 +71,7 @@ public class HtmlDownloader implements Tool {
     private Set<OutputType> outputTypes = EnumSet.of(OutputType.html);
     private Proxy proxy;
     private String filter;
-    private Optional<String> webDriver;
+    private String webDriver;
     private ToolContext context;
     private Args args;
 
@@ -105,7 +105,7 @@ public class HtmlDownloader implements Tool {
             .collect(Collectors.toSet());
         var img = args.readArg("img").val();
         filter = args.readArg("filter").getVal().orElse(null);
-        webDriver = args.readArg("webDriver").getVal().filter(a -> !a.isBlank());
+        webDriver = args.readArg("webDriver").getVal().filter(a -> !a.isBlank()).orElse(null);
         REPLACER = new Replacer(args.readArg("replace").getVal().orElse(null));
         cleanexp = args.readArg("cleanexp").getVal().orElse(null);
 
@@ -125,21 +125,21 @@ public class HtmlDownloader implements Tool {
             for (String url : urls) {
                 downloadUrl(out, url, depth, img);
             }
+
+            history.clear();
+
+            for (OutputType type : outputTypes) {
+                type.finished();
+            }
         } finally {
             release();
-        }
-
-
-        history.clear();
-
-        for (OutputType type : outputTypes) {
-            type.finished();
         }
     }
 
     private void release() {
         if (driver != null) {
             driver.quit();
+            driver = null;
         }
     }
 
@@ -187,9 +187,8 @@ public class HtmlDownloader implements Tool {
 
     }
 
-    @SuppressWarnings("OptionalGetWithoutIsPresent")
     private Document loadDynamicWeb(String url) {
-        System.setProperty("webdriver.chrome.driver", webDriver.get());
+        System.setProperty("webdriver.chrome.driver", webDriver);
         var options = new ChromeOptions();
         options.addArguments("--headless")
             .addArguments("--disable-gpu")
@@ -227,7 +226,7 @@ public class HtmlDownloader implements Tool {
         Document doc;
         if (url.startsWith("file")) {
             doc = Jsoup.parse(new File(url.substring(5)));
-        } else if (webDriver.isPresent()) {
+        } else if (webDriver != null) {
             doc = loadDynamicWeb(url);
         } else {
             doc = getConnection().url(url).get();

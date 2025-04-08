@@ -58,7 +58,11 @@ compose.desktop {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "TheSourceBox"
             packageVersion = "1.0.0"
-            description = "The Source Box client"
+            description = "The Source Box Client.net"
+            copyright = "2025 CofCool.net"
+            windows.iconFile.set(file("src/main/resources/icons/icon.ico"))
+            linux.iconFile.set(file("src/main/resources/icons/icon.png"))
+            macOS.iconFile.set(file("src/main/resources/icons/icon.icns"))
             modules("java.sql", "java.naming")
         }
 

@@ -14,12 +14,12 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.selects.select
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
-import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 val logger = LoggerFactory.getLogger("request.network")
 val actionEvents = Channel<Action>(Channel.UNLIMITED)
 val trigger = Channel<Boolean>(Channel.RENDEZVOUS)
+val msgDone = Channel<Boolean>(Channel.RENDEZVOUS)
 
 class Request {
 
@@ -108,14 +108,12 @@ class Request {
         }
         onBefore()
         CoroutineScope(Dispatchers.IO).launch {
-            delay(100.milliseconds)
-            while (!trigger.receive()) {
+            while (!msgDone.receive()) {
                 select<Unit> {
                     actionEvents.onReceive {
                         onReceived(it, globalJson)
                     }
                 }
-                return@launch
             }
         }
     }
@@ -136,9 +134,11 @@ class Request {
                             if (it.action == "finished") {
                                 flag = false
                                 trigger.send(false)
+                                msgDone.send(true)
                                 return@forEach
                             }
                             actionEvents.send(it)
+                            msgDone.send(false)
                         }
                     }
                     delay(1.seconds)

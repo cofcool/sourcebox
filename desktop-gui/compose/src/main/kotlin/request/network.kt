@@ -133,7 +133,6 @@ class Request {
                         a.forEach {
                             if (it.action == "finished") {
                                 flag = false
-                                trigger.send(false)
                                 msgDone.send(true)
                                 return@forEach
                             }

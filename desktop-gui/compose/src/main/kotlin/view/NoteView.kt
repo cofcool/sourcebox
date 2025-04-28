@@ -20,8 +20,8 @@ val defaultNote = Note("", "", LocalDateTime.now(), "")
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun NoteView() {
-    var currentNote = remember { mutableStateOf<Note>(defaultNote) }
-    var notesList = remember { mutableStateListOf<Note>() }
+    val currentNote = remember { mutableStateOf<Note>(defaultNote) }
+    val notesList = remember { mutableStateListOf<Note>() }
     LaunchedEffect(true) {
         refreshNoteList(notesList)
     }

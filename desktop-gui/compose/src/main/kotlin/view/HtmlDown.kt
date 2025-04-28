@@ -18,15 +18,15 @@ import request.Tools
 @Composable
 fun htmlDown() {
     val itemList = remember { mutableStateListOf<String>() }
-    val proxy = remember { mutableStateOf(TextFieldValue("")) }
-    val clean = remember { mutableStateOf(TextFieldValue("true")) }
-    val out = remember { mutableStateOf(TextFieldValue("/tmp/html")) }
-    val filter = remember { mutableStateOf(TextFieldValue("")) }
-    val depth = remember { mutableStateOf(TextFieldValue("1")) }
-    val url = remember { mutableStateOf(TextFieldValue("")) }
-    val cleanexp = remember { mutableStateOf(TextFieldValue("")) }
-    val webDriver = remember { mutableStateOf(TextFieldValue("/usr/local/bin/chromedriver")) }
-    val hrefFilter = remember { mutableStateOf(TextFieldValue("")) }
+    val proxy = remember { mutableStateOf(TextFieldValue(readParams(Tools.HtmlDown, "proxy"))) }
+    val clean = remember { mutableStateOf(TextFieldValue(readParams(Tools.HtmlDown, "clean","true"))) }
+    val out = remember { mutableStateOf(TextFieldValue(readParams(Tools.HtmlDown, "out","/tmp/html"))) }
+    val filter = remember { mutableStateOf(TextFieldValue(readParams(Tools.HtmlDown, "filter"))) }
+    val depth = remember { mutableStateOf(TextFieldValue(readParams(Tools.HtmlDown, "depth","1"))) }
+    val url = remember { mutableStateOf(TextFieldValue(readParams(Tools.HtmlDown, "url"))) }
+    val cleanexp = remember { mutableStateOf(TextFieldValue(readParams(Tools.HtmlDown, "cleanexp"))) }
+    val webDriver = remember { mutableStateOf(TextFieldValue(readParams(Tools.HtmlDown, "webDriver","/usr/local/bin/chromedriver"))) }
+    val hrefFilter = remember { mutableStateOf(TextFieldValue(readParams(Tools.HtmlDown, "hrefFilter"))) }
 
     Column(modifier = Modifier.fillMaxSize().padding(10.dp)) {
         Row {
@@ -109,6 +109,7 @@ fun createTextField(textFieldValue: MutableState<TextFieldValue>, label: String)
 }
 
 fun download(map: Map<String, String>, items: MutableList<String>) {
+    addParams(Tools.HtmlDown, map)
     G_REQUEST.runTool(Tools.HtmlDown, map)
     G_REQUEST.readEvents({-> items.clear()}) { e, j ->
         items.add(e.source)

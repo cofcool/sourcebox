@@ -159,7 +159,7 @@ public class JsonToPojo implements Tool {
             .arg(new Arg("ver", Lang.JAVA_RECORD.getVer(), "language version", false, null))
             .arg(new Arg("pkg", "demo.json", "generated class package", false, null))
             .arg(new Arg("clean", "true", "delete output directory", false, null))
-            .runnerTypes(EnumSet.of(RunnerType.CLI, RunnerType.WEB));
+            .runnerTypes(EnumSet.allOf(RunnerType.class));
     }
 
 

@@ -91,6 +91,6 @@ public class JsonFormatter implements Tool {
             .arg(new Arg("pretty", "true", "", false, null))
             .arg(new Arg("jsonl", "none", "json line format: none, line, idline. Only supports json file", false, null))
             .alias("json", name(), "path", null)
-            .runnerTypes(EnumSet.of(RunnerType.CLI, RunnerType.WEB));
+            .runnerTypes(EnumSet.allOf(RunnerType.class));
     }
 }

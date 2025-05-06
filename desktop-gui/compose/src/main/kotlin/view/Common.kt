@@ -41,7 +41,7 @@ fun readParams(tools: Tools, key: String, default: String = "") :String {
     if (m != null) {
         return m.getOrDefault(key, default)
     }
-    return ""
+    return default
 }
 
 @Composable

@@ -17,7 +17,8 @@ enum class Tools(val tool: Tools?, val cmd: String) {
     HtmlDown(null, "htmlDown"),
     Helper(null, "cHelper"),
     Note(null, "note"),
-    None(null, "");
+    Json(null, "json"),
+    None(null, "")
     ;
 
     fun toolName() = if (this.tool == null) cmd else this.tool.cmd

@@ -24,6 +24,7 @@ fun ContentView(currentTool: Tools) {
                 Tools.HtmlDown  -> htmlDown()
                 Tools.Note -> NoteView()
                 Tools.C -> converts()
+                Tools.Json -> JsonView()
                 else -> {}
             }
         }

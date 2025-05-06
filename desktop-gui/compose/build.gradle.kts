@@ -63,7 +63,7 @@ compose.desktop {
             windows.iconFile.set(file("src/main/resources/icons/icon.ico"))
             linux.iconFile.set(file("src/main/resources/icons/icon.png"))
             macOS.iconFile.set(file("src/main/resources/icons/icon.icns"))
-            modules("java.sql", "java.naming")
+            modules("java.sql", "java.naming", "java.management", "java.net.http")
         }
 
         jvmArgs ("--enable-preview")

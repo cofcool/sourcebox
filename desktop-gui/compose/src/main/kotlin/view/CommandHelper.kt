@@ -4,15 +4,11 @@ import G_REQUEST
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.Button
+import androidx.compose.material.*
 import androidx.compose.material.MaterialTheme.typography
-import androidx.compose.material.Text
-import androidx.compose.material.TextField
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import request.CommandItem
@@ -22,33 +18,52 @@ import request.Tools
 @Composable
 fun commandHelper() {
     val itemList = remember { mutableStateListOf<CommandItem>() }
-    val searchQuery = remember { mutableStateOf(TextFieldValue("")) }
+    val tagQuery = remember { mutableStateOf(TextFieldValue("")) }
+    val idQuery = remember { mutableStateOf(TextFieldValue("")) }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Row {
             TextField(
-                value = searchQuery.value,
+                value = idQuery.value,
                 onValueChange = { query ->
-                    searchQuery.value = query
-                    searchCommand(itemList, query.text, null)
+                    idQuery.value = query
                 },
                 label = { Text("Search ID") },
                 modifier = Modifier.padding(bottom = 5.dp)
             )
+            Spacer(modifier = Modifier.padding(2.dp))
             TextField(
-                value = searchQuery.value,
+                value = tagQuery.value,
                 onValueChange = { query ->
-                    searchQuery.value = query
-                    searchCommand(itemList, null, query.text)
+                    tagQuery.value = query
                 },
                 label = { Text("Search tag") },
                 modifier = Modifier.padding(bottom = 5.dp)
             )
             Button(
-                onClick = { searchCommand(itemList, null, null) },
+                onClick = {
+                    val id = idQuery.value.text
+                    val tag = tagQuery.value.text
+                    var s = ""
+                    if (id.isNotEmpty()) {
+                        s += "@${id} "
+                    }
+                    if (tag.isNotEmpty()) {
+                        s += "#${tag} "
+                    }
+                    searchCommand(itemList, s)
+                },
                 modifier = Modifier.padding(8.dp)
             ) {
                 Text("Search")
+            }
+            Button(
+                onClick = {
+                    storeCommand()
+                },
+                modifier = Modifier.padding(8.dp)
+            ) {
+                Text("Store")
             }
         }
 
@@ -75,8 +90,23 @@ fun cmdHeader() {
     }
 }
 
-fun searchCommand(items: MutableList<CommandItem>, id: String?, tag: String?) {
-    G_REQUEST.runTool(Tools.Helper, mapOf<String, String>())
+fun storeCommand() {
+    G_REQUEST.runTool(Tools.Helper, mapOf(
+        "store" to "ALL"
+    ))
+    G_REQUEST.readEvents({},{ _, j ->})
+}
+
+fun editCommand(item: CommandItem) {
+    G_REQUEST.runTool(Tools.Helper, mapOf(
+        "add" to "${item.id} ${item.cmd} ${item.tags?.joinToString(separator = " ") }"
+    ))
+    G_REQUEST.readEvents({},{ _, j ->})
+}
+
+fun searchCommand(items: MutableList<CommandItem>, query: String) {
+    val q = query.takeIf { it.isNotEmpty() }?.let { mapOf("find" to query) }?: mapOf()
+    G_REQUEST.runTool(Tools.Helper, q)
 
     G_REQUEST.readEvents({ -> items.clear() }) { a, j ->
         items.addAll(j.decodeFromString<List<CommandItem>>(a.source))
@@ -86,12 +116,78 @@ fun searchCommand(items: MutableList<CommandItem>, id: String?, tag: String?) {
 @Composable
 @Preview
 fun commandItem(cmd: CommandItem) {
+    var isEditing by remember { mutableStateOf(false) }
+
+    var id by remember { mutableStateOf(cmd.id) }
+    var commandText by remember { mutableStateOf(cmd.cmd) }
+    var tagsText by remember { mutableStateOf(cmd.tags?.joinToString(",") ?: "") }
     Row(
         modifier = Modifier.padding(vertical = 5.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(cmd.id, modifier = Modifier.weight(1f))
-        Text(cmd.cmd, modifier = Modifier.weight(2f))
-        cmd.tags?.joinToString(",")?.let { Text(it, modifier = Modifier.weight(2f)) }
+        TextField(
+            value = id,
+            onValueChange = { id = it },
+            modifier = Modifier.weight(1f),
+            enabled = isEditing,
+            readOnly = !isEditing,
+            singleLine = true,
+            colors = TextFieldDefaults.textFieldColors(
+                disabledTextColor = LocalContentColor.current,
+                disabledIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                focusedIndicatorColor = Color.Blue,
+                backgroundColor = Color.Transparent
+            )
+        )
+        TextField(
+            value = commandText,
+            onValueChange = { commandText = it },
+            modifier = Modifier.weight(2f),
+            enabled = isEditing,
+            readOnly = !isEditing,
+            singleLine = true,
+            colors = TextFieldDefaults.textFieldColors(
+                disabledTextColor = LocalContentColor.current,
+                disabledIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                focusedIndicatorColor = Color.Blue,
+                backgroundColor = Color.Transparent
+            )
+        )
+
+        TextField(
+            value = tagsText,
+            onValueChange = { tagsText = it },
+            modifier = Modifier.weight(2f),
+            enabled = isEditing,
+            readOnly = !isEditing,
+            singleLine = true,
+            colors = TextFieldDefaults.textFieldColors(
+                disabledTextColor = LocalContentColor.current,
+                disabledIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                focusedIndicatorColor = Color.Blue,
+                backgroundColor = Color.Transparent
+            )
+        )
+        Button(
+            onClick = {
+                if (isEditing) {
+                    editCommand(
+                        CommandItem(
+                            id = id,
+                            cmd = commandText,
+                            tags = tagsText.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                        )
+                    )
+                }
+                isEditing = !isEditing
+            },
+            modifier = Modifier.padding(8.dp)
+        ) {
+            Text(if (isEditing) "Save" else "Edit")
+        }
     }
+    grayDivider()
 }

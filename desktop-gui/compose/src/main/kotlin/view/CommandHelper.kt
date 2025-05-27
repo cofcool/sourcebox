@@ -71,7 +71,11 @@ fun commandHelper() {
             item { cmdHeader() }
 
             items(itemList.size) { i ->
-                commandItem(itemList[i])
+                commandItem(itemList[i]) {
+                    if (it) {
+                        itemList.removeAt(i)
+                    }
+                }
             }
         }
 
@@ -97,6 +101,13 @@ fun storeCommand() {
     G_REQUEST.readEvents({},{ _, j ->})
 }
 
+fun delCommand(id: String) {
+    G_REQUEST.runTool(Tools.Helper, mapOf(
+        "del" to id
+    ))
+    G_REQUEST.readEvents({},{ _, j ->})
+}
+
 fun editCommand(item: CommandItem) {
     G_REQUEST.runTool(Tools.Helper, mapOf(
         "add" to "${item.id} ${item.cmd} ${item.tags?.joinToString(separator = " ") }"
@@ -115,7 +126,7 @@ fun searchCommand(items: MutableList<CommandItem>, query: String) {
 
 @Composable
 @Preview
-fun commandItem(cmd: CommandItem) {
+fun commandItem(cmd: CommandItem, action: (Boolean) -> Unit) {
     var isEditing by remember { mutableStateOf(false) }
 
     var id by remember { mutableStateOf(cmd.id) }
@@ -187,6 +198,15 @@ fun commandItem(cmd: CommandItem) {
             modifier = Modifier.padding(8.dp)
         ) {
             Text(if (isEditing) "Save" else "Edit")
+        }
+        Button(
+            onClick = {
+                delCommand(cmd.id)
+                action(true)
+            },
+            modifier = Modifier.padding(8.dp)
+        ) {
+            Text("Delete")
         }
     }
     grayDivider()

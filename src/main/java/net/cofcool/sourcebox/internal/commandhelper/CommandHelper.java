@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import lombok.CustomLog;
 import net.cofcool.sourcebox.Tool;
 import net.cofcool.sourcebox.ToolName;
+import net.cofcool.sourcebox.util.JsonUtil;
 import org.apache.commons.io.FilenameUtils;
 
 @CustomLog
@@ -39,7 +40,16 @@ public class CommandHelper implements Tool {
             return;
         }
 
-        args.readArg("find").ifPresent(a -> args.getContext().write(toPrintStr(cmg.findByAT(a.val()))));
+        args.readArg("find").ifPresent(a -> {
+            var data = cmg.findByAT(a.val());
+            Object ret = null;
+            if (args.getContext().runnerType() == RunnerType.CLI) {
+                ret = toPrintStr(data);
+            } else {
+                ret = JsonUtil.toJson(data);
+            }
+            args.getContext().write(ret);
+        });
 
         args.readArg("store").ifPresent(a -> {
             cmg.store(a.val());

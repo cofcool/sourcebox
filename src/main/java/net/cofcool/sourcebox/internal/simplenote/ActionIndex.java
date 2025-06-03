@@ -1,5 +1,6 @@
 package net.cofcool.sourcebox.internal.simplenote;
 
+import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
 import java.util.Set;
@@ -37,7 +38,17 @@ public class ActionIndex {
             actionService.saveAll(JsonUtil.toPojoList(r.body().buffer().getBytes(), ActionRecord.class))
         );
 
-        router.get().respond(r -> actionService.find());
+        router.get().respond(r -> {
+            MultiMap map = r.queryParams();
+            var condition = ActionRecord
+                .builder()
+                .type(map.get("type"))
+                .name(map.get("name"))
+                .state(map.get("state"))
+                .id(map.get("id"))
+                .build();
+            return actionService.find(condition);
+        });
         router.post().respond(r -> actionService.saveAction(r.body().asPojo(ActionRecord.class)));
 
         router.delete("/:actionId").respond(r -> actionService.deleteActions(Set.of(r.pathParam("actionId"))));

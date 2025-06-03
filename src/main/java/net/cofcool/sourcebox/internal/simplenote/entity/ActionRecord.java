@@ -6,25 +6,28 @@ import java.sql.JDBCType;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import lombok.Builder;
 import net.cofcool.sourcebox.util.LogseqOutStr;
 import net.cofcool.sourcebox.util.TableInfoHelper.Column;
 import net.cofcool.sourcebox.util.TableInfoHelper.DefaultMapper;
 import net.cofcool.sourcebox.util.TableInfoHelper.Entity;
 import net.cofcool.sourcebox.util.TableInfoHelper.ID;
 import net.cofcool.sourcebox.util.Utils;
+import org.apache.commons.lang3.StringUtils;
 
+@Builder
 @Entity(name = "action_record")
 public record ActionRecord(
     @ID
     @Column(name = "id", type = JDBCType.CHAR, length = 32)
     String id,
-    @Column(name = "name", type = JDBCType.VARCHAR, length = 50)
+    @Column(name = "name", type = JDBCType.VARCHAR, length = 512)
     String name,
     @Column(name = "icon", type = JDBCType.VARCHAR, length = 256, nullable = true)
     String icon,
     @Column(name = "index", type = JDBCType.VARCHAR, length = 100, nullable = true)
     String index,
-    @Column(name = "device", type = JDBCType.VARCHAR, length = 30)
+    @Column(name = "device", type = JDBCType.VARCHAR, length = 30, nullable = true)
     String device,
     @Column(name = "type", type = JDBCType.VARCHAR, length = 20)
     String type,
@@ -45,6 +48,8 @@ public record ActionRecord(
     String labels,
     @Column(name = "refs", type = JDBCType.VARCHAR, length = 512, nullable = true)
     String refs,
+    @Column(name = "remark", type = JDBCType.VARCHAR, length = 512, nullable = true)
+    String remark,
     @Column(name = "create_time", type = JDBCType.TIMESTAMP)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     LocalDateTime createTime,
@@ -56,9 +61,10 @@ public record ActionRecord(
     public ActionRecord(String id, String name, String icon, String index, String device,
         String type,
         String state, LocalDateTime start, LocalDateTime end, Integer duration, Integer rating,
-        List<String> comments, String labels, String refs, LocalDateTime createTime,
+        List<String> comments, String labels, String refs, String remark, LocalDateTime createTime,
         LocalDateTime updateTime) {
-        this.id = id == null && name != null ? Utils.md5(name + type) : id;
+        this.id = StringUtils.isBlank(id) && !StringUtils.isBlank(name) && !StringUtils.isBlank(type) ?
+            Utils.md5(name + type) : id;
         this.name = name;
         this.icon = icon;
         this.index = index;
@@ -73,6 +79,7 @@ public record ActionRecord(
         this.comments = comments;
         this.labels = labels;
         this.refs = refs;
+        this.remark = remark;
         this.createTime = createTime;
         this.updateTime = updateTime;
     }
@@ -81,19 +88,19 @@ public record ActionRecord(
         String state, LocalDateTime start, LocalDateTime end, Integer duration, Integer rating,
         List<String> commentIds, String labels, String refs, LocalDateTime createTime) {
         this(null, name, icon, index, device, type, state, start, end, duration,
-            rating, commentIds, labels, refs, createTime, LocalDateTime.now());
+            rating, commentIds, labels, refs, null, createTime, LocalDateTime.now());
     }
 
     public ActionRecord(String refs) {
         this(null, null, null, null, null, null, null, null, null, null, null, null, null, refs,
-            null,
+            null,null,
             null);
     }
 
     public static ActionRecord copy(ActionRecord record) {
         return new ActionRecord(record.id, record.name, record.icon,
             record.index, record.device, record.type, record.state, record.start, record.end,
-            record.duration, record.rating, record.comments, record.labels, record.refs,
+            record.duration, record.rating, record.comments, record.labels, record.refs, record.remark,
             record.createTime == null ? LocalDateTime.now() : record.createTime,
             LocalDateTime.now());
     }
@@ -136,9 +143,9 @@ public record ActionRecord(
             List.of(),
             row.getString("LABELS"),
             row.getString("REFS"),
+            row.getString("REMARK"),
             row.getLocalDateTime("CREATE_TIME"),
             row.getLocalDateTime("UPDATE_TIME")
-
         );
     }
 

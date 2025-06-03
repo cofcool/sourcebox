@@ -14,6 +14,7 @@ import net.cofcool.sourcebox.Utils;
 import net.cofcool.sourcebox.internal.simplenote.NoteConfig;
 import net.cofcool.sourcebox.internal.simplenote.entity.ActionRecord;
 import net.cofcool.sourcebox.internal.simplenote.entity.Note;
+import net.cofcool.sourcebox.runner.CLIWebToolVerticle;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -28,7 +29,7 @@ class SimpleNoteTest extends BaseTest {
     @BeforeAll
     static void deployVerticle(Vertx vertx, VertxTestContext testContext) throws Exception {
         var note = new SimpleNote();
-        note.deploy(vertx, null, new Args().copyConfigFrom(note.config())
+        note.deploy(vertx, new CLIWebToolVerticle(note), new Args().copyConfigFrom(note.config())
                 .arg(NoteConfig.PATH_KEY, PATH)
                 .arg(NoteConfig.PORT_KEY, port)
             )

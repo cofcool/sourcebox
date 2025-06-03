@@ -53,6 +53,10 @@ public interface Tool {
             }
         }
 
+        public void accept(Consumer<Arg> consumer) {
+            consumer.accept(this);
+        }
+
         public String getRequiredVal(String message) {
             if (val == null) {
                 throw new IllegalArgumentException(message);

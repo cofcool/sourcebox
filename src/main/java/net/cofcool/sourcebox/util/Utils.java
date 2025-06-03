@@ -1,18 +1,29 @@
 package net.cofcool.sourcebox.util;
 
 import io.vertx.core.Future;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.Builder;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.KeySpec;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import javax.crypto.Cipher;
@@ -23,6 +34,9 @@ import lombok.SneakyThrows;
 import org.apache.commons.io.FilenameUtils;
 
 public abstract class Utils {
+
+    public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern(
+        "yyyy-MM-dd HH:mm:ss");
 
     public static String desdeEncrypt(String key, String src) {
         try {
@@ -139,6 +153,52 @@ public abstract class Utils {
                     }
                 });
             }
+        }
+    }
+
+    public static <T> T requestLocalData(String port, String methodPath, Class<T> bodyType, Function<Builder, Builder> requestAction, Consumer<Exception> errorAction) {
+        try (var client = HttpClient.newHttpClient()){
+            var builder = requestAction.apply(
+                HttpRequest
+                    .newBuilder()
+                    .uri(new URI("http://localhost:" + port + methodPath))
+            );
+
+            var response = client.send(builder.build(), HttpResponse.BodyHandlers.ofByteArray());
+            if (response.statusCode() == 200) {
+                return JsonUtil.toPojo(response.body(), bodyType);
+            }
+            if (errorAction != null) {
+                errorAction.accept(new RuntimeException("response error code is " + response.statusCode()));
+            }
+        } catch (Exception e) {
+            if (errorAction != null) {
+                errorAction.accept(e);
+            }
+        }
+
+        return null;
+    }
+
+    public static String formatDatetime(LocalDateTime dateTime) {
+        return DATE_TIME_FORMATTER.format(dateTime);
+    }
+
+
+    private static BufferedReader br;
+    static synchronized BufferedReader reader() {
+        if (br == null) {
+            br = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
+        }
+        return br;
+    }
+
+    public static String readLine(String hint) {
+        try {
+            System.out.print("please enter " + hint + ": ");
+            return reader().readLine();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 }

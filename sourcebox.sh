@@ -24,5 +24,5 @@ fi
 if [ "$run_go" = "true" ]; then
   "$PRGDIR"/lib/the-source-box "$@"
 else
-  java --enable-preview -jar "$PRGDIR"/lib/sourcebox-fat.jar "$@"
+  java -Dlogging.type=net.cofcool.sourcebox.logging.JULLogger --enable-preview -jar "$PRGDIR"/lib/sourcebox-fat.jar "$@"
 fi

@@ -40,19 +40,21 @@ public class CommandHelper implements Tool {
             return;
         }
 
+        var store = args.readArg("store");
+        if (store.isPresent()) {
+            cmg.store(store.val());
+            return;
+        }
+
         args.readArg("find").ifPresent(a -> {
             var data = cmg.findByAT(a.val());
-            Object ret = null;
+            Object ret;
             if (args.getContext().runnerType() == RunnerType.CLI) {
                 ret = toPrintStr(data);
             } else {
                 ret = JsonUtil.toJson(data);
             }
             args.getContext().write(ret);
-        });
-
-        args.readArg("store").ifPresent(a -> {
-            cmg.store(a.val());
         });
     }
 

@@ -25,6 +25,6 @@ public record ActionType(
     }
 
     public enum Type {
-        action, device, state, label
+        action, device, state, label, todo
     }
 }

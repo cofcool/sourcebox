@@ -1,16 +1,17 @@
 package net.cofcool.sourcebox.runner;
 
+import io.vertx.core.Vertx;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.CustomLog;
 import lombok.SneakyThrows;
 import net.cofcool.sourcebox.App;
-import net.cofcool.sourcebox.Tool;
 import net.cofcool.sourcebox.Tool.Args;
 import net.cofcool.sourcebox.Tool.RunnerType;
 import net.cofcool.sourcebox.ToolContext;
 import net.cofcool.sourcebox.ToolRunner;
+import net.cofcool.sourcebox.WebTool;
 import org.apache.commons.io.FileUtils;
 
 @CustomLog
@@ -22,20 +23,50 @@ public class CLIRunner implements ToolRunner {
         var run = new AtomicBoolean(false);
 
         args.readArg("tool").ifPresent(a -> {
-            for (Tool tool : App.supportTools(RunnerType.CLI)) {
-                var name = tool.name().name();
-                if (name.equals(a.val())) {
-                    run.set(true);
-                    log.debug("Start run " + name);
-                    try {
-                        tool.run(args.removePrefix(name).copyConfigFrom(tool.config()));
-                    } catch (Throwable e) {
-                        log.error(e);
-                        log.info("Help");
-                        log.info(tool.config().toHelpString());
+            var name = a.val();
+            App.getTool(name).ifPresent(tool -> {
+                run.set(true);
+                log.debug("Start run " + name);
+                try {
+                    var newArgs = args.removePrefix(name).copyConfigFrom(tool.config());
+                    if (tool instanceof WebTool webTool) {
+                        var v = Vertx.vertx();
+                        webTool.deploy(v, new CLIWebToolVerticle(webTool), newArgs)
+                            .onComplete(r -> {
+                                if (r.failed()) {
+                                    log.error("Server run error", r.cause());
+                                    v.close();
+                                } else {
+                                    log.info("Server run result is " + r.result());
+                                    if (webTool.supportCommand()) {
+                                        v.executeBlocking(() -> {
+                                            Exception ex = null;
+                                            try {
+                                                webTool.run(newArgs);
+                                            } catch (Exception e) {
+                                                ex = e;
+                                            }
+                                            return ex;
+                                        }).onComplete(tr -> {
+                                            v.close();
+                                            if (tr.result() != null) {
+                                                log.error(tr.result());
+                                            }
+                                        });
+                                    }
+                                }
+                            });
+                    } else {
+                        tool.run(newArgs);
                     }
+                } catch (Throwable e) {
+                    args.getContext().write(e.getMessage());
+                    args.getContext().write("Help");
+                    args.getContext().write(tool.config().toHelpString());
+
+                    log.error(e);
                 }
-            }
+            });
         });
 
         return run.get();

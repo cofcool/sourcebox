@@ -1,9 +1,6 @@
 package net.cofcool.sourcebox.internal;
 
-import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
-import io.vertx.core.Promise;
-import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
@@ -16,13 +13,14 @@ import java.nio.file.Paths;
 import lombok.CustomLog;
 import net.cofcool.sourcebox.ToolName;
 import net.cofcool.sourcebox.WebTool;
+import net.cofcool.sourcebox.WebTool.WebRouter;
 import net.cofcool.sourcebox.runner.WebRunner;
 import net.cofcool.sourcebox.util.VertxDeployer;
 import net.cofcool.sourcebox.util.VertxUtils;
 import org.apache.commons.io.FilenameUtils;
 
 @CustomLog
-public class DirWebServer implements WebTool {
+public class DirWebServer implements WebTool, WebRouter {
 
     @Override
     public ToolName name() {
@@ -31,15 +29,7 @@ public class DirWebServer implements WebTool {
 
     @Override
     public void run(Args args) throws Exception {
-        deploy(args);
-    }
 
-    @Override
-    public Future<String> deploy(Vertx vertx, Verticle verticle, Args args) {
-        if (verticle == null) {
-            verticle = new DirVerticle();
-        }
-        return WebTool.super.deploy(vertx, verticle, args).onComplete(VertxUtils.logResult(log, e -> vertx.close()));
     }
 
     @Override
@@ -48,11 +38,6 @@ public class DirWebServer implements WebTool {
             .arg(new Arg("port", WebRunner.PORT_VAL + "", "web server listen port", false, null))
             .arg(new Arg("root", System.getProperty("user.dir"), "web server root directory", false, null))
             .alias("dir", name(), "root", null);
-    }
-
-    @Override
-    public Router router(Vertx vertx) {
-        return buildRouter(vertx);
     }
 
     private static Router buildRouter(Vertx vertx) {
@@ -97,19 +82,13 @@ public class DirWebServer implements WebTool {
         return router;
     }
 
-    private static class DirVerticle extends AbstractVerticle {
-
-        @Override
-        public void start(Promise<Void> startPromise) throws Exception {
-            VertxUtils
-                .initHttpServer(
-                    vertx,
-                    startPromise,
-                    buildRouter(vertx),
-                    Integer.parseInt(VertxDeployer.getSharedArgs(ToolName.dirWebServer.name(), vertx).readArg("port").val()),
-                    log
-                );
-        }
+    @Override
+    public Class<? extends WebRouter> routerType() {
+        return this.getClass();
     }
 
+    @Override
+    public Router router(Vertx vertx) {
+        return buildRouter(vertx);
+    }
 }

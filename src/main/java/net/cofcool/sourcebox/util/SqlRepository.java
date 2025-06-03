@@ -41,6 +41,12 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
         var url = "jdbc:hsqldb:file:" + dir;
         poolConfig = new JDBCPoolConfig(vertx, url, "sa", "");
         log.debug("Init {0}", url);
+
+        try {
+            DBMigrator.migrator(poolConfig);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     public static <T> SqlRepository<T> create(Vertx vertx, Class<T> entity) {

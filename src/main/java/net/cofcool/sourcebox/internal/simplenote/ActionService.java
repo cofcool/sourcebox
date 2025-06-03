@@ -121,6 +121,10 @@ public class ActionService {
             );
     }
 
+    public Future<List<ActionRecord>> find(ActionRecord record) {
+        return actionRecordSqlRepository.find(record);
+    }
+
     public Future<ActionRecord.RecordRet> find(String id) {
         return actionRecordSqlRepository.find(id)
             .compose(a ->
@@ -190,7 +194,7 @@ public class ActionService {
                     record.end(),
                     record.duration(), record.rating(),
                     a.comments().stream().map(Comment::content).toList(), record.labels(),
-                    record.refs(), record.createTime(), LocalDateTime.now());
+                    record.refs(), record.remark(), record.createTime(), LocalDateTime.now());
             },
             Collectors.toList()
         );

@@ -1,13 +1,23 @@
 package net.cofcool.sourcebox.logging;
 
+import java.io.IOException;
 import java.util.Objects;
 import java.util.logging.Level;
+import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
 
 public class JULLogger implements Logger {
 
     private final java.util.logging.Logger logger;
     private final String name;
+
+    static  {
+        try {
+            LogManager.getLogManager().readConfiguration(ClassLoader.getSystemResourceAsStream("logging.properties")); // 可选，清除默认配置
+        } catch (IOException e) {
+            System.err.println("load logging.properties error: "+ e.getMessage());
+        }
+    }
 
     public JULLogger(Class<?> clazz) {
         name = clazz.getName();

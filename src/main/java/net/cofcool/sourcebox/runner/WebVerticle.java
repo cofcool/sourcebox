@@ -24,13 +24,14 @@ import net.cofcool.sourcebox.Tool.Args;
 import net.cofcool.sourcebox.Tool.RunnerType;
 import net.cofcool.sourcebox.ToolContext;
 import net.cofcool.sourcebox.WebTool;
+import net.cofcool.sourcebox.WebTool.RouterTypeManger;
 import net.cofcool.sourcebox.util.SqlRepository;
 import net.cofcool.sourcebox.util.VertxDeployer;
 import net.cofcool.sourcebox.util.VertxUtils;
 
 @CustomLog
 @RequiredArgsConstructor
-class WebVerticle extends AbstractVerticle implements VertxDeployer {
+public class WebVerticle extends AbstractVerticle implements VertxDeployer {
 
     public static final String PORT_KEY = "web.port";
     public static final String USER_KEY = "web.username";
@@ -43,6 +44,8 @@ class WebVerticle extends AbstractVerticle implements VertxDeployer {
     private int port = PORT_VAL;
     private final RunnerType runnerType;
     private final Function<Tool, ToolContext> contextSupplier;
+
+    private final RouterTypeManger manger = new RouterTypeManger();
 
     @Override
     public void init(Vertx vertx, Context context) {
@@ -160,7 +163,11 @@ class WebVerticle extends AbstractVerticle implements VertxDeployer {
                     new Args().copyConfigFrom(globalConfig.removePrefix(toolName))
                         .copyConfigFrom(tool.config())
                 );
-                router.route(path + "/*").subRouter(((WebTool) tool).router(vertx));
+                manger.registerWebRouter(
+                    ((WebTool) tool).routerType(),
+                    vertx,
+                    r -> router.route(path + "/*").subRouter(r)
+                );
             } else {
                 router.post(path).respond(r -> {
                     var args = new Args();

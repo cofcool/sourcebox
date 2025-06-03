@@ -8,26 +8,20 @@ import io.vertx.ext.web.Router;
 import java.util.List;
 import java.util.Map;
 import lombok.CustomLog;
+import net.cofcool.sourcebox.WebTool.WebRouter;
 import net.cofcool.sourcebox.internal.simplenote.NoteConfig.NoteCodec;
 import net.cofcool.sourcebox.internal.simplenote.entity.Note;
 import net.cofcool.sourcebox.util.JsonUtil;
 import net.cofcool.sourcebox.util.VertxUtils;
 
 @CustomLog
-public class NoteIndex {
+public class NoteIndex implements WebRouter {
 
-    private final Vertx vertx;
-    private final NoteService noteService;
-    private final ActionIndex actionIndex;
-
-    public NoteIndex(Vertx vertx) {
-        this.vertx = vertx;
-        this.noteService = new NoteService(vertx);
-        this.actionIndex = new ActionIndex(vertx, noteService);
+    public Router buildRouter(Vertx vertx) {
+        var noteService = new NoteService(vertx);
+        var actionIndex = new ActionIndex(vertx, noteService);
         vertx.eventBus().registerDefaultCodec(Note.class, new NoteCodec());
-    }
 
-    public Router router() {
         var router = Router.router(vertx);
 
         router.route("/").handler(it -> it.redirect(it.request().path() + "static/"));
@@ -74,5 +68,10 @@ public class NoteIndex {
 
     private static List<String> readRouteNames(Router router) {
         return router.getRoutes().stream().map(Route::getName).toList();
+    }
+
+    @Override
+    public Router router(Vertx vertx) {
+        return buildRouter(vertx);
     }
 }

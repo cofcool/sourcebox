@@ -5,12 +5,14 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import net.cofcool.sourcebox.Tool.Arg;
 import net.cofcool.sourcebox.Tool.Args;
 import net.cofcool.sourcebox.Tool.RunnerType;
+import net.cofcool.sourcebox.logging.ConsoleLogger;
 import net.cofcool.sourcebox.logging.Logger;
 import net.cofcool.sourcebox.logging.LoggerFactory;
 import net.cofcool.sourcebox.runner.CLIRunner;
@@ -53,7 +55,7 @@ public class App {
                     .arg(new Arg("mode", RunnerType.CLI.name(), "interface type", false, null))
             );
         LoggerFactory.setDebug(Boolean.parseBoolean(pArgs.readArg("debug").val()));
-        var logger = LoggerFactory.getLogger(App.class);
+        var logger = new ConsoleLogger(App.class);
 
         pArgs.getArgVal("cfg").ifPresentOrElse(
             a -> GLOBAL_CFG = a,
@@ -146,6 +148,10 @@ public class App {
 
     public static Set<Tool> supportTools(RunnerType type) {
         return ALL_TOOLS.stream().filter(tool -> tool.config().supportsType(type)).collect(Collectors.toSet());
+    }
+
+    public static Optional<Tool> getTool(String name) {
+        return ALL_TOOLS.stream().filter(tool -> tool.name().name().equals(name)).findAny();
     }
 
     private static void logAbout(Logger logger) {

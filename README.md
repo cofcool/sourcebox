@@ -149,6 +149,10 @@ Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到
 
 支持指定执行次数，循环次数，执行频率等，使用: `./sourcebox.sh --tool=task --count=10 --cmd='echo $count'`
 
+## 简单 ToDo
+
+简单的 ToDo 工具，支持创建、完成、搜索，使用: `./sourcebox.sh --tool=todo --add=`
+
 ## 参与开发
 
 执行流程：

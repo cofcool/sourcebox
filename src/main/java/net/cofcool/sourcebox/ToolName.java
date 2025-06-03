@@ -16,6 +16,7 @@ import net.cofcool.sourcebox.internal.LinkCovertTool;
 import net.cofcool.sourcebox.internal.NetworkUtils;
 import net.cofcool.sourcebox.internal.ShellStarter;
 import net.cofcool.sourcebox.internal.SimpleNote;
+import net.cofcool.sourcebox.internal.ToDo;
 import net.cofcool.sourcebox.internal.TrelloToLogseqImporter;
 import net.cofcool.sourcebox.internal.commandhelper.CommandHelper;
 
@@ -37,6 +38,7 @@ public enum ToolName {
     analysisDiff("analysis diff file", DiffAnalysis.class),
     fileTools("some utils about file", FileTools.class),
     netUtils("some utils about network", NetworkUtils.class),
+    todo("Simple To Do tool", ToDo.class),
     task("repeat execute task(go)", GoAdapter.Task.class),
     mobileBackup("backup android phone files by adb(go)", GoAdapter.MobileBackup.class);
 

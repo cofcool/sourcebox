@@ -21,6 +21,10 @@
 
 ***Java 实现支持全平台（需预先安装 JRE 21）, 由 Go 实现的功能只提供 Linux 平台的软件包***
 
+软件截图
+
+![gui-01.jpg](./imgs/gui-01.png)
+
 ## 命令助手
 
 使用前需要把 `source ～/.sourcebox/alias` 添加到 shell 配置中

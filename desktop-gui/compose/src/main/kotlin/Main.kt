@@ -37,6 +37,7 @@ fun main() = application {
 }
 
 fun loadServer() {
+    System.setProperty("logging.type", "net.cofcool.sourcebox.logging.JULLogger")
     try {
         val clazz = Class.forName("net.cofcool.sourcebox.App")
         val method = clazz.getDeclaredMethod("main", Array<String>::class.java)

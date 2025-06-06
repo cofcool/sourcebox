@@ -3,10 +3,12 @@ package net.cofcool.sourcebox.internal.simplenote;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -21,6 +23,7 @@ import net.cofcool.sourcebox.internal.simplenote.entity.Note;
 import net.cofcool.sourcebox.internal.simplenote.entity.RefType;
 import net.cofcool.sourcebox.util.SqlRepository;
 import net.cofcool.sourcebox.util.Utils;
+import org.jsoup.Jsoup;
 
 @CustomLog
 public class ActionService {
@@ -49,6 +52,21 @@ public class ActionService {
     }
 
     public Future<ActionRecord> saveAction(ActionRecord record) {
+        if (Objects.equals(record.type(), Type.todo.name()) && record.name().toLowerCase().startsWith("http")) {
+            try {
+                var title = Jsoup.newSession().url(record.name()).get().title();
+                record = ActionRecord.builder()
+                    .name(title)
+                    .remark(record.name())
+                    .type(record.type())
+                    .state(record.state())
+                    .start(record.start())
+                    .end(record.end())
+                    .build();
+            } catch (IOException e) {
+                log.error("Get " + record.name() + " web page title error", e);
+            }
+        }
         var newRecord = ActionRecord.copy(record);
         var ret = actionRecordSqlRepository.save(newRecord);
         ret.onSuccess(a -> {

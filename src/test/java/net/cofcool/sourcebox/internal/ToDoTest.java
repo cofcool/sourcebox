@@ -94,6 +94,15 @@ class ToDoTest extends BaseTest {
     }
 
     @Test
+    void addLink(Vertx vertx, VertxTestContext testContext) throws Exception {
+        testContext.verify(() -> {
+            instance().run(args.arg(NoteConfig.PORT_KEY, port).arg("add", "https://baidu.com"));
+            instance().run(args.arg(NoteConfig.PORT_KEY, port).arg("find", ""));
+            testContext.completeNow();
+        });
+    }
+
+    @Test
     void cancel(Vertx vertx, VertxTestContext testContext) throws Exception {
         testContext.verify(() -> {
             var t = ActionRecord.builder().name("buy something").type(Type.todo.name())

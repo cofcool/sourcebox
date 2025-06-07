@@ -205,6 +205,18 @@ class WebRunnerTest {
             })));
     }
 
+    @Test
+    void reqConfig(Vertx vertx, VertxTestContext testContext) {
+        WebClient.create(vertx)
+            .get(Integer.parseInt(port), "127.0.0.1", "/config")
+            .send()
+            .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
+                Assertions.assertEquals(200, r.statusCode());
+                Assertions.assertNotNull(r.bodyAsJsonObject());
+                testContext.completeNow();
+            })));
+    }
+
     private Future<ActionEvent> queryEvents(String key) {
         Queue<ActionEvent> queue = WebVerticle.EVENT_QUEUE;
         var i = 0;

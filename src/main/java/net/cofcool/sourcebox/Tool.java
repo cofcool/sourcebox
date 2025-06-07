@@ -1,5 +1,6 @@
 package net.cofcool.sourcebox;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.vertx.core.shareddata.Shareable;
 import java.io.File;
 import java.io.IOException;
@@ -43,6 +44,7 @@ public interface Tool {
             this(key, val, null, false, null);
         }
 
+        @JsonIgnore
         public boolean isPresent() {
             return val != null;
         }
@@ -57,6 +59,7 @@ public interface Tool {
             consumer.accept(this);
         }
 
+        @JsonIgnore
         public String getRequiredVal(String message) {
             if (val == null) {
                 throw new IllegalArgumentException(message);
@@ -65,6 +68,7 @@ public interface Tool {
             return val;
         }
 
+        @JsonIgnore
         public Optional<String> getVal() {
             return Optional.ofNullable(val);
         }

@@ -153,6 +153,12 @@ public class WebVerticle extends AbstractVerticle implements VertxDeployer {
         );
 
         var globalConfig = VertxDeployer.getSharedArgs(getClass().getSimpleName(), vertx);
+
+        router.get("/config")
+            .handler(c -> {
+                c.json(globalConfig);
+            });
+
         for (Tool tool : tools) {
             String toolName = tool.name().name();
             var path = "/" + toolName;

@@ -16,7 +16,7 @@ fun ContentView(currentTool: Tools) {
         Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        topBar(currentTool.toolName(), true)
+        topBar(currentTool.toolName())
         grayDivider()
         Row {
             when (currentTool) {

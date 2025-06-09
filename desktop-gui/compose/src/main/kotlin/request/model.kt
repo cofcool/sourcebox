@@ -4,6 +4,7 @@ import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.format
 import kotlinx.datetime.format.char
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
@@ -39,6 +40,9 @@ data class Action(val action: String, val tool: String, val source: String, val 
 
 @Serializable
 data class Note(val id: String, val content: String, @Serializable(with = LocalDateTimeSerializer::class) val date: LocalDateTime?, val state: String)
+
+@Serializable
+data class Arg(val key: String, @SerialName("val") val value: String?, val desc: String?, val required: Boolean, val demo: String?);
 
 val formatter = LocalDateTime.Format {
     year(); char('-'); monthNumber(); char('-'); dayOfMonth()

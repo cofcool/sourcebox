@@ -6,6 +6,8 @@
 
 使用 Java（要求 JDK 21, 推荐使用 `GraalVM`）、Python、Go 等语言实现，桌面版使用 KMP 实现
 
+命令参数也可通过全局配置文件进行配置，路径为 `~/.mytool/mytool.cfg`
+
 * `./sourcebox.sh` 查看程序信息，`--help={COMMAND}` 查看具体命令的帮助信息, 如 `--help=converts`
 * `--debug=true` 打开调试模式
 

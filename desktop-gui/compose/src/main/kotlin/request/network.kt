@@ -68,6 +68,11 @@ class Request {
         return r.body<List<String>>().sorted()
     }
 
+    suspend fun getConfig(): Map<String, Arg> {
+        val r = client.get("/config")
+        return r.body<Map<String, Arg>>()
+    }
+
     fun listNote(note: Note): List<Note> {
         return runBlocking {
             val r = client.get("/note/list")

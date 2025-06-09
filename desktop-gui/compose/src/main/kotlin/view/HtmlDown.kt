@@ -109,7 +109,6 @@ fun createTextField(textFieldValue: MutableState<TextFieldValue>, label: String)
 }
 
 fun download(map: Map<String, String>, items: MutableList<String>) {
-    addParams(Tools.HtmlDown, map)
     G_REQUEST.runTool(Tools.HtmlDown, map)
     G_REQUEST.readEvents({-> items.clear()}) { e, j ->
         items.add(e.source)

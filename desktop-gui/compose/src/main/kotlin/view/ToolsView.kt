@@ -24,6 +24,7 @@ fun ToolsView(changeTool: (Tools) -> Unit) {
     val scope = rememberCoroutineScope()
     LaunchedEffect(true) {
         scope.launch {
+            currentParams.putAll(G_REQUEST.getConfig())
             tools = try {
                 G_REQUEST.getAllTools()
             } catch (e: Exception) {

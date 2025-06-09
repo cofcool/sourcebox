@@ -25,7 +25,13 @@
 
 软件截图
 
-![gui-01.jpg](./imgs/gui-01.png)
+命令模式:
+
+![i1.png](./imgs/i1.png)
+
+图形界面模式:
+
+![i2.png](./imgs/i2.png)
 
 ## 命令助手
 

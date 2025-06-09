@@ -23,7 +23,7 @@
     <maven.compiler.source>21</maven.compiler.source>
     <maven.compiler.target>21</maven.compiler.target>
     <graalvm-native.version>0.9.27</graalvm-native.version>
-    <selenium.version>4.30.0</selenium.version>
+    <selenium.version>4.33.0</selenium.version>
     <vertx.version>4.4.6</vertx.version>
     <junit-jupiter.version>5.9.1</junit-jupiter.version>
   </properties>

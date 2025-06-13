@@ -39,7 +39,7 @@ class SimpleNoteTest extends BaseTest {
     @Test
     void list(Vertx vertx, VertxTestContext testContext) {
         vertx.createHttpClient()
-            .request(HttpMethod.GET, Integer.parseInt(port), "127.0.0.1", "/list")
+            .request(HttpMethod.GET, Integer.parseInt(port), "127.0.0.1", "/note/list")
             .compose(HttpClientRequest::send)
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertEquals(200, r.statusCode());
@@ -51,7 +51,7 @@ class SimpleNoteTest extends BaseTest {
     @Test
     void addNote(Vertx vertx, VertxTestContext testContext) {
         vertx.createHttpClient()
-            .request(HttpMethod.POST, Integer.parseInt(port), "127.0.0.1", "/note")
+            .request(HttpMethod.POST, Integer.parseInt(port), "127.0.0.1", "/note/note")
             .compose(h -> h.send(Json.encodeToBuffer(Note.init("test content"))))
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertEquals(200, r.statusCode());

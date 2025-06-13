@@ -54,16 +54,18 @@ public class NoteIndex implements WebRouter {
             (e, f) -> log.error("Parsing note file error", e)
         );
 
-        var actionRouter = actionIndex.mountRoute(router);
+        var rootRouter = Router.router(vertx);
+        rootRouter.route("/note/*").subRouter(router);
+        var actionRouter = actionIndex.mountRoute(rootRouter);
 
-        router.get("/develop/routes").respond(r ->
+        rootRouter.get("/develop/routes").respond(r ->
             Future.succeededFuture(Map.of(
-                "/", readRouteNames(router),
+                "note", readRouteNames(router),
                 "action", readRouteNames(actionRouter)
             ))
         );
 
-        return router;
+        return rootRouter;
     }
 
     private static List<String> readRouteNames(Router router) {

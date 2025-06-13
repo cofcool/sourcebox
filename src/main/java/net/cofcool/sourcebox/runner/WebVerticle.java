@@ -172,7 +172,7 @@ public class WebVerticle extends AbstractVerticle implements VertxDeployer {
                 manger.registerWebRouter(
                     ((WebTool) tool).routerType(),
                     vertx,
-                    r -> router.route(path + "/*").subRouter(r)
+                    r -> router.route("/*").subRouter(r)
                 );
             } else {
                 router.post(path).respond(r -> {

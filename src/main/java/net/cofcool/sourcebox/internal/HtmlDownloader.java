@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -273,7 +272,7 @@ public class HtmlDownloader implements Tool {
             .stream()
             .map(a -> cleanHref(url, a.attr("href")))
             .filter(Objects::nonNull)
-            .filter(a -> Objects.equals(baseUrl(a), baseUrl(url)))
+            .filter(a -> Objects.equals(baseUrl(a, true), baseUrl(url, true)))
             .filter(f -> args.readArg("hrefFilter").test(f::contains))
             .collect(Collectors.toSet());
         for (String href : links) {
@@ -300,6 +299,10 @@ public class HtmlDownloader implements Tool {
     }
 
     private String baseUrl(String fullUrl) {
+        return baseUrl(fullUrl, false);
+    }
+
+    private String baseUrl(String fullUrl, boolean ignoreProtocol) {
         URL url;
         try {
             url = new URL(fullUrl);
@@ -320,7 +323,12 @@ public class HtmlDownloader implements Tool {
             }
             path = String.join("/", ps);
         }
-        return STR."\{protocol}://\{host}\{port == 80 || port == 443 ? "" : STR.":\{port}"}\{path}";
+
+        if (ignoreProtocol) {
+            return STR."\{host}\{port == 80 || port == 443 ? "" : STR.":\{port}"}\{path}";
+        } else {
+            return STR."\{protocol}://\{host}\{port == 80 || port == 443 ? "" : STR.":\{port}"}\{path}";
+        }
     }
 
     private void downloadImages(Elements imgs, String folder, String expression) throws IOException {

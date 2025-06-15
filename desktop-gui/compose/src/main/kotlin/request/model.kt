@@ -19,6 +19,7 @@ enum class Tools(val tool: Tools?, val cmd: String) {
     Helper(null, "cHelper"),
     Note(null, "note"),
     Json(null, "json"),
+    Todo(null, "todo"),
     None(null, "")
     ;
 
@@ -34,6 +35,9 @@ data class Params(val cmd: String, val input: String)
 
 @Serializable
 data class CommandItem(val id: String, val cmd: String, val tags: List<String>?)
+
+@Serializable
+data class TodoItem(val id: String, val name: String, val state: String, val remark: String?, val createTime: String = "")
 
 @Serializable
 data class Action(val action: String, val tool: String, val source: String, val success: Boolean)

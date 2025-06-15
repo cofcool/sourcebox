@@ -96,9 +96,25 @@ class Request {
         }
     }
 
+    fun listTodo(item: TodoItem): List<TodoItem> {
+        return runBlocking {
+            val r = client.get("/action?state=todo&type=todo")
+            return@runBlocking r.body<List<TodoItem>>()
+        }
+    }
+
     fun runTool(tool: Tools, data: Any) {
         runBlocking {
             client.post("/${tool.toolName()}") {
+                contentType(ContentType.Application.Json)
+                setBody(data)
+            }
+        }
+    }
+
+    fun runTool(path: String, data: Any) {
+        runBlocking {
+            client.post("/${path}") {
                 contentType(ContentType.Application.Json)
                 setBody(data)
             }
@@ -145,7 +161,7 @@ class Request {
                             msgDone.send(false)
                         }
                     }
-                    delay(1.seconds)
+                    delay(2.seconds)
                 }
             }
         }

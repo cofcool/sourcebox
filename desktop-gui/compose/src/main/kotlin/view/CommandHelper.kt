@@ -21,7 +21,7 @@ fun commandHelper() {
     val tagQuery = remember { mutableStateOf(TextFieldValue("")) }
     val idQuery = remember { mutableStateOf(TextFieldValue("")) }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Column(modifier = Modifier.padding(16.dp)) {
         Row {
             TextField(
                 value = idQuery.value,
@@ -29,7 +29,7 @@ fun commandHelper() {
                     idQuery.value = query
                 },
                 label = { Text("Search ID") },
-                modifier = Modifier.padding(bottom = 5.dp)
+                modifier = Modifier.padding(bottom = 5.dp).weight(1f)
             )
             Spacer(modifier = Modifier.padding(2.dp))
             TextField(
@@ -38,8 +38,11 @@ fun commandHelper() {
                     tagQuery.value = query
                 },
                 label = { Text("Search tag") },
-                modifier = Modifier.padding(bottom = 5.dp)
+                modifier = Modifier.padding(bottom = 5.dp).weight(1f)
             )
+
+        }
+        Row {
             Button(
                 onClick = {
                     val id = idQuery.value.text

@@ -13,6 +13,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import formatFullStyle
+import kotlinx.datetime.LocalDateTime
+import now
 import request.TodoItem
 
 
@@ -41,14 +44,29 @@ fun Todo() {
                 label = { Text("Note (optional)") },
                 modifier = Modifier.fillMaxWidth()
             )
-            Button(onClick = {
-                if (todoText.value.isNotBlank()) {
-                    todos.add(TodoItem("", todoText.value, "todo", todoText.value))
-                    todoText.value = ""
-                    todoNote.value = ""
+            Row {
+                Button(
+                    modifier = Modifier.padding(8.dp),
+                    onClick = {
+                    if (todoText.value.isNotBlank()) {
+                        val item = TodoItem("", todoText.value, "todo", todoNote.value)
+                        addTodo(item)
+                        todos.add(item)
+                        todoText.value = ""
+                        todoNote.value = ""
+                    }
+                }) {
+                    Text("Add")
                 }
-            }) {
-                Text("Add")
+                Button(
+                    modifier = Modifier.padding(8.dp),
+                    onClick = {
+                        refreshTodos(todos, TodoItem("", todoText.value, "", null))
+                        todoText.value = ""
+
+                }) {
+                    Text("Search")
+                }
             }
         }
 
@@ -102,9 +120,9 @@ fun todoItem(todo: TodoItem) {
     grayDivider()
 }
 
-fun refreshTodos(items: MutableList<TodoItem>) {
+fun refreshTodos(items: MutableList<TodoItem>, condition: TodoItem= TodoItem("", "", "", "")) {
     items.clear()
-    items.addAll(G_REQUEST.listTodo(TodoItem("", "", "", "")))
+    items.addAll(G_REQUEST.listTodo(condition))
 }
 
 fun doneTodo(item: TodoItem) {
@@ -112,6 +130,19 @@ fun doneTodo(item: TodoItem) {
         "action", mapOf(
             "id" to item.id,
             "state" to "done"
+        )
+    )
+}
+
+fun addTodo(item: TodoItem) {
+    G_REQUEST.runTool(
+        "action", mapOf(
+            "name" to item.name,
+            "remark" to item.remark,
+            "state" to item.state,
+            "type" to "todo",
+            "start" to LocalDateTime.now().formatFullStyle(),
+            "end" to LocalDateTime.now().formatFullStyle()
         )
     )
 }

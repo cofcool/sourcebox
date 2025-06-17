@@ -14,6 +14,8 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.selects.select
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import kotlin.time.Duration.Companion.seconds
 
 val logger = LoggerFactory.getLogger("request.network")
@@ -96,9 +98,15 @@ class Request {
         }
     }
 
-    fun listTodo(item: TodoItem): List<TodoItem> {
+    fun listTodo(item: TodoItem?): List<TodoItem> {
         return runBlocking {
-            val r = client.get("/action?state=todo&type=todo")
+            var path = "/action?state=todo&type=todo&id=NOT_GENERATED"
+            item?.apply{
+                if (item.name.isNotBlank()) {
+                    path = "${path}&name=${URLEncoder.encode(item.name, StandardCharsets.UTF_8)}"
+                }
+            }
+            val r = client.get(path)
             return@runBlocking r.body<List<TodoItem>>()
         }
     }

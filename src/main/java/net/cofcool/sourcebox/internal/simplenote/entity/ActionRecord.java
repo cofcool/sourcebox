@@ -6,6 +6,7 @@ import java.sql.JDBCType;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import lombok.Builder;
 import net.cofcool.sourcebox.util.LogseqOutStr;
 import net.cofcool.sourcebox.util.TableInfoHelper.Column;
@@ -95,6 +96,10 @@ public record ActionRecord(
         this(null, null, null, null, null, null, null, null, null, null, null, null, null, refs,
             null,null,
             null);
+    }
+
+    public boolean checkId() {
+        return !Objects.equals(id, "NOT_GENERATED");
     }
 
     public static ActionRecord copy(ActionRecord record) {

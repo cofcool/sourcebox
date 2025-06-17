@@ -37,7 +37,15 @@ data class Params(val cmd: String, val input: String)
 data class CommandItem(val id: String, val cmd: String, val tags: List<String>?)
 
 @Serializable
-data class TodoItem(val id: String, val name: String, val state: String, val remark: String?, val createTime: String = "")
+data class TodoItem(
+    val id: String,
+    val name: String,
+    val state: String,
+    val remark: String?,
+    val createTime: String = "",
+    val start: String = "",
+    val end: String = ""
+)
 
 @Serializable
 data class Action(val action: String, val tool: String, val source: String, val success: Boolean)

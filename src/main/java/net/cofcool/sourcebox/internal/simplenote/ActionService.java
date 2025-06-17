@@ -146,7 +146,7 @@ public class ActionService {
         if (StringUtils.isNotBlank(record.name())) {
             builder.and("name like '%" + record.name() + "%'");
         }
-        if (StringUtils.isNotBlank(record.id())) {
+        if (StringUtils.isNotBlank(record.id()) && record.checkId()) {
             builder.and("id=?", record.id());
         }
         if (StringUtils.isNotBlank(record.type())) {

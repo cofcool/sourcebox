@@ -13,6 +13,8 @@ public interface AsyncCrudRepository<T> {
 
     Future<List<T>> find(T condition);
 
+    Future<List<T>> find(QueryBuilder condition);
+
     Future<List<T>> find();
 
     Future<T> find(String id);

@@ -94,6 +94,17 @@ class ActionServiceTest extends BaseTest {
     }
 
     @Test
+    void findByRecord(Vertx vertx, VertxTestContext testContext) {
+        actionService
+            .find(defaultRecord)
+            .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
+                Assertions.assertNotNull(r);
+                System.out.println(r);
+                testContext.completeNow();
+            })));
+    }
+
+    @Test
     void findAllRefs(Vertx vertx, VertxTestContext testContext) {
         actionService
             .findAllRefs(defaultRecord.id())

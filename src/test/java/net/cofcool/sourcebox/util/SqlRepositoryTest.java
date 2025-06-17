@@ -102,6 +102,31 @@ class SqlRepositoryTest extends BaseTest {
     }
 
     @Test
+    void testFindCondition(Vertx vertx, VertxTestContext testContext) {
+        repository
+            .find(QueryBuilder.builder()
+                .select("*")
+                .from("user")
+                .and("name like 'test%'"))
+            .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
+                assertNotNull(r);
+                testContext.completeNow();
+            })));
+    }
+
+    @Test
+    void testFindCondition1(Vertx vertx, VertxTestContext testContext) {
+        repository
+            .find(QueryBuilder.builder()
+                .select()
+                .from(User.class))
+            .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
+                assertNotNull(r);
+                testContext.completeNow();
+            })));
+    }
+
+    @Test
     void executeQuery(Vertx vertx, VertxTestContext testContext) {
         repository
             .executeQuery("select count(*) from user")

@@ -193,6 +193,14 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
     }
 
     @Override
+    public Future<List<T>> find(QueryBuilder condition) {
+        var p = condition.getParameters();
+        return preparedQuery(condition.build())
+            .execute(p.isEmpty() ? Tuple.tuple(): Tuple.wrap(p.toArray()))
+            .compose(r -> Future.succeededFuture(extractRow(r)));
+    }
+
+    @Override
     public Future<List<T>> find() {
         return preparedQuery("select * from " + tableInfo.name())
                 .execute()

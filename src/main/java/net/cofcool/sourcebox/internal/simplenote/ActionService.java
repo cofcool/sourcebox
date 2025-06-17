@@ -21,8 +21,10 @@ import net.cofcool.sourcebox.internal.simplenote.entity.ActionType.Type;
 import net.cofcool.sourcebox.internal.simplenote.entity.Comment;
 import net.cofcool.sourcebox.internal.simplenote.entity.Note;
 import net.cofcool.sourcebox.internal.simplenote.entity.RefType;
+import net.cofcool.sourcebox.util.QueryBuilder;
 import net.cofcool.sourcebox.util.SqlRepository;
 import net.cofcool.sourcebox.util.Utils;
+import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 
 @CustomLog
@@ -140,7 +142,20 @@ public class ActionService {
     }
 
     public Future<List<ActionRecord>> find(ActionRecord record) {
-        return actionRecordSqlRepository.find(record);
+        var builder = QueryBuilder.builder().select().from(ActionRecord.class).orderBy("create_time desc");
+        if (StringUtils.isNotBlank(record.name())) {
+            builder.and("name like '%" + record.name() + "%'");
+        }
+        if (StringUtils.isNotBlank(record.id())) {
+            builder.and("id=?", record.id());
+        }
+        if (StringUtils.isNotBlank(record.type())) {
+            builder.and("type=?", record.type());
+        }
+        if (StringUtils.isNotBlank(record.state())) {
+            builder.and("state=?", record.state());
+        }
+        return actionRecordSqlRepository.find(builder);
     }
 
     public Future<ActionRecord.RecordRet> find(String id) {

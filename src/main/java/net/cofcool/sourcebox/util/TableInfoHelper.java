@@ -46,7 +46,10 @@ public class TableInfoHelper {
             var column = field.getAnnotation(Column.class);
             if (column != null) {
                 field.setAccessible(true);
-                columns.put(name, new TableProperty(column.name(), column.type(), column.length(), column.nullable(), field, field.getAnnotation(ID.class) != null));
+                columns.put(name, new TableProperty(column.name(), column.type(), column.length(),
+                    column.nullable(), field, field.getAnnotation(ID.class) != null,
+                    column.arrayElemType(), column.arrayElemLength()
+                ));
             }
         }
 
@@ -111,9 +114,10 @@ public class TableInfoHelper {
                 .map(a ->
                     a.name()
                         + " "
+                        + (a.arrayElemType == JDBCType.NULL ? "" : a.arrayElemType.getName() + (a.arrayElemLength() > 0 ? "(" + a.arrayElemLength() + ") " : " "))
                         + a.type().getName()
                         + (a.length() > 0 ? "(" + a.length() + ")" : "")
-                        + (a.nullable ? " null " : " not null ")
+                        + (a.nullable ? " null" : " not null")
                         + (a.isId() ? " PRIMARY KEY " : "")
                 )
                 .collect(Collectors.joining(","))
@@ -128,7 +132,9 @@ public class TableInfoHelper {
         int length,
         boolean nullable,
         Field field,
-        boolean isId
+        boolean isId,
+        JDBCType arrayElemType,
+        int arrayElemLength
     ) {
 
         @Override
@@ -172,6 +178,8 @@ public class TableInfoHelper {
         JDBCType type();
         int length() default -1;
         boolean nullable() default false;
+        JDBCType arrayElemType() default JDBCType.NULL;
+        int arrayElemLength() default -1;
     }
 
     @Retention(RetentionPolicy.RUNTIME)

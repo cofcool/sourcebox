@@ -1,11 +1,15 @@
 package net.cofcool.sourcebox.internal.simplenote;
 
+import io.vertx.core.Future;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
+import java.util.List;
 import java.util.Set;
 import lombok.CustomLog;
 import net.cofcool.sourcebox.internal.simplenote.entity.ActionRecord;
+import net.cofcool.sourcebox.internal.simplenote.entity.ActionType.Type;
 import net.cofcool.sourcebox.util.JsonUtil;
 import net.cofcool.sourcebox.util.VertxUtils;
 
@@ -38,17 +42,10 @@ public class ActionIndex {
             actionService.saveAll(JsonUtil.toPojoList(r.body().buffer().getBytes(), ActionRecord.class))
         );
 
-        router.get().respond(r -> {
-            MultiMap map = r.queryParams();
-            var condition = ActionRecord
-                .builder()
-                .type(map.get("type"))
-                .name(map.get("name"))
-                .state(map.get("state"))
-                .id(map.get("id"))
-                .build();
-            return actionService.find(condition);
-        });
+        router.get().respond(r -> finaAction(r, null));
+        router.get("/todo").respond(r -> finaAction(r, Type.todo));
+        router.get("/link").respond(r -> finaAction(r, Type.link));
+
         router.post().respond(r -> actionService.saveAction(r.body().asPojo(ActionRecord.class)));
 
         router.delete("/:actionId").respond(r -> actionService.deleteActions(Set.of(r.pathParam("actionId"))));
@@ -57,5 +54,17 @@ public class ActionIndex {
         parentRouter.route("/action/*").subRouter(router);
 
         return router;
+    }
+
+    private Future<List<ActionRecord>> finaAction(RoutingContext r, Type type) {
+        MultiMap map = r.queryParams();
+        var condition = ActionRecord
+            .builder()
+            .type(type == null ? map.get("type") : type.name())
+            .name(map.get("name"))
+            .state(map.get("state"))
+            .id(map.get("id"))
+            .build();
+        return actionService.find(condition);
     }
 }

@@ -34,6 +34,8 @@ public class ActionService {
     private final SqlRepository<Comment> commentSqlRepository;
     private final SqlRepository<ActionType> actionTypeSqlRepository;
 
+    private final List<ActionInterceptor> saveInterceptors = List.of(new TodoInterceptor());
+
     private final NoteService noteService;
 
     public ActionService(Vertx vertx, NoteService noteService) {
@@ -54,20 +56,8 @@ public class ActionService {
     }
 
     public Future<ActionRecord> saveAction(ActionRecord record) {
-        if (Objects.equals(record.type(), Type.todo.name()) && record.name().toLowerCase().startsWith("http")) {
-            try {
-                var title = Jsoup.newSession().url(record.name()).get().title();
-                record = ActionRecord.builder()
-                    .name(title)
-                    .remark(record.name())
-                    .type(record.type())
-                    .state(record.state())
-                    .start(record.start())
-                    .end(record.end())
-                    .build();
-            } catch (IOException e) {
-                log.error("Get " + record.name() + " web page title error", e);
-            }
+        for (ActionInterceptor interceptor : saveInterceptors) {
+            record = interceptor.apply(record);
         }
         var newRecord = ActionRecord.copy(record);
         var ret = actionRecordSqlRepository.save(newRecord);
@@ -231,6 +221,29 @@ public class ActionService {
             },
             Collectors.toList()
         );
+    }
+
+    private static class TodoInterceptor implements ActionInterceptor {
+
+        @Override
+        public ActionRecord apply(ActionRecord record) {
+            if (Objects.equals(record.type(), Type.todo.name()) && record.name().toLowerCase().startsWith("http")) {
+                try {
+                    var title = Jsoup.newSession().url(record.name()).get().title();
+                    record = ActionRecord.builder()
+                        .name(title)
+                        .remark(record.name())
+                        .type(record.type())
+                        .state(record.state())
+                        .start(record.start())
+                        .end(record.end())
+                        .build();
+                } catch (IOException e) {
+                    log.error("Get " + record.name() + " web page title error", e);
+                }
+            }
+            return record;
+        }
     }
 
     private record Log(

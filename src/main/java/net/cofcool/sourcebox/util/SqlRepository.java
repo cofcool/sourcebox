@@ -1,7 +1,6 @@
 package net.cofcool.sourcebox.util;
 
 import io.vertx.core.Future;
-import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.jdbcclient.JDBCPool;
 import io.vertx.sqlclient.PreparedQuery;
@@ -16,8 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.function.Function;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.CustomLog;
@@ -34,9 +32,6 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
     private static VertxUtils.JDBCPoolConfig poolConfig;
 
     public static synchronized void init(Vertx vertx) {
-//        if (poolConfig != null) {
-//            throw new IllegalStateException("poolConfig has be init");
-//        }
         var dir = App.globalCfgDir("data.db");
         var url = "jdbc:hsqldb:file:" + dir;
         poolConfig = new JDBCPoolConfig(vertx, url, "sa", "");
@@ -49,14 +44,14 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
         }
     }
 
-    public static <T> SqlRepository<T> create(Vertx vertx, Class<T> entity) {
+    public static <T> SqlRepository<T> create(Class<T> entity) {
         Objects.requireNonNull(poolConfig, "poolConfig must be init");
         var repository = new SqlRepository<>(entity);
 
         var ddl = repository.tableInfo.ddl();
         try (var conn = DriverManager.getConnection(poolConfig.getUrl());
             var s = conn.createStatement()) {
-            log.debug("Create {0} table: {1}; result: {2}", poolConfig.getUrl(), ddl, s.execute(ddl));
+            log.info("Create {0} table: {1}; result: {2}", poolConfig.getUrl(), ddl, s.execute(ddl));
         } catch (SQLException e) {
             throw new IllegalStateException(e);
         }
@@ -64,9 +59,8 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
         return repository;
     }
 
-    private static final Function<Set<String>, String> WHERE_SQL_GENERATOR = (c) -> {
-        String s = c.stream().map(a -> a + "=?").collect(Collectors.joining(" and "));
-        return s.isEmpty() ? "" : " where " + s;
+    private static final BiConsumer<Map<String, Object>, QueryBuilder> WHERE_SQL_GENERATOR = (c,q) -> {
+        c.forEach((k, v) -> q.and(k+ "=?", v));
     };
 
     private final TableInfo tableInfo;
@@ -77,20 +71,6 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
 
     private JDBCPool getPool() {
         return poolConfig.getGlobalPool();
-    }
-
-    public Future<RowSet<Row>> executeQuery(String sql) {
-        return executeQuery(sql, null);
-    }
-
-    public Future<RowSet<Row>> executeQuery(String sql, Tuple args) {
-        Promise<RowSet<Row>> p = Promise.promise();
-        if (args == null) {
-            preparedQuery(sql).execute(p);
-        } else {
-            preparedQuery(sql).execute(args, p);
-        }
-        return p.future();
     }
 
     @Override
@@ -182,14 +162,11 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
                 .compose(rows -> rows.rowCount() > 0 ? Future.succeededFuture() : Future.failedFuture("No data delete"));
     }
 
-
     @Override
     public Future<List<T>> find(T condition) {
-        var p = readProperties(condition);
-        return preparedQuery(
-                "select * from " + tableInfo.name() + WHERE_SQL_GENERATOR.apply(p.keySet()))
-            .execute(p.isEmpty() ? Tuple.tuple() : Tuple.wrap(p.values().toArray()))
-            .compose(r -> Future.succeededFuture(extractRow(r)));
+        var query = QueryBuilder.builder().from(tableInfo.name()).select();
+        WHERE_SQL_GENERATOR.accept(readProperties(condition), query);
+        return find(query);
     }
 
     @Override
@@ -202,9 +179,7 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
 
     @Override
     public Future<List<T>> find() {
-        return preparedQuery("select * from " + tableInfo.name())
-                .execute()
-                .compose(r -> Future.succeededFuture(extractRow(r)));
+        return find(QueryBuilder.builder().from(tableInfo.name()).select());
     }
 
     private List<T> extractRow(RowSet<Row> ret) {
@@ -217,18 +192,22 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
 
     @Override
     public Future<T> find(String id) {
-        return preparedQuery(
-                    "select * from " + tableInfo.name() + " where " + tableInfo.id().name()
-                        + " = ?")
-                .execute(Tuple.of(id))
-                .compose(r -> {
-                    List<T> list = extractRow(r);
-                    if (list.isEmpty()) {
-                        return Future.failedFuture("Can not find " + id);
-                    } else {
-                        return Future.succeededFuture(list.getFirst());
-                    }
-                });
+        return find(QueryBuilder.builder().select().from(tableInfo.name()).and(tableInfo.id().name() + "=?", id))
+            .compose(i -> {
+                if (i.isEmpty()) {
+                    return Future.failedFuture("Can not find by " + id);
+                } else {
+                    return Future.succeededFuture(i.getFirst());
+                }
+            });
+    }
+
+    @Override
+    public Future<Integer> count(QueryBuilder condition) {
+        var p = condition.getParameters();
+        return preparedQuery(condition.build())
+            .execute(p.isEmpty() ? Tuple.tuple(): Tuple.wrap(p.toArray()))
+            .compose(r -> Future.succeededFuture(r.iterator().next().getInteger(0)));
     }
 
 
@@ -251,5 +230,4 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
 
         return columns;
     }
-
 }

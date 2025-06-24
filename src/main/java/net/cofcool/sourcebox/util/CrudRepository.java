@@ -19,6 +19,10 @@ public interface CrudRepository<T> {
 
     List<T> find(T condition);
 
+    List<T> find(QueryBuilder condition);
+
+    Integer count(QueryBuilder condition);
+
     List<T> find();
 
     Optional<T> find(String id);

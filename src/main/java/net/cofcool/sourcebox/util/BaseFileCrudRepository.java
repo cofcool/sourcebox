@@ -80,6 +80,16 @@ public abstract class BaseFileCrudRepository<T> implements CrudRepository<T> {
         return List.copyOf(dataCache.values());
     }
 
+    @Override
+    public List<T> find(QueryBuilder condition) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Integer count(QueryBuilder condition) {
+        return find(condition).size();
+    }
+
     protected void refreshDirtyData(Object data) {
         try {
             FileUtils.write(file, JsonUtil.toJson(dataCache.values()), StandardCharsets.UTF_8);

@@ -72,6 +72,10 @@ public final class QueryBuilder {
         return this;
     }
 
+    public QueryBuilder count() {
+        return select("count(1)");
+    }
+
     public String build() {
         if (fromTable == null || selectFields.isEmpty()) {
             throw new IllegalStateException("SELECT and FROM must be specified.");

@@ -27,7 +27,7 @@ class SqlRepositoryTest extends BaseTest {
     static void create(Vertx vertx, VertxTestContext testContext) {
         LoggerFactory.setDebug(true);
         SqlRepository.init(vertx);
-        repository = SqlRepository.create(vertx, User.class);
+        repository = SqlRepository.create(User.class);
         repository.save(new User("1", "test1", "12345"))
             .onComplete(testContext.succeeding(t -> testContext.completeNow()));
     }
@@ -129,11 +129,9 @@ class SqlRepositoryTest extends BaseTest {
     @Test
     void executeQuery(Vertx vertx, VertxTestContext testContext) {
         repository
-            .executeQuery("select count(*) from user")
+            .count(QueryBuilder.builder().from("user").count())
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
-                assertEquals(1, r.size());
-                var row = r.iterator().next();
-                assertEquals(1, row.getInteger(0));
+                assertEquals(1, r);
                 testContext.completeNow();
             })));
     }

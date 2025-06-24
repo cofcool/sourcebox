@@ -19,4 +19,5 @@ public interface AsyncCrudRepository<T> {
 
     Future<T> find(String id);
 
+    Future<Integer> count(QueryBuilder condition);
 }

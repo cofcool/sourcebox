@@ -29,10 +29,6 @@ public interface Tool {
 
     Args config();
 
-    default Args defaultConfig(String globalDir) {
-        return null;
-    }
-
     default Logger getLogger() {
         return LoggerFactory.getLogger(getClass());
     }

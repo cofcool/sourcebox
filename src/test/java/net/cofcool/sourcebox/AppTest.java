@@ -34,8 +34,6 @@ class AppTest {
         File cfg = new File(file, "mytool.cfg");
         App.main(new String[]{"--cfg=" + cfg.getAbsolutePath()});
         Assertions.assertTrue(new File(App.globalCfgDir("mytool.cfg")).exists());
-        App.main(new String[]{"--cfg=" + cfg.getAbsolutePath(), "--tool=" + ToolName.cHelper.name()});
-        Assertions.assertTrue(new File(App.globalCfgDir("commands.json")).exists());
     }
 
     @Test

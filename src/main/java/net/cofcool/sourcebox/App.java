@@ -1,7 +1,6 @@
 package net.cofcool.sourcebox;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.HashSet;
 import java.util.Map;
@@ -19,7 +18,6 @@ import net.cofcool.sourcebox.runner.CLIRunner;
 import net.cofcool.sourcebox.runner.GUIRunner;
 import net.cofcool.sourcebox.runner.WebRunner;
 import net.cofcool.sourcebox.util.Utils;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 
 
@@ -66,20 +64,6 @@ public class App {
         if (!cfg.exists()) {
             //noinspection ResultOfMethodCallIgnored
             cfg.getParentFile().mkdirs();
-
-            var dcfg = new HashSet<Arg>();
-            for (Tool tool : ALL_TOOLS) {
-                var df = tool.defaultConfig(GLOBAL_CFG_DIR);
-                if (df != null) {
-                    df.forEach((k, v) -> dcfg.add(new Arg(tool.name().name() + "." + k, v.val())));
-                }
-            }
-            try {
-                FileUtils.writeLines(cfg, "utf-8", dcfg.stream().map(a -> a.key() + "=" + a.val()).toList());
-                logger.debug("Init config file {0}", cfg);
-            } catch (IOException e) {
-                logger.error("Create " + cfg + " file error", e);
-            }
         }
         pArgs.copyConfigFrom(new Args(cfg));
 

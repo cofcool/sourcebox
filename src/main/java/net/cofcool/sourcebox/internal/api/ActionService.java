@@ -74,9 +74,6 @@ public class ActionService {
             if (a.device() != null) {
                 saveType(a.device(), Type.device, "Save device error");
             }
-            if (a.state() != null) {
-                saveType(a.state(), Type.state, "Save device error");
-            }
             if (a.labels() != null) {
                 for (String s : a.labels().split(",")) {
                     saveType(s, Type.label, "Save label error");

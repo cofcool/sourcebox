@@ -15,6 +15,7 @@ import net.cofcool.sourcebox.WebTool;
 import net.cofcool.sourcebox.internal.api.NoteConfig;
 import net.cofcool.sourcebox.internal.api.NoteIndex;
 import net.cofcool.sourcebox.internal.api.entity.ActionRecord;
+import net.cofcool.sourcebox.internal.api.entity.ActionState;
 import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
 import net.cofcool.sourcebox.internal.api.entity.ListData;
 import net.cofcool.sourcebox.runner.WebRunner;
@@ -51,7 +52,7 @@ public class ToDo implements WebTool {
                     .readLines(new File(a.val()), StandardCharsets.UTF_8)
                     .forEach(s -> {
                         var t =  CsvParser.parseLine(s);
-                        var state = "";
+                        var state = "todo";
                         var remark = "";
                         if (t.size() == 2) {
                             remark = t.get(1);
@@ -60,7 +61,7 @@ public class ToDo implements WebTool {
                             remark = t.get(1);
                             state = t.get(2);
                         }
-                        saveTodo(state, t.get(0), remark);
+                        saveTodo(ActionState.valueOf(state), t.get(0), remark);
                     });
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -72,20 +73,20 @@ public class ToDo implements WebTool {
             if (a.val().isBlank()) {
                 var name = Utils.readLine("name");
                 var remark = Utils.readLine("remark");
-                saveTodo("todo", name, remark);
+                saveTodo(ActionState.todo, name, remark);
             } else {
-                saveTodo("todo", a.val(), null);
+                saveTodo(ActionState.todo, a.val(), null);
             }
         });
 
         args.readArg("done").ifPresent(a -> {
             flag.set(true);
-            updateState(a.val(),"done");
+            updateState(a.val(),ActionState.done);
         });
 
         args.readArg("cancel").ifPresent(a -> {
             flag.set(true);
-            updateState(a.val(),"cancel");
+            updateState(a.val(),ActionState.cancel);
         });
 
         var find = args.readArg("find");
@@ -107,32 +108,29 @@ public class ToDo implements WebTool {
             ActionRecord.class);
     }
 
-    private void updateState(String id, String state) {
+    private void updateState(String id, ActionState state) {
         updateState(
             ActionRecord
                 .builder()
                 .id(id)
-                .state(state)
+                .state(state.name())
                 .build()
         );
     }
 
-    private void saveTodo(String state, String name, String remark) {
+    private void saveTodo(ActionState state, String name, String remark) {
         if (StringUtils.isBlank(name)) {
             throw new IllegalArgumentException("name must not be null");
         }
-        if (StringUtils.isBlank(state)) {
-            state = "todo";
+        if (state == null) {
+            state = ActionState.todo;
         }
         if (StringUtils.isBlank(remark)) {
             remark = null;
         }
-        if (!state.equals("todo") && !state.equals("done") && !state.equals("cancel")) {
-            throw new IllegalArgumentException("item state error, must be todo or done");
-        }
         var param = ActionRecord.builder()
             .name(name)
-            .state(state)
+            .state(state.name())
             .remark(remark)
             .type(Type.todo.name())
             .start(LocalDateTime.now())

@@ -1,6 +1,7 @@
 package net.cofcool.sourcebox;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.HashSet;
 import java.util.Map;
@@ -18,6 +19,7 @@ import net.cofcool.sourcebox.runner.CLIRunner;
 import net.cofcool.sourcebox.runner.GUIRunner;
 import net.cofcool.sourcebox.runner.WebRunner;
 import net.cofcool.sourcebox.util.Utils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 
 
@@ -50,6 +52,7 @@ public class App {
                     .arg(new Arg("archive", null, "archive config", false, "true"))
                     .arg(new Arg("help", null, "", false, null))
                     .arg(new Arg("tool", null, "", false, "converts"))
+                    .arg(new Arg("defaultConfig", null, "", false, ""))
                     .arg(new Arg("mode", RunnerType.CLI.name(), "interface type", false, null))
             );
         LoggerFactory.setDebug(Boolean.parseBoolean(pArgs.readArg("debug").val()));
@@ -64,6 +67,25 @@ public class App {
         if (!cfg.exists()) {
             //noinspection ResultOfMethodCallIgnored
             cfg.getParentFile().mkdirs();
+
+            var dcfg = new HashSet<Arg>();
+            pArgs.readArg("defaultConfig").ifPresent(i -> {
+                for (Tool tool : ALL_TOOLS) {
+                    tool.config()
+                        .forEach((k, v) -> dcfg.add(new Arg(tool.name().name() + "." + k, v.val())));
+                }
+            });
+
+            try {
+                FileUtils.writeLines(cfg, "utf-8", dcfg.stream().map(a -> a.key() + "=" + a.val()).toList());
+            } catch (IOException e) {
+                logger.error("Create " + cfg + " file error", e);
+            }
+
+            if (!dcfg.isEmpty()) {
+                logger.info("Generate default config file {0}", cfg);
+                return;
+            }
         }
         pArgs.copyConfigFrom(new Args(cfg));
 
@@ -143,6 +165,7 @@ public class App {
         logger.info("Example: --tool=demo --path=tmp");
         logger.info("Help: --help='{COMMAND}', like: --help=rename");
         logger.info("Archive: --archive=true, archive config");
+        logger.info("Default Config: --defaultConfig=, generate default config file when it does not exist");
         logger.info(STR."Interface: --mode='{CLI}', support: \{RUNNER_MAP.entrySet().stream()
             .map(e -> {
                 String help = e.getValue().help();

@@ -37,6 +37,13 @@ class AppTest {
     }
 
     @Test
+    void runWithDefaultCfg() throws Exception {
+        File cfg = new File(file, "mytool.cfg");
+        App.main(new String[]{"--defaultConfig="});
+        Assertions.assertTrue(new File(App.globalCfgDir("mytool.cfg")).exists());
+    }
+
+    @Test
     void runWithHelp() throws Exception {
         App.main(new String[]{"--tool=" + ToolName.converts.name()});
     }

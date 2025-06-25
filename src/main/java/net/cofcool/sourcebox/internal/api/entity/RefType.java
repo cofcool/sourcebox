@@ -1,4 +1,4 @@
-package net.cofcool.sourcebox.internal.simplenote.entity;
+package net.cofcool.sourcebox.internal.api.entity;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;

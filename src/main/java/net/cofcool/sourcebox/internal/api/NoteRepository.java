@@ -1,8 +1,8 @@
-package net.cofcool.sourcebox.internal.simplenote;
+package net.cofcool.sourcebox.internal.api;
 
 import java.util.List;
 import java.util.Optional;
-import net.cofcool.sourcebox.internal.simplenote.entity.Note;
+import net.cofcool.sourcebox.internal.api.entity.Note;
 
 public interface NoteRepository {
 

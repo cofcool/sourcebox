@@ -9,7 +9,7 @@ public interface AsyncCrudRepository<T> {
 
     Future<Void> save(List<T> entities);
 
-    Future<Void> delete(String id);
+    Future<Boolean> delete(String id);
 
     Future<List<T>> find(T condition);
 

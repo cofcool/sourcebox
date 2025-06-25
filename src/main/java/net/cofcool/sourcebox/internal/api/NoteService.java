@@ -1,10 +1,10 @@
-package net.cofcool.sourcebox.internal.simplenote;
+package net.cofcool.sourcebox.internal.api;
 
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import java.util.List;
 import lombok.CustomLog;
-import net.cofcool.sourcebox.internal.simplenote.entity.Note;
+import net.cofcool.sourcebox.internal.api.entity.Note;
 import net.cofcool.sourcebox.util.SqlRepository;
 import org.apache.commons.lang3.StringUtils;
 
@@ -14,7 +14,7 @@ public class NoteService {
     private final SqlRepository<Note> noteRepository;
 
     public NoteService(Vertx vertx) {
-        noteRepository = SqlRepository.create(vertx, Note.class);
+        noteRepository = SqlRepository.create(Note.class);
     }
 
     public Future<Note> save(Note note)  {
@@ -29,7 +29,7 @@ public class NoteService {
         return noteRepository.save(notes);
     }
 
-    Future<Void> delete(Note note) {
+    Future<Boolean> delete(Note note) {
         return noteRepository.delete(note.id());
     }
 

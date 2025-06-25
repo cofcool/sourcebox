@@ -1,4 +1,4 @@
-package net.cofcool.sourcebox.internal.simplenote.entity;
+package net.cofcool.sourcebox.internal.api.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.vertx.sqlclient.Row;

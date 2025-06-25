@@ -1,4 +1,4 @@
-package net.cofcool.sourcebox.internal.simplenote;
+package net.cofcool.sourcebox.internal.api;
 
 import io.vertx.core.Vertx;
 import io.vertx.junit5.VertxExtension;
@@ -8,9 +8,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import net.cofcool.sourcebox.BaseTest;
-import net.cofcool.sourcebox.internal.simplenote.entity.ActionRecord;
-import net.cofcool.sourcebox.internal.simplenote.entity.Comment;
-import net.cofcool.sourcebox.internal.simplenote.entity.RefType;
+import net.cofcool.sourcebox.internal.api.entity.ActionRecord;
+import net.cofcool.sourcebox.internal.api.entity.Comment;
+import net.cofcool.sourcebox.internal.api.entity.RefType;
 import net.cofcool.sourcebox.logging.LoggerFactory;
 import net.cofcool.sourcebox.util.SqlRepository;
 import org.junit.jupiter.api.Assertions;

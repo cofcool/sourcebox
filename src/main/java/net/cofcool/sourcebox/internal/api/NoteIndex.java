@@ -1,4 +1,4 @@
-package net.cofcool.sourcebox.internal.simplenote;
+package net.cofcool.sourcebox.internal.api;
 
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.Map;
 import lombok.CustomLog;
 import net.cofcool.sourcebox.WebTool.WebRouter;
-import net.cofcool.sourcebox.internal.simplenote.NoteConfig.NoteCodec;
-import net.cofcool.sourcebox.internal.simplenote.entity.Note;
+import net.cofcool.sourcebox.internal.api.NoteConfig.NoteCodec;
+import net.cofcool.sourcebox.internal.api.entity.Note;
 import net.cofcool.sourcebox.util.JsonUtil;
 import net.cofcool.sourcebox.util.VertxUtils;
 
@@ -22,11 +22,10 @@ public class NoteIndex implements WebRouter {
         var actionIndex = new ActionIndex(vertx, noteService);
         vertx.eventBus().registerDefaultCodec(Note.class, new NoteCodec());
 
-        var router = Router.router(vertx);
+        var router = VertxUtils.createBodyRouter(vertx);
 
         router.route("/").handler(it -> it.redirect(it.request().path() + "static/"));
         router.route("/static/*").handler(VertxUtils.webrootHandler());
-        router.route().handler(VertxUtils.bodyHandler(null));
 
         router.get("/list").respond(context ->
             noteService.find(null).andThen(it -> Json.encodeToBuffer(it.result()))

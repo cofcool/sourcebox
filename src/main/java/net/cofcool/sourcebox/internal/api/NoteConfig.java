@@ -1,9 +1,9 @@
-package net.cofcool.sourcebox.internal.simplenote;
+package net.cofcool.sourcebox.internal.api;
 
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.eventbus.MessageCodec;
 import io.vertx.core.json.Json;
-import net.cofcool.sourcebox.internal.simplenote.entity.Note;
+import net.cofcool.sourcebox.internal.api.entity.Note;
 import net.cofcool.sourcebox.runner.WebRunner;
 
 public interface NoteConfig {

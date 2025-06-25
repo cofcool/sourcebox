@@ -155,4 +155,10 @@ public final class VertxUtils {
 
     }
 
+    public static Router createBodyRouter(Vertx vertx) {
+        var router = Router.router(vertx);
+        router.route().handler(bodyHandler(null));
+        return router;
+    }
+
 }

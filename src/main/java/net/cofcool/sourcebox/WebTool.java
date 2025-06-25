@@ -8,7 +8,6 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpRequest.Builder;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import net.cofcool.sourcebox.util.JsonUtil;
@@ -70,15 +69,7 @@ public interface WebTool extends Tool, VertxDeployer {
     }
 
     default boolean deleteRequestLocalData(String methodPath) {
-        var f = new AtomicBoolean();
-        Utils.requestLocalData(getPort(), methodPath, Map.class, Builder::DELETE, e -> {
-            if (e != null) {
-                getLogger().error("request " + methodPath + " error", e);
-                f.set(true);
-            }
-        });
-
-        return f.get();
+        return requestLocalData(methodPath, Boolean.class, Builder::DELETE);
     }
 
     class RouterTypeManger {

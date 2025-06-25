@@ -7,7 +7,7 @@ import io.vertx.junit5.VertxTestContext;
 import net.cofcool.sourcebox.Tool.Args;
 import net.cofcool.sourcebox.Tool.RunnerType;
 import net.cofcool.sourcebox.ToolName;
-import net.cofcool.sourcebox.internal.simplenote.NoteConfig;
+import net.cofcool.sourcebox.internal.api.NoteConfig;
 import net.cofcool.sourcebox.runner.WebRunner.WebToolContext;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.Assertions;

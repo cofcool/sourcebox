@@ -20,7 +20,7 @@ import net.cofcool.sourcebox.Utils;
 import net.cofcool.sourcebox.internal.JsonFormatterTest;
 import net.cofcool.sourcebox.internal.JsonToPojoTest;
 import net.cofcool.sourcebox.internal.TrelloToLogseqImporterTest;
-import net.cofcool.sourcebox.internal.simplenote.NoteConfig;
+import net.cofcool.sourcebox.internal.api.NoteConfig;
 import net.cofcool.sourcebox.runner.WebRunner.WebToolContext;
 import net.cofcool.sourcebox.util.VertxUtils;
 import org.junit.jupiter.api.Assertions;

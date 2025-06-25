@@ -1,4 +1,4 @@
-package net.cofcool.sourcebox.internal.simplenote;
+package net.cofcool.sourcebox.internal.api;
 
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -14,13 +14,13 @@ import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import lombok.CustomLog;
-import net.cofcool.sourcebox.internal.simplenote.entity.ActionRecord;
-import net.cofcool.sourcebox.internal.simplenote.entity.ActionState;
-import net.cofcool.sourcebox.internal.simplenote.entity.ActionType;
-import net.cofcool.sourcebox.internal.simplenote.entity.ActionType.Type;
-import net.cofcool.sourcebox.internal.simplenote.entity.Comment;
-import net.cofcool.sourcebox.internal.simplenote.entity.Note;
-import net.cofcool.sourcebox.internal.simplenote.entity.RefType;
+import net.cofcool.sourcebox.internal.api.entity.ActionRecord;
+import net.cofcool.sourcebox.internal.api.entity.ActionState;
+import net.cofcool.sourcebox.internal.api.entity.ActionType;
+import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
+import net.cofcool.sourcebox.internal.api.entity.Comment;
+import net.cofcool.sourcebox.internal.api.entity.Note;
+import net.cofcool.sourcebox.internal.api.entity.RefType;
 import net.cofcool.sourcebox.util.QueryBuilder;
 import net.cofcool.sourcebox.util.SqlRepository;
 import net.cofcool.sourcebox.util.Utils;
@@ -39,9 +39,9 @@ public class ActionService {
     private final NoteService noteService;
 
     public ActionService(Vertx vertx, NoteService noteService) {
-        this.actionRecordSqlRepository = SqlRepository.create(vertx, ActionRecord.class);
-        this.commentSqlRepository = SqlRepository.create(vertx, Comment.class);
-        this.actionTypeSqlRepository = SqlRepository.create(vertx, ActionType.class);
+        this.actionRecordSqlRepository = SqlRepository.create(ActionRecord.class);
+        this.commentSqlRepository = SqlRepository.create(Comment.class);
+        this.actionTypeSqlRepository = SqlRepository.create(ActionType.class);
         this.noteService = noteService;
     }
 
@@ -181,7 +181,7 @@ public class ActionService {
         return delete(ids, commentSqlRepository::delete);
     }
 
-    private Future<String> delete(Set<String> ids, Function<String, Future<Void>> deleteFunc) {
+    private Future<String> delete(Set<String> ids, Function<String, Future<Boolean>> deleteFunc) {
         var ret = ids.stream()
             .map(deleteFunc)
             .collect(Collectors.toList());

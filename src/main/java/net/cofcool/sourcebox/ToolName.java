@@ -2,6 +2,7 @@ package net.cofcool.sourcebox;
 
 import net.cofcool.sourcebox.internal.ClippingsToMd;
 import net.cofcool.sourcebox.internal.CodeGenerator;
+import net.cofcool.sourcebox.internal.CommandHelper;
 import net.cofcool.sourcebox.internal.Converts;
 import net.cofcool.sourcebox.internal.DiffAnalysis;
 import net.cofcool.sourcebox.internal.DirWebServer;
@@ -18,7 +19,6 @@ import net.cofcool.sourcebox.internal.ShellStarter;
 import net.cofcool.sourcebox.internal.SimpleNote;
 import net.cofcool.sourcebox.internal.ToDo;
 import net.cofcool.sourcebox.internal.TrelloToLogseqImporter;
-import net.cofcool.sourcebox.internal.commandhelper.CommandHelper;
 
 public enum ToolName {
     trelloLogseqImporter("read trello backup json file and convert to logseq md file", TrelloToLogseqImporter.class),

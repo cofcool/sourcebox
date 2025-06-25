@@ -1,4 +1,4 @@
-package net.cofcool.sourcebox.internal.simplenote;
+package net.cofcool.sourcebox.internal.api;
 
 import io.vertx.core.Future;
 import io.vertx.core.MultiMap;
@@ -8,8 +8,8 @@ import io.vertx.ext.web.RoutingContext;
 import java.util.List;
 import java.util.Set;
 import lombok.CustomLog;
-import net.cofcool.sourcebox.internal.simplenote.entity.ActionRecord;
-import net.cofcool.sourcebox.internal.simplenote.entity.ActionType.Type;
+import net.cofcool.sourcebox.internal.api.entity.ActionRecord;
+import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
 import net.cofcool.sourcebox.util.JsonUtil;
 import net.cofcool.sourcebox.util.VertxUtils;
 
@@ -25,9 +25,7 @@ public class ActionIndex {
     }
 
     public Router mountRoute(Router parentRouter) {
-        var router = Router.router(vertx);
-
-        router.route().handler(VertxUtils.bodyHandler(null));
+        var router = VertxUtils.createBodyRouter(vertx);
 
         router.get("/example").respond(r -> actionService.example());
         router.get("/types").respond(r -> actionService.findAllType());

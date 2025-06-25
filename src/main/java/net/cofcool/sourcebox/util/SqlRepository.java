@@ -77,16 +77,31 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
     public Future<T> save(T entity) {
         Optional<String> id = tableInfo.getIdVal(entity);
         if (id.isEmpty()) {
-            return insert(entity);
+            return insert(invokeAction(entity, false));
         } else {
             return find(id.get()).compose(
-                n -> update(id.get(), n, entity),
+                n -> {
+                   return update(id.get(), n, invokeAction(entity, true));
+                },
                 e -> {
                     log.debug(e.getMessage());
-                    return insert(entity);
+                    return insert(invokeAction(entity, false));
                 }
             );
         }
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private T invokeAction(T entity, boolean update) {
+        if (entity instanceof EntityAction ea) {
+            if (update) {
+                return (T) ea.beforeUpdate();
+            } else {
+                return (T) ea.beforeInsert();
+            }
+        }
+
+        return entity;
     }
 
     private PreparedQuery<RowSet<Row>> preparedQuery(String sql) {
@@ -143,14 +158,14 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
             )
             .executeBatch(
                 entities.stream()
-                    .map(e -> Tuple.wrap(readProperties(e, false).values().toArray()))
+                    .map(e -> Tuple.wrap(readProperties(invokeAction(e, false), false).values().toArray()))
                     .toList()
             )
             .compose(rows -> rows.rowCount() > 0 ? Future.succeededFuture() : Future.failedFuture("No data save"));
     }
 
     @Override
-    public Future<Void> delete(String id) {
+    public Future<Boolean> delete(String id) {
         return preparedQuery(
                     "delete from "
                         + tableInfo.name()
@@ -159,7 +174,7 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
                         + " = ?"
                 )
                 .execute(Tuple.of(id))
-                .compose(rows -> rows.rowCount() > 0 ? Future.succeededFuture() : Future.failedFuture("No data delete"));
+                .compose(rows -> rows.rowCount() > 0 ? Future.succeededFuture(true) : Future.failedFuture("No data delete"));
     }
 
     @Override

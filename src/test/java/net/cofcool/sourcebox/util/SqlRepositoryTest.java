@@ -8,6 +8,7 @@ import io.vertx.core.Vertx;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import java.sql.JDBCType;
+import java.time.LocalDateTime;
 import java.util.List;
 import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.logging.LoggerFactory;
@@ -144,8 +145,23 @@ class SqlRepositoryTest extends BaseTest {
         @Column(name = "name", type = JDBCType.CHAR, length = 30)
         String name,
         @Column(name = "pwd", type = JDBCType.CHAR, length = 50)
-        String pwd
-    ) {
+        String pwd,
+        @Column(name = "time", type = JDBCType.TIMESTAMP)
+        LocalDateTime time
+    ) implements EntityAction<User> {
 
+        @Override
+        public User beforeUpdate() {
+            return new User(id, name, pwd, LocalDateTime.now());
+        }
+
+        @Override
+        public User beforeInsert() {
+            return new User(id, name, pwd, time == null ? LocalDateTime.now() : time);
+        }
+
+        public User(String id, String name, String pwd) {
+            this(id, name, pwd, null);
+        }
     }
 }

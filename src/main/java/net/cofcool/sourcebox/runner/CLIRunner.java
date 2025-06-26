@@ -38,24 +38,15 @@ public class CLIRunner implements ToolRunner {
                                     v.close();
                                 } else {
                                     log.info("Server run result is " + r.result());
-                                    if (webTool.supportCommand()) {
-                                        v.executeBlocking(() -> {
-                                            Exception ex = null;
-                                            try {
-                                                webTool.run(newArgs);
-                                            } catch (Exception e) {
-                                                ex = e;
-                                            }
-                                            return ex;
-                                        }).onComplete(tr -> {
-                                            v.close();
-                                            if (tr.result() != null) {
-                                                log.error(tr.result());
-                                            }
-                                        });
-                                    }
                                 }
-                            });
+                            }).toCompletionStage().toCompletableFuture().get();
+                        if (webTool.supportCommand()) {
+                            try {
+                                webTool.run(newArgs);
+                            } finally {
+                                v.close();
+                            }
+                        }
                     } else {
                         tool.run(newArgs);
                     }

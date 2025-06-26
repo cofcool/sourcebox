@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.CustomLog;
 import net.cofcool.sourcebox.App;
+import net.cofcool.sourcebox.internal.api.ConfigService;
 import net.cofcool.sourcebox.util.TableInfoHelper.TableInfo;
 import net.cofcool.sourcebox.util.TableInfoHelper.TableProperty;
 import net.cofcool.sourcebox.util.VertxUtils.JDBCPoolConfig;
@@ -38,7 +39,7 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
         log.debug("Init {0}", url);
 
         try {
-            DBMigrator.migrator(poolConfig);
+            ConfigService.migrator(poolConfig);
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }

@@ -12,12 +12,14 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import net.cofcool.sourcebox.BaseTest;
+import net.cofcool.sourcebox.internal.api.CommandService.HistoryProcessor;
 import net.cofcool.sourcebox.logging.LoggerFactory;
 import net.cofcool.sourcebox.util.SqlRepository;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
@@ -140,5 +142,22 @@ class CommandServiceTest extends BaseTest {
                 Assertions.assertFalse(r.isEmpty());
                 testContext.completeNow();
             })));
+    }
+
+    @Test
+    void hisProcessor(Vertx vertx, VertxTestContext testContext) {
+        HistoryProcessor
+            .process()
+            .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
+                Assertions.assertFalse(r.isEmpty());
+                testContext.completeNow();
+            })));
+    }
+
+    @Test
+    @Disabled
+    void importHisProcessor(Vertx vertx, VertxTestContext testContext) {
+        commandManager.importHis()
+            .onComplete(testContext.succeeding(r -> testContext.verify(testContext::completeNow)));
     }
 }

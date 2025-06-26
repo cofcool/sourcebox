@@ -1,20 +1,64 @@
-package net.cofcool.sourcebox.util;
+package net.cofcool.sourcebox.internal.api;
 
+import io.vertx.core.Future;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.CustomLog;
+import net.cofcool.sourcebox.internal.api.entity.Config;
+import net.cofcool.sourcebox.util.JsonUtil;
+import net.cofcool.sourcebox.util.SqlRepository;
 import net.cofcool.sourcebox.util.VertxUtils.JDBCPoolConfig;
 
 @CustomLog
-public class DBMigrator {
+public class ConfigService {
 
     static final int DB_VERSION = 4;
+
+    private static final class ServiceHolder {
+        private static final ConfigService SERVICE = new ConfigService();
+    }
+
+    public static ConfigService getService() {
+        return ServiceHolder.SERVICE;
+    }
+
+    private final SqlRepository<Config> repository = SqlRepository.create(Config.class);
+
+    public Future<Config> put(String key, String val) {
+        return repository.save(new Config(key, val, LocalDateTime.now()));
+    }
+
+    public Future<Config> put(String key, Object val) {
+        return repository.save(new Config(key, JsonUtil.toJson(val), LocalDateTime.now()));
+    }
+
+    public <T> Future<T> get(String key, Class<T> clazz) {
+        return repository.find(key).compose(c -> Future.succeededFuture(JsonUtil.toPojo(c.data(), clazz)));
+    }
+
+    public Future<String> get(String key) {
+        return repository.find(key).compose(c -> Future.succeededFuture(c.data()));
+    }
+
+    public Future<String> get(String key, String defaultVal) {
+        return repository.find(key)
+            .compose(c -> Future.succeededFuture(c.data()))
+            .otherwise(e -> {
+                log.info("Get config {0} error: {1}", key, e.getMessage());
+                return defaultVal;
+            });
+    }
+
+    public Future<Config> getConfig(String key) {
+        return repository.find(key).compose(Future::succeededFuture);
+    }
 
     public static void migrator(JDBCPoolConfig config) throws Exception {
         Map<Integer, List<String>> migrationSteps = new LinkedHashMap<>();

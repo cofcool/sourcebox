@@ -145,9 +145,14 @@ public class TableInfoHelper {
             return length;
         }
 
+        @SuppressWarnings("rawtypes")
         public <T> Object getVal(T entity) {
             try {
-                return field.get(entity);
+                var v = field.get(entity);
+                if (v instanceof List v1) {
+                    v = v1.toArray();
+                }
+                return v;
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
             }

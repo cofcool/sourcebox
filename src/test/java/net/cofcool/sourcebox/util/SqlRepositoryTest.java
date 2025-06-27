@@ -23,12 +23,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 class SqlRepositoryTest extends BaseTest {
 
     static SqlRepository<User> repository;
+    static SqlRepository<Tmp> tmpRepository;
 
     @BeforeAll
     static void create(Vertx vertx, VertxTestContext testContext) {
         LoggerFactory.setDebug(true);
         SqlRepository.init(vertx);
         repository = SqlRepository.create(User.class);
+        tmpRepository = SqlRepository.create(Tmp.class);
         repository.save(new User("1", "test1", "12345"))
             .onComplete(testContext.succeeding(t -> testContext.completeNow()));
     }
@@ -55,6 +57,14 @@ class SqlRepositoryTest extends BaseTest {
                 assertEquals("test21", r.name());
                 testContext.completeNow();
             })));
+    }
+
+    @Test
+    void saveTmp(Vertx vertx, VertxTestContext testContext) {
+        tmpRepository
+            .save(new Tmp("/tmp"))
+            .compose(a -> tmpRepository.save(new Tmp("/tmp")))
+            .onComplete(testContext.succeeding(r -> testContext.verify(testContext::completeNow)));
     }
 
     @Test
@@ -136,6 +146,13 @@ class SqlRepositoryTest extends BaseTest {
                 testContext.completeNow();
             })));
     }
+
+    @Entity(name = "tmp")
+    record Tmp(
+        @ID
+        @Column(name = "path", type = JDBCType.CHAR, length = 5)
+        String path
+    ) {}
 
     @Entity(name = "user")
     record User(

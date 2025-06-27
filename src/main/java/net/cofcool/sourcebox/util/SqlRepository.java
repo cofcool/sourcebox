@@ -118,7 +118,7 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
                 "UPDATE " + tableInfo.name()
                     + " SET "
                     + columns.keySet().stream().map(k -> " " + k + "=?").collect(Collectors.joining(","))
-                + " WHERE id = ? "
+                + " WHERE " + tableInfo.id().name() + "=?"
             )
             .execute(Tuple.wrap(args.toArray()))
             .compose(rows -> rows.rowCount() > 0 ? Future.succeededFuture(entity) : Future.failedFuture("No data update"));

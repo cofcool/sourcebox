@@ -19,9 +19,9 @@ import org.apache.commons.lang3.StringUtils;
 @Entity(name = "command_record")
 public record CommandRecord(
     @ID
-    @Column(name = "id", type = JDBCType.CHAR, length = 32)
+    @Column(name = "id", type = JDBCType.VARCHAR, length = 32)
     String id,
-    @Column(name = "cmd", type = JDBCType.VARCHAR, length = 1024)
+    @Column(name = "cmd", type = JDBCType.VARCHAR, length = 2048)
     String cmd,
     @Column(name = "alias", type = JDBCType.VARCHAR, length = 50, nullable = true)
     String alias,
@@ -93,6 +93,10 @@ public record CommandRecord(
             row.getLocalDateTime("CREATE_TIME"),
             row.getLocalDateTime("UPDATE_TIME")
         );
+    }
+
+    public CommandRecord incrementFrequency() {
+        return new CommandRecord(id, null, null, null, null, frequency+1, null, LocalDateTime.now());
     }
 
     @Override

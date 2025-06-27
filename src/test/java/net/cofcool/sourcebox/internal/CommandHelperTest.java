@@ -48,7 +48,7 @@ class CommandHelperTest extends BaseTest {
     @Test
     void run(Vertx vertx, VertxTestContext testContext) throws Exception {
         testContext.verify(() -> {
-            instance().run(args.arg(NoteConfig.PORT_KEY, port));
+            instance().run(args.arg(NoteConfig.PORT_KEY, port).arg("find", "ALL"));
             testContext.completeNow();
         });
     }

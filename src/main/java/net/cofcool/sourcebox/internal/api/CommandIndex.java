@@ -37,6 +37,14 @@ public class CommandIndex implements WebRouter {
             return commandService.find(p.get("q"));
         });
 
+        router.get("/import").respond(r -> {
+            vertx.executeBlocking(commandService::importHis);
+            return Future.succeededFuture(true);
+        });
+
+        router.post("/enter/:id")
+            .respond(r ->  commandService.enter(r.pathParam("id")));
+
         router.post("/quick")
             .respond(r -> commandService.save(r.body().asPojo(CommandRecord.class).cmd()));
 

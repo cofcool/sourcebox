@@ -19,6 +19,7 @@ import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BasicAuthHandler;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.FileSystemAccess;
+import io.vertx.ext.web.handler.LoggerHandler;
 import io.vertx.ext.web.handler.SessionHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.sstore.SessionStore;
@@ -158,6 +159,7 @@ public final class VertxUtils {
     public static Router createBodyRouter(Vertx vertx) {
         var router = Router.router(vertx);
         router.route().handler(bodyHandler(null));
+        router.route().handler(LoggerHandler.create());
         return router;
     }
 

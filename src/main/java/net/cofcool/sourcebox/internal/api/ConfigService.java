@@ -19,7 +19,7 @@ import net.cofcool.sourcebox.util.VertxUtils.JDBCPoolConfig;
 @CustomLog
 public class ConfigService {
 
-    static final int DB_VERSION = 4;
+    static final int DB_VERSION = 5;
 
     private static final class ServiceHolder {
         private static final ConfigService SERVICE = new ConfigService();
@@ -74,6 +74,11 @@ public class ConfigService {
 
         migrationSteps.put(4, List.of(
             "ALTER TABLE action_record ALTER COLUMN name VARCHAR(512)"
+        ));
+
+        migrationSteps.put(5, List.of(
+            "ALTER TABLE command_record ALTER COLUMN id VARCHAR(32)",
+            "ALTER TABLE command_record ALTER COLUMN cmd VARCHAR(2048)"
         ));
 
         try (Connection conn = DriverManager.getConnection(config.getUrl());

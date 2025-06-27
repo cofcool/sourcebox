@@ -129,9 +129,10 @@ class CommandServiceTest extends BaseTest {
             .compose(i -> commandManager.find("@mymd5"))
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 assertTrue(r.isEmpty());
-                testContext.completeNow();
-            }))).compose(i -> commandManager
-                .save("@mymd5 mytool --tool=converts --cmd=md5 #md5 #my"));
+            })))
+            .compose(i -> commandManager
+                .save("@mymd5 mytool --tool=converts --cmd=md5 #md5 #my"))
+            .onComplete(i -> testContext.completeNow());
     }
 
     @Test
@@ -140,6 +141,16 @@ class CommandServiceTest extends BaseTest {
             .findByCmd("kafka")
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertFalse(r.isEmpty());
+                testContext.completeNow();
+            })));
+    }
+
+    @Test
+    void enter(Vertx vertx, VertxTestContext testContext) {
+        commandManager
+            .enter("@mymd5")
+            .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
+                Assertions.assertTrue(r.frequency() > 0);
                 testContext.completeNow();
             })));
     }

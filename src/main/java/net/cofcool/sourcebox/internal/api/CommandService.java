@@ -60,6 +60,11 @@ public class CommandService {
         return repository.save(command);
     }
 
+    public Future<CommandRecord> enter(String id) {
+        return repository.find(id)
+            .compose(c -> repository.save(c.incrementFrequency()));
+    }
+
     public Future<CommandRecord> save(String command) {
         String alias = null;
         var tags = new ArrayList<String>();
@@ -97,6 +102,8 @@ public class CommandService {
                 .builder()
                 .from(CommandRecord.class)
                 .select()
+                .limit(6)
+                .orderBy("frequency desc")
                 .and("cmd like '%" + cmd + "%'")
         );
     }
@@ -106,20 +113,21 @@ public class CommandService {
     }
 
     public Future<List<CommandRecord>> find(String aliasTags) {
-        if (aliasTags == null || "ALL".equals(aliasTags)) {
-            return repository.find();
-        }
+        var builder = QueryBuilder.builder().select().from(CommandRecord.class)
+            .orderBy("create_time desc").limit(20);
 
-        var builder = QueryBuilder.builder().select().from(CommandRecord.class);
-        for (String s : aliasTags.split(" ")) {
-            if (s.startsWith("@")) {
-                builder.and("alias=?", s);
-            } else if (s.startsWith("#")) {
-                builder.and("? in (unnest(tags))", s);
-            } else {
-                builder.and("alias=?", "@" + s);;
+        if (aliasTags != null && !"ALL".equals(aliasTags)) {
+            for (String s : aliasTags.split(" ")) {
+                if (s.startsWith("@")) {
+                    builder.and("alias=?", s);
+                } else if (s.startsWith("#")) {
+                    builder.and("? in (unnest(tags))", s);
+                } else {
+                    builder.and("alias=?", "@" + s);;
+                }
             }
         }
+
         return repository.find(builder);
     }
 
@@ -172,14 +180,23 @@ public class CommandService {
         return HistoryProcessor
             .process()
             .map(h -> h.stream()
-                .map(s -> CommandRecord.builder().cmd(s).remark("his").build()).toList())
-            .onSuccess(h -> {
-                h.forEach(c -> {
-                    find(c).onFailure(i ->
-                        save(c.cmd()).onFailure(e -> log.error("Save error when import his", e))
-                    );
-                });
-            });
+                .map(s -> CommandRecord.builder().cmd(s).frequency(0).tags(List.of("#his")).remark("his").build()).toList())
+            .compose(h -> {
+                log.info("Start save {0} history records", h.size());
+                return Future.join(h
+                    .stream()
+                    .map(c ->
+                        repository.find(c.id()).compose(
+                            i -> Future.succeededFuture(),
+                            i ->
+                            save(c).onFailure(e -> log.error("Save error when import his", e))
+                        )
+                    )
+                    .toList()
+                );
+            })
+            .onFailure(e -> log.error("Import history error", e))
+            .onSuccess(r -> log.info("Import history ok"));
     }
 
     private void loadOrInitData(String path) {
@@ -249,22 +266,23 @@ public class CommandService {
                         .map(reader ->
                             getLastModifiedTime(reader.getName())
                                 .compose(i -> {
-                                    List<String> commands;
-                                    if (i < reader.getModifiedTime()) {
+                                    var modifiedTime = reader.getModifiedTime();
+                                    if (i < modifiedTime) {
                                         try {
-                                            commands = new ArrayList<>(reader.readCommands());
+                                            var commands = new ArrayList<>(reader.readCommands());
+                                            return storeLastModifiedTime(
+                                                reader.getName(),
+                                                modifiedTime
+                                            )
+                                                .compose(c -> Future.succeededFuture(
+                                                    new LastRecord(modifiedTime, commands))
+                                                );
                                         } catch (IOException e) {
                                             throw new RuntimeException("read history error", e);
                                         }
                                     } else {
-                                        return Future.failedFuture("No need to update history");
+                                        return Future.succeededFuture(new LastRecord(modifiedTime, List.of()));
                                     }
-                                    return storeLastModifiedTime(
-                                        LASTMT + "." + reader.getName(),
-                                        reader.getModifiedTime()
-                                    )
-                                        .compose(c -> Future.succeededFuture(
-                                            new LastRecord(reader.getModifiedTime(), commands)));
                                 }))
                         .toList()
                 )
@@ -272,7 +290,8 @@ public class CommandService {
                     List<LastRecord> val = i.list();
                     return Future.succeededFuture(
                         new LinkedHashSet<>(
-                            val.stream().map(v -> v.cmds)
+                            val.stream()
+                                .map(v -> v.cmds)
                                 .reduce(new ArrayList<>(), (v1, v2) -> {
                                     v1.addAll(v2);
                                     return v1;

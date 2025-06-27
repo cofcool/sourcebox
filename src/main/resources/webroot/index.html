@@ -1,50 +1,89 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="zh">
 <head>
   <meta charset="UTF-8">
+  <title>The Source Box</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="./3.3.2.js"></script>
   <script src="./jquery-3.7.0.min.js"></script>
-  <title>Simple Note</title>
+  <style>
+    .sidebar-collapsed .label {
+      display: none;
+    }
+    .sidebar-collapsed {
+      width: 4rem;
+    }
+    .sidebar-expanded {
+      width: 12rem;
+    }
+  </style>
 </head>
-<body>
-<form action="" id="saveForm">
-  <label>
-    <textarea placeholder="请输入内容" name="note"></textarea>
-  </label>
-  <button type="submit" >保存</button>
-</form>
+<body class="flex h-screen bg-gray-100">
+
+<!-- 左侧侧边栏 -->
+<aside id="sidebar" class="sidebar-expanded bg-white shadow flex flex-col transition-all duration-300">
+  <button onclick="toggleSidebar()" class="p-4 border-b text-left hover:bg-gray-100">
+    ☰ <span class="label ml-2">菜单</span>
+  </button>
+  <button class="tab-btn p-4 border-b flex items-center hover:bg-gray-100" data-tab="timestamp">
+    ⏱ <span class="label ml-2">时间戳</span>
+  </button>
+  <button class="tab-btn p-4 border-b flex items-center hover:bg-gray-100" data-tab="notepad">
+    📝 <span class="label ml-2">记事本</span>
+  </button>
+  <button class="tab-btn p-4 border-b flex items-center hover:bg-gray-100" data-tab="converter">
+    📏 <span class="label ml-2">换算</span>
+  </button>
+  <button class="tab-btn p-4 border-b flex items-center hover:bg-gray-100" data-tab="todo">
+    ✅ <span class="label ml-2">TODO</span>
+  </button>
+</aside>
+
+<!-- 内容区 -->
+<main class="flex-1 p-6 overflow-auto">
+  <div id="content" class="max-w-4xl mx-auto bg-white p-6 rounded shadow text-gray-800">
+    请选择左侧的工具...
+  </div>
+</main>
+
 <script>
-$.getJSON( "../list", function( data ) {
-  var items = [];
-  $.each( data, function( key, val ) {
-    items.push( "<li id='" + key + "'>" + val.content + ' - ' + val.date + "</li>" );
+  let expanded = true;
+
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    expanded = !expanded;
+    sidebar.classList.toggle('sidebar-collapsed', !expanded);
+    sidebar.classList.toggle('sidebar-expanded', expanded);
+  }
+
+  const tabContentMap = {
+    timestamp: '/api/tool/timestamp',    // 示例：替换为你真实的API
+    notepad: '/api/tool/notepad',
+    converter: '/api/tool/converter',
+    todo: '/api/tool/todo',
+  };
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const tab = btn.dataset.tab;
+      const url = tabContentMap[tab];
+      if (!url) return;
+
+      document.getElementById('content').innerHTML = '加载中...';
+      try {
+        const res = await fetch(url);
+        const html = await res.text();
+        document.getElementById('content').innerHTML = html;
+      } catch (e) {
+        document.getElementById('content').innerHTML = '加载失败';
+      }
+    });
   });
 
-  $( "<ul/>", {
-    "class": "w-full",
-    html: items.join( "" )
-  }).appendTo( "body" );
-});
-
-saveForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-var data = {};
-data.content = e.target[0].value;
-
-
-$.ajax({
-  type: "POST",
-  url: "../note",
-  data: JSON.stringify(data),
-  success: function() {
-    e.target.reset();
-    location.reload();
-  },
-  dataType: "json"
-});
-});
-
+  toggleSidebar(); // 默认收起
 </script>
+<footer class="fixed bottom-0 w-full text-center text-sm text-gray-500 py-3 bg-white border-t shadow">
+  © 2025 <a href="https://github.com/cofcool" target="_blank">CofCool</a> | 使用 Tailwind CSS + 原生 JS 构建
+</footer>
 </body>
 </html>

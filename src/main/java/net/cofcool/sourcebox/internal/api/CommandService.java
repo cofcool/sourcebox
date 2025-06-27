@@ -116,6 +116,10 @@ public class CommandService {
         var builder = QueryBuilder.builder().select().from(CommandRecord.class)
             .orderBy("create_time desc").limit(20);
 
+        return find(builder, aliasTags);
+    }
+
+    private Future<List<CommandRecord>> find(QueryBuilder builder, String aliasTags) {
         if (aliasTags != null && !"ALL".equals(aliasTags)) {
             for (String s : aliasTags.split(" ")) {
                 if (s.startsWith("@")) {
@@ -136,12 +140,12 @@ public class CommandService {
     }
 
     public Future<Boolean> store(String alias) {
-        return find(alias)
-            .compose(i -> Future.succeededFuture(
-                i.stream()
-                    .filter(CommandRecord::hasAlias)
-                    .toList()
-            ))
+        QueryBuilder builder = QueryBuilder.builder().select().from(CommandRecord.class)
+            .limit(200);
+        if (alias == null || "ALL".equals(alias)) {
+            builder.and("alias is not null");
+        }
+        return find(builder, alias)
             .compose(i -> {
                 try {
                     File file = new File(aliasPath);

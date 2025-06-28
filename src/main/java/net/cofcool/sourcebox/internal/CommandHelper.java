@@ -7,6 +7,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.CustomLog;
+import net.cofcool.sourcebox.ToolContext;
 import net.cofcool.sourcebox.ToolName;
 import net.cofcool.sourcebox.WebTool;
 import net.cofcool.sourcebox.internal.api.CommandIndex;
@@ -31,6 +32,7 @@ import org.jline.terminal.TerminalBuilder;
 public class CommandHelper implements WebTool {
 
     private String port;
+    private ToolContext toolContext;
 
     @Override
     public ToolName name() {
@@ -44,6 +46,7 @@ public class CommandHelper implements WebTool {
 
     @Override
     public void run(Args args) throws Exception {
+        toolContext = args.getContext();
         args.readArg(NoteConfig.PORT_KEY).ifPresent(a -> port = a.val());
         var command = args.readArg("add");
         if (command.isPresent()) {
@@ -73,11 +76,11 @@ public class CommandHelper implements WebTool {
         if (find.isPresent()) {
             var q = "/cmd/quick?q="+ URLEncoder.encode(find.val(), StandardCharsets.UTF_8);
             var data = getRequestLocalData(q, Commands.class);
-            args.getContext().write(toPrintStr(data));
+            toolContext.write(toPrintStr(data));
             return;
         }
 
-        if (args.getContext().runnerType() == RunnerType.CLI) {
+        if (toolContext.runnerType() == RunnerType.CLI) {
             new InteractiveShell().launch();
         }
     }
@@ -159,7 +162,7 @@ public class CommandHelper implements WebTool {
                         }
                     );
 
-                    System.out.println(line);
+                    toolContext.write(line);
                     return;
                 } catch (UserInterruptException e) {
                     terminal.writer().println("\nInterrupt，enter 'exit' to exit");
@@ -167,7 +170,7 @@ public class CommandHelper implements WebTool {
                     terminal.writer().println("\nEOF (Ctrl+D)，exit");
                     return;
                 } catch (Exception e) {
-                    log.error("Read input command error", e);
+                    terminal.writer().println("\nRead input command error: " + e);
                 }
             }
         }

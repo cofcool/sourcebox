@@ -39,6 +39,7 @@
 
 * 命令管理，方便管理日常使用的长命令，如查询，添加标签等
 * 别名管理，可针对长命令配置别名，并导出到当前环境
+* 历史记录管理，导入、管理 zsh、bash 的命令历史记录 
 
 使用:
 
@@ -58,6 +59,8 @@
 @mnow sourcebox --tool=converts --cmd=now #sourcebox
 @mhdate sourcebox --tool=converts --cmd=hdate #sourcebox
 ```
+
+注意：执行无参命令时会自动导入 shell 的历史记录，并进入 REPL 环境，输入命令时自动根据历史记录进行补全，确定后会输出到标准输出流中，**如想实现命令确认后立即执行**，使用： `eval $(helper)` 
 
 ## 常用字符串转换工具
 

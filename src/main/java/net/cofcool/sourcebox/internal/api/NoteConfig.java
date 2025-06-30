@@ -3,12 +3,12 @@ package net.cofcool.sourcebox.internal.api;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.eventbus.MessageCodec;
 import io.vertx.core.json.Json;
+import net.cofcool.sourcebox.ToolRunner;
 import net.cofcool.sourcebox.internal.api.entity.Note;
-import net.cofcool.sourcebox.runner.WebRunner;
 
 public interface NoteConfig {
     String PORT_KEY = "port";
-    int PORT_VAL = WebRunner.PORT_VAL;
+    int PORT_VAL = ToolRunner.DEFAULT_PORT;
 
     String PATH_KEY = "filepath";
     String PATH_VAL = "./";

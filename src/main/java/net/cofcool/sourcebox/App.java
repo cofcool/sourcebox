@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import net.cofcool.sourcebox.Tool.Arg;
@@ -37,10 +38,24 @@ public class App {
         RunnerType.GUI, new GUIRunner()
     );
 
+    private static final Map<String, Object> OBJECT_MAP = new ConcurrentHashMap<>();
+
     static final Args ALIAS = new Args();
 
     static String GLOBAL_CFG_DIR = FilenameUtils.concat(System.getProperty("user.home"), ".mytool");
     private static String GLOBAL_CFG;
+
+    public static Optional<Object> getOpGlobalConfig(String key) {
+        return Optional.ofNullable(OBJECT_MAP.get(key));
+    }
+
+    public static Object getGlobalConfig(String key) {
+        return OBJECT_MAP.get(key);
+    }
+
+    public static void setGlobalConfig(String key, Object obj) {
+        OBJECT_MAP.put(key, obj);
+    }
 
 
     public static void main(String[] args) throws Exception {
@@ -115,6 +130,7 @@ public class App {
             if (runner == null) {
                 throw new IllegalArgumentException("Unknown mode: " + mode);
             }
+            ToolRunner.initGlobalConfig();
             notRun.set(!runner.run(pArgs));
         } catch (Exception e) {
             notRun.set(false);

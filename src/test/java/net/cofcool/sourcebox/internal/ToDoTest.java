@@ -10,7 +10,6 @@ import java.nio.charset.StandardCharsets;
 import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.Tool;
 import net.cofcool.sourcebox.Tool.Args;
-import net.cofcool.sourcebox.Utils;
 import net.cofcool.sourcebox.internal.api.NoteConfig;
 import net.cofcool.sourcebox.internal.api.entity.ActionRecord;
 import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
@@ -27,7 +26,7 @@ import org.junit.jupiter.api.io.TempDir;
 class ToDoTest extends BaseTest {
 
     static final String PATH = "./target/";
-    static String port = Utils.randomPort();
+
 
     @TempDir
     File tmpDir;
@@ -42,7 +41,6 @@ class ToDoTest extends BaseTest {
         var t = new ToDo();
         var args = new Args().copyConfigFrom(t.config())
             .arg(NoteConfig.PATH_KEY, PATH)
-            .arg(NoteConfig.PORT_KEY, port)
             .context(new ConsoleToolContext());
         t.deploy(vertx, new CLIWebToolVerticle(t), args)
             .onSuccess(a -> {
@@ -60,8 +58,8 @@ class ToDoTest extends BaseTest {
     @Test
     void list(Vertx vertx, VertxTestContext testContext) throws Exception {
         testContext.verify(() -> {
-            instance().run(args.arg(NoteConfig.PORT_KEY, port));
-            instance().run(args.arg(NoteConfig.PORT_KEY, port).arg("find", "state=todo"));
+            instance().run(args);
+            instance().run(args.arg("find", "state=todo"));
             testContext.completeNow();
         });
     }
@@ -71,7 +69,7 @@ class ToDoTest extends BaseTest {
         testContext.verify(() -> {
             var t = ActionRecord.builder().name("buy something").type(Type.todo.name())
                 .state("todo").build();
-            instance().run(args.arg(NoteConfig.PORT_KEY, port).arg("done", t.id()));
+            instance().run(args.arg("done", t.id()));
             testContext.completeNow();
         });
     }
@@ -85,7 +83,7 @@ class ToDoTest extends BaseTest {
             var t = ActionRecord.builder().name("").type(Type.todo.name())
                 .state("todo").build();
             try {
-                instance().run(args.arg(NoteConfig.PORT_KEY, port).arg("add", ""));
+                instance().run(args.arg("add", ""));
             } finally {
                 System.setIn(originalIn);
             }
@@ -96,8 +94,8 @@ class ToDoTest extends BaseTest {
     @Test
     void addLink(Vertx vertx, VertxTestContext testContext) throws Exception {
         testContext.verify(() -> {
-            instance().run(args.arg(NoteConfig.PORT_KEY, port).arg("add", "https://baidu.com"));
-            instance().run(args.arg(NoteConfig.PORT_KEY, port).arg("find", ""));
+            instance().run(args.arg("add", "https://baidu.com"));
+            instance().run(args.arg("find", ""));
             testContext.completeNow();
         });
     }
@@ -107,7 +105,7 @@ class ToDoTest extends BaseTest {
         testContext.verify(() -> {
             var t = ActionRecord.builder().name("buy something").type(Type.todo.name())
                 .state("todo").build();
-            instance().run(args.arg(NoteConfig.PORT_KEY, port).arg("cancel", t.id()));
+            instance().run(args.arg("cancel", t.id()));
             testContext.completeNow();
         });
     }
@@ -126,7 +124,7 @@ class ToDoTest extends BaseTest {
                     "test4,com",test4 xxxx
                     """,
                 StandardCharsets.UTF_8);
-            instance().run(args.arg(NoteConfig.PORT_KEY, port).arg("import", p));
+            instance().run(args.arg("import", p));
             testContext.completeNow();
         });
     }

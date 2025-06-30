@@ -4,10 +4,11 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
+import net.cofcool.sourcebox.App;
+import net.cofcool.sourcebox.ToolRunner;
 import net.cofcool.sourcebox.WebTool;
 import net.cofcool.sourcebox.WebTool.RouterTypeManger;
 import net.cofcool.sourcebox.util.SqlRepository;
-import net.cofcool.sourcebox.util.VertxDeployer;
 import net.cofcool.sourcebox.util.VertxUtils;
 
 
@@ -31,9 +32,7 @@ public class CLIWebToolVerticle extends AbstractVerticle {
                     r -> {
                     }
                 ),
-                Integer.parseInt(
-                    VertxDeployer.getSharedArgs(tool.name().name(), vertx).getArgVal("port")
-                        .orElse(WebVerticle.PORT_VAL + "")),
+                Integer.parseInt((String) App.getGlobalConfig(ToolRunner.PORT_KEY)),
                 log
             );
     }

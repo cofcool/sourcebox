@@ -11,11 +11,8 @@ import net.cofcool.sourcebox.ToolContext;
 import net.cofcool.sourcebox.ToolName;
 import net.cofcool.sourcebox.WebTool;
 import net.cofcool.sourcebox.internal.api.CommandIndex;
-import net.cofcool.sourcebox.internal.api.NoteConfig;
 import net.cofcool.sourcebox.internal.api.entity.CommandRecord;
 import net.cofcool.sourcebox.internal.api.entity.ListData;
-import net.cofcool.sourcebox.runner.WebRunner;
-import net.cofcool.sourcebox.util.Utils;
 import org.jline.reader.Candidate;
 import org.jline.reader.Completer;
 import org.jline.reader.EndOfFileException;
@@ -24,14 +21,12 @@ import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.ParsedLine;
 import org.jline.reader.UserInterruptException;
 import org.jline.reader.impl.DefaultParser;
-import org.jline.reader.impl.history.DefaultHistory;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 
 @CustomLog
 public class CommandHelper implements WebTool {
 
-    private String port;
     private ToolContext toolContext;
 
     @Override
@@ -40,14 +35,8 @@ public class CommandHelper implements WebTool {
     }
 
     @Override
-    public String getPort() {
-        return port;
-    }
-
-    @Override
     public void run(Args args) throws Exception {
         toolContext = args.getContext();
-        args.readArg(NoteConfig.PORT_KEY).ifPresent(a -> port = a.val());
         var command = args.readArg("add");
         if (command.isPresent()) {
             postRequestLocalData(
@@ -96,7 +85,6 @@ public class CommandHelper implements WebTool {
             .arg(new Arg("find", null, "find command, can be tag or alias, ALL will list all",  false, "#md5"))
             .arg(new Arg("del", null, "delete command, can be tag or alias, ALL will delete all",  false, "#md5"))
             .arg(new Arg("store", null, "save alias into env, ALL will save all",  false, "ALL"))
-            .arg(new Arg("port", WebRunner.PORT_VAL + "", "web server listen port", false, null))
             .runnerTypes(EnumSet.allOf(RunnerType.class));
     }
 
@@ -144,7 +132,6 @@ public class CommandHelper implements WebTool {
                 .terminal(terminal)
                 .parser(new DefaultParser())
                 .completer(completer)
-                .history(new DefaultHistory())
                 .build();
 
             while (true) {
@@ -152,8 +139,7 @@ public class CommandHelper implements WebTool {
                     String line = reader.readLine("$>> ");
                     if (line == null || line.trim().isEmpty()) continue;
 
-                    Utils.requestLocalData(
-                        getPort(),
+                    requestLocalData(
                         "/cmd/enter/" + CommandRecord.builder().cmd(line).build().id(),
                         CommandRecord.class, b -> b.POST(BodyPublishers.noBody()), e -> {
                             if (e != null) {

@@ -14,7 +14,6 @@ import lombok.CustomLog;
 import net.cofcool.sourcebox.ToolName;
 import net.cofcool.sourcebox.WebTool;
 import net.cofcool.sourcebox.WebTool.WebRouter;
-import net.cofcool.sourcebox.runner.WebRunner;
 import net.cofcool.sourcebox.util.VertxDeployer;
 import net.cofcool.sourcebox.util.VertxUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -35,7 +34,6 @@ public class DirWebServer implements WebTool, WebRouter {
     @Override
     public Args config() {
         return new Args()
-            .arg(new Arg("port", WebRunner.PORT_VAL + "", "web server listen port", false, null))
             .arg(new Arg("root", System.getProperty("user.dir"), "web server root directory", false, null))
             .alias("dir", name(), "root", null);
     }

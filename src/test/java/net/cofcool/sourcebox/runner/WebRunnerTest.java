@@ -13,10 +13,10 @@ import io.vertx.ext.web.multipart.MultipartForm;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import java.util.Queue;
+import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.Tool.Args;
 import net.cofcool.sourcebox.Tool.RunnerType;
 import net.cofcool.sourcebox.ToolName;
-import net.cofcool.sourcebox.Utils;
 import net.cofcool.sourcebox.internal.JsonFormatterTest;
 import net.cofcool.sourcebox.internal.JsonToPojoTest;
 import net.cofcool.sourcebox.internal.TrelloToLogseqImporterTest;
@@ -29,9 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(VertxExtension.class)
-class WebRunnerTest {
-
-    static String port = Utils.randomPort();
+class WebRunnerTest extends BaseTest {
 
     @BeforeAll
     static void deployVerticle(Vertx vertx, VertxTestContext testContext) throws Exception {
@@ -43,7 +41,6 @@ class WebRunnerTest {
                 null,
                 new Args()
                     .arg(ToolName.note.name() + "." + NoteConfig.PATH_KEY, "./target/")
-                    .arg(WebVerticle.PORT_KEY, port)
             )
             .onComplete(testContext.succeeding(t -> testContext.completeNow()));
     }
@@ -56,7 +53,7 @@ class WebRunnerTest {
     @Test
     void tools(Vertx vertx, VertxTestContext testContext) {
         vertx.createHttpClient()
-            .request(HttpMethod.GET, Integer.parseInt(port), "127.0.0.1", "/")
+            .request(HttpMethod.GET, Integer.parseInt(getPort()), "127.0.0.1", "/")
             .compose(HttpClientRequest::send)
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertEquals(200, r.statusCode());
@@ -69,7 +66,7 @@ class WebRunnerTest {
     @Test
     void reqConverts(Vertx vertx, VertxTestContext testContext) {
         vertx.createHttpClient()
-            .request(HttpMethod.POST, Integer.parseInt(port), "127.0.0.1",
+            .request(HttpMethod.POST, Integer.parseInt(getPort()), "127.0.0.1",
                 "/" + ToolName.converts.name())
             .compose(r -> r.send(Buffer.buffer("{\"cmd\": \"now\"}")))
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
@@ -83,7 +80,7 @@ class WebRunnerTest {
     @Test
     void reqJson2POJO(Vertx vertx, VertxTestContext testContext) {
         WebClient.create(vertx)
-            .post(Integer.parseInt(port), "127.0.0.1", "/" + ToolName.json2POJO.name())
+            .post(Integer.parseInt(getPort()), "127.0.0.1", "/" + ToolName.json2POJO.name())
             .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
             .sendJson(JsonObject.of("json", JsonToPojoTest.JSON_STR).toBuffer())
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
@@ -101,7 +98,7 @@ class WebRunnerTest {
     @Test
     void reqJson(Vertx vertx, VertxTestContext testContext) {
         WebClient.create(vertx)
-            .post(Integer.parseInt(port), "127.0.0.1", "/" + ToolName.json.name())
+            .post(Integer.parseInt(getPort()), "127.0.0.1", "/" + ToolName.json.name())
             .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
             .sendJson(JsonObject.of("json", JsonFormatterTest.JSON_STR).toBuffer())
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
@@ -115,7 +112,7 @@ class WebRunnerTest {
     @Test
     void reqTrelloLogseqImporter(Vertx vertx, VertxTestContext testContext) {
         WebClient.create(vertx)
-            .post(Integer.parseInt(port), "127.0.0.1", "/upload")
+            .post(Integer.parseInt(getPort()), "127.0.0.1", "/upload")
             .sendMultipartForm(
                 MultipartForm.create()
                     .textFileUpload("file", "test.txt", TrelloToLogseqImporterTest.RESOURCE_PATH,
@@ -123,7 +120,7 @@ class WebRunnerTest {
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 var name = r.bodyAsJsonObject().getJsonArray("result").getString(0);
                 WebClient.create(vertx)
-                    .post(Integer.parseInt(port), "127.0.0.1",
+                    .post(Integer.parseInt(getPort()), "127.0.0.1",
                         "/" + ToolName.trelloLogseqImporter.name())
                     .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
                     .sendJson(JsonObject.of("path", name).toBuffer())
@@ -143,7 +140,7 @@ class WebRunnerTest {
     @Test
     void reqHelp(Vertx vertx, VertxTestContext testContext) {
         vertx.createHttpClient()
-            .request(HttpMethod.GET, Integer.parseInt(port), "127.0.0.1", "/help")
+            .request(HttpMethod.GET, Integer.parseInt(getPort()), "127.0.0.1", "/help")
             .compose(HttpClientRequest::send)
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertEquals(200, r.statusCode());
@@ -156,7 +153,7 @@ class WebRunnerTest {
     @Test
     void reqUpload(Vertx vertx, VertxTestContext testContext) {
         WebClient.create(vertx)
-            .post(Integer.parseInt(port), "127.0.0.1", "/upload")
+            .post(Integer.parseInt(getPort()), "127.0.0.1", "/upload")
             .sendMultipartForm(
                 MultipartForm.create()
                     .textFileUpload("file", "test.txt", Buffer.buffer("demo test txt"),
@@ -181,7 +178,7 @@ class WebRunnerTest {
             vertx.fileSystem().createFileBlocking(path);
         }
         WebClient.create(vertx)
-            .get(Integer.parseInt(port), "127.0.0.1", "/resource/reqResource.txt")
+            .get(Integer.parseInt(getPort()), "127.0.0.1", "/resource/reqResource.txt")
             .send()
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertEquals(200, r.statusCode());
@@ -196,7 +193,7 @@ class WebRunnerTest {
             WebVerticle.EVENT_QUEUE.offer(new ActionEvent("id:" + i, "", "test"));
         }
         WebClient.create(vertx)
-            .get(Integer.parseInt(port), "127.0.0.1", "/event")
+            .get(Integer.parseInt(getPort()), "127.0.0.1", "/event")
             .send()
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertEquals(200, r.statusCode());
@@ -208,7 +205,7 @@ class WebRunnerTest {
     @Test
     void reqConfig(Vertx vertx, VertxTestContext testContext) {
         WebClient.create(vertx)
-            .get(Integer.parseInt(port), "127.0.0.1", "/config")
+            .get(Integer.parseInt(getPort()), "127.0.0.1", "/config")
             .send()
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertEquals(200, r.statusCode());

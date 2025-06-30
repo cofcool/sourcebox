@@ -18,6 +18,12 @@ public abstract class BaseTest {
     @BeforeAll
     static void config() {
         App.GLOBAL_CFG_DIR = gTmpDir.getAbsolutePath();
+        ToolRunner.initGlobalConfig();
+        App.setGlobalConfig(ToolRunner.PORT_KEY, Utils.randomPort());
+    }
+
+    public static String getPort() {
+        return (String) App.getGlobalConfig(ToolRunner.PORT_KEY);
     }
 
     @BeforeEach

@@ -44,17 +44,19 @@ public interface WebTool extends Tool, VertxDeployer {
         return vertx.deployVerticle(verticle);
     }
 
-    default String getPort() {
-        throw new UnsupportedOperationException();
-    }
-
     default <T> T requestLocalData(String methodPath, Class<T> bodyType,
         Function<Builder, Builder> requestAction) {
-        return Utils.requestLocalData(getPort(), methodPath, bodyType, requestAction, e -> {
+        return requestLocalData(methodPath, bodyType, requestAction, e -> {
             if (e != null) {
                 throw new IllegalStateException("request " + methodPath + " error", e);
             }
         });
+    }
+
+    default <T> T requestLocalData(String methodPath, Class<T> bodyType,
+        Function<Builder, Builder> requestAction, Consumer<Exception> errorAction) {
+        return Utils.requestAPI((String) App.getGlobalConfig(ToolRunner.ADDRESS_KEY),
+            (String) App.getGlobalConfig(ToolRunner.PORT_KEY), methodPath, bodyType, requestAction, errorAction);
     }
 
     default <T> T getRequestLocalData(String methodPath, Class<T> bodyType) {

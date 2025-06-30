@@ -18,6 +18,11 @@ import org.apache.commons.io.FileUtils;
 public class CLIRunner implements ToolRunner {
 
     @Override
+    public String help() {
+        return String.join(", ", ToolRunner.ADDRESS_KEY, ToolRunner.PORT_KEY);
+    }
+
+    @Override
     public boolean run(Args args) throws Exception {
         args.context(new ConsoleToolContext());
         var run = new AtomicBoolean(false);
@@ -29,7 +34,11 @@ public class CLIRunner implements ToolRunner {
                 log.debug("Start run " + name);
                 try {
                     var newArgs = args.removePrefix(name).copyConfigFrom(tool.config());
-                    if (tool instanceof WebTool webTool) {
+                    if (tool instanceof WebTool webTool && !ToolRunner.checkLocalAPIServer(
+                        args.getArgVal(ADDRESS_KEY).orElse(null),
+                        args.getArgVal(PORT_KEY).orElse(null)
+                    )) {
+
                         var v = Vertx.vertx();
                         webTool.deploy(v, new CLIWebToolVerticle(webTool), newArgs)
                             .onComplete(r -> {

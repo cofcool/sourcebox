@@ -2,7 +2,6 @@ package net.cofcool.sourcebox;
 
 import java.net.URL;
 import net.cofcool.sourcebox.internal.ClippingsToMd;
-import net.cofcool.sourcebox.runner.WebRunner;
 import org.apache.commons.lang3.RandomUtils;
 
 public class Utils {
@@ -12,7 +11,7 @@ public class Utils {
     }
 
     public static String randomPort() {
-        return RandomUtils.nextInt(38000, WebRunner.PORT_VAL) + "";
+        return RandomUtils.nextInt(38000, ToolRunner.DEFAULT_PORT) + "";
     }
 
     public static URL getTestResourceUrlPath(String path) {

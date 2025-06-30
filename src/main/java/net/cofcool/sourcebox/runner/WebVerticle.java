@@ -1,5 +1,8 @@
 package net.cofcool.sourcebox.runner;
 
+import static net.cofcool.sourcebox.ToolRunner.PASSWD_KEY;
+import static net.cofcool.sourcebox.ToolRunner.USER_KEY;
+
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
@@ -23,6 +26,7 @@ import net.cofcool.sourcebox.Tool;
 import net.cofcool.sourcebox.Tool.Args;
 import net.cofcool.sourcebox.Tool.RunnerType;
 import net.cofcool.sourcebox.ToolContext;
+import net.cofcool.sourcebox.ToolRunner;
 import net.cofcool.sourcebox.WebTool;
 import net.cofcool.sourcebox.WebTool.RouterTypeManger;
 import net.cofcool.sourcebox.util.SqlRepository;
@@ -33,15 +37,9 @@ import net.cofcool.sourcebox.util.VertxUtils;
 @RequiredArgsConstructor
 public class WebVerticle extends AbstractVerticle implements VertxDeployer {
 
-    public static final String PORT_KEY = "web.port";
-    public static final String USER_KEY = "web.username";
-    public static final String PASSWD_KEY = "web.password";
-    public static final int PORT_VAL = 38080;
-
     static final Queue<ActionEvent> EVENT_QUEUE = new ConcurrentLinkedQueue<>();
 
     private Credentials usernamePasswordCredentials;
-    private int port = PORT_VAL;
     private final RunnerType runnerType;
     private final Function<Tool, ToolContext> contextSupplier;
 
@@ -60,7 +58,7 @@ public class WebVerticle extends AbstractVerticle implements VertxDeployer {
                 vertx,
                 startPromise,
                 build(usernamePasswordCredentials),
-                port,
+                Integer.parseInt((String) App.getGlobalConfig(ToolRunner.PORT_KEY)),
                 log
             );
         vertx.setPeriodic(600_000, l -> {
@@ -92,7 +90,6 @@ public class WebVerticle extends AbstractVerticle implements VertxDeployer {
             };
             log.info("Enable basicAuth");
         });
-        args.getArgVal(PORT_KEY).ifPresent(a -> port = Integer.parseInt(a));
         return VertxDeployer.super.deploy(vertx, verticle, args);
     }
 

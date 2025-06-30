@@ -18,7 +18,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.random.RandomGenerator;
 import java.util.stream.Collectors;
+import net.cofcool.sourcebox.App;
+import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.Tool.Args;
+import net.cofcool.sourcebox.ToolRunner;
 import net.cofcool.sourcebox.Utils;
 import net.cofcool.sourcebox.runner.CLIWebToolVerticle;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,9 +30,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 
 @ExtendWith(VertxExtension.class)
-class DirWebServerTest {
+class DirWebServerTest extends BaseTest {
 
     static final String UPLOAD_FILE = "clippingsKindle.txt";
+    String URL = App.getGlobalConfig(ToolRunner.ADDRESS_KEY) + ":" + getPort();
 
     static Args ARGS;
 
@@ -51,7 +55,7 @@ class DirWebServerTest {
         testContext.verify(() -> {
             var request = HttpRequest
                 .newBuilder()
-                .uri(URI.create("http://127.0.0.1:" + ARGS.readArg("port").val() + "/files"))
+                .uri(URI.create(URL + "/files"))
                 .GET()
                 .build();
             var response = client.send(request, BodyHandlers.ofString());
@@ -79,7 +83,7 @@ class DirWebServerTest {
 
             var request = HttpRequest
                 .newBuilder()
-                .uri(URI.create("http://127.0.0.1:" + ARGS.readArg("port").val() + "/upload"))
+                .uri(URI.create(URL + "/upload"))
                 .header("Content-Type", "multipart/form-data; boundary=" + boundary.substring(2))
                 .POST(BodyPublishers.ofByteArray(input))
                 .build();

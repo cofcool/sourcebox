@@ -3,6 +3,7 @@ package net.cofcool.sourcebox.util;
 import io.vertx.core.Future;
 import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;
+import net.cofcool.sourcebox.App;
 import net.cofcool.sourcebox.Tool.Args;
 
 public interface VertxDeployer {
@@ -39,15 +40,15 @@ public interface VertxDeployer {
     }
 
     static Args getSharedArgs(String toolName,Vertx vertx) {
-        return (Args) vertx.sharedData().getLocalMap(getName(toolName)).get(ARGS_KEY);
+        return (Args) App.getGlobalConfig(getName(toolName));
     }
 
     static void sharedArgs(Vertx vertx, String toolName, Args args) {
-        vertx.sharedData().getLocalMap(getName(toolName)).put(ARGS_KEY, args);
+        App.setGlobalConfig(getName(toolName), args);
     }
 
     static String getName(String toolName) {
-        return toolName + "." + ARGS_KEY;
+        return String.join(".", toolName, ARGS_KEY);
     }
 
 }

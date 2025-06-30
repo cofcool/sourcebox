@@ -12,13 +12,11 @@ import java.util.stream.Collectors;
 import lombok.CustomLog;
 import net.cofcool.sourcebox.ToolName;
 import net.cofcool.sourcebox.WebTool;
-import net.cofcool.sourcebox.internal.api.NoteConfig;
 import net.cofcool.sourcebox.internal.api.NoteIndex;
 import net.cofcool.sourcebox.internal.api.entity.ActionRecord;
 import net.cofcool.sourcebox.internal.api.entity.ActionState;
 import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
 import net.cofcool.sourcebox.internal.api.entity.ListData;
-import net.cofcool.sourcebox.runner.WebRunner;
 import net.cofcool.sourcebox.util.CsvParser;
 import net.cofcool.sourcebox.util.Utils;
 import org.apache.commons.io.FileUtils;
@@ -27,22 +25,13 @@ import org.apache.commons.lang3.StringUtils;
 @CustomLog
 public class ToDo implements WebTool {
 
-    private String port;
-
-
     @Override
     public ToolName name() {
         return ToolName.todo;
     }
 
     @Override
-    public String getPort() {
-        return port;
-    }
-
-    @Override
     public void run(Args args) throws Exception {
-        args.readArg(NoteConfig.PORT_KEY).ifPresent(a -> port = a.val());
         var flag = new AtomicBoolean();
 
         args.readArg("import").ifPresent(a -> {
@@ -166,7 +155,6 @@ public class ToDo implements WebTool {
             .arg(new Arg("cancel", null, "mark item cancel by item id", false,
                 "d5ebeacf9a0aa3319560c7aa78e8751c"))
             .arg(new Arg("import", null, "csv file path, like: value,remark or value,remark,state ", false, null))
-            .arg(new Arg("port", WebRunner.PORT_VAL + "", "web server listen port", false, null))
             .runnerTypes(EnumSet.allOf(RunnerType.class));
     }
 

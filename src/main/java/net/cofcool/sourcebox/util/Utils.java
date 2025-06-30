@@ -156,20 +156,23 @@ public abstract class Utils {
         }
     }
 
-    public static <T> T requestLocalData(String port, String methodPath, Class<T> bodyType, Function<Builder, Builder> requestAction, Consumer<Exception> errorAction) {
+    public static <T> T requestAPI(String addr, String port, String methodPath, Class<T> bodyType, Function<Builder, Builder> requestAction, Consumer<Exception> errorAction) {
         try (var client = HttpClient.newHttpClient()){
             var builder = requestAction.apply(
                 HttpRequest
                     .newBuilder()
-                    .uri(new URI("http://localhost:" + port + methodPath))
+                    .uri(new URI(addr + ":" + port + methodPath))
             );
 
             var response = client.send(builder.build(), HttpResponse.BodyHandlers.ofByteArray());
             if (response.statusCode() == 200) {
+                if (errorAction != null) {
+                    errorAction.accept(null);
+                }
                 return JsonUtil.toPojo(response.body(), bodyType);
             }
             if (errorAction != null) {
-                errorAction.accept(new RuntimeException("response error code is " + response.statusCode()));
+                errorAction.accept(new IllegalStateException("response error code is " + response.statusCode()));
             }
         } catch (Exception e) {
             if (errorAction != null) {

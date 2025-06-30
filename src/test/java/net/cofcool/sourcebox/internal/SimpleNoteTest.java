@@ -10,7 +10,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.Tool.Args;
-import net.cofcool.sourcebox.Utils;
 import net.cofcool.sourcebox.internal.api.NoteConfig;
 import net.cofcool.sourcebox.internal.api.entity.ActionRecord;
 import net.cofcool.sourcebox.internal.api.entity.Note;
@@ -24,14 +23,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 class SimpleNoteTest extends BaseTest {
 
     static final String PATH = "./target/";
-    static String port = Utils.randomPort();
 
     @BeforeAll
     static void deployVerticle(Vertx vertx, VertxTestContext testContext) throws Exception {
         var note = new SimpleNote();
         note.deploy(vertx, new CLIWebToolVerticle(note), new Args().copyConfigFrom(note.config())
                 .arg(NoteConfig.PATH_KEY, PATH)
-                .arg(NoteConfig.PORT_KEY, port)
             )
             .onComplete(testContext.succeeding(t -> testContext.completeNow()));
     }
@@ -39,7 +36,7 @@ class SimpleNoteTest extends BaseTest {
     @Test
     void list(Vertx vertx, VertxTestContext testContext) {
         vertx.createHttpClient()
-            .request(HttpMethod.GET, Integer.parseInt(port), "127.0.0.1", "/note/list")
+            .request(HttpMethod.GET, Integer.parseInt(getPort()), "127.0.0.1", "/note/list")
             .compose(HttpClientRequest::send)
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertEquals(200, r.statusCode());
@@ -51,7 +48,7 @@ class SimpleNoteTest extends BaseTest {
     @Test
     void addNote(Vertx vertx, VertxTestContext testContext) {
         vertx.createHttpClient()
-            .request(HttpMethod.POST, Integer.parseInt(port), "127.0.0.1", "/note/note")
+            .request(HttpMethod.POST, Integer.parseInt(getPort()), "127.0.0.1", "/note/note")
             .compose(h -> h.send(Json.encodeToBuffer(Note.init("test content"))))
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertEquals(200, r.statusCode());
@@ -79,7 +76,7 @@ class SimpleNoteTest extends BaseTest {
             LocalDateTime.now()
         );
         vertx.createHttpClient()
-            .request(HttpMethod.POST, Integer.parseInt(port), "127.0.0.1", "/action")
+            .request(HttpMethod.POST, Integer.parseInt(getPort()), "127.0.0.1", "/action")
             .compose(h -> h.send(Json.encodeToBuffer(param)))
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertEquals(200, r.statusCode());
@@ -107,7 +104,7 @@ class SimpleNoteTest extends BaseTest {
             LocalDateTime.now()
         );
         vertx.createHttpClient()
-            .request(HttpMethod.POST, Integer.parseInt(port), "127.0.0.1", "/action/actions")
+            .request(HttpMethod.POST, Integer.parseInt(getPort()), "127.0.0.1", "/action/actions")
             .compose(h -> h.send(Json.encodeToBuffer(List.of(param))))
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertEquals(204, r.statusCode());
@@ -118,7 +115,7 @@ class SimpleNoteTest extends BaseTest {
     @Test
     void listAction(Vertx vertx, VertxTestContext testContext) {
         vertx.createHttpClient()
-            .request(HttpMethod.GET, Integer.parseInt(port), "127.0.0.1", "/action")
+            .request(HttpMethod.GET, Integer.parseInt(getPort()), "127.0.0.1", "/action")
             .compose(HttpClientRequest::send)
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertEquals(200, r.statusCode());
@@ -130,7 +127,7 @@ class SimpleNoteTest extends BaseTest {
     @Test
     void listRoute(Vertx vertx, VertxTestContext testContext) {
         vertx.createHttpClient()
-            .request(HttpMethod.GET, Integer.parseInt(port), "127.0.0.1", "/develop/routes")
+            .request(HttpMethod.GET, Integer.parseInt(getPort()), "127.0.0.1", "/develop/routes")
             .compose(HttpClientRequest::send)
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertEquals(200, r.statusCode());

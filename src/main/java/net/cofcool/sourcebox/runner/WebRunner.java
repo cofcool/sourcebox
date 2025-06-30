@@ -19,13 +19,10 @@ import net.cofcool.sourcebox.util.VertxUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 
-/**
- * config listen port: {@link WebVerticle#PORT_KEY}
- */
+
 @CustomLog
 public class WebRunner implements ToolRunner {
 
-    public static final int PORT_VAL =  WebVerticle.PORT_VAL;
 
     @Override
     public boolean run(Args args) throws Exception {
@@ -37,7 +34,7 @@ public class WebRunner implements ToolRunner {
 
     @Override
     public String help() {
-        return String.join(", ", WebVerticle.USER_KEY,  WebVerticle.PASSWD_KEY,  WebVerticle.PORT_KEY);
+        return String.join(", ", ToolRunner.USER_KEY,  ToolRunner.PASSWD_KEY,  ToolRunner.PORT_KEY);
     }
 
     static class WebToolContext implements ToolContext {

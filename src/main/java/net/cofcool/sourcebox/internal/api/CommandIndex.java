@@ -9,6 +9,7 @@ import java.util.List;
 import lombok.CustomLog;
 import net.cofcool.sourcebox.App;
 import net.cofcool.sourcebox.WebTool.WebRouter;
+import net.cofcool.sourcebox.internal.api.CommandService.ImportParam;
 import net.cofcool.sourcebox.internal.api.entity.CommandRecord;
 import net.cofcool.sourcebox.util.VertxUtils;
 
@@ -37,10 +38,12 @@ public class CommandIndex implements WebRouter {
             return commandService.find(p.get("q"));
         });
 
-        router.get("/import").respond(r -> {
-            vertx.executeBlocking(commandService::importHis);
+        router.post("/import").respond(r -> {
+            vertx.executeBlocking(() -> commandService.importHis(r.body().asPojo(ImportParam.class)));
             return Future.succeededFuture(true);
         });
+
+        router.get("/export").respond(r -> commandService.exportHis());
 
         router.post("/enter/:id")
             .respond(r ->  commandService.enter(r.pathParam("id")));

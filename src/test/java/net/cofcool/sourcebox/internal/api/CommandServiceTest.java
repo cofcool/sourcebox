@@ -2,6 +2,7 @@ package net.cofcool.sourcebox.internal.api;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.vertx.core.Vertx;
@@ -12,8 +13,10 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import net.cofcool.sourcebox.BaseTest;
-import net.cofcool.sourcebox.internal.api.CommandService.HistoryProcessor;
+import net.cofcool.sourcebox.internal.api.CommandService.ImportParam;
+import net.cofcool.sourcebox.internal.api.entity.CommandRecord;
 import net.cofcool.sourcebox.logging.LoggerFactory;
+import net.cofcool.sourcebox.util.JsonUtil;
 import net.cofcool.sourcebox.util.SqlRepository;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -156,19 +159,26 @@ class CommandServiceTest extends BaseTest {
     }
 
     @Test
-    void hisProcessor(Vertx vertx, VertxTestContext testContext) {
-        HistoryProcessor
-            .process()
-            .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
-                Assertions.assertFalse(r.isEmpty());
-                testContext.completeNow();
-            })));
+    void importHisProcessor(Vertx vertx, VertxTestContext testContext) {
+        commandManager.importHis(new ImportParam("zsh", "1716081742:0;brew install cmake\n1716083182:0;./build.sh\n1716108706:0;hdiutil -h", "test"))
+            .onComplete(testContext.succeeding(r -> testContext.verify(testContext::completeNow)));
     }
 
     @Test
-    @Disabled
-    void importHisProcessor(Vertx vertx, VertxTestContext testContext) {
-        commandManager.importHis()
+    void importHisJson(Vertx vertx, VertxTestContext testContext) {
+        commandManager.importHis(new ImportParam("jsonline",
+                JsonUtil.toJson(CommandRecord.builder().cmd("ls -al").alias("@lstest").frequency(0).tags(List.of("test")).build()),
+                "test")
+            )
             .onComplete(testContext.succeeding(r -> testContext.verify(testContext::completeNow)));
+    }
+
+    @Test
+    void exportHis(Vertx vertx, VertxTestContext testContext) {
+        commandManager.exportHis()
+            .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
+                assertFalse(r.isEmpty());
+                testContext.completeNow();
+            })));
     }
 }

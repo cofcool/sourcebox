@@ -1,5 +1,6 @@
 package net.cofcool.sourcebox.internal;
 
+import java.io.File;
 import java.net.URLEncoder;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.nio.charset.StandardCharsets;
@@ -7,12 +8,20 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.CustomLog;
+import lombok.SneakyThrows;
+import lombok.val;
+import net.cofcool.sourcebox.App;
 import net.cofcool.sourcebox.ToolContext;
 import net.cofcool.sourcebox.ToolName;
+import net.cofcool.sourcebox.ToolRunner;
 import net.cofcool.sourcebox.WebTool;
 import net.cofcool.sourcebox.internal.api.CommandIndex;
+import net.cofcool.sourcebox.internal.api.CommandService.ImportParam;
 import net.cofcool.sourcebox.internal.api.entity.CommandRecord;
 import net.cofcool.sourcebox.internal.api.entity.ListData;
+import net.cofcool.sourcebox.util.Utils;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jline.reader.Candidate;
 import org.jline.reader.Completer;
 import org.jline.reader.EndOfFileException;
@@ -47,6 +56,12 @@ public class CommandHelper implements WebTool {
             return;
         }
 
+        var importArg = args.readArg("import");
+        if (importArg.isPresent()) {
+            importHis(importArg.val());
+            return;
+        }
+
         var del = args.readArg("del");
         if (del.isPresent()) {
             if (deleteRequestLocalData("/cmd/"+ URLEncoder.encode(del.val(), StandardCharsets.UTF_8))) {
@@ -58,6 +73,13 @@ public class CommandHelper implements WebTool {
         var store = args.readArg("store");
         if (store.isPresent()) {
             getRequestLocalData("/cmd/store/"+ URLEncoder.encode(store.val(), StandardCharsets.UTF_8), Boolean.class);
+            return;
+        }
+
+        var export = args.readArg("export");
+        if (export.isPresent()) {
+            var body = getRequestLocalData("/cmd/export", JSONL.class);
+            FileUtils.writeLines(new File(export.val()), body);
             return;
         }
 
@@ -85,6 +107,8 @@ public class CommandHelper implements WebTool {
             .arg(new Arg("find", null, "find command, can be tag or alias, ALL will list all",  false, "#md5"))
             .arg(new Arg("del", null, "delete command, can be tag or alias, ALL will delete all",  false, "#md5"))
             .arg(new Arg("store", null, "save alias into env, ALL will save all",  false, "ALL"))
+            .arg(new Arg("import", null, "import bash history, zsh history or jsonline",  false, "local:bash:~/.bash_history"))
+            .arg(new Arg("export", null, "export all history with the out path",  false, "./export-his.txt"))
             .runnerTypes(EnumSet.allOf(RunnerType.class));
     }
 
@@ -102,6 +126,10 @@ public class CommandHelper implements WebTool {
 
     }
 
+    public static class JSONL extends ListData<String> {
+
+    }
+
     class OnlineCompleter implements Completer {
 
         @Override
@@ -115,13 +143,26 @@ public class CommandHelper implements WebTool {
         }
     }
 
-    private void importHis() {
-        getRequestLocalData("/cmd/import", boolean.class);
+    @SneakyThrows
+    private void importHis(String path) {
+        var split = path.split(":");
+        if (split.length == 3) {
+            var param = new ImportParam(
+                split[1],
+                FileUtils.readFileToString(new File(split[2]), StandardCharsets.UTF_8),
+                split[0]
+            );
+            postRequestLocalData("/cmd/import", param, boolean.class);
+        } else {
+            throw new IllegalArgumentException("import path error " + path);
+        }
     }
 
     class InteractiveShell {
         void launch() throws Exception {
-            importHis();
+            if (Utils.isLocalhost((String) App.getGlobalConfig(ToolRunner.ADDRESS_KEY))) {
+                importHis("local:zsh:" + System.getProperty("user.home") + "/.zsh_history");
+            }
             Terminal terminal = TerminalBuilder.builder()
                 .system(true)
                 .build();
@@ -137,8 +178,8 @@ public class CommandHelper implements WebTool {
             while (true) {
                 try {
                     String line = reader.readLine("$>> ");
-                    if (line == null || line.trim().isEmpty()) continue;
-
+                    if (StringUtils.isBlank(line)) {continue;};
+                    line = line.trim();
                     requestLocalData(
                         "/cmd/enter/" + CommandRecord.builder().cmd(line).build().id(),
                         CommandRecord.class, b -> b.POST(BodyPublishers.noBody()), e -> {

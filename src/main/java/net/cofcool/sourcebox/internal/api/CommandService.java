@@ -2,32 +2,25 @@ package net.cofcool.sourcebox.internal.api;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.vertx.core.Future;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.CharsetDecoder;
-import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.CustomLog;
 import net.cofcool.sourcebox.internal.api.entity.CommandRecord;
-import net.cofcool.sourcebox.internal.api.entity.Config;
 import net.cofcool.sourcebox.util.JsonUtil;
 import net.cofcool.sourcebox.util.QueryBuilder;
 import net.cofcool.sourcebox.util.SqlRepository;
+import net.cofcool.sourcebox.util.Utils;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 
 @CustomLog
 public class CommandService {
@@ -127,7 +120,7 @@ public class CommandService {
                 } else if (s.startsWith("#")) {
                     builder.and("? in (unnest(tags))", s);
                 } else {
-                    builder.and("alias=?", "@" + s);;
+                    builder.and("id=?", Utils.md5(s));;
                 }
             }
         }
@@ -180,25 +173,30 @@ public class CommandService {
             .onFailure(e -> log.error("Store alias error", e));
     }
 
-    public Future<?> importHis() {
-        return HistoryProcessor
-            .process()
-            .map(h -> h.stream()
-                .map(s -> CommandRecord.builder().cmd(s).frequency(0).tags(List.of("#his")).remark("his").build()).toList())
-            .compose(h -> {
-                log.info("Start save {0} history records", h.size());
-                return Future.join(h
+    public Future<?> importHis(ImportParam param) {
+        return Future.join(
+                new HistoryReader(param)
+                    .readCommands()
                     .stream()
+                    .filter(s -> !s.isBlank())
+                    .map(s -> {
+                        if (s.startsWith("{") && s.endsWith("}")) {
+                            return JsonUtil.toPojo(s, CommandRecord.class);
+                        } else {
+                            return CommandRecord.builder()
+                                .cmd(s).frequency(0).tags(List.of("#his", param.tag))
+                                .remark("his").build();
+                        }
+                    })
                     .map(c ->
                         repository.find(c.id()).compose(
                             i -> Future.succeededFuture(),
                             i ->
-                            save(c).onFailure(e -> log.error("Save error when import his", e))
+                                save(c).onFailure(e -> log.error("Save error when import his", e))
                         )
                     )
                     .toList()
-                );
-            })
+            )
             .onFailure(e -> log.error("Import history error", e))
             .onSuccess(r -> log.info("Import history ok"));
     }
@@ -241,6 +239,16 @@ public class CommandService {
             });
     }
 
+    public Future<List<String>> exportHis() {
+        return repository
+            .find()
+            .compose(a ->
+                Future.succeededFuture(
+                    a.stream().map(JsonUtil::toJson).toList()
+                )
+            );
+    }
+
     public record Command(
         String id,
         String cmd,
@@ -250,151 +258,33 @@ public class CommandService {
         LocalDateTime cTime
     ) {}
 
-    interface HistoryFileReader {
-        List<String> readCommands() throws IOException;
-        long getModifiedTime();
-        String getName();
-    }
+    private record HistoryReader(ImportParam param) {
 
-    static class HistoryProcessor {
-        private static final String LASTMT = "lastmt";
-
-        private static final List<HistoryFileReader> readers = List.of(
-            new ZshHistoryFileReader(),
-            new BashHistoryFileReader()
-        );
-
-        public static Future<Set<String>> process() {
-            return Future.join(
-                    readers.stream()
-                        .map(reader ->
-                            getLastModifiedTime(reader.getName())
-                                .compose(i -> {
-                                    var modifiedTime = reader.getModifiedTime();
-                                    if (i < modifiedTime) {
-                                        try {
-                                            var commands = new ArrayList<>(reader.readCommands());
-                                            return storeLastModifiedTime(
-                                                reader.getName(),
-                                                modifiedTime
-                                            )
-                                                .compose(c -> Future.succeededFuture(
-                                                    new LastRecord(modifiedTime, commands))
-                                                );
-                                        } catch (IOException e) {
-                                            throw new RuntimeException("read history error", e);
-                                        }
-                                    } else {
-                                        return Future.succeededFuture(new LastRecord(modifiedTime, List.of()));
-                                    }
-                                }))
-                        .toList()
-                )
-                .compose(i -> {
-                    List<LastRecord> val = i.list();
-                    return Future.succeededFuture(
-                        new LinkedHashSet<>(
-                            val.stream()
-                                .map(v -> v.cmds)
-                                .reduce(new ArrayList<>(), (v1, v2) -> {
-                                    v1.addAll(v2);
-                                    return v1;
-                                })
-                        )
-                    );
-                });
-        }
-
-        private static Future<Long> getLastModifiedTime(String sh) {
-            return ConfigService
-                .getService()
-                .get(LASTMT + "." + sh, "0")
-                .compose(i -> Future.succeededFuture(Long.valueOf(i)));
-        }
-
-        private static Future<Config> storeLastModifiedTime(String sh, long lastModifiedTime) {
-            return ConfigService.getService().put(LASTMT+"." + sh, lastModifiedTime + "");
-        }
-    }
-
-    record LastRecord(
-        long lstm,
-        List<String> cmds
-    ){}
-
-    static class ZshHistoryFileReader implements HistoryFileReader {
-        private static final String FILE_PATH = System.getProperty("user.home") + "/.zsh_history";
-
-        @Override
-        public List<String> readCommands() throws IOException {
+        public List<String> readCommands() {
             Set<String> uniqueCommands = new LinkedHashSet<>();
-            Path path = Paths.get(FILE_PATH);
-            if (Files.exists(path)) {
-                CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
-                    .onMalformedInput(CodingErrorAction.IGNORE)
-                    .onUnmappableCharacter(CodingErrorAction.IGNORE);
-
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(path), decoder))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
+            for (String line : StringUtils.split(param.data, "\n")) {
+                var a = switch (param.shell) {
+                    case "zsh" -> {
                         int semicolonIndex = line.indexOf(';');
                         if (semicolonIndex != -1 && semicolonIndex + 1 < line.length()) {
-                            uniqueCommands.add(line.substring(semicolonIndex + 1));
+                            yield line.substring(semicolonIndex + 1);
+                        } else {
+                            yield line;
                         }
                     }
-                }
+                    default -> line;
+                };
+                uniqueCommands.add(a.trim());
             }
+            log.info("Start save {0} history records", uniqueCommands.size());
             return new ArrayList<>(uniqueCommands);
-        }
-
-        @Override
-        public long getModifiedTime() {
-            try {
-                Path path = Paths.get(FILE_PATH);
-                return Files.exists(path) ? Files.getLastModifiedTime(path).toMillis() : 0;
-            } catch (IOException e) {
-                return 0;
-            }
-        }
-
-        @Override
-        public String getName() {
-            return "zsh";
         }
     }
 
-    static class BashHistoryFileReader implements HistoryFileReader {
-        private static final String FILE_PATH = System.getProperty("user.home") + "/.bash_history";
-
-        @Override
-        public List<String> readCommands() throws IOException {
-            Set<String> uniqueCommands = new HashSet<>();
-            Path path = Paths.get(FILE_PATH);
-            if (Files.exists(path)) {
-                try (BufferedReader reader = Files.newBufferedReader(path)) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                            uniqueCommands.add(line);
-                    }
-                }
-            }
-            return new ArrayList<>(uniqueCommands);
-        }
-
-        @Override
-        public long getModifiedTime() {
-            try {
-                Path path = Paths.get(FILE_PATH);
-                return Files.exists(path) ? Files.getLastModifiedTime(path).toMillis() : 0;
-            } catch (IOException e) {
-                return 0;
-            }
-        }
-
-        @Override
-        public String getName() {
-            return "bash";
-        }
-    }
+    public record ImportParam(
+        String shell,
+        String data,
+        String tag
+    ){}
 }
 

@@ -183,6 +183,10 @@ public abstract class Utils {
         return null;
     }
 
+    public static boolean isLocalhost(String address) {
+        return address.contains("127.0.0.1") || address.contains("localhost");
+    }
+
     public static String formatDatetime(LocalDateTime dateTime) {
         return DATE_TIME_FORMATTER.format(dateTime);
     }

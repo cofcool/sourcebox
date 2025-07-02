@@ -1,5 +1,7 @@
 package net.cofcool.sourcebox;
 
+import static net.cofcool.sourcebox.util.Utils.isLocalhost;
+
 import java.net.http.HttpRequest.Builder;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,12 +40,14 @@ public interface ToolRunner {
         App.setGlobalConfig(PORT_KEY, port);
 
         var flag = new AtomicBoolean();
-        if (address.contains("127.0.0.1") || address.contains("localhost")) {
+        if (isLocalhost(address)) {
             Utils.requestAPI(address, port, "/", List.class, Builder::GET, e -> {
                 if (e == null || e instanceof IllegalStateException) {
                     flag.set(true);
                 }
             });
+        } else {
+            flag.set(true);
         }
 
         return flag.get();

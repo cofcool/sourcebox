@@ -1,5 +1,6 @@
 package request
 
+import ConfigManager
 import globalJson
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -13,6 +14,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.selects.select
 import kotlinx.serialization.json.Json
+import loadServer
 import org.slf4j.LoggerFactory
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -23,16 +25,21 @@ val actionEvents = Channel<Action>(Channel.UNLIMITED)
 val trigger = Channel<Boolean>(Channel.RENDEZVOUS)
 val msgDone = Channel<Boolean>(Channel.RENDEZVOUS)
 
+val CFG = ConfigManager
+
 class Request {
 
-    private fun baseUrl() = "http://localhost:38080"
+    private var baseUrl = CFG.requestUrl()
 
     private var client: HttpClient = buildClient()
 
     private fun buildClient(): HttpClient {
+        if (CFG.needLocalServer()) {
+            loadServer()
+        }
         return HttpClient {
             defaultRequest {
-                url(baseUrl())
+                url(baseUrl)
             }
             install(ContentNegotiation) {
                 json(Json {
@@ -90,6 +97,7 @@ class Request {
             }
         }
     }
+
     fun deleteNote(note: Note) {
         if (note.id.isNotBlank()) {
             runBlocking {
@@ -108,6 +116,33 @@ class Request {
             }
             val r = client.get(path)
             return@runBlocking r.body<List<TodoItem>>()
+        }
+    }
+
+    fun listCmd(q: String): List<CommandItem> {
+        return runBlocking {
+            var path = "/cmd/quick"
+            if (q.isNotEmpty()) {
+                var c = "cmd"
+                if (q.startsWith("#") || q.startsWith("@")) {
+                    c = "q"
+                }
+                path = "${path}?${c}=${URLEncoder.encode(q, StandardCharsets.UTF_8)}"
+            }
+            val r = client.get(path)
+            return@runBlocking r.body<List<CommandItem>>()
+        }
+    }
+
+    fun deleteCmd(id: String) {
+        runBlocking {
+            client.delete("/cmd/${id}")
+        }
+    }
+
+    fun storeCmd() {
+        runBlocking {
+            client.get("/cmd/store/ALL")
         }
     }
 

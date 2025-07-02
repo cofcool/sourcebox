@@ -107,7 +107,7 @@ public class CommandService {
 
     public Future<List<CommandRecord>> find(String aliasTags) {
         var builder = QueryBuilder.builder().select().from(CommandRecord.class)
-            .orderBy("create_time desc").limit(20);
+            .orderBy("create_time desc").limit(50);
 
         return find(builder, aliasTags);
     }
@@ -184,7 +184,7 @@ public class CommandService {
                             return JsonUtil.toPojo(s, CommandRecord.class);
                         } else {
                             return CommandRecord.builder()
-                                .cmd(s).frequency(0).tags(List.of("#his", param.tag))
+                                .cmd(s).frequency(0).tags(List.of("#his", "#" + param.tag))
                                 .remark("his").build();
                         }
                     })

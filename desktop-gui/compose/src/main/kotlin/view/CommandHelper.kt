@@ -2,7 +2,10 @@ package view
 
 import G_REQUEST
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.*
 import androidx.compose.material.MaterialTheme.typography
@@ -12,32 +15,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import request.CommandItem
-import request.Tools
 
 @Preview
 @Composable
 fun commandHelper() {
     val itemList = remember { mutableStateListOf<CommandItem>() }
-    val tagQuery = remember { mutableStateOf(TextFieldValue("")) }
-    val idQuery = remember { mutableStateOf(TextFieldValue("")) }
+    val query = remember { mutableStateOf(TextFieldValue("")) }
 
     Column(modifier = Modifier.padding(16.dp)) {
         Row {
             TextField(
-                value = idQuery.value,
-                onValueChange = { query ->
-                    idQuery.value = query
+                value = query.value,
+                onValueChange = {
+                    query.value = it
                 },
-                label = { Text("Search ID") },
-                modifier = Modifier.padding(bottom = 5.dp).weight(1f)
-            )
-            Spacer(modifier = Modifier.padding(2.dp))
-            TextField(
-                value = tagQuery.value,
-                onValueChange = { query ->
-                    tagQuery.value = query
-                },
-                label = { Text("Search tag") },
+                label = { Text("Search") },
                 modifier = Modifier.padding(bottom = 5.dp).weight(1f)
             )
 
@@ -45,16 +37,7 @@ fun commandHelper() {
         Row {
             Button(
                 onClick = {
-                    val id = idQuery.value.text
-                    val tag = tagQuery.value.text
-                    var s = ""
-                    if (id.isNotEmpty()) {
-                        s += "@${id} "
-                    }
-                    if (tag.isNotEmpty()) {
-                        s += "#${tag} "
-                    }
-                    searchCommand(itemList, s)
+                    searchCommand(itemList, query.value.text)
                 },
                 modifier = Modifier.padding(8.dp)
             ) {
@@ -98,33 +81,20 @@ fun cmdHeader() {
 }
 
 fun storeCommand() {
-    G_REQUEST.runTool(Tools.Helper, mapOf(
-        "store" to "ALL"
-    ))
-    G_REQUEST.readEvents({},{ _, j ->})
+    G_REQUEST.storeCmd()
 }
 
 fun delCommand(id: String) {
-    G_REQUEST.runTool(Tools.Helper, mapOf(
-        "del" to id
-    ))
-    G_REQUEST.readEvents({},{ _, j ->})
+    G_REQUEST.deleteCmd(id)
 }
 
 fun editCommand(item: CommandItem) {
-    G_REQUEST.runTool(Tools.Helper, mapOf(
-        "add" to "${item.id} ${item.cmd} ${item.tags?.joinToString(separator = " ") }"
-    ))
-    G_REQUEST.readEvents({},{ _, j ->})
+    G_REQUEST.runTool("cmd", item)
 }
 
 fun searchCommand(items: MutableList<CommandItem>, query: String) {
-    val q = query.takeIf { it.isNotEmpty() }?.let { mapOf("find" to query) }?: mapOf()
-    G_REQUEST.runTool(Tools.Helper, q)
-
-    G_REQUEST.readEvents({ -> items.clear() }) { a, j ->
-        items.addAll(j.decodeFromString<List<CommandItem>>(a.source))
-    }
+    items.clear()
+    items.addAll(G_REQUEST.listCmd(query))
 }
 
 @Composable

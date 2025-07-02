@@ -32,7 +32,6 @@ fun main() = application {
     Window(onCloseRequest = ::exitApplication, title = "The Source Box") {
         App()
     }
-    loadServer()
     G_REQUEST.checkEvent()
 }
 
@@ -44,7 +43,7 @@ fun loadServer() {
         method.invoke(null, arrayOf<String>("--mode=GUI"))
         viewLogger.info("Start server ok")
     } catch (e: Exception) {
-        System.err.println(e)
+        viewLogger.error("Run server error", e)
         exitProcess(1)
     }
 }

@@ -3,10 +3,12 @@ package net.cofcool.sourcebox.internal.api.entity;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import java.sql.JDBCType;
 import java.time.LocalDateTime;
+import lombok.Builder;
 import net.cofcool.sourcebox.util.TableInfoHelper.Column;
 import net.cofcool.sourcebox.util.TableInfoHelper.Entity;
 import net.cofcool.sourcebox.util.TableInfoHelper.ID;
 
+@Builder
 @Entity(name = "comment")
 public record Comment(
     @ID

@@ -1,14 +1,13 @@
 package net.cofcool.sourcebox.internal;
 
+import static net.cofcool.sourcebox.internal.api.entity.ActionRecord.toPrintStr;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.EnumSet;
-import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 import lombok.CustomLog;
 import net.cofcool.sourcebox.ToolName;
 import net.cofcool.sourcebox.WebTool;
@@ -128,26 +127,11 @@ public class ToDo implements WebTool {
         updateState(param);
     }
 
-    public static String toPrintStr(List<ActionRecord> objects) {
-        if (objects == null) {
-            return "";
-        }
-        return objects.stream()
-            .map(obj ->
-                String.join(" | ",
-                    obj.id(), obj.state(), obj.name(), Objects.toString(obj.remark(), ""),
-                    Utils.formatDatetime(obj.createTime())
-                )
-            )
-            .map(s -> s +"\n" + "-".repeat(s.length()))
-            .collect(Collectors.joining("\n"));
-    }
-
     @Override
     public Args config() {
         return new Args()
             .arg(new Arg("find", null, "find condition, use url query string", false,
-                "state=todo&id=d5ebeacf9a0aa3319560c7aa78e8751c"))
+                "id=d5ebeacf9a0aa3319560c7aa78e8751c"))
             .arg(new Arg("add", null, "add new to do item", false,
                 "buy something"))
             .arg(new Arg("done", null, "mark item done by item id", false,

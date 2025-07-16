@@ -12,6 +12,7 @@ import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.Tool.Args;
 import net.cofcool.sourcebox.internal.api.NoteConfig;
 import net.cofcool.sourcebox.internal.api.entity.ActionRecord;
+import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
 import net.cofcool.sourcebox.internal.api.entity.Note;
 import net.cofcool.sourcebox.runner.CLIWebToolVerticle;
 import org.junit.jupiter.api.Assertions;
@@ -64,6 +65,7 @@ class SimpleNoteTest extends BaseTest {
             null,
             null,
             "mac",
+            Type.record.name(),
             "video",
             "init",
             LocalDateTime.now(),
@@ -92,6 +94,7 @@ class SimpleNoteTest extends BaseTest {
             null,
             null,
             "mac",
+            Type.record.name(),
             "video",
             "init",
             LocalDateTime.now(),

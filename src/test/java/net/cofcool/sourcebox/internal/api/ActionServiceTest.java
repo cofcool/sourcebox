@@ -4,11 +4,10 @@ import io.vertx.core.Vertx;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.internal.api.entity.ActionRecord;
+import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
 import net.cofcool.sourcebox.internal.api.entity.Comment;
 import net.cofcool.sourcebox.internal.api.entity.RefType;
 import net.cofcool.sourcebox.logging.LoggerFactory;
@@ -35,6 +34,7 @@ class ActionServiceTest extends BaseTest {
                 null,
                 null,
                 "mac",
+                Type.record.name(),
                 "video",
                 "doing",
                 LocalDateTime.now(),
@@ -53,6 +53,7 @@ class ActionServiceTest extends BaseTest {
                     null,
                     null,
                     "mac",
+                    Type.record.name(),
                     "video",
                     "doing",
                     LocalDateTime.now(),
@@ -122,6 +123,7 @@ class ActionServiceTest extends BaseTest {
             "asdasda",
             null,
             "mac",
+            Type.record.name(),
             "xxx",
             "init",
             LocalDateTime.now(),
@@ -135,11 +137,8 @@ class ActionServiceTest extends BaseTest {
         );
         actionService
             .saveAction(newR)
-            .compose(r -> actionService.deleteActions(Collections.singleton(r.id())))
-            .compose(r -> actionService
-                .findComment(newR.id())
-                .compose(r1 -> actionService.deleteComments(r1.stream().map(Comment::id).collect(Collectors.toSet())))
-            )
+            .compose(r -> actionService.deleteActions(r.id()))
+            .compose(r -> actionService.deleteCommentsByActionId(newR.id()))
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertNotNull(r);
                 testContext.completeNow();
@@ -168,6 +167,13 @@ class ActionServiceTest extends BaseTest {
     }
 
     @Test
+    void saveComment(Vertx vertx, VertxTestContext testContext) {
+        actionService
+            .saveComment(defaultRecord.id(), Comment.builder().content("aaaaaa").build())
+            .onComplete(testContext.succeeding(r -> testContext.verify(testContext::completeNow)));
+    }
+
+    @Test
     void toMarkdown(Vertx vertx, VertxTestContext testContext) {
         actionService
             .export2Md()
@@ -182,6 +188,7 @@ class ActionServiceTest extends BaseTest {
     void saveMultiProperties(Vertx vertx, VertxTestContext testContext) {
         ActionRecord newR = new ActionRecord(
             defaultRecord.id(),
+            null,
             null,
             null,
             null,

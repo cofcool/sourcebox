@@ -108,7 +108,7 @@ class Request {
 
     fun listTodo(item: TodoItem?): List<TodoItem> {
         return runBlocking {
-            var path = "/action?state=todo&type=todo&id=NOT_GENERATED"
+            var path = "/action?state=todo&type=todo"
             item?.apply{
                 if (item.name.isNotBlank()) {
                     path = "${path}&name=${URLEncoder.encode(item.name, StandardCharsets.UTF_8)}"

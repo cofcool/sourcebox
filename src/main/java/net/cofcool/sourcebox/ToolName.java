@@ -10,6 +10,7 @@ import net.cofcool.sourcebox.internal.FileNameFormatter;
 import net.cofcool.sourcebox.internal.FileTools;
 import net.cofcool.sourcebox.internal.GitCommitsToChangelog;
 import net.cofcool.sourcebox.internal.GoAdapter;
+import net.cofcool.sourcebox.internal.HisRecord;
 import net.cofcool.sourcebox.internal.HtmlDownloader;
 import net.cofcool.sourcebox.internal.JsonFormatter;
 import net.cofcool.sourcebox.internal.JsonToPojo;
@@ -38,7 +39,8 @@ public enum ToolName {
     analysisDiff("analysis diff file", DiffAnalysis.class),
     fileTools("some utils about file", FileTools.class),
     netUtils("some utils about network", NetworkUtils.class),
-    todo("Simple To Do tool", ToDo.class),
+    todo("simple To Do tool", ToDo.class),
+    hisRecord("simple personal record tool", HisRecord.class),
     task("repeat execute task(go)", GoAdapter.Task.class),
     mobileBackup("backup android phone files by adb(go)", GoAdapter.MobileBackup.class);
 

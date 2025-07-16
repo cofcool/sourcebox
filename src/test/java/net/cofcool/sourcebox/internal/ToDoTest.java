@@ -10,7 +10,6 @@ import java.nio.charset.StandardCharsets;
 import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.Tool;
 import net.cofcool.sourcebox.Tool.Args;
-import net.cofcool.sourcebox.internal.api.NoteConfig;
 import net.cofcool.sourcebox.internal.api.entity.ActionRecord;
 import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
 import net.cofcool.sourcebox.runner.CLIRunner.ConsoleToolContext;
@@ -40,7 +39,6 @@ class ToDoTest extends BaseTest {
     static void deployVerticle(Vertx vertx, VertxTestContext testContext) throws Exception {
         var t = new ToDo();
         var args = new Args().copyConfigFrom(t.config())
-            .arg(NoteConfig.PATH_KEY, PATH)
             .context(new ConsoleToolContext());
         t.deploy(vertx, new CLIWebToolVerticle(t), args)
             .onSuccess(a -> {

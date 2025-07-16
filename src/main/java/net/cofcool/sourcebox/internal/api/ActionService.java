@@ -9,7 +9,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -34,7 +33,7 @@ public class ActionService {
     private final SqlRepository<Comment> commentSqlRepository;
     private final SqlRepository<ActionType> actionTypeSqlRepository;
 
-    private final List<ActionInterceptor> saveInterceptors = List.of(new TodoInterceptor());
+    private final List<ActionInterceptor> saveInterceptors = List.of(new TodoInterceptor(), new RecordInterceptor());
 
     private final NoteService noteService;
 
@@ -59,8 +58,7 @@ public class ActionService {
         for (ActionInterceptor interceptor : saveInterceptors) {
             record = interceptor.apply(record);
         }
-        var newRecord = ActionRecord.copy(record);
-        var ret = actionRecordSqlRepository.save(newRecord);
+        var ret = actionRecordSqlRepository.save(record);
         ret.onSuccess(a -> {
             if (a.comments() != null) {
                 var comments = a.comments().stream().map(c ->
@@ -68,8 +66,8 @@ public class ActionService {
                 ).toList();
                 commentSqlRepository.save(comments).onFailure(new Log("Save comment error"));
             }
-            if (a.type() != null) {
-                saveType(a.type(), Type.action, "Save actionType error");
+            if (a.category() != null) {
+                saveType(a.category(), Type.category, "Save actionType error");
             }
             if (a.device() != null) {
                 saveType(a.device(), Type.device, "Save device error");
@@ -105,6 +103,7 @@ public class ActionService {
             null,
             null,
             "Browser",
+            Type.record.name(),
             "video",
             "init",
             LocalDateTime.now(),
@@ -129,7 +128,9 @@ public class ActionService {
     }
 
     public Future<List<ActionRecord>> find(ActionRecord record) {
-        var builder = QueryBuilder.builder().select().from(ActionRecord.class).orderBy("create_time desc");
+        var builder = QueryBuilder.builder().select().from(ActionRecord.class)
+            .orderBy("create_time desc")
+            .limit(50);
         if (StringUtils.isNotBlank(record.name())) {
             builder.and("name like '%" + record.name() + "%'");
         }
@@ -141,6 +142,9 @@ public class ActionService {
         }
         if (StringUtils.isNotBlank(record.state())) {
             builder.and("state=?", record.state());
+        }
+        if (StringUtils.isNotBlank(record.category())) {
+            builder.and("category=?", record.category());
         }
         return actionRecordSqlRepository.find(builder);
     }
@@ -170,21 +174,25 @@ public class ActionService {
             ));
     }
 
-    public Future<String> deleteActions(Set<String> ids) {
-        return delete(ids, actionRecordSqlRepository::delete);
+    public Future<Boolean> deleteActions(String id) {
+        return delete(id, actionRecordSqlRepository::delete).compose(a -> deleteCommentsByActionId(id));
     }
 
-    public Future<String> deleteComments(Set<String> ids) {
-        return delete(ids, commentSqlRepository::delete);
+    public Future<Boolean> deleteComments(String id) {
+        return delete(id, commentSqlRepository::delete);
     }
 
-    private Future<String> delete(Set<String> ids, Function<String, Future<Boolean>> deleteFunc) {
-        var ret = ids.stream()
-            .map(deleteFunc)
-            .collect(Collectors.toList());
-        return Future.all(ret).compose(a ->
-            a.failed() ? Future.failedFuture(a.cause()) : Future.succeededFuture(ids.toString())
-        );
+    public Future<Boolean> deleteCommentsByActionId(String actionId) {
+        return commentSqlRepository
+            .find(
+                QueryBuilder.builder().from(Comment.class).select().and("action_id=?", actionId))
+            .compose(
+                a -> Future.all(a.stream().map(c -> commentSqlRepository.delete(c.id())).toList()))
+            .compose(a -> Future.succeededFuture(true));
+    }
+
+    private Future<Boolean> delete(String id, Function<String, Future<Boolean>> deleteFunc) {
+        return deleteFunc.apply(id).compose(a -> Future.succeededFuture(true));
     }
 
     private <T, R, A> Future<R> findAll(Function<ActionRecord.RecordRet, T> mapper, Collector<? super T, A, R> collector) {
@@ -210,13 +218,22 @@ public class ActionService {
         return findAll(a -> {
                 ActionRecord record = a.record();
                 return new ActionRecord(record.id(), record.name(), record.icon(),
-                    record.index(), record.device(), record.type(), record.state(), record.start(),
+                    record.index(), record.device(), record.type(), record.category(), record.state(), record.start(),
                     record.end(),
                     record.duration(), record.rating(),
                     a.comments().stream().map(Comment::content).toList(), record.labels(),
                     record.refs(), record.remark(), record.createTime(), LocalDateTime.now());
             },
             Collectors.toList()
+        );
+    }
+
+    public Future<Comment> saveComment(String actionId, Comment pojo) {
+        return commentSqlRepository.save(Comment.builder()
+            .id(System.currentTimeMillis() + "")
+            .actionId(actionId).content(pojo.content())
+            .createTime(LocalDateTime.now()).updateTime(LocalDateTime.now())
+            .build()
         );
     }
 
@@ -243,13 +260,29 @@ public class ActionService {
         }
     }
 
+    private static class RecordInterceptor implements ActionInterceptor {
+
+        @Override
+        public ActionRecord apply(ActionRecord record) {
+            if (Objects.equals(record.type(), Type.record.name()) && Objects.equals(record.state(), ActionState.done.name())) {
+                    record = ActionRecord.builder()
+                        .id(record.id())
+                        .type(record.type())
+                        .state(record.state())
+                        .end(LocalDateTime.now())
+                        .build();
+            }
+            return record;
+        }
+    }
+
     private record Log(
         String msg
     ) implements Handler<Throwable> {
 
         @Override
         public void handle(Throwable event) {
-            log.error(msg, event);
+            log.info(msg, event);
         }
     }
 

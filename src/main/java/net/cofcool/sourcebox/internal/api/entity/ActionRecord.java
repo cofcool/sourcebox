@@ -7,7 +7,9 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.Builder;
+import net.cofcool.sourcebox.util.EntityAction;
 import net.cofcool.sourcebox.util.LogseqOutStr;
 import net.cofcool.sourcebox.util.TableInfoHelper.Column;
 import net.cofcool.sourcebox.util.TableInfoHelper.DefaultMapper;
@@ -32,6 +34,8 @@ public record ActionRecord(
     String device,
     @Column(name = "type", type = JDBCType.VARCHAR, length = 20)
     String type,
+    @Column(name = "category", type = JDBCType.VARCHAR, length = 50, nullable = true)
+    String category,
     @Column(name = "state", type = JDBCType.VARCHAR, length = 20)
     String state,
     @Column(name = "start", type = JDBCType.TIMESTAMP)
@@ -57,10 +61,12 @@ public record ActionRecord(
     @Column(name = "update_time", type = JDBCType.TIMESTAMP)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     LocalDateTime updateTime
-) {
+) implements EntityAction<ActionRecord> {
+
+    public static final String GENERATED = "GENERATED_ID";
 
     public ActionRecord(String id, String name, String icon, String index, String device,
-        String type,
+        String type, String category,
         String state, LocalDateTime start, LocalDateTime end, Integer duration, Integer rating,
         List<String> comments, String labels, String refs, String remark, LocalDateTime createTime,
         LocalDateTime updateTime) {
@@ -71,6 +77,7 @@ public record ActionRecord(
         this.index = index;
         this.device = device;
         this.type = type;
+        this.category = category;
         this.state = state;
         this.start = start;
         this.end = end;
@@ -85,29 +92,21 @@ public record ActionRecord(
         this.updateTime = updateTime;
     }
 
-    public ActionRecord(String name, String icon, String index, String device, String type,
+    public ActionRecord(String name, String icon, String index, String device, String type, String category,
         String state, LocalDateTime start, LocalDateTime end, Integer duration, Integer rating,
         List<String> commentIds, String labels, String refs, LocalDateTime createTime) {
-        this(null, name, icon, index, device, type, state, start, end, duration,
+        this(null, name, icon, index, device, type, category, state, start, end, duration,
             rating, commentIds, labels, refs, null, createTime, LocalDateTime.now());
     }
 
     public ActionRecord(String refs) {
-        this(null, null, null, null, null, null, null, null, null, null, null, null, null, refs,
+        this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, refs,
             null,null,
             null);
     }
 
     public boolean checkId() {
-        return !Objects.equals(id, "NOT_GENERATED");
-    }
-
-    public static ActionRecord copy(ActionRecord record) {
-        return new ActionRecord(record.id, record.name, record.icon,
-            record.index, record.device, record.type, record.state, record.start, record.end,
-            record.duration, record.rating, record.comments, record.labels, record.refs, record.remark,
-            record.createTime == null ? LocalDateTime.now() : record.createTime,
-            LocalDateTime.now());
+        return !Objects.equals(id, GENERATED);
     }
 
     public static String toMarkdown(RecordRet recordRet) {
@@ -131,6 +130,21 @@ public record ActionRecord(
         return out.toString();
     }
 
+    public static String toPrintStr(List<ActionRecord> objects) {
+        if (objects == null) {
+            return "";
+        }
+        return objects.stream()
+            .map(obj ->
+                String.join(" | ",
+                    obj.id(), obj.state(), obj.name(), Objects.toString(obj.remark(), ""),
+                    Utils.formatDatetime(obj.createTime())
+                )
+            )
+            .map(s -> s +"\n" + "-".repeat(s.length()))
+            .collect(Collectors.joining("\n"));
+    }
+
     @DefaultMapper
     public static ActionRecord from(Row row) {
         return new ActionRecord(
@@ -140,6 +154,7 @@ public record ActionRecord(
             row.getString("INDEX"),
             row.getString("DEVICE"),
             row.getString("TYPE"),
+            row.getString("CATEGORY"),
             row.getString("STATE"),
             row.getLocalDateTime("START"),
             row.getLocalDateTime("END"),
@@ -152,6 +167,22 @@ public record ActionRecord(
             row.getLocalDateTime("CREATE_TIME"),
             row.getLocalDateTime("UPDATE_TIME")
         );
+    }
+
+    @Override
+    public ActionRecord beforeUpdate() {
+        return new ActionRecord(id, name, icon,
+            index, device, type, category, state, start, end,
+            duration, rating, comments, labels, refs, remark,
+            createTime, LocalDateTime.now());
+    }
+
+    @Override
+    public ActionRecord beforeInsert() {
+        return new ActionRecord(id, name, icon,
+            index, device, type, category, state, start, end,
+            duration, rating, comments, labels, refs, remark,
+            createTime != null ? createTime : LocalDateTime.now() , LocalDateTime.now());
     }
 
     public record Records(

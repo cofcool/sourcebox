@@ -6,10 +6,10 @@ import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import java.util.List;
-import java.util.Set;
 import lombok.CustomLog;
 import net.cofcool.sourcebox.internal.api.entity.ActionRecord;
 import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
+import net.cofcool.sourcebox.internal.api.entity.Comment;
 import net.cofcool.sourcebox.util.JsonUtil;
 import net.cofcool.sourcebox.util.VertxUtils;
 
@@ -30,7 +30,10 @@ public class ActionIndex {
         router.get("/example").respond(r -> actionService.example());
         router.get("/types").respond(r -> actionService.findAllType());
 
-        router.get("/comments/:actionId").respond(r -> actionService.findComment(r.pathParam("actionId")));
+        router.get("/comment/:actionId").respond(r -> actionService.findComment(r.pathParam("actionId")));
+        router.post("/comment/:actionId")
+            .respond(r -> actionService.saveComment(r.pathParam("actionId"), r.body().asPojo(Comment.class)));
+        router.delete("/comment/:id").respond(r -> actionService.deleteComments(r.pathParam("id")));
 
         router.get("/:actionId").respond(r -> actionService.find(r.pathParam("actionId")));
 
@@ -46,8 +49,7 @@ public class ActionIndex {
 
         router.post().respond(r -> actionService.saveAction(r.body().asPojo(ActionRecord.class)));
 
-        router.delete("/:actionId").respond(r -> actionService.deleteActions(Set.of(r.pathParam("actionId"))));
-        router.delete("/comment/:id").respond(r -> actionService.deleteComments(Set.of(r.pathParam("id"))));
+        router.delete("/:actionId").respond(r -> actionService.deleteActions(r.pathParam("actionId")));
 
         parentRouter.route("/action/*").subRouter(router);
 
@@ -56,12 +58,13 @@ public class ActionIndex {
 
     private Future<List<ActionRecord>> finaAction(RoutingContext r, Type type) {
         MultiMap map = r.queryParams();
+        String id = map.get("id");
         var condition = ActionRecord
             .builder()
             .type(type == null ? map.get("type") : type.name())
             .name(map.get("name"))
             .state(map.get("state"))
-            .id(map.get("id"))
+            .id(id == null ? ActionRecord.GENERATED : id)
             .build();
         return actionService.find(condition);
     }

@@ -131,7 +131,7 @@ public class ToDo implements WebTool {
     public Args config() {
         return new Args()
             .arg(new Arg("find", null, "find condition, use url query string", false,
-                "id=d5ebeacf9a0aa3319560c7aa78e8751c"))
+                "state=todo&id=d5ebeacf9a0aa3319560c7aa78e8751c"))
             .arg(new Arg("add", null, "add new to do item", false,
                 "buy something"))
             .arg(new Arg("done", null, "mark item done by item id", false,

@@ -33,7 +33,7 @@
         <fileSet>
             <outputDirectory>/</outputDirectory>
             <includes>
-                <include>sourcebox.sh</include>
+                <include>*.sh</include>
             </includes>
         </fileSet>
         <fileSet>

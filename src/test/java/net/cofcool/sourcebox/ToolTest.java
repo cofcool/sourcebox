@@ -36,11 +36,13 @@ class ToolTest {
             """
             cfg1=val1
             cfg2=val2 sdfs
+            #cfg3=val3
             """.getBytes(StandardCharsets.UTF_8)
         );
         Args args = new Args(cfgFile);
         Assertions.assertEquals("val1", args.readArg("cfg1").val());
         Assertions.assertEquals("val2 sdfs", args.readArg("cfg2").val());
+        Assertions.assertTrue(args.getArgVal("#cfg3").isEmpty());
     }
 
     @Test

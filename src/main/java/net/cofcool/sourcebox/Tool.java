@@ -108,6 +108,7 @@ public interface Tool {
                 Files
                     .readAllLines(cfgFile.toPath(), StandardCharsets.UTF_8)
                     .stream()
+                    .filter(s -> !s.startsWith("#"))
                     .map(s -> "--" + s)
                     .toArray(String[]::new)
             );

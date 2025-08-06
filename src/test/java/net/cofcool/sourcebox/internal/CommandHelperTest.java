@@ -9,8 +9,7 @@ import net.cofcool.sourcebox.App;
 import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.Tool;
 import net.cofcool.sourcebox.Tool.Args;
-import net.cofcool.sourcebox.Utils;
-import net.cofcool.sourcebox.internal.api.NoteConfig;
+import net.cofcool.sourcebox.ToolRunner;
 import net.cofcool.sourcebox.runner.CLIRunner.ConsoleToolContext;
 import net.cofcool.sourcebox.runner.CLIWebToolVerticle;
 import org.apache.commons.io.FileUtils;
@@ -86,6 +85,16 @@ class CommandHelperTest extends BaseTest {
             String f = App.globalCfgDir("runWithExport");
             instance().run(args.arg("export", f));
             Assertions.assertTrue(new File(f).exists());
+            testContext.completeNow();
+        });
+    }
+
+    @Test
+    void runWithDownload(Vertx vertx, VertxTestContext testContext) throws Exception {
+        testContext.verify(() -> {
+            String f = App.globalCfgDir("runWithDownload");
+            instance().run(args.arg("download", App.getGlobalConfig(ToolRunner.ADDRESS_KEY)+":"+
+                App.getGlobalConfig(ToolRunner.PORT_KEY)));
             testContext.completeNow();
         });
     }

@@ -3,13 +3,13 @@ package net.cofcool.sourcebox.internal;
 import java.io.File;
 import java.net.URLEncoder;
 import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpRequest.Builder;
 import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.CustomLog;
 import lombok.SneakyThrows;
-import lombok.val;
 import net.cofcool.sourcebox.App;
 import net.cofcool.sourcebox.ToolContext;
 import net.cofcool.sourcebox.ToolName;
@@ -36,6 +36,7 @@ import org.jline.terminal.TerminalBuilder;
 @CustomLog
 public class CommandHelper implements WebTool {
 
+    private static final String TMP_TSB_D_TMP_JSONL = "/tmp/tsb-d-tmp.jsonl";
     private ToolContext toolContext;
 
     @Override
@@ -83,6 +84,20 @@ public class CommandHelper implements WebTool {
             return;
         }
 
+        var download = args.readArg("download");
+        if (download.isPresent()) {
+            String s = download.val();
+            var i = s.lastIndexOf(":");
+            var body = Utils.requestAPI(s.substring(0, i), s.substring(i+1), "/cmd/export", JSONL.class, Builder::GET, e -> {
+                if (e != null) {
+                    throw new IllegalStateException("request " + s +" export error", e);
+                }
+            });
+            FileUtils.writeLines(new File(TMP_TSB_D_TMP_JSONL), body);
+            importHis("down:jsonline:"+TMP_TSB_D_TMP_JSONL);
+            return;
+        }
+
         Arg find = args.readArg("find");
         if (find.isPresent()) {
             var q = "/cmd/quick?q="+ URLEncoder.encode(find.val(), StandardCharsets.UTF_8);
@@ -109,6 +124,7 @@ public class CommandHelper implements WebTool {
             .arg(new Arg("store", null, "save alias into env, ALL will save all",  false, "ALL"))
             .arg(new Arg("import", null, "import bash history, zsh history or jsonline",  false, "local:bash:~/.bash_history"))
             .arg(new Arg("export", null, "export all history with the out path",  false, "./export-his.txt"))
+            .arg(new Arg("download", null, "download history from some server and import to local db",  false, "http://xxx:38080"))
             .runnerTypes(EnumSet.allOf(RunnerType.class));
     }
 

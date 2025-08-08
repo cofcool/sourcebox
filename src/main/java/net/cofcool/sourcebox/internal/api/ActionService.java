@@ -33,7 +33,7 @@ public class ActionService {
     private final SqlRepository<Comment> commentSqlRepository;
     private final SqlRepository<ActionType> actionTypeSqlRepository;
 
-    private final List<ActionInterceptor> saveInterceptors = List.of(new TodoInterceptor(), new RecordInterceptor());
+    private final List<ActionInterceptor> saveInterceptors = List.of(new LinkInterceptor(), new RecordInterceptor());
 
     private final NoteService noteService;
 
@@ -237,11 +237,11 @@ public class ActionService {
         );
     }
 
-    private static class TodoInterceptor implements ActionInterceptor {
+    private static class LinkInterceptor implements ActionInterceptor {
 
         @Override
         public ActionRecord apply(ActionRecord record) {
-            if (Objects.equals(record.type(), Type.todo.name()) && record.name().toLowerCase().startsWith("http")) {
+            if (record.name() != null && record.name().toLowerCase().startsWith("http") && StringUtils.isBlank(record.remark())) {
                 try {
                     var title = Jsoup.newSession().url(record.name()).get().title();
                     record = ActionRecord.builder()

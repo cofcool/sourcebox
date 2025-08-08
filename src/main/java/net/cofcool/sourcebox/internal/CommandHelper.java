@@ -36,7 +36,7 @@ import org.jline.terminal.TerminalBuilder;
 @CustomLog
 public class CommandHelper implements WebTool {
 
-    private static final String TMP_TSB_D_TMP_JSONL = "/tmp/tsb-d-tmp.jsonl";
+    private static final String TMP_TSB_D_TMP_JSONL = System.getProperty("java.io.tmpdir") + File.separator + "tsb-d-tmp.jsonl";
     private ToolContext toolContext;
 
     @Override

@@ -15,6 +15,7 @@ import net.cofcool.sourcebox.internal.HtmlDownloader;
 import net.cofcool.sourcebox.internal.JsonFormatter;
 import net.cofcool.sourcebox.internal.JsonToPojo;
 import net.cofcool.sourcebox.internal.LinkCovertTool;
+import net.cofcool.sourcebox.internal.LinkRecord;
 import net.cofcool.sourcebox.internal.NetworkUtils;
 import net.cofcool.sourcebox.internal.ShellStarter;
 import net.cofcool.sourcebox.internal.SimpleNote;
@@ -41,6 +42,7 @@ public enum ToolName {
     netUtils("some utils about network", NetworkUtils.class),
     todo("simple To Do tool", ToDo.class),
     hisRecord("simple personal record tool", HisRecord.class),
+    link("simple link tool", LinkRecord.class),
     task("repeat execute task(go)", GoAdapter.Task.class),
     mobileBackup("backup android phone files by adb(go)", GoAdapter.MobileBackup.class);
 

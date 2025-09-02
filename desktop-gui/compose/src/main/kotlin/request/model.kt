@@ -39,9 +39,9 @@ data class CommandItem(val id: String, val cmd: String, val tags: List<String>?)
 @Serializable
 data class TodoItem(
     val id: String,
-    val name: String,
-    val state: String,
-    val remark: String?,
+    var name: String,
+    var state: String,
+    var remark: String?,
     val createTime: String = "",
     val start: String = "",
     val end: String = ""

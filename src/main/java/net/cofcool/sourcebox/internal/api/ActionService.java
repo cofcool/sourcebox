@@ -243,7 +243,7 @@ public class ActionService {
         public ActionRecord apply(ActionRecord record) {
             if (record.name() != null && record.name().toLowerCase().startsWith("http") && StringUtils.isBlank(record.remark())) {
                 try {
-                    var title = Jsoup.newSession().url(record.name()).get().title();
+                    var title = Jsoup.newSession().url(record.name()).timeout(5_000).get().title();
                     record = ActionRecord.builder()
                         .name(title)
                         .remark(record.name())

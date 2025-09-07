@@ -1,8 +1,6 @@
 package net.cofcool.sourcebox.internal.api;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.vertx.core.Vertx;
@@ -22,7 +20,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
@@ -106,24 +103,6 @@ class CommandServiceTest extends BaseTest {
             testContext.completeNow();
         })));
 
-    }
-
-    @Test
-    void storeSingle(Vertx vertx, VertxTestContext testContext) throws IOException {
-        var aliasFile = new File(FilenameUtils.concat(file.getAbsolutePath(), ".mytools"));
-        FileUtils.writeStringToFile(aliasFile, "alias mynow='mytool --tool=converts --cmd=now'", StandardCharsets.UTF_8);
-        commandManager
-            .store("@mymd5")
-            .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
-                var strings = FileUtils.readLines(
-                    aliasFile,
-                    StandardCharsets.UTF_8
-                );
-                assertFalse(strings.isEmpty());
-                assertEquals("alias mymd5='mytool --tool=converts --cmd=md5'", strings.get(0));
-                assertEquals("alias mynow='mytool --tool=converts --cmd=now'", strings.get(1));
-                testContext.completeNow();
-            })));
     }
 
     @Test

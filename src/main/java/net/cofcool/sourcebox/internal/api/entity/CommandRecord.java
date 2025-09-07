@@ -61,8 +61,12 @@ public record CommandRecord(
     }
 
     public String makeAlias() {
+        var s = alias;
+        if (alias == null) {
+            s = id;
+        }
         return "alias "
-            + alias.substring(1)
+            + s.substring(1)
             + "='"
             + cmd
             + "'";

@@ -8,7 +8,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -136,31 +135,16 @@ public class CommandService {
         QueryBuilder builder = QueryBuilder.builder().select().from(CommandRecord.class)
             .limit(200);
         if (alias == null || "ALL".equals(alias)) {
-            builder.and("alias is not null");
+            builder.and("id like '@%'");
         }
         return find(builder, alias)
             .compose(i -> {
                 try {
                     File file = new File(aliasPath);
-                    var newAlias = new ArrayList<>(i);
-                    if (file.exists()) {
-                        var old = FileUtils.readLines(file, StandardCharsets.UTF_8)
-                            .stream()
-                            .map(a -> {
-                                var index = a.indexOf("=");
-                                return CommandRecord
-                                    .builder()
-                                    .cmd(a.substring(index + 2, a.length() - 1))
-                                    .alias("@" + a.substring(6, index))
-                                    .tags(Collections.emptyList()).build();
-                            })
-                            .filter(a -> i.stream().noneMatch(c -> c.id().equals(a.id())))
-                            .toList();
-                        newAlias.addAll(old);
-                    }
                     FileUtils.write(
                         file,
-                        newAlias.stream().map(CommandRecord::makeAlias)
+                        i.stream().map(CommandRecord::makeAlias)
+                            .filter(a -> !a.isBlank())
                             .collect(Collectors.joining("\n")),
                         StandardCharsets.UTF_8
                     );

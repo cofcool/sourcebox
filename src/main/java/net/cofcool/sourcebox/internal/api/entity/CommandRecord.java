@@ -106,6 +106,6 @@ public record CommandRecord(
 
     @Override
     public CommandRecord beforeInsert() {
-        return new CommandRecord(id, cmd, alias, tags, remark, frequency, createTime != null ? createTime : LocalDateTime.now(), LocalDateTime.now());
+        return new CommandRecord(id, cmd, alias, tags, remark, frequency == null ? 0 : frequency, createTime != null ? createTime : LocalDateTime.now(), LocalDateTime.now());
     }
 }

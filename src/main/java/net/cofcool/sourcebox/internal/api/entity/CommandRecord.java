@@ -82,7 +82,7 @@ public record CommandRecord(
 
     @Override
     public String toString() {
-        return String.join(" ", id, cmd, Objects.toString(tags.toString(), "[]"));
+        return String.join(" ", id, cmd, Objects.toString(tags.toString(), "[]"), Objects.toString(alias, ""));
     }
 
     @DefaultMapper

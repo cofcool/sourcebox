@@ -2,7 +2,6 @@ package net.cofcool.sourcebox.internal;
 
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
-import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.FileSystemAccess;
 import io.vertx.ext.web.handler.LoggerHandler;
@@ -54,10 +53,6 @@ public class DirWebServer implements WebTool, WebRouter {
                 .setDirectoryTemplate(VertxUtils.webrootPath() + "/vertx-web-directory.html")
                 .setDirectoryListing(true)
         );
-        router.errorHandler(500, r -> {
-            log.error("Request error", r.failure());
-            r.json(new JsonObject().put("error", r.failure().getMessage()));
-        });
 
         VertxUtils.uploadRoute(
             router,

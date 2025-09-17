@@ -19,6 +19,7 @@ import net.cofcool.sourcebox.internal.LinkRecord;
 import net.cofcool.sourcebox.internal.NetworkUtils;
 import net.cofcool.sourcebox.internal.ShellStarter;
 import net.cofcool.sourcebox.internal.SimpleNote;
+import net.cofcool.sourcebox.internal.TimerRecord;
 import net.cofcool.sourcebox.internal.ToDo;
 import net.cofcool.sourcebox.internal.TrelloToLogseqImporter;
 
@@ -43,6 +44,7 @@ public enum ToolName {
     todo("simple To Do tool", ToDo.class),
     hisRecord("simple personal record tool", HisRecord.class),
     link("simple link tool", LinkRecord.class),
+    timer("simple timer tool", TimerRecord.class),
     task("repeat execute task(go)", GoAdapter.Task.class),
     mobileBackup("backup android phone files by adb(go)", GoAdapter.MobileBackup.class);
 

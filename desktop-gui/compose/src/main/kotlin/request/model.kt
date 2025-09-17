@@ -20,6 +20,7 @@ enum class Tools(val tool: Tools?, val cmd: String) {
     Note(null, "note"),
     Json(null, "json"),
     Todo(null, "todo"),
+    Timer(null, "timer"),
     None(null, "")
     ;
 

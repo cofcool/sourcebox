@@ -13,3 +13,11 @@ fun LocalDateTime.Companion.now(timeZone: TimeZone = TimeZone.currentSystemDefau
 fun LocalDateTime.formatFullStyle() : String {
     return datetimeFormatter.format(toJavaLocalDateTime())
 }
+
+fun secondsDisplay(seconds: Long) : String {
+    return if (seconds > 60) {
+        "${(seconds / 60)}min"
+    } else {
+        "${seconds}s"
+    }
+}

@@ -1,5 +1,6 @@
 package view
 
+import ConfigManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
@@ -27,7 +28,7 @@ import java.awt.Toolkit
 fun timerView() {
     val notificationService = NotificationService()
     TomatoClockApp(
-        timerService = TimerService(2400L, 300L),
+        timerService = TimerService(ConfigManager.config().timerWorkDurationSec(), ConfigManager.config().timerBreakDurationSec()),
         notificationService = notificationService
     )
 }
@@ -40,12 +41,12 @@ fun TomatoClockApp(timerService: TimerService, notificationService: Notification
 
     var isFullScreen by remember { mutableStateOf(false) }
 
-    var workDurationInput by remember { mutableStateOf(TextFieldValue("40")) }
-    var breakDurationInput by remember { mutableStateOf(TextFieldValue("5")) }
+    var workDurationInput by remember { mutableStateOf(TextFieldValue("${ConfigManager.config().timerWorkDuration}")) }
+    var breakDurationInput by remember { mutableStateOf(TextFieldValue("${ConfigManager.config().timerBreakDuration}")) }
 
     fun updateDurations() {
-        val workMinutes = workDurationInput.text.toLongOrNull() ?: 40
-        val breakMinutes = breakDurationInput.text.toLongOrNull() ?: 5
+        val workMinutes = workDurationInput.text.toLongOrNull() ?: ConfigManager.config().timerWorkDuration
+        val breakMinutes = breakDurationInput.text.toLongOrNull() ?: ConfigManager.config().timerBreakDuration
         timerService.updateDurations(workMinutes, breakMinutes)
         remainingTime = workMinutes * 60
     }
@@ -118,6 +119,12 @@ fun TomatoClockApp(timerService: TimerService, notificationService: Notification
 
         Button(onClick = {
             updateDurations()
+            ConfigManager.saveConfig {
+                it.timerWorkDuration = workDurationInput.text.toLong()
+                it.timerBreakDuration = breakDurationInput.text.toLong()
+
+                it
+            }
             timerService.startTimer()
         }) {
             Text("Start")
@@ -159,7 +166,8 @@ fun fullScreenWindow(isButtonEnabled: Boolean, onClose: () -> Unit) {
         state = state,
         title = "Break Time",
         undecorated = true,
-        transparent = true
+        transparent = true,
+        alwaysOnTop = true
     ) {
         Box(
             modifier = Modifier.fillMaxSize()

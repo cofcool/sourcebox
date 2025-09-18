@@ -78,6 +78,7 @@ class Request {
     }
 
     suspend fun getConfig(): Map<String, Arg> {
+        delay(100L)
         val r = client.get("/config")
         return r.body<Map<String, Arg>>()
     }

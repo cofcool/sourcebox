@@ -13,9 +13,9 @@ object ConfigManager {
         config = loadConfig()?:defaultConfig
     }
 
-    fun saveConfig(c: AppConfig) {
-        config = c
-        configFile.writeText(globalJson.encodeToString(c))
+    fun saveConfig(cf: (c: AppConfig) -> AppConfig) {
+        config = cf(config)
+        configFile.writeText(globalJson.encodeToString(config))
     }
 
     fun requestUrl() = config.webAddr + ":" + config.webPort
@@ -43,12 +43,18 @@ object ConfigManager {
     fun configPath(): String = configFile.absolutePath
 
     fun needLocalServer(): Boolean {
-        return config == defaultConfig
+        return config.needLocalServer
     }
 }
 
 @Serializable
 data class AppConfig(
     val webAddr: String,
-    val webPort: Int
-)
+    val webPort: Int,
+    val needLocalServer: Boolean = true,
+    var timerWorkDuration: Long = 40,
+    var timerBreakDuration: Long = 5
+) {
+    fun timerWorkDurationSec() = timerWorkDuration * 60
+    fun timerBreakDurationSec() = timerBreakDuration * 60
+}

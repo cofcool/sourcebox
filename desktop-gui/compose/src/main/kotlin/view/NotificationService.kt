@@ -2,6 +2,7 @@ package view
 
 import java.awt.*
 import javax.swing.ImageIcon
+import kotlin.system.exitProcess
 
 class NotificationService {
 
@@ -12,14 +13,18 @@ class NotificationService {
         if (SystemTray.isSupported()) {
             systemTray = SystemTray.getSystemTray()
             val trayIconImage = ImageIcon(javaClass.getResource("/icons/icon.png")).image
-            trayIcon = TrayIcon(trayIconImage, "Tomato Clock")
-            trayIcon?.toolTip = "Tomato Clock"
+            trayIcon = TrayIcon(trayIconImage, "Timer")
+            trayIcon?.toolTip = "Timer"
 
             val popupMenu = PopupMenu()
             val exitItem = MenuItem("Exit")
             exitItem.addActionListener {
-                System.exit(0)
+                exitProcess(0)
             }
+            val msgItem = MenuItem("Work Time: 0s")
+            msgItem.isEnabled = false
+
+            popupMenu.add(msgItem)
             popupMenu.add(exitItem)
 
             trayIcon?.popupMenu = popupMenu
@@ -38,9 +43,12 @@ class NotificationService {
         trayIcon?.displayMessage(title, message, TrayIcon.MessageType.INFO)
     }
 
-    fun removeNotification() {
-        if (systemTray != null) {
-            systemTray?.remove(trayIcon)
-        }
+    fun updateMenuMsg(message: String) {
+        trayIcon?.popupMenu?.getItem(0)?.label = message
     }
+
+    fun removeNotification() {
+        systemTray?.remove(trayIcon)
+    }
+
 }

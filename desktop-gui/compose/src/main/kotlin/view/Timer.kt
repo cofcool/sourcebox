@@ -24,20 +24,24 @@ import kotlinx.coroutines.launch
 import secondsDisplay
 import java.awt.Toolkit
 
+val notificationService = NotificationService()
+
 @Composable
 fun timerView() {
-    val notificationService = NotificationService()
     TomatoClockApp(
-        timerService = TimerService(ConfigManager.config().timerWorkDurationSec(), ConfigManager.config().timerBreakDurationSec()),
+        timerService = TimerService(
+            ConfigManager.config().timerWorkDurationSec(),
+            ConfigManager.config().timerBreakDurationSec()
+        ),
         notificationService = notificationService
     )
 }
 
 @Composable
 fun TomatoClockApp(timerService: TimerService, notificationService: NotificationService) {
-    var remainingTime by remember { mutableStateOf(timerService.workDuration) }
+    var remainingTime by remember { mutableStateOf(timerService.timeMsg()) }
     var isWorkingTime by remember { mutableStateOf(true) }
-    var notificationMessage by remember { mutableStateOf("Start your work!") }
+    var shouldNotify = true
 
     var isFullScreen by remember { mutableStateOf(false) }
 
@@ -45,33 +49,30 @@ fun TomatoClockApp(timerService: TimerService, notificationService: Notification
     var breakDurationInput by remember { mutableStateOf(TextFieldValue("${ConfigManager.config().timerBreakDuration}")) }
 
     fun updateDurations() {
-        val workMinutes = workDurationInput.text.toLongOrNull() ?: ConfigManager.config().timerWorkDuration
-        val breakMinutes = breakDurationInput.text.toLongOrNull() ?: ConfigManager.config().timerBreakDuration
+        val workMinutes =
+            workDurationInput.text.toLongOrNull() ?: ConfigManager.config().timerWorkDuration
+        val breakMinutes =
+            breakDurationInput.text.toLongOrNull() ?: ConfigManager.config().timerBreakDuration
         timerService.updateDurations(workMinutes, breakMinutes)
-        remainingTime = workMinutes * 60
+        remainingTime = timerService.timeMsg(workMinutes * 60)
     }
 
-    timerService.onTimeUpdated = { time ->
-        remainingTime = time
-    }
-
-    timerService.onSessionCompleted = {
-        notificationMessage = if (isWorkingTime) {
-            "Break time! Please relax."
-        } else {
-            "Time to work again!"
+    timerService.onTimeUpdated = fun(i1: Long, i2: String) {
+        remainingTime = i2
+        notificationService.updateMenuMsg(i2)
+        if (i1 < 60 && isWorkingTime && shouldNotify) {
+            shouldNotify = false
+            notificationService.showNotification("Timer", "Break time! Please relax.")
         }
-        notificationService.showNotification("Pomodoro Timer", notificationMessage)
     }
 
     timerService.onBreakTimeCompleted = {
         isWorkingTime = true
+        shouldNotify = true
     }
     timerService.onBreakTimeStarted = {
         isWorkingTime = false
         isFullScreen = true
-        notificationMessage = "Break time started!"
-        notificationService.showNotification("Pomodoro Timer", notificationMessage)
     }
 
     Column(
@@ -79,16 +80,9 @@ fun TomatoClockApp(timerService: TimerService, notificationService: Notification
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Timer", style = MaterialTheme.typography.h4)
-        Spacer(modifier = Modifier.height(20.dp))
-
         Text(
-            text = if (isWorkingTime) {
-                "Work Time: ${secondsDisplay(remainingTime)}"
-            } else {
-                "Break Time: ${secondsDisplay(remainingTime)}"
-            },
-            style = MaterialTheme.typography.h5
+            text = remainingTime,
+            style = MaterialTheme.typography.h4
         )
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -193,8 +187,7 @@ class TimerService(
     private var isWorkingTime: Boolean = true
     private var isReset = false
 
-    var onTimeUpdated: (Long) -> Unit = {}
-    var onSessionCompleted: () -> Unit = {}
+    var onTimeUpdated: (Long, String) -> Unit = fun(_, _) {}
     var onBreakTimeStarted: () -> Unit = {}
     var onBreakTimeCompleted: () -> Unit = {}
 
@@ -206,18 +199,25 @@ class TimerService(
                 delay(1000L)
                 timeRemaining--
 
-                onTimeUpdated(timeRemaining)
+                onTimeUpdated(timeRemaining, timeMsg())
 
             }
             if (isReset) {
                 isWorkingTime = true
                 isReset = false
                 timeRemaining = workDuration
-                onTimeUpdated(timeRemaining)
+                onTimeUpdated(timeRemaining, timeMsg())
             } else {
-                onSessionCompleted()
                 switchSession()
             }
+        }
+    }
+
+    fun timeMsg(t: Long = timeRemaining): String {
+        return if (isWorkingTime) {
+            "Work Time: ${secondsDisplay(t)}"
+        } else {
+            "Break Time: ${secondsDisplay(t)}"
         }
     }
 

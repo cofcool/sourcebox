@@ -41,8 +41,6 @@ fun timerView() {
 fun TomatoClockApp(timerService: TimerService, notificationService: NotificationService) {
     var remainingTime by remember { mutableStateOf(timerService.timeMsg()) }
     var isWorkingTime by remember { mutableStateOf(true) }
-    var shouldNotify = true
-
     var isFullScreen by remember { mutableStateOf(false) }
 
     var workDurationInput by remember { mutableStateOf(TextFieldValue("${ConfigManager.config().timerWorkDuration}")) }
@@ -60,15 +58,13 @@ fun TomatoClockApp(timerService: TimerService, notificationService: Notification
     timerService.onTimeUpdated = fun(i1: Long, i2: String) {
         remainingTime = i2
         notificationService.updateMenuMsg(i2)
-        if (i1 < 60 && isWorkingTime && shouldNotify) {
-            shouldNotify = false
+        if (i1 == 59L && isWorkingTime) {
             notificationService.showNotification("Timer", "Break time! Please relax.")
         }
     }
 
     timerService.onBreakTimeCompleted = {
         isWorkingTime = true
-        shouldNotify = true
     }
     timerService.onBreakTimeStarted = {
         isWorkingTime = false

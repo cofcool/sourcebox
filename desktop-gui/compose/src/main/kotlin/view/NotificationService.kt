@@ -1,5 +1,6 @@
 package view
 
+import W_REF
 import java.awt.*
 import javax.swing.ImageIcon
 import kotlin.system.exitProcess
@@ -21,10 +22,21 @@ class NotificationService {
             exitItem.addActionListener {
                 exitProcess(0)
             }
+            val showItem = MenuItem("Show")
+            showItem.addActionListener {
+                if (W_REF?.state == Frame.ICONIFIED) {
+                    W_REF?.state = Frame.NORMAL
+                }
+                W_REF?.isVisible = true
+                W_REF?.toFront()
+                W_REF?.requestFocus()
+            }
+
             val msgItem = MenuItem("Work Time: 0s")
             msgItem.isEnabled = false
 
             popupMenu.add(msgItem)
+            popupMenu.add(showItem)
             popupMenu.add(exitItem)
 
             trayIcon?.popupMenu = popupMenu

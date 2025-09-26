@@ -2,6 +2,7 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
+import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import request.Request
@@ -13,6 +14,7 @@ import kotlin.system.exitProcess
 
 
 val G_REQUEST = Request()
+var W_REF : ComposeWindow? = null
 
 @Composable
 @Preview
@@ -29,8 +31,14 @@ fun App() {
 }
 
 fun main() = application {
-    Window(onCloseRequest = ::exitApplication, title = "The Source Box") {
+    Window(
+        onCloseRequest = {
+            W_REF?.isVisible = false
+        },
+        title = "The Source Box"
+    ) {
         App()
+       W_REF = this.window
     }
     G_REQUEST.checkEvent()
 }

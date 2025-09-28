@@ -29,7 +29,7 @@ public class TimerRecord extends BaseRecord {
 
     @Override
     protected void callAdd(Arg a) {
-        saveRecord(null, a.val(), null, LinkCategory.bookmark.name());
+        saveRecord(null, a.val(), null, null);
     }
 
     @Override

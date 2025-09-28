@@ -24,51 +24,68 @@ import kotlinx.coroutines.launch
 import secondsDisplay
 import java.awt.Toolkit
 
-val notificationService = NotificationService()
+private val helper = TimerHelper()
 
-@Composable
-fun timerView() {
-    TomatoClockApp(
-        timerService = TimerService(
-            ConfigManager.config().timerWorkDurationSec(),
-            ConfigManager.config().timerBreakDurationSec()
-        ),
-        notificationService = notificationService
-    )
-}
+class TimerHelper {
+    val notificationService = NotificationService()
+    val timerService = TimerService()
+    var remainingTime = timerService.timeMsg()
 
-@Composable
-fun TomatoClockApp(timerService: TimerService, notificationService: NotificationService) {
-    var remainingTime by remember { mutableStateOf(timerService.timeMsg()) }
-    var isWorkingTime by remember { mutableStateOf(true) }
-    var isFullScreen by remember { mutableStateOf(false) }
+    var isWorkingTime = true
+    var isFullScreen = false
 
-    var workDurationInput by remember { mutableStateOf(TextFieldValue("${ConfigManager.config().timerWorkDuration}")) }
-    var breakDurationInput by remember { mutableStateOf(TextFieldValue("${ConfigManager.config().timerBreakDuration}")) }
+    var action:(r: String, isW: Boolean, isF: Boolean) -> Unit = fun(_,_,_){}
 
-    fun updateDurations() {
-        val workMinutes =
-            workDurationInput.text.toLongOrNull() ?: ConfigManager.config().timerWorkDuration
-        val breakMinutes =
-            breakDurationInput.text.toLongOrNull() ?: ConfigManager.config().timerBreakDuration
-        timerService.updateDurations(workMinutes, breakMinutes)
-        remainingTime = timerService.timeMsg(workMinutes * 60)
-    }
-
-    timerService.onTimeUpdated = fun(i1: Long, i2: String) {
-        remainingTime = i2
-        notificationService.updateMenuMsg(i2)
-        if (i1 == 59L && isWorkingTime) {
-            notificationService.showNotification("Timer", "Break time! Please relax.")
+    init {
+        timerService.onTimeUpdated = fun(i1: Long, i2: String) {
+            remainingTime = i2
+            notificationService.updateMenuMsg(i2)
+            if (i1 == 59L && isWorkingTime) {
+                notificationService.showNotification("Timer", "Break time! Please relax.")
+            }
+            updateNotify()
+        }
+        timerService.onBreakTimeCompleted = {
+            isWorkingTime = true
+            updateNotify()
+        }
+        timerService.onBreakTimeStarted = {
+            isWorkingTime = false
+            isFullScreen = true
+            updateNotify()
         }
     }
 
-    timerService.onBreakTimeCompleted = {
-        isWorkingTime = true
+    fun updateNotify() {
+        action(remainingTime, isWorkingTime, isFullScreen)
     }
-    timerService.onBreakTimeStarted = {
-        isWorkingTime = false
-        isFullScreen = true
+}
+
+@Composable
+fun timerView() {
+    TomatoClockApp(timerService = helper.timerService)
+}
+
+@Composable
+fun TomatoClockApp(timerService: TimerService) {
+    var remainingTime by remember { mutableStateOf(helper.remainingTime) }
+    var isWorkingTime by remember { mutableStateOf(helper.isWorkingTime) }
+    var isFullScreen by remember { mutableStateOf(helper.isFullScreen) }
+
+    var workDurationInput by remember { mutableStateOf(TextFieldValue("${timerService.workMin()}")) }
+    var breakDurationInput by remember { mutableStateOf(TextFieldValue("${timerService.breakMin()}")) }
+
+    helper.action = { r: String, isW: Boolean, isF: Boolean ->
+        remainingTime = r
+        isWorkingTime = isW
+        isFullScreen = isF
+    }
+
+    fun updateDurations() {
+        val workMinutes = workDurationInput.text.toLong()
+        val breakMinutes = breakDurationInput.text.toLong()
+        helper.timerService.updateDurations(workMinutes, breakMinutes)
+        remainingTime = helper.timerService.timeMsg(workMinutes * 60)
     }
 
     Column(
@@ -131,6 +148,7 @@ fun TomatoClockApp(timerService: TimerService, notificationService: Notification
         if (isFullScreen) {
             fullScreenWindow(isWorkingTime) {
                 isFullScreen = false
+                helper.isFullScreen = false
                 timerService.startTimer()
             }
         }
@@ -176,8 +194,8 @@ fun fullScreenWindow(isButtonEnabled: Boolean, onClose: () -> Unit) {
 }
 
 class TimerService(
-    var workDuration: Long,
-    private var breakDuration: Long
+    var workDuration: Long = ConfigManager.config().timerWorkDurationSec(),
+    var breakDuration: Long = ConfigManager.config().timerBreakDurationSec()
 ) {
     private var timeRemaining: Long = workDuration
     private var isWorkingTime: Boolean = true
@@ -188,6 +206,10 @@ class TimerService(
     var onBreakTimeCompleted: () -> Unit = {}
 
     private val timerScope = CoroutineScope(Dispatchers.Default)
+
+
+    fun workMin() = workDuration / 60
+    fun breakMin() = breakDuration / 60
 
     fun startTimer() {
         timerScope.launch {

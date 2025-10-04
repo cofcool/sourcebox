@@ -157,6 +157,17 @@ class ActionServiceTest extends BaseTest {
     }
 
     @Test
+    void findRecordStatistics(Vertx vertx, VertxTestContext testContext) {
+        actionService
+            .findRecordStatistics(Type.record)
+            .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
+                System.out.println(r);
+                Assertions.assertFalse(r.isEmpty());
+                testContext.completeNow();
+            })));
+    }
+
+    @Test
     void example(Vertx vertx, VertxTestContext testContext) {
         actionService
             .example()

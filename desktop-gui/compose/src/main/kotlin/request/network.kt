@@ -1,6 +1,8 @@
 package request
 
 import ConfigManager
+import G_REQUEST
+import formatFullStyle
 import globalJson
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -13,8 +15,10 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.selects.select
+import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.json.Json
 import loadServer
+import now
 import org.slf4j.LoggerFactory
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -117,6 +121,29 @@ class Request {
             }
             val r = client.get(path)
             return@runBlocking r.body<List<TodoItem>>()
+        }
+    }
+
+    fun addRecord(name: String, state: String, type: String,
+                  remark: String = "",
+                  start: LocalDateTime = LocalDateTime.now(), end: LocalDateTime = LocalDateTime.now()
+    ) {
+        G_REQUEST.runTool(
+            "action", mapOf(
+                "name" to name,
+                "remark" to remark,
+                "state" to state,
+                "type" to type,
+                "start" to start.formatFullStyle(),
+                "end" to end.formatFullStyle()
+            )
+        )
+    }
+
+    fun getRecordStatistics(type: String): List<RecordStatistics> {
+        return runBlocking {
+            val r = client.get("/action/statistics/${type}")
+            return@runBlocking r.body<List<RecordStatistics>>()
         }
     }
 

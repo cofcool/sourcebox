@@ -1,6 +1,8 @@
 package net.cofcool.sourcebox.util;
 
 import io.vertx.core.Future;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowSet;
 import java.util.List;
 
 public interface AsyncCrudRepository<T> {
@@ -14,6 +16,8 @@ public interface AsyncCrudRepository<T> {
     Future<List<T>> find(T condition);
 
     Future<List<T>> find(QueryBuilder condition);
+
+    Future<RowSet<Row>> execute(QueryBuilder condition);
 
     Future<List<T>> find();
 

@@ -39,6 +39,8 @@ public class ActionIndex {
 
         router.get("/refs/:actionId").respond(r -> actionService.findAllRefs(r.pathParam("actionId")));
 
+        router.get("/statistics/:type").respond(r -> actionService.findRecordStatistics(Type.valueOf(r.pathParam("type"))));
+
         router.post("/actions").respond(r ->
             actionService.saveAll(JsonUtil.toPojoList(r.body().buffer().getBytes(), ActionRecord.class))
         );

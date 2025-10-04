@@ -1,7 +1,6 @@
 package view
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Button
 import androidx.compose.material.Divider
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
@@ -15,7 +14,6 @@ import androidx.compose.ui.unit.dp
 import org.slf4j.LoggerFactory
 import request.Arg
 import request.Tools
-import java.io.File
 
 val viewLogger = LoggerFactory.getLogger("view")
 

@@ -1,10 +1,14 @@
 package net.cofcool.sourcebox.internal.api;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.sqlclient.Row;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -95,6 +99,28 @@ public class ActionService {
 
     public Future<List<Comment>> findComment(String actionId) {
         return commentSqlRepository.find(new Comment(actionId));
+    }
+
+    public Future<List<RecordStatistics>> findRecordStatistics(Type t) {
+        var a = actionRecordSqlRepository.execute(
+            QueryBuilder.builder()
+                .select("CAST(start AS DATE) AS day")
+                .select("COUNT(*) AS cnt")
+                .select("SUM(COALESCE(duration, 0)) total")
+                .from(ActionRecord.class)
+                .and("type=?", t.name())
+                .groupBy("day")
+                .orderBy("day desc")
+                .limit(15)
+        );
+
+        return a.compose(r -> {
+            List<RecordStatistics> list = new ArrayList<>();
+            for (Row row : r) {
+                list.add(new RecordStatistics(row.getLocalDate("DAY"), row.getLong("CNT"), row.getLong("TOTAL")));
+            }
+            return Future.succeededFuture(list);
+        });
     }
 
     public Future<ActionRecord> example() {
@@ -285,5 +311,12 @@ public class ActionService {
             log.info(msg, event);
         }
     }
+
+    public record RecordStatistics (
+        @JsonFormat(pattern = "yyyy-MM-dd")
+        LocalDate day,
+        Long cnt,
+        Long total
+    ){}
 
 }

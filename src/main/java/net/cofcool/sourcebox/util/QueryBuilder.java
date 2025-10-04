@@ -13,6 +13,7 @@ public final class QueryBuilder {
     @Getter
     private final List<Object> parameters = new ArrayList<>();
     private String orderByClause;
+    private String groupByClause;
     private Integer limit;
 
     private QueryBuilder() {
@@ -67,6 +68,11 @@ public final class QueryBuilder {
         return this;
     }
 
+    public QueryBuilder groupBy(String groupBy) {
+        this.groupByClause = groupBy;
+        return this;
+    }
+
     public QueryBuilder limit(int limit) {
         this.limit = limit;
         return this;
@@ -94,6 +100,10 @@ public final class QueryBuilder {
                 }
                 sb.append(clause).append(" ");
             }
+        }
+
+        if (groupByClause != null) {
+            sb.append(" GROUP BY ").append(groupByClause).append(" ");
         }
 
         if (orderByClause != null) {

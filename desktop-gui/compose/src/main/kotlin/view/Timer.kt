@@ -1,8 +1,10 @@
 package view
 
 import ConfigManager
+import G_REQUEST
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.Button
 import androidx.compose.material.LocalTextStyle
@@ -21,8 +23,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import request.RecordStatistics
 import secondsDisplay
 import java.awt.Toolkit
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 private val helper = TimerHelper()
 
@@ -34,7 +42,7 @@ class TimerHelper {
     var isWorkingTime = true
     var isFullScreen = false
 
-    var action:(r: String, isW: Boolean, isF: Boolean) -> Unit = fun(_,_,_){}
+    var action: (r: String, isW: Boolean, isF: Boolean) -> Unit = fun(_, _, _) {}
 
     init {
         timerService.onTimeUpdated = fun(i1: Long, i2: String) {
@@ -53,11 +61,23 @@ class TimerHelper {
             isWorkingTime = false
             isFullScreen = true
             updateNotify()
+            addRecord(timerService.workDuration, "finish")
+        }
+        timerService.onReset = {
+            addRecord(it, "reset")
         }
     }
 
     fun updateNotify() {
         action(remainingTime, isWorkingTime, isFullScreen)
+    }
+
+    fun addRecord(time: Long, remark: String) {
+        G_REQUEST.addRecord(
+            "workTime-${Clock.System.now().epochSeconds}", "done", "timer", remark,
+            end = Clock.System.now().plus(time.toDuration(DurationUnit.SECONDS))
+                .toLocalDateTime(TimeZone.currentSystemDefault())
+        )
     }
 }
 
@@ -93,6 +113,8 @@ fun TomatoClockApp(timerService: TimerService) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        Spacer(modifier = Modifier.height(20.dp))
+
         Text(
             text = remainingTime,
             style = MaterialTheme.typography.h4
@@ -120,30 +142,41 @@ fun TomatoClockApp(timerService: TimerService) {
                 textStyle = LocalTextStyle.current.copy(color = Color.Black),
                 modifier = Modifier.padding(start = 10.dp)
             )
-        }
 
+        }
         Spacer(modifier = Modifier.height(20.dp))
 
-        Button(onClick = {
-            updateDurations()
-            ConfigManager.saveConfig {
-                it.timerWorkDuration = workDurationInput.text.toLong()
-                it.timerBreakDuration = breakDurationInput.text.toLong()
+        Row {
+            Button(
+                modifier = Modifier.padding(8.dp),
+                onClick = {
+                updateDurations()
+                ConfigManager.saveConfig {
+                    it.timerWorkDuration = workDurationInput.text.toLong()
+                    it.timerBreakDuration = breakDurationInput.text.toLong()
 
-                it
+                    it
+                }
+                timerService.startTimer()
+            }) {
+                Text("Start")
             }
-            timerService.startTimer()
-        }) {
-            Text("Start")
-        }
 
-        Button(onClick = {
-            timerService.resetTimer()
-        }) {
-            Text("Reset")
-        }
+            Button(
+                modifier = Modifier.padding(8.dp),
+                onClick = {
+                timerService.resetTimer()
+            }) {
+                Text("Reset")
+            }
 
+        }
         Spacer(modifier = Modifier.height(20.dp))
+
+
+        Row {
+            statisticsView()
+        }
 
         if (isFullScreen) {
             fullScreenWindow(isWorkingTime) {
@@ -152,6 +185,47 @@ fun TomatoClockApp(timerService: TimerService) {
                 timerService.startTimer()
             }
         }
+    }
+}
+
+@Composable
+fun statisticsView() {
+    var data by remember { mutableStateOf<List<RecordStatistics>>(emptyList()) }
+
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Button(
+            onClick = {
+                data = G_REQUEST.getRecordStatistics("timer")
+            }
+        ) {
+            Text("Statistics")
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        Table(data)
+    }
+}
+
+@Composable
+fun Table(data: List<RecordStatistics>) {
+    LazyColumn {
+        item {
+            Row(Modifier.fillMaxWidth().padding(8.dp)) {
+                Text("Date", modifier = Modifier.weight(1f))
+                Text("Times", modifier = Modifier.weight(1f))
+                Text("WorkTime", modifier = Modifier.weight(1f))
+            }
+        }
+        items(data.size) {
+            Row(Modifier.fillMaxWidth().padding(8.dp)) {
+                Text(data[it].day, modifier = Modifier.weight(1f))
+                Text(data[it].cnt.toString(), modifier = Modifier.weight(1f))
+                Text(secondsDisplay(data[it].total), modifier = Modifier.weight(1f))
+            }
+            grayDivider()
+        }
+
     }
 }
 
@@ -204,6 +278,7 @@ class TimerService(
     var onTimeUpdated: (Long, String) -> Unit = fun(_, _) {}
     var onBreakTimeStarted: () -> Unit = {}
     var onBreakTimeCompleted: () -> Unit = {}
+    var onReset: (Long) -> Unit = fun(_) {}
 
     private val timerScope = CoroutineScope(Dispatchers.Default)
 
@@ -221,6 +296,7 @@ class TimerService(
 
             }
             if (isReset) {
+                onReset(workDuration - timeRemaining)
                 isWorkingTime = true
                 isReset = false
                 timeRemaining = workDuration

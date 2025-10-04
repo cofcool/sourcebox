@@ -38,10 +38,25 @@ data class Params(val cmd: String, val input: String)
 data class CommandItem(val id: String, val cmd: String, val tags: List<String>?)
 
 @Serializable
+data class RecordStatistics(val cnt: Long, val total: Long, val day: String)
+
+@Serializable
 data class TodoItem(
     val id: String,
     var name: String,
     var state: String,
+    var remark: String?,
+    val createTime: String = "",
+    val start: String = "",
+    val end: String = ""
+)
+
+@Serializable
+data class RecordItem(
+    val id: String,
+    var name: String,
+    var state: String,
+    var type: String,
     var remark: String?,
     val createTime: String = "",
     val start: String = "",

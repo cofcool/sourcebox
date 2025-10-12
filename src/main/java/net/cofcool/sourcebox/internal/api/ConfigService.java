@@ -126,7 +126,7 @@ public class ConfigService {
                 }
             }
 
-            if (!flag && DB_VERSION >= currentVersion) {
+            if (!flag && DB_VERSION > currentVersion) {
                 flag = true;
                 updateDBVersion(stmt, DB_VERSION);
             }

@@ -16,13 +16,17 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.selects.select
 import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.toJavaLocalDateTime
+import kotlinx.datetime.toKotlinLocalDateTime
 import kotlinx.serialization.json.Json
 import loadServer
 import now
 import org.slf4j.LoggerFactory
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.DurationUnit
 
 val logger = LoggerFactory.getLogger("request.network")
 val actionEvents = Channel<Action>(Channel.UNLIMITED)
@@ -126,15 +130,20 @@ class Request {
 
     fun addRecord(name: String, state: String, type: String,
                   remark: String = "",
-                  start: LocalDateTime = LocalDateTime.now(), end: LocalDateTime = LocalDateTime.now()
+                  start: LocalDateTime = LocalDateTime.now(), end: LocalDateTime = LocalDateTime.now(),
+                  duration: Duration = Duration.ZERO
     ) {
+        var s = start;
+        if (duration != Duration.ZERO) {
+            s = end.toJavaLocalDateTime().minusSeconds(duration.toLong(DurationUnit.SECONDS)).toKotlinLocalDateTime()
+        }
         G_REQUEST.runTool(
             "action", mapOf(
                 "name" to name,
                 "remark" to remark,
                 "state" to state,
                 "type" to type,
-                "start" to start.formatFullStyle(),
+                "start" to s.formatFullStyle(),
                 "end" to end.formatFullStyle()
             )
         )

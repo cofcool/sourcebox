@@ -1,6 +1,3 @@
-package view
-
-import W_REF
 import java.awt.*
 import javax.swing.ImageIcon
 import kotlin.system.exitProcess

@@ -1,6 +1,7 @@
 package view
 
 import ConfigManager
+import G_NS
 import G_REQUEST
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -24,8 +25,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import request.RecordStatistics
 import secondsDisplay
 import java.awt.Toolkit
@@ -35,12 +34,13 @@ import kotlin.time.toDuration
 private val helper = TimerHelper()
 
 class TimerHelper {
-    val notificationService = NotificationService()
+    val notificationService = G_NS
     val timerService = TimerService()
     var remainingTime = timerService.timeMsg()
 
     var isWorkingTime = true
     var isFullScreen = false
+    var state = TimerState.start
 
     var action: (r: String, isW: Boolean, isF: Boolean) -> Unit = fun(_, _, _) {}
 
@@ -68,6 +68,8 @@ class TimerHelper {
         }
     }
 
+    fun isPause(): Boolean = timerService.isPause
+
     fun updateNotify() {
         action(remainingTime, isWorkingTime, isFullScreen)
     }
@@ -75,8 +77,7 @@ class TimerHelper {
     fun addRecord(time: Long, remark: String) {
         G_REQUEST.addRecord(
             "workTime-${Clock.System.now().epochSeconds}", "done", "timer", remark,
-            end = Clock.System.now().plus(time.toDuration(DurationUnit.SECONDS))
-                .toLocalDateTime(TimeZone.currentSystemDefault())
+            duration = time.toDuration(DurationUnit.SECONDS)
         )
     }
 }
@@ -91,6 +92,10 @@ fun TomatoClockApp(timerService: TimerService) {
     var remainingTime by remember { mutableStateOf(helper.remainingTime) }
     var isWorkingTime by remember { mutableStateOf(helper.isWorkingTime) }
     var isFullScreen by remember { mutableStateOf(helper.isFullScreen) }
+
+    var isPause by remember { mutableStateOf(helper.isPause()) }
+
+    var state by remember { mutableStateOf(helper.state) }
 
     var workDurationInput by remember { mutableStateOf(TextFieldValue("${timerService.workMin()}")) }
     var breakDurationInput by remember { mutableStateOf(TextFieldValue("${timerService.breakMin()}")) }
@@ -165,14 +170,26 @@ fun TomatoClockApp(timerService: TimerService) {
             Button(
                 modifier = Modifier.padding(8.dp),
                 onClick = {
-                timerService.resetTimer()
-            }) {
-                Text("Reset")
+                    isPause = !isPause
+                    timerService.pauseTimer()
+                }
+            ) {
+                Text(if (isPause) "Resume" else "Pause")
             }
 
+            Button(
+                modifier = Modifier.padding(8.dp),
+                onClick = {
+                    isPause = !isPause
+                    timerService.resetTimer()
+                }
+            ) {
+                Text("Reset")
+            }
         }
         Spacer(modifier = Modifier.height(20.dp))
 
+        grayDivider()
 
         Row {
             statisticsView()
@@ -274,6 +291,7 @@ class TimerService(
     private var timeRemaining: Long = workDuration
     private var isWorkingTime: Boolean = true
     private var isReset = false
+    var isPause = false
 
     var onTimeUpdated: (Long, String) -> Unit = fun(_, _) {}
     var onBreakTimeStarted: () -> Unit = {}
@@ -289,6 +307,10 @@ class TimerService(
     fun startTimer() {
         timerScope.launch {
             while (timeRemaining > 0 && !isReset) {
+                if (isPause) {
+                    delay(5_000L)
+                    continue
+                }
                 delay(1000L)
                 timeRemaining--
 
@@ -336,6 +358,18 @@ class TimerService(
 
     fun resetTimer() {
         isReset = true
+        isPause = false
+    }
+
+    fun pauseTimer() {
+        isPause = !isPause
     }
 }
 
+
+enum class TimerState {
+    stop,
+    start,
+    pause,
+    resume
+}

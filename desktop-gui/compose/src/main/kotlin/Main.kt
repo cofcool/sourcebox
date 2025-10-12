@@ -14,6 +14,7 @@ import kotlin.system.exitProcess
 
 
 val G_REQUEST = Request()
+val G_NS = NotificationService()
 var W_REF : ComposeWindow? = null
 
 @Composable

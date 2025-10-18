@@ -33,7 +33,7 @@ public class TrelloToLogseqImporter implements Tool {
     public void run(Args args) throws Exception {
         var path = args.readArg("path").val();
         var outPath = args.readArg("out");
-        var titleToPage = args.readArg("titleToPage").getVal().orElse("false").equalsIgnoreCase("true");
+        var titleToPage = args.readArg("titleToPage").optVal().orElse("false").equalsIgnoreCase("true");
         try (var reader = new FileReader(path)) {
             Trello trello = JsonUtil.getObjectMapper().readValue(reader, Trello.class);
             var name = trello.name();

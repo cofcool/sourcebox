@@ -55,8 +55,7 @@ public interface Tool {
             consumer.accept(this);
         }
 
-        @JsonIgnore
-        public String getRequiredVal(String message) {
+        public String requiredVal(String message) {
             if (val == null) {
                 throw new IllegalArgumentException(message);
             }
@@ -64,8 +63,7 @@ public interface Tool {
             return val;
         }
 
-        @JsonIgnore
-        public Optional<String> getVal() {
+        public Optional<String> optVal() {
             return Optional.ofNullable(val);
         }
 

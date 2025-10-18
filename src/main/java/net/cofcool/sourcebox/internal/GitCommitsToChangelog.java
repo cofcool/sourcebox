@@ -49,7 +49,7 @@ public class GitCommitsToChangelog implements Tool {
         if (logFile.isPresent()) {
             commitLog = FileUtils.readFileToString(new File(logFile.val()), StandardCharsets.UTF_8);
         } else {
-            String path = args.readArg("path").getRequiredVal("path must not be null");
+            String path = args.readArg("path").requiredVal("path must not be null");
 
             String command = "git log --format=%an;%d;%h;%s";
             getLogger().info("Run command: " + command);

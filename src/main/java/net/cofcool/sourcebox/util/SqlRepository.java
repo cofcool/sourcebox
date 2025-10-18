@@ -3,6 +3,7 @@ package net.cofcool.sourcebox.util;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.jdbcclient.JDBCPool;
+import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.PreparedQuery;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
@@ -70,7 +71,7 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
         this.tableInfo = TableInfoHelper.tableInfo(entity);
     }
 
-    private JDBCPool getPool() {
+    private Pool getPool() {
         return poolConfig.getGlobalPool();
     }
 

@@ -103,10 +103,10 @@ public class HtmlDownloader implements Tool {
             .map(OutputType::valueOf)
             .collect(Collectors.toSet());
         var img = args.readArg("img").val();
-        filter = args.readArg("filter").getVal().orElse(null);
-        webDriver = args.readArg("webDriver").getVal().filter(a -> !a.isBlank()).orElse(null);
-        REPLACER = new Replacer(args.readArg("replace").getVal().orElse(null));
-        cleanexp = args.readArg("cleanexp").getVal().orElse(null);
+        filter = args.readArg("filter").optVal().orElse(null);
+        webDriver = args.readArg("webDriver").optVal().filter(a -> !a.isBlank()).orElse(null);
+        REPLACER = new Replacer(args.readArg("replace").optVal().orElse(null));
+        cleanexp = args.readArg("cleanexp").optVal().orElse(null);
 
         if (urls.isEmpty()) {
             throw new IllegalArgumentException("Do not find any url");

@@ -31,7 +31,7 @@ public class CodeGenerator implements Tool {
     @Override
     public void run(Args args) throws Exception {
         var out = args.readArg("out").val();
-        var configPath = args.readArg("config").getRequiredVal("Config path can not be null");
+        var configPath = args.readArg("config").requiredVal("Config path can not be null");
 
         var templates = Templates.getTemplate(args.readArg("template").val());
         var ret = templates.generate(FileUtils.readFileToByteArray(new File(configPath)));

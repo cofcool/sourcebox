@@ -58,7 +58,7 @@ class WebRunnerTest extends BaseTest {
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertEquals(200, r.statusCode());
                 Assertions.assertEquals("application/json", r.getHeader("Content-Type"));
-                r.body(res -> System.out.println(res.map(Json::decodeValue).result()));
+                r.body().onSuccess(res -> System.out.println(res.toJsonArray()));
                 testContext.completeNow();
             })));
     }
@@ -72,7 +72,7 @@ class WebRunnerTest extends BaseTest {
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertEquals(200, r.statusCode());
                 Assertions.assertEquals("application/json", r.getHeader("Content-Type"));
-                r.body(res -> System.out.println(res.map(Json::decodeValue).result()));
+                r.body().onSuccess(res -> System.out.println(res.toJsonObject()));
                 testContext.completeNow();
             })));
     }
@@ -145,7 +145,7 @@ class WebRunnerTest extends BaseTest {
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertEquals(200, r.statusCode());
                 Assertions.assertEquals("application/json", r.getHeader("Content-Type"));
-                r.body(res -> System.out.println(res.map(Json::decodeValue).result()));
+                r.body().onSuccess(res -> System.out.println(res.toJsonObject()));
                 testContext.completeNow();
             })));
     }

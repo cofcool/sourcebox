@@ -45,8 +45,8 @@ public class NoteIndex implements WebRouter {
         VertxUtils.uploadRoute(
             router,
             (f, r) -> {
-                r.vertx().fileSystem().readFile(f.uploadedFileName(), it ->
-                    noteService.save(JsonUtil.toPojoList(it.result().getBytes(), Note.class))
+                r.vertx().fileSystem().readFile(f.uploadedFileName()).onSuccess(it ->
+                    noteService.save(JsonUtil.toPojoList(it.getBytes(), Note.class))
                 );
                 return "OK";
             },

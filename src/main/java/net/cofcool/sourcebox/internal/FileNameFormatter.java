@@ -54,7 +54,7 @@ public class FileNameFormatter implements Tool {
     @SuppressWarnings("ResultOfMethodCallIgnored")
     private void rename(File file, Args args, NameGenerator nameGenerator) {
         var fullPath = FilenameUtils.getFullPath(file.getAbsolutePath());
-        var baseName = args.readArg("base").getVal().orElse(FilenameUtils.getBaseName(file.getName()));
+        var baseName = args.readArg("base").optVal().orElse(FilenameUtils.getBaseName(file.getName()));
         var ignore = args.readArg("ignore").val();
         if (Pattern.compile(ignore).matcher(file.getName()).matches()) {
             getLogger().debug("Ignore " + file);
@@ -66,7 +66,7 @@ public class FileNameFormatter implements Tool {
         var newName = new File(fullPath + newFileName);
 
         Object ret;
-        var dest = args.readArg("dest").getVal();
+        var dest = args.readArg("dest").optVal();
         if (dest.isPresent()) {
             var target = Path.of(dest.get(), newFileName);
             try {

@@ -151,8 +151,8 @@ public class Converts implements Tool {
 
         @Override
         public String run(Args args) throws Exception {
-            var radix = args.readArg("radix").getVal().map(Integer::parseUnsignedInt).orElse(10);
-            var newRadix = args.readArg("nradix").getVal().map(Integer::parseUnsignedInt).orElse(2);
+            var radix = args.readArg("radix").optVal().map(Integer::parseUnsignedInt).orElse(10);
+            var newRadix = args.readArg("nradix").optVal().map(Integer::parseUnsignedInt).orElse(2);
             var val = Long.valueOf(args.readArg(INPUT).val(), radix);
 
             return Long.toString(val, newRadix);
@@ -359,7 +359,7 @@ public class Converts implements Tool {
             var chars = "abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+";
             return RandomGenerator
                 .getDefault()
-                .ints(Integer.parseInt(args.readArg(INPUT).getVal().orElse("10")), 0, chars.length())
+                .ints(Integer.parseInt(args.readArg(INPUT).optVal().orElse("10")), 0, chars.length())
                 .mapToObj(i -> String.valueOf(chars.charAt(i)))
                 .collect(Collectors.joining(""));
         }

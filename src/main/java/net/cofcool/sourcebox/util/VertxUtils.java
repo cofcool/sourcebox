@@ -23,7 +23,10 @@ import io.vertx.ext.web.handler.LoggerHandler;
 import io.vertx.ext.web.handler.SessionHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.sstore.SessionStore;
+import io.vertx.jdbcclient.JDBCConnectOptions;
 import io.vertx.jdbcclient.JDBCPool;
+import io.vertx.sqlclient.Pool;
+import io.vertx.sqlclient.PoolOptions;
 import java.util.ArrayList;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -38,7 +41,6 @@ public final class VertxUtils {
 
     static {
         JsonUtil.enableTimeModule(DatabindCodec.mapper());
-        JsonUtil.enableTimeModule(DatabindCodec.prettyMapper());
     }
 
     public static String webrootPath() {
@@ -73,13 +75,12 @@ public final class VertxUtils {
         };
     }
 
-    public static HttpServer initHttpServer(Vertx vertx, Promise<Void> startPromise, Handler<HttpServerRequest> handler, int port, Logger log) {
+    public static Future<HttpServer> initHttpServer(Vertx vertx, Promise<Void> startPromise, Handler<HttpServerRequest> handler, int port, Logger log) {
         return vertx.createHttpServer()
             .requestHandler(handler)
             .exceptionHandler(e -> log.error("HTTP server socket error", e))
-            .listen(
-                port,
-                http -> {
+            .listen(port)
+            .onComplete(http -> {
                     if (http.succeeded()) {
                         startPromise.complete();
                         log.info("HTTP server started on port {0}", http.result().actualPort());
@@ -126,31 +127,30 @@ public final class VertxUtils {
     public static Route basicAuth(Router router, Vertx vertx, Credentials realCredentials) {
         return router.route()
             .handler(SessionHandler.create(SessionStore.create(vertx)))
-            .handler(BasicAuthHandler.create((credentials, resultHandler) -> resultHandler.handle(Future.future(p -> {
-                try {
-                    realCredentials.checkValid(credentials);
-                    p.complete(User.fromName(credentials.getString("username")));
-                } catch (Exception e) {
-                    p.fail(e);
-                }
-            })), "web-toolbox"));
+            .handler(BasicAuthHandler.create(credentials -> {
+                    try {
+                        realCredentials.checkValid(credentials);
+                        return Future.succeededFuture(
+                            (User.fromName(credentials.toJson().getString("username"))));
+                    } catch (Exception e) {
+                        return Future.failedFuture(e);
+                    }
+                }, "web-toolbox")
+            );
     }
 
     @Getter
     public static class JDBCPoolConfig {
 
-        private final JDBCPool globalPool;
+        private final Pool globalPool;
         private final String url;
 
         public JDBCPoolConfig(Vertx vertx, String url, String user, String pwd) {
             this.url = url;
             globalPool = JDBCPool.pool(
                 vertx,
-                new JsonObject()
-                    .put("url", url)
-                    .put("username", user)
-                    .put("password", pwd)
-                    .put("max_pool_size", 10)
+                new JDBCConnectOptions().setJdbcUrl(url).setUser(user).setPassword(pwd),
+                new PoolOptions().setMaxSize(10)
             );
         }
 

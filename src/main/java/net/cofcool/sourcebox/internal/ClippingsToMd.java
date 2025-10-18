@@ -31,7 +31,7 @@ public class ClippingsToMd implements Tool {
     @Override
     public void run(Args args) throws Exception {
         var path = args.readArg("path").val();
-        var out = args.readArg("out").getVal().orElse(
+        var out = args.readArg("out").optVal().orElse(
             STR."\{FilenameUtils.getFullPath(path)}\{FilenameUtils.getBaseName(path)}.md"
         );
         var type = ClipType.valueOf(args.readArg("type").val());

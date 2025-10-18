@@ -24,7 +24,7 @@
     <maven.compiler.target>21</maven.compiler.target>
     <graalvm-native.version>0.9.27</graalvm-native.version>
     <selenium.version>4.33.0</selenium.version>
-    <vertx.version>4.4.6</vertx.version>
+    <vertx.version>5.0.4</vertx.version>
     <jline.version>3.30.0</jline.version>
     <junit-jupiter.version>5.9.1</junit-jupiter.version>
   </properties>
@@ -43,7 +43,7 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-      <version>3.12.0</version>
+      <version>3.18.0</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>

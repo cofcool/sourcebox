@@ -74,7 +74,7 @@ public class WebVerticle extends AbstractVerticle implements VertxDeployer {
             usernamePasswordCredentials = new UsernamePasswordCredentials(
                 a,
                 args.readArg(PASSWD_KEY)
-                    .getRequiredVal("If username is not null, password must also not be null")
+                    .requiredVal("If username is not null, password must also not be null")
             ) {
                 @Override
                 public <V> void checkValid(V arg) throws CredentialValidationException {

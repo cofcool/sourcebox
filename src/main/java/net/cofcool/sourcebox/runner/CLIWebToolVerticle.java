@@ -20,6 +20,12 @@ public class CLIWebToolVerticle extends AbstractVerticle {
     private final RouterTypeManger manger = new RouterTypeManger();
 
     @Override
+    public void stop() throws Exception {
+        super.stop();
+        SqlRepository.closePool();
+    }
+
+    @Override
     public void start(Promise<Void> startPromise) throws Exception {
         SqlRepository.init(vertx);
         VertxUtils

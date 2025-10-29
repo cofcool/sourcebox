@@ -52,6 +52,12 @@ public class WebVerticle extends AbstractVerticle implements VertxDeployer {
     }
 
     @Override
+    public void stop() throws Exception {
+        super.stop();
+        SqlRepository.closePool();
+    }
+
+    @Override
     public void start(Promise<Void> startPromise) throws Exception {
         VertxUtils
             .initHttpServer(

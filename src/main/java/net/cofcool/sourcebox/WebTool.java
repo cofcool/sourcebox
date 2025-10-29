@@ -13,6 +13,7 @@ import java.util.function.Function;
 import net.cofcool.sourcebox.util.JsonUtil;
 import net.cofcool.sourcebox.util.Utils;
 import net.cofcool.sourcebox.util.VertxDeployer;
+import net.cofcool.sourcebox.util.VertxUtils;
 
 public interface WebTool extends Tool, VertxDeployer {
 
@@ -41,6 +42,7 @@ public interface WebTool extends Tool, VertxDeployer {
         if (args != null) {
             VertxDeployer.sharedArgs(vertx, name().name(), args);
         }
+        VertxUtils.registerShutdownHook(vertx);
         return vertx.deployVerticle(verticle);
     }
 

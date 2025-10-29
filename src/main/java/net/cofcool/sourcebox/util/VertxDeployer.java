@@ -36,6 +36,7 @@ public interface VertxDeployer {
         if (args != null) {
             sharedArgs(vertx, getClass().getSimpleName(), args);
         }
+        VertxUtils.registerShutdownHook(vertx);
         return vertx.deployVerticle(verticle);
     }
 

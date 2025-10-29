@@ -75,6 +75,11 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
         return poolConfig.getGlobalPool();
     }
 
+    public static void closePool() {
+        Objects.requireNonNull(poolConfig, "poolConfig must be init");
+        poolConfig.getGlobalPool().close();
+    }
+
     @Override
     public Future<T> save(T entity) {
         Optional<String> id = tableInfo.getIdVal(entity);

@@ -56,7 +56,12 @@ public class Converts implements Tool {
         pipelines.add(args.readArg("cmd").val());
 
         args.readArg("pipeline").ifPresent(a -> {
-            pipelines.addAll(Arrays.stream(a.val().split("\\|")).map(String::trim).toList());
+            pipelines.addAll(
+                Arrays.stream(a.val().split("\\|"))
+                    .map(String::trim)
+                    .filter(s -> !s.isBlank())
+                    .toList()
+            );
         });
 
         var cmds = pipelines.iterator();

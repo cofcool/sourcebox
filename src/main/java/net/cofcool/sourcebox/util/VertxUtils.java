@@ -139,6 +139,15 @@ public final class VertxUtils {
             );
     }
 
+    private static boolean needRegisterShutdownHook = true;
+    public static synchronized void registerShutdownHook(Vertx v) {
+        if (!needRegisterShutdownHook) {
+            return;
+        }
+        needRegisterShutdownHook = false;
+        Runtime.getRuntime().addShutdownHook(new Thread(v::close));
+    }
+
     @Getter
     public static class JDBCPoolConfig {
 

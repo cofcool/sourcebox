@@ -40,7 +40,7 @@ class TimerHelper {
 
     var isWorkingTime = true
     var isFullScreen = false
-    var state = TimerState.start
+    var state = TimerState.stop
 
     var action: (r: String, isW: Boolean, isF: Boolean) -> Unit = fun(_, _, _) {}
 
@@ -68,8 +68,6 @@ class TimerHelper {
         }
     }
 
-    fun isPause(): Boolean = timerService.isPause
-
     fun updateNotify() {
         action(remainingTime, isWorkingTime, isFullScreen)
     }
@@ -92,8 +90,6 @@ fun TomatoClockApp(timerService: TimerService) {
     var remainingTime by remember { mutableStateOf(helper.remainingTime) }
     var isWorkingTime by remember { mutableStateOf(helper.isWorkingTime) }
     var isFullScreen by remember { mutableStateOf(helper.isFullScreen) }
-
-    var isPause by remember { mutableStateOf(helper.isPause()) }
 
     var state by remember { mutableStateOf(helper.state) }
 
@@ -155,32 +151,40 @@ fun TomatoClockApp(timerService: TimerService) {
             Button(
                 modifier = Modifier.padding(8.dp),
                 onClick = {
-                updateDurations()
-                ConfigManager.saveConfig {
-                    it.timerWorkDuration = workDurationInput.text.toLong()
-                    it.timerBreakDuration = breakDurationInput.text.toLong()
+                    when (state) {
+                        TimerState.stop -> {
+                            state = TimerState.pause
+                            updateDurations()
+                            ConfigManager.saveConfig {
+                                it.timerWorkDuration = workDurationInput.text.toLong()
+                                it.timerBreakDuration = breakDurationInput.text.toLong()
 
-                    it
-                }
-                timerService.startTimer()
+                                it
+                            }
+                            timerService.startTimer()
+                        }
+                        TimerState.pause -> {
+                            timerService.pauseTimer()
+                            state = TimerState.resume
+                        }
+                        TimerState.resume -> {
+                            timerService.pauseTimer()
+                            state = TimerState.pause
+                        }
+                    }
+
             }) {
-                Text("Start")
+                Text(when (state) {
+                    TimerState.stop -> "Start"
+                    TimerState.pause ->"Pause"
+                    TimerState.resume ->"Resume"
+                })
             }
 
             Button(
                 modifier = Modifier.padding(8.dp),
                 onClick = {
-                    isPause = !isPause
-                    timerService.pauseTimer()
-                }
-            ) {
-                Text(if (isPause) "Resume" else "Pause")
-            }
-
-            Button(
-                modifier = Modifier.padding(8.dp),
-                onClick = {
-                    isPause = !isPause
+                    state = TimerState.stop
                     timerService.resetTimer()
                 }
             ) {
@@ -304,18 +308,21 @@ class TimerService(
     fun workMin() = workDuration / 60
     fun breakMin() = breakDuration / 60
 
+    fun nowSeconds(): Long = System.currentTimeMillis() / 1000
+
     fun startTimer() {
         timerScope.launch {
+            var lastTime = nowSeconds()
             while (timeRemaining > 0 && !isReset) {
                 if (isPause) {
                     delay(5_000L)
+                    lastTime = nowSeconds()
                     continue
                 }
-                delay(1000L)
-                timeRemaining--
-
+                delay(900L)
+                timeRemaining -= nowSeconds() - lastTime
                 onTimeUpdated(timeRemaining, timeMsg())
-
+                lastTime = nowSeconds()
             }
             if (isReset) {
                 onReset(workDuration - timeRemaining)
@@ -369,7 +376,6 @@ class TimerService(
 
 enum class TimerState {
     stop,
-    start,
     pause,
     resume
 }

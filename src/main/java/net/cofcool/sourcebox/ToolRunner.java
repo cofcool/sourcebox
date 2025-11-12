@@ -15,6 +15,7 @@ public interface ToolRunner {
     String PORT_KEY = "web.port";
     String USER_KEY = "web.username";
     String PASSWD_KEY = "web.password";
+    String WEB_FILE_SHARE_KEY = "web.fileshare";
     int DEFAULT_PORT = 38080;
     String DEFAULT_ADDRESS = "http://localhost";
 

@@ -14,8 +14,12 @@ import io.vertx.ext.auth.authentication.CredentialValidationException;
 import io.vertx.ext.auth.authentication.Credentials;
 import io.vertx.ext.auth.authentication.UsernamePasswordCredentials;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.handler.FileSystemAccess;
 import io.vertx.ext.web.handler.LoggerHandler;
+import io.vertx.ext.web.handler.StaticHandler;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
@@ -161,6 +165,14 @@ public class WebVerticle extends AbstractVerticle implements VertxDeployer {
             .handler(c -> {
                 c.json(globalConfig);
             });
+        globalConfig.getArgVal(ToolRunner.WEB_FILE_SHARE_KEY).filter(v -> !v.isBlank()).ifPresent(v -> {
+            router.get("/fileshare/*").handler(
+                StaticHandler
+                    .create(FileSystemAccess.ROOT, v)
+                    .setDirectoryTemplate(VertxUtils.webrootPath() + "/vertx-web-directory.html")
+                    .setDirectoryListing(true)
+            );
+        });
 
         for (Tool tool : tools) {
             String toolName = tool.name().name();

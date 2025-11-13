@@ -279,47 +279,5 @@
         </plugins>
       </build>
     </profile>
-    <profile>
-      <id>native</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.graalvm.buildtools</groupId>
-            <artifactId>native-maven-plugin</artifactId>
-            <version>${graalvm-native.version}</version>
-            <extensions>true</extensions>
-            <executions>
-              <execution>
-                <id>build-native</id>
-                <goals>
-                  <goal>compile-no-fork</goal>
-                </goals>
-                <phase>package</phase>
-              </execution>
-            </executions>
-            <configuration>
-              <skip>false</skip>
-              <agent>
-                <enabled>true</enabled>
-              </agent>
-              <imageName>sourcebox</imageName>
-              <buildArgs>
-                --no-fallback
-                -H:ReflectionConfigurationResources=META-INF/native-image/reflect-config.json
-                -H:JNIConfigurationResources=META-INF/native-image/jni-config.json
-                -H:ResourceConfigurationResources=META-INF/native-image/resource-config.json
-                --initialize-at-run-time=io.netty.handler.codec.compression.ZstdOptions
-                --enable-url-protocols=http --enable-url-protocols=https
-                --enable-preview
-              </buildArgs>
-            </configuration>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-assembly-plugin</artifactId>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
   </profiles>
 </project>

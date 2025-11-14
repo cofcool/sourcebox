@@ -26,7 +26,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=java -Dlogging.type=net.cofcool.sourcebox.logging.JULLogger --enable-preview -jar $TARGET_JAR --mode=WEB
+ExecStart=java -Dlogging.type=net.cofcool.sourcebox.logging.JULLogger -jar $TARGET_JAR --mode=WEB
 Restart=on-failure
 
 [Install]

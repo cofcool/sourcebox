@@ -214,8 +214,7 @@ public class FileNameFormatter implements Tool {
 
             while (matcher.find()) {
                 var m = matcher.group(1);
-                var key = STR."{\{m}}";
-                System.out.println(key);
+                var key = String.format("{%s}", m);
                 var f = exps.get(key);
                 if (f != null) {
                     expression = expression.replace(key, String.valueOf(f.get()));

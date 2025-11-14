@@ -20,6 +20,7 @@ import net.cofcool.sourcebox.Tool;
 import net.cofcool.sourcebox.ToolContext;
 import net.cofcool.sourcebox.ToolName;
 import net.cofcool.sourcebox.util.JsonUtil;
+import net.cofcool.sourcebox.util.Utils;
 import org.apache.commons.io.FileUtils;
 
 public class JsonToPojo implements Tool {
@@ -231,15 +232,15 @@ public class JsonToPojo implements Tool {
                 fields.stream()
                     .map(a -> {
                         if (this == JAVA_CLASS) {
-                            return STR."private \{a};";
+                            return String.format("private %s;", a);
                         } else if (this == Kotlin) {
                             var t = a.split(" ");
-                            return STR."val \{t[1]}: \{t[0]}";
+                            return String.format("val %s: %s", t[1], t[0]);
                         } else {
                             return a;
                         }
                     })
-                    .map(a -> STR."    \{a}")
+                    .map(a -> "    "+ a)
                     .collect(Collectors.joining(this == JAVA_CLASS ? "\n" : ",\n"))
             );
         }

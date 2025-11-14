@@ -47,7 +47,7 @@ public record DataSize(double size) {
             try {
                 return new DataSize(Double.parseDouble(value));
             } catch (NumberFormatException ignore) {}
-            throw new IllegalArgumentException(STR."Invalid format: \{value}");
+            throw new IllegalArgumentException("Invalid format: " + value);
         }
 
         double size = Double.parseDouble(matcher.group(1));
@@ -59,7 +59,7 @@ public record DataSize(double size) {
             case "G", "GB" -> new DataSize(size, Unit.GB);
             case "T", "TB" -> new DataSize(size, Unit.TB);
             case "P", "PB" -> new DataSize(size, Unit.PB);
-            default -> throw new IllegalArgumentException(STR."Unknown unit: \{unit}");
+            default -> throw new IllegalArgumentException("Unknown unit: " + unit);
         };
     }
 

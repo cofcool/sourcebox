@@ -32,7 +32,7 @@ public class NetworkUtils implements Tool {
     @Override
     public Args config() {
         return new Args()
-            .arg(new Arg("util", null, STR."util name, support: \{utilMap.keySet()}, note: ip info from ip-api.com", true, "count"))
+            .arg(new Arg("util", null, String.format("util name, support: %s, note: ip info from ip-api.com", utilMap.keySet()), true, "count"))
             .arg(new Arg("in", null, "input string, if the in is 'my' will get current public ip", true, "localhost"));
     }
 
@@ -54,8 +54,8 @@ public class NetworkUtils implements Tool {
                     .setConnectTimeout(10_000)
             );
             var url = switch (in) {
-                case "my" -> STR."/json";
-                default -> STR."/json/\{in}";
+                case "my" -> "/json";
+                default -> "/json/" + in;
             };
             var resp = client.get(url).send();
             while (!resp.isComplete()) {
@@ -94,12 +94,13 @@ public class NetworkUtils implements Tool {
             client.close();
             vertx.close();
 
-            return STR."""
-                A: \{f.resultAt(0)}
-                CNAME: \{f.resultAt(1)}
-                MX: \{f.resultAt(2)}
-                TXT: \{f.resultAt(3)}
-                """;
+            return String.format("""
+                A: %s
+                CNAME:%s
+                MX: %s
+                TXT: %s
+                """, f.resultAt(0), f.resultAt(1), f.resultAt(2), f.resultAt(3)
+            );
         }
     }
 

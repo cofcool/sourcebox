@@ -177,19 +177,19 @@ public class App {
     }
 
     private static void logAbout(Logger logger) {
-        logger.info(STR."About: \{ABOUT}");
+        logger.info("About: "+ ABOUT);
         logger.info("Example: --tool=demo --path=tmp");
         logger.info("Help: --help='{COMMAND}', like: --help=rename");
         logger.info("Archive: --archive=true, archive config");
         logger.info("Default Config: --defaultConfig=, generate default config file when it does not exist");
-        logger.info(STR."Interface: --mode='{CLI}', support: \{RUNNER_MAP.entrySet().stream()
+        logger.info("Interface: --mode='{CLI}', support: "+ RUNNER_MAP.entrySet().stream()
             .map(e -> {
                 String help = e.getValue().help();
-                return e.getKey() + (help != null ? (STR.": arguments: [\{help}]") : "");
+                return e.getKey() + (help != null ? (": arguments: [" + help +"]") : "");
             })
-            .collect(Collectors.joining("; "))}");
+            .collect(Collectors.joining("; ")));
         logger.info("Global config file path: --cfg={0}", GLOBAL_CFG);
-        logger.info(STR."Tools:\n    \{ALL_TOOLS.stream().map(Tool::name).map(ToolName::toString)
-            .collect(Collectors.joining("\n    "))}");
+        logger.info("Tools:\n    " + ALL_TOOLS.stream().map(Tool::name).map(ToolName::toString)
+            .collect(Collectors.joining("\n    ")));
     }
 }

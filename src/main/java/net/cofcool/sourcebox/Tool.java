@@ -154,7 +154,7 @@ public interface Tool {
         public Arg readArg(String key) {
             var arg = get(key);
             if (arg == null) {
-                throw new IllegalStateException(STR."Do not support argument \{key}, please see the help");
+                throw new IllegalStateException(String.format("Do not support argument %s, please see the help", key));
             }
 
             return arg;
@@ -224,7 +224,7 @@ public interface Tool {
             newRags.aliases.putAll(aliases);
             newRags.aliasInterceptors.putAll(aliasInterceptors);
             forEach((k, v) -> {
-                if (k.startsWith(STR."\{prefix}.") && !k.equals(prefix)) {
+                if (k.startsWith(prefix + ".") && !k.equals(prefix)) {
                     newRags.arg(new Arg(k.substring(prefix.length() + 1), v.val, v.desc, v.required, v.demo));
                 } else {
                     newRags.arg(v);

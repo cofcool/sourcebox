@@ -324,7 +324,7 @@ public class HtmlDownloader implements Tool {
             path = String.join("/", ps);
         }
 
-        String s = port == 80 || port == 443 ? "" : ":" + port + path;
+        String s = (port == 80 || port == 443 ? "" : ":" + port) + path;
         if (ignoreProtocol) {
             return host + s;
         } else {

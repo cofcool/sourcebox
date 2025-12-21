@@ -27,6 +27,7 @@ fun ContentView(currentTool: Tools) {
                 Tools.Json -> JsonView()
                 Tools.Todo -> Todo()
                 Tools.Timer -> timerView()
+                Tools.Clipboard -> clipboardView()
                 else -> {}
             }
         }

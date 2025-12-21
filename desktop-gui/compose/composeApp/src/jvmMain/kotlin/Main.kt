@@ -39,6 +39,7 @@ fun main() = application {
         title = "The Source Box"
     ) {
         App()
+        SystemTrayView(G_NS)
        W_REF = this.window
     }
     G_REQUEST.checkEvent()

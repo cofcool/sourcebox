@@ -24,11 +24,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
 import request.RecordStatistics
 import secondsDisplay
 import java.awt.Toolkit
 import kotlin.time.DurationUnit
+import kotlin.time.ExperimentalTime
 import kotlin.time.toDuration
 
 private val helper = TimerHelper()
@@ -72,9 +72,10 @@ class TimerHelper {
         action(remainingTime, isWorkingTime, isFullScreen)
     }
 
+    @OptIn(ExperimentalTime::class)
     fun addRecord(time: Long, remark: String) {
         G_REQUEST.addRecord(
-            "workTime-${Clock.System.now().epochSeconds}", "done", "timer", remark,
+            "workTime-${kotlin.time.Clock.System.now().epochSeconds}", "done", "timer", remark,
             duration = time.toDuration(DurationUnit.SECONDS)
         )
     }

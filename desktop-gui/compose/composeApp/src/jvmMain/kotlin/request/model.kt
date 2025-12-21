@@ -12,19 +12,25 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-enum class Tools(val tool: Tools?, val cmd: String) {
+enum class Tools(val tool: Tools?, val cmd: String, val alias: String = cmd) {
     C(null, "converts"),
     C_MD5(C, "md5"), C_NOW(C, "now"), C_HDATE(C, "hdate"),
+    C_UPPER(C, "upper"), C_LOWER(C, "lower"), C_TIMESP(C, "timesp"),
+    C_REPLACE(C, "replace"), C_HEX(C, "hex"), C_DATAUNIT(C, "dataunit", "dataUnit"),
+    C_BASE64(C, "base64"), C_URLENCODE(C, "curl", "urlEncode"), C_RANDOM(C, "random"),
     HtmlDown(null, "htmlDown"),
     Helper(null, "cHelper"),
     Note(null, "note"),
     Json(null, "json"),
     Todo(null, "todo"),
     Timer(null, "timer"),
+    Clipboard(null, "clipboard"),
     None(null, "")
     ;
 
     fun toolName() = if (this.tool == null) cmd else this.tool.cmd
+
+    fun subTool(): List<Tools> = Tools.entries.filter { it.tool==this }
 
     companion object {
         fun from(cmd: String) : Tools = Tools.entries.find { it.toolName() == cmd } ?: None

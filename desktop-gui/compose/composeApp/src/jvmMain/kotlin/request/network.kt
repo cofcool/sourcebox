@@ -183,6 +183,11 @@ class Request {
         }
     }
 
+    fun runSubTool(tool: Tools, data: Map<String, String>) {
+        checkNotNull(tool.tool) { "sub cmd must not be null" }
+        runTool(tool.tool, mutableMapOf(Pair("cmd", tool.cmd)).apply { putAll(data) })
+    }
+
     fun runTool(tool: Tools, data: Any) {
         runBlocking {
             client.post("/${tool.toolName()}") {

@@ -102,6 +102,7 @@ fun JsonTreeItem(key: String, value: Any, level: Int, isExpandedAll: MutableStat
                         isExpandedAll
                     ) 
                     is JsonArray -> RenderJsonArray(value, level + 1, isExpandedAll)
+                    else -> {}
                 }
             }
         } else {

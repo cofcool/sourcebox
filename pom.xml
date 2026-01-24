@@ -249,9 +249,8 @@
                                 <executable>cp</executable>
                                 <workingDirectory>${project.basedir}</workingDirectory>
                                 <arguments>
-                                    <argument>${project.build.directory}/sourcebox-fat.jar
-                                    </argument>
-                                    <argument>${project.basedir}/desktop-gui/compose/libs</argument>
+                                    <argument>${project.build.directory}/sourcebox-fat.jar</argument>
+                                    <argument>${project.basedir}/desktop-gui/compose/composeApp/libs</argument>
                                 </arguments>
                             </configuration>
                         </execution>

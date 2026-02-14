@@ -94,7 +94,7 @@
 
 ## 简单 Web 文件服务器
 
-使用 `./sourcebox.sh --tool=dirWebServer`
+使用 `./sourcebox.sh --tool=dirWebServer`, `WEB` 模式下配置全局变量 `web.fileshare` 后可通过 `/fileshare/` URL 路径进行文件共享
 
 ## JSON 生成对象
 

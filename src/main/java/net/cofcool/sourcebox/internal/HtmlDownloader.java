@@ -89,6 +89,14 @@ public class HtmlDownloader implements Tool {
         context = args.getContext();
         this.args = args;
 
+        args.readArg("folder").ifPresent(path -> {
+            FileUtils.listFiles(new File(path.val()), new String[]{".html"}, false)
+                .stream()
+                .filter(File::isFile)
+                .map(File::getAbsolutePath)
+                .forEach(a -> urls.add("file://" + a));
+        });
+
         args.readArg("urlFile").ifPresent(a -> {
             try {
                 urls.addAll(FileUtils.readLines(new File(a.val()), StandardCharsets.UTF_8));
@@ -233,7 +241,7 @@ public class HtmlDownloader implements Tool {
 
         var title = doc.title();
 
-        if (depth == this.depth) {
+        if (this.depth > 1 && depth == this.depth) {
             var dir = Paths.get(folder, title).toFile();
             folder = dir.toString();
             FileUtils.forceMkdir(dir);
@@ -389,6 +397,7 @@ public class HtmlDownloader implements Tool {
             .arg(new Arg("webDriver", null, "web driver path", false, "/usr/local/bin/chromedriver"))
             .arg(new Arg("waitexp", null, "wait element by CSS-like element selector", false, "a[href]"))
             .arg(new Arg("hrefFilter", null, "sub-link filter", false, "demo"))
+            .arg(new Arg("folder", null, "html file folder path", false, null))
             .runnerTypes(EnumSet.allOf(RunnerType.class));
     }
 

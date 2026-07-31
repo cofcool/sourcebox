@@ -1,12 +1,10 @@
 package net.cofcool.sourcebox.internal;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Objects;
+
 import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.Tool;
 import net.cofcool.sourcebox.Utils;
@@ -15,6 +13,8 @@ import org.jsoup.Jsoup;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 class HtmlDownloaderTest extends BaseTest {
 
@@ -43,10 +43,10 @@ class HtmlDownloaderTest extends BaseTest {
         instance().run(args
             .arg("url", url)
             .arg("out", "./target/HtmlDownloaderTest")
-            .arg("img", "Multimedia_and_embedding")
+            .arg("img", "basic")
         );
-        File download = new File("./target/HtmlDownloaderTest/HtmlDownloaderTest/imgs");
-        assertTrue(download.listFiles().length > 0);
+        File download = new File("./target/HtmlDownloaderTest/imgs");
+        assertTrue(Objects.requireNonNull(download.listFiles()).length > 0);
     }
 
     @Test
@@ -56,10 +56,9 @@ class HtmlDownloaderTest extends BaseTest {
             .arg("out", new File(file, "runWithFilter").getAbsolutePath())
             .arg("filter", "test")
         );
-        assertEquals(0,
-            Paths.get(file.getAbsolutePath(), "runWithFilter", "HtmlDownloaderTest")
-                .toFile()
-                .listFiles().length
+        assertFalse(
+            Paths.get(file.getAbsolutePath(), "runWithFilter")
+                    .toFile().exists()
         );
     }
 
@@ -136,10 +135,7 @@ class HtmlDownloaderTest extends BaseTest {
         assertNotNull(files);
         assertTrue(files.length > 0);
 
-        File[] listFiles = files[0].listFiles();
-        assertNotNull(listFiles);
-        assertTrue(listFiles.length > 0);
-        assertEquals(0, Jsoup.parse(listFiles[0]).getElementsByTag("script").size());
+        assertEquals(0, Jsoup.parse(files[0]).getElementsByTag("script").size());
     }
 
     @Test

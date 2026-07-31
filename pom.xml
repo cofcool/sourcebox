@@ -226,20 +226,6 @@
                     <version>3.5.0</version>
                     <executions>
                         <execution>
-                            <id>build-go</id>
-                            <phase>compile</phase>
-                            <goals>
-                                <goal>exec</goal>
-                            </goals>
-                            <configuration>
-                                <executable>make</executable>
-                                <workingDirectory>${project.basedir}/go/sourcebox</workingDirectory>
-                                <arguments>
-                                    <argument>VERSION=${project.version}</argument>
-                                </arguments>
-                            </configuration>
-                        </execution>
-                        <execution>
                             <id>cp-fat</id>
                             <phase>package</phase>
                             <goals>
@@ -250,7 +236,7 @@
                                 <workingDirectory>${project.basedir}</workingDirectory>
                                 <arguments>
                                     <argument>${project.build.directory}/sourcebox-fat.jar</argument>
-                                    <argument>${project.basedir}/desktop-gui/compose/composeApp/libs</argument>
+                                    <argument>${project.basedir}/desktop-gui/compose/composeApp/libs/sourcebox-fat.jar</argument>
                                 </arguments>
                             </configuration>
                         </execution>

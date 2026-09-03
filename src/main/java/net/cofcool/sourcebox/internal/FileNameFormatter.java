@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
@@ -36,9 +37,36 @@ public class FileNameFormatter implements Tool {
 
     @Override
     public void run(Args args) throws Exception {
-        var root = new File(args.readArg("path").val());
-
         var nameGenerator = Formatter.valueOf(args.readArg("formatter").val()).getGenerator();
+
+        // list mode: read local file containing absolute paths (one per line)
+        var listOpt = args.readArg("list").optVal();
+        if (listOpt.isPresent()) {
+            var listPath = listOpt.get();
+            boolean dryRun = Boolean.parseBoolean(args.readArg("dryrun").optVal().orElse("true"));
+            List<String> lines;
+            try {
+                lines = Files.readAllLines(Path.of(listPath));
+            } catch (IOException e) {
+                throw new IllegalStateException("Read list file " + listPath + " error", e);
+            }
+            for (String raw : lines) {
+                String line = raw == null ? "" : raw.trim();
+                if (line.isEmpty() || line.startsWith("#")) {
+                    continue;
+                }
+                File f = new File(line);
+                if (!f.exists()) {
+                    getLogger().warn("File not found: " + line);
+                    continue;
+                }
+                rename(f, args, nameGenerator, dryRun);
+            }
+            return;
+        }
+
+        // original behavior: path could be a file or a directory
+        var root = new File(args.readArg("path").val());
         if (FileUtils.isDirectory(root)) {
             Files.walkFileTree(
                     root.toPath(),
@@ -53,6 +81,12 @@ public class FileNameFormatter implements Tool {
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     private void rename(File file, Args args, NameGenerator nameGenerator) {
+        // preserve original behavior: not a dry-run
+        rename(file, args, nameGenerator, false);
+    }
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    private void rename(File file, Args args, NameGenerator nameGenerator, boolean dryRun) {
         var fullPath = FilenameUtils.getFullPath(file.getAbsolutePath());
         var baseName = args.readArg("base").optVal().orElse(FilenameUtils.getBaseName(file.getName()));
         var ignore = args.readArg("ignore").val();
@@ -63,22 +97,39 @@ public class FileNameFormatter implements Tool {
 
         var ext = FilenameUtils.getExtension(file.getName());
         var newFileName = nameGenerator.name(baseName, StringUtils.isEmpty(ext) ? "" : "." + ext, args);
-        var newName = new File(fullPath + newFileName);
-
-        Object ret;
         var dest = args.readArg("dest").optVal();
+
+        // conflict detection
         if (dest.isPresent()) {
             var target = Path.of(dest.get(), newFileName);
+            if (Files.exists(target)) {
+                getLogger().warn(String.format("Target exists, skip rename %s -> %s", file, target));
+                return;
+            }
+            if (dryRun) {
+                getLogger().info(String.format("dry-run rename file %s to %s", file, target));
+                return;
+            }
             try {
                 new File(dest.get()).mkdirs();
-                ret = Files.move(file.toPath(), target);
+                Object ret = Files.move(file.toPath(), target);
+                getLogger().info(String.format("rename file %s to %s: %s", file, target, ret));
             } catch (IOException e) {
-                throw new IllegalStateException("Move " + file + " to " + target +  " error", e);
+                throw new IllegalStateException("Move " + file + " to " + target + " error", e);
             }
         } else {
-            ret = file.renameTo(newName);
+            var newName = new File(fullPath + newFileName);
+            if (newName.exists()) {
+                getLogger().warn(String.format("Target exists, skip rename %s -> %s", file, newName));
+                return;
+            }
+            if (dryRun) {
+                getLogger().info(String.format("dry-run rename file %s to %s", file, newName));
+                return;
+            }
+            Object ret = file.renameTo(newName);
+            getLogger().info(String.format("rename file %s to %s: %s", file, newName, ret));
         }
-        getLogger().info(String.format("rename file %s to %s: %s", file, newName, ret));
     }
 
     @Override
@@ -89,6 +140,8 @@ public class FileNameFormatter implements Tool {
             .arg(new Arg("base", null, "file base name, default is old name", false, "demo"))
             .arg(new Arg("ignore", "^\\..*", "ignore files with regular expression", false, null))
             .arg(new Arg("formatter", null, "new name formatter, like " + Arrays.toString(Formatter.values()), true, Formatter.order.name()))
+            .arg(new Arg("list", null, "file contains list of absolute file paths, one per line", false, null))
+            .arg(new Arg("dryrun", "true", "dry run: don't actually rename files when using list mode", false, "true"))
             .alias("rename", name(), "path",  null);
     }
 

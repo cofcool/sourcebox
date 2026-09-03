@@ -118,6 +118,32 @@ public class FileNameFormatter implements Tool {
                 throw new IllegalStateException("Move " + file + " to " + target + " error", e);
             }
         } else {
+            // support move formatter: replace original file's path prefix with provided --newpath
+            if (nameGenerator instanceof MoveGenerator) {
+                var newpathOpt = args.readArg("newpath").optVal();
+                if (newpathOpt.isEmpty()) {
+                    getLogger().warn("Formatter 'move' requires --newpath, skip " + file);
+                    return;
+                }
+                var target = Path.of(newpathOpt.get(), newFileName);
+                if (Files.exists(target)) {
+                    getLogger().warn(String.format("Target exists, skip rename %s -> %s", file, target));
+                    return;
+                }
+                if (dryRun) {
+                    getLogger().info(String.format("dry-run rename file %s to %s", file, target));
+                    return;
+                }
+                try {
+                    new File(newpathOpt.get()).mkdirs();
+                    Object ret = Files.move(file.toPath(), target);
+                    getLogger().info(String.format("rename file %s to %s: %s", file, target, ret));
+                } catch (IOException e) {
+                    throw new IllegalStateException("Move " + file + " to " + target + " error", e);
+                }
+                return;
+            }
+
             var newName = new File(fullPath + newFileName);
             if (newName.exists()) {
                 getLogger().warn(String.format("Target exists, skip rename %s -> %s", file, newName));
@@ -142,6 +168,7 @@ public class FileNameFormatter implements Tool {
             .arg(new Arg("formatter", null, "new name formatter, like " + Arrays.toString(Formatter.values()), true, Formatter.order.name()))
             .arg(new Arg("list", null, "file contains list of absolute file paths, one per line", false, null))
             .arg(new Arg("dryrun", "true", "dry run: don't actually rename files when using list mode", false, "true"))
+            .arg(new Arg("newpath", null, "when using formatter 'move', replace original file path prefix with this new path", false, null))
             .alias("rename", name(), "path",  null);
     }
 
@@ -176,7 +203,8 @@ public class FileNameFormatter implements Tool {
         urlencoded(UrlNameDecoder::new),
         replace(Replace::new),
         delete(Delete::new),
-        expression(ExpressionGenerator::new);
+        expression(ExpressionGenerator::new),
+        move(MoveGenerator::new);
 
         private final Supplier<NameGenerator> supplier;
 
@@ -308,6 +336,20 @@ public class FileNameFormatter implements Tool {
         @Override
         public String help() {
             return "--old=demo";
+        }
+    }
+
+    private static class MoveGenerator implements NameGenerator {
+
+        @Override
+        public String name(String old, String ext, Args args) {
+            // keep original filename; path replacement handled in rename()
+            return old + ext;
+        }
+
+        @Override
+        public String help() {
+            return "--newpath=/new/dir";
         }
     }
 

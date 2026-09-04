@@ -140,6 +140,21 @@ class FileNameFormatterTest extends BaseTest {
     }
 
     @Test
+    void runWithMove() throws Exception {
+        var path = file.getPath();
+        System.out.println(path);
+        FileUtils.writeStringToFile(new File(path + File.separator + URLEncoder.encode("demo.txt", StandardCharsets.UTF_8)), "test", StandardCharsets.UTF_8);
+        String dest = path + File.separator + "demo" + File.separator;
+        instance().run(
+            args
+                .arg("path", path)
+                .arg("dest", dest)
+                .arg("formatter", "move")
+        );
+        Assertions.assertTrue(new File(dest +  "demo.txt").exists());
+    }
+
+    @Test
     void runWithExpression() throws Exception {
         var path = file.getPath();
         System.out.println(path);
@@ -166,6 +181,7 @@ class FileNameFormatterTest extends BaseTest {
     @Override
     protected void init() throws Exception {
         super.init();
-        args.arg("formatter", Formatter.order.name());
+        args.arg("formatter", Formatter.order.name()).arg("dryrun", "false");
+
     }
 }

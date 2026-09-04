@@ -3,7 +3,11 @@ package net.cofcool.sourcebox.util;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
+import java.io.IOException;
 import java.util.List;
+
+import com.jayway.jsonpath.JsonPath;
 import lombok.SneakyThrows;
 
 public class JsonUtil {
@@ -42,4 +46,16 @@ public class JsonUtil {
     public static String toJson(Object val) {
         return OBJECT_MAPPER.writeValueAsString(val);
     }
+
+    public static Object extract(String json, String jsonPath) {
+        if (json == null) {
+            throw new IllegalArgumentException("json must not be null");
+        }
+        if (jsonPath == null) {
+            throw new IllegalArgumentException("jsonPath must not be null");
+        }
+
+        return JsonPath.parse(json).read(jsonPath);
+    }
+
 }

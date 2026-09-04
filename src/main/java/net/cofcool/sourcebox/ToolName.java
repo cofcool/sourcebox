@@ -1,27 +1,6 @@
 package net.cofcool.sourcebox;
 
-import net.cofcool.sourcebox.internal.ClippingsToMd;
-import net.cofcool.sourcebox.internal.CodeGenerator;
-import net.cofcool.sourcebox.internal.CommandHelper;
-import net.cofcool.sourcebox.internal.Converts;
-import net.cofcool.sourcebox.internal.DiffAnalysis;
-import net.cofcool.sourcebox.internal.DirWebServer;
-import net.cofcool.sourcebox.internal.FileNameFormatter;
-import net.cofcool.sourcebox.internal.FileTools;
-import net.cofcool.sourcebox.internal.GitCommitsToChangelog;
-import net.cofcool.sourcebox.internal.GoAdapter;
-import net.cofcool.sourcebox.internal.HisRecord;
-import net.cofcool.sourcebox.internal.HtmlDownloader;
-import net.cofcool.sourcebox.internal.JsonFormatter;
-import net.cofcool.sourcebox.internal.JsonToPojo;
-import net.cofcool.sourcebox.internal.LinkCovertTool;
-import net.cofcool.sourcebox.internal.LinkRecord;
-import net.cofcool.sourcebox.internal.NetworkUtils;
-import net.cofcool.sourcebox.internal.ShellStarter;
-import net.cofcool.sourcebox.internal.SimpleNote;
-import net.cofcool.sourcebox.internal.TimerRecord;
-import net.cofcool.sourcebox.internal.ToDo;
-import net.cofcool.sourcebox.internal.TrelloToLogseqImporter;
+import net.cofcool.sourcebox.internal.*;
 
 public enum ToolName {
     trelloLogseqImporter("read trello backup json file and convert to logseq md file", TrelloToLogseqImporter.class),
@@ -45,6 +24,7 @@ public enum ToolName {
     hisRecord("simple personal record tool", HisRecord.class),
     link("simple link tool", LinkRecord.class),
     timer("simple timer tool", TimerRecord.class),
+    jsonex("exactor values by json path", JsonExactor.class),
     task("repeat execute task(go)", GoAdapter.Task.class),
     mobileBackup("backup android phone files by adb(go)", GoAdapter.MobileBackup.class);
 

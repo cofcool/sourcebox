@@ -58,7 +58,7 @@ public class FileNameFormatter implements Tool {
                 }
                 File f = new File(line);
                 if (!f.exists()) {
-                    getLogger().error("File not found: " + line);
+                    args.getContext().write("File not found: " + line);
                     continue;
                 }
                 rename(f, args, nameGenerator, dryRun);
@@ -98,32 +98,33 @@ public class FileNameFormatter implements Tool {
         if (dest.isPresent()) {
             var target = Path.of(dest.get(), newFileName);
             if (Files.exists(target)) {
-                getLogger().error(String.format("Target exists, skip rename %s -> %s", file, target));
+                args.getContext().write(String.format("Target exists, skip rename %s -> %s", file, target));
                 return;
             }
             if (dryRun) {
-                getLogger().info(String.format("dry-run rename file %s to %s", file, target));
+                args.getContext().write(String.format("dry-run rename file %s to %s", file, target));
                 return;
             }
             try {
+                //noinspection ResultOfMethodCallIgnored
                 new File(dest.get()).mkdirs();
                 Object ret = Files.move(file.toPath(), target);
-                getLogger().info(String.format("rename file %s to %s: %s", file, target, ret));
+                args.getContext().write(String.format("rename file %s to %s: %s", file, target, ret));
             } catch (IOException e) {
                 throw new IllegalStateException("Move " + file + " to " + target + " error", e);
             }
         } else {
             var newName = new File(fullPath + newFileName);
             if (newName.exists()) {
-                getLogger().error(String.format("Target exists, skip rename %s -> %s", file, newName));
+                args.getContext().write(String.format("Target exists, skip rename %s -> %s", file, newName));
                 return;
             }
             if (dryRun) {
-                getLogger().info(String.format("dry-run rename file %s to %s", file, newName));
+                args.getContext().write(String.format("dry-run rename file %s to %s", file, newName));
                 return;
             }
             Object ret = file.renameTo(newName);
-            getLogger().info(String.format("rename file %s to %s: %s", file, newName, ret));
+            args.getContext().write(String.format("rename file %s to %s: %s", file, newName, ret));
         }
     }
 

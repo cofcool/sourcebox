@@ -119,6 +119,8 @@
 * datetime, 时间
 * urlencoded, 解码 URL 编码
 * replace, 字符串替换
+* move, 移动文件
+* replace, 移除字符
 
 ## Git diff 分析
 
@@ -171,6 +173,10 @@ Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到
 ## 简单番茄时钟
 
 工作和休息计时，休息时弹出全屏遮罩提示进入休息时间
+
+## JSON 内容提取
+
+通过 JSON path 规则提取内容
 
 ## 参与开发
 

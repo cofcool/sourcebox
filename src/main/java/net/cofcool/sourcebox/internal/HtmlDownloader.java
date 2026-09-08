@@ -1,37 +1,5 @@
 package net.cofcool.sourcebox.internal;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
-import java.net.Proxy;
-import java.net.Proxy.Type;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.zip.CRC32;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 import lombok.CustomLog;
 import net.cofcool.sourcebox.Tool;
 import net.cofcool.sourcebox.ToolContext;
@@ -40,6 +8,11 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.jline.reader.EndOfFileException;
+import org.jline.reader.LineReader;
+import org.jline.reader.LineReaderBuilder;
+import org.jline.reader.UserInterruptException;
+import org.jline.reader.impl.DefaultParser;
 import org.jsoup.Connection;
 import org.jsoup.Connection.Method;
 import org.jsoup.Jsoup;
@@ -50,10 +23,30 @@ import org.jsoup.safety.Safelist;
 import org.jsoup.select.Elements;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.firefox.FirefoxOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import java.io.*;
+import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
+import java.net.Proxy;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.Duration;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.zip.CRC32;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @CustomLog
 public class HtmlDownloader implements Tool {
@@ -61,6 +54,7 @@ public class HtmlDownloader implements Tool {
     private static final Map<String, Function<Element, String>> tagMap = new HashMap<>();
 
     private static final String IMGS_FOLDER = "imgs";
+    public static final String TERMINAL_TIP = "\nPlease enter: depth url or url or depth filter url\n";
     private static Replacer REPLACER;
     private final Set<String> history = new HashSet<>();
 
@@ -68,7 +62,7 @@ public class HtmlDownloader implements Tool {
     private boolean clean;
     private String cleanexp;
     private Set<OutputType> outputTypes = EnumSet.of(OutputType.html);
-    private Proxy proxy;
+    private InetSocketAddress proxy;
     private String filter;
     private String webDriver;
     private ToolContext context;
@@ -116,21 +110,61 @@ public class HtmlDownloader implements Tool {
         REPLACER = new Replacer(args.readArg("replace").optVal().orElse(null));
         cleanexp = args.readArg("cleanexp").optVal().orElse(null);
 
-        if (urls.isEmpty()) {
-            throw new IllegalArgumentException("Do not find any url");
-        }
-
         var out = args.readArg("out").val();
         args.readArg("proxy").ifPresent(a -> {
             var p = a.val().split(":");
-            proxy = new Proxy(Type.HTTP, new InetSocketAddress(p[0], Integer.parseInt(p[1])));
+            proxy = new InetSocketAddress(p[0], Integer.parseInt(p[1]));
             log.debug("Enable {0}", proxy);
         });
         depth = Integer.parseInt(args.readArg("depth").val());
 
+        var stdin = args.readArg("stdin").test(Boolean::parseBoolean);
+        if (urls.isEmpty() && !stdin) {
+            throw new IllegalArgumentException("Can not find any url");
+        }
+
         try {
-            for (String url : urls) {
-                downloadUrl(out, url, depth, img);
+            if (stdin) {
+                LineReader reader = LineReaderBuilder.builder()
+                        .parser(new DefaultParser())
+                        .build();
+
+                while (true) {
+                    try {
+                        String line = reader.readLine("url >>");
+                        if (StringUtils.isBlank(line)) {
+                            args.getContext().write(TERMINAL_TIP);
+                            continue;
+                        }
+
+                        var lines = line.trim().split(" ");
+
+                        var url = line;
+                        if (lines.length == 2) {
+                            depth = Integer.parseInt(lines[0]);
+                            url = lines[1].trim();
+                        } else if (lines.length == 1) {
+                            url = lines[0].trim();
+                        } else if (lines.length == 3) {
+                            depth = Integer.parseInt(lines[0]);
+                            filter = lines[1].trim();
+                            url = lines[2].trim();
+                        } else {
+                            args.getContext().write(TERMINAL_TIP);
+                            continue;
+                        }
+
+                        downloadUrl(out, url, depth, img);
+                        depth = 1;
+                        filter = null;
+                    } catch (UserInterruptException | EndOfFileException e) {
+                        break;
+                    }
+                }
+            } else {
+                for (String url : urls) {
+                    downloadUrl(out, url, depth, img);
+                }
             }
 
             history.clear();
@@ -152,7 +186,7 @@ public class HtmlDownloader implements Tool {
 
     private Connection getConnection() {
         if (connection == null) {
-            connection = Jsoup.newSession().proxy(proxy);
+            connection = Jsoup.newSession().proxy(new Proxy(java.net.Proxy.Type.HTTP, proxy));
         }
 
         return connection;
@@ -194,19 +228,23 @@ public class HtmlDownloader implements Tool {
 
     }
 
-    private Document loadDynamicWeb(String url) {
-        System.setProperty("webdriver.chrome.driver", webDriver);
-        var options = new ChromeOptions();
-        options.addArguments("--headless")
-            .addArguments("--disable-gpu")
-            .addArguments("--window-size=1920,1080")
-            .addArguments("--disable-dev-shm-usage");
-        if (proxy != null) {
-            options.addArguments("--proxy-server=http://" + proxy.address().toString().substring(1));
-        }
-
+    private Document loadDynamicWeb(String url) throws IOException {
         if (driver == null) {
-            driver = new ChromeDriver(options);
+            System.setProperty("webdriver.gecko.driver", webDriver);
+            var options = new FirefoxOptions()
+                    .addArguments("--headless")
+                    .addArguments("--profile").addArguments(Files.createTempDirectory("ff-tmp-").toString());
+            if (proxy != null) {
+                var val = proxy.getHostName() + ":" + proxy.getPort();
+                var fp = new org.openqa.selenium.Proxy()
+                        .setProxyType(org.openqa.selenium.Proxy.ProxyType.MANUAL)
+                        .setHttpProxy(val)
+                        .setSslProxy(val)
+                        .setSocksVersion(5)
+                        .setSocksProxy(val);
+                options.setProxy(fp);
+            }
+            driver = new FirefoxDriver(options);
         }
 
         driver.get(url);
@@ -391,6 +429,7 @@ public class HtmlDownloader implements Tool {
             .arg(new Arg("depth", "1", "link depth", false, null))
             .arg(new Arg("proxy", null, "request proxy", false, "127.0.0.1:8087"))
             .arg(new Arg("out", "./", "output folder", false, null))
+            .arg(new Arg("stdin", "false", "read from stdin", false, null))
             .arg(new Arg("clean", "false", "remove css or javascript", false, null))
             .arg(new Arg("cleanexp", null, "clean element by CSS-like element selector", false, "a[href]"))
             .arg(new Arg("replace", null, "replace some text", false, "test+"))

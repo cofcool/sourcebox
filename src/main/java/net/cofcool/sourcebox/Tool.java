@@ -2,24 +2,17 @@ package net.cofcool.sourcebox;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.vertx.core.shareddata.Shareable;
+import net.cofcool.sourcebox.logging.Logger;
+import net.cofcool.sourcebox.logging.LoggerFactory;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import net.cofcool.sourcebox.logging.Logger;
-import net.cofcool.sourcebox.logging.LoggerFactory;
 
 public interface Tool {
 
@@ -306,5 +299,10 @@ public interface Tool {
 
     enum RunnerType {
         WEB, CLI, GUI
+    }
+
+    interface SimpleTool {
+
+        String run(Args args) throws Exception;
     }
 }

@@ -230,6 +230,7 @@ public class HtmlDownloader implements Tool {
 
     private Document loadDynamicWeb(String url) throws IOException {
         if (driver == null) {
+            // snap firefox should use /snap/bin/firefox.geckodriver
             System.setProperty("webdriver.gecko.driver", webDriver);
             var options = new FirefoxOptions()
                     .addArguments("--headless")
@@ -433,7 +434,7 @@ public class HtmlDownloader implements Tool {
             .arg(new Arg("clean", "false", "remove css or javascript", false, null))
             .arg(new Arg("cleanexp", null, "clean element by CSS-like element selector", false, "a[href]"))
             .arg(new Arg("replace", null, "replace some text", false, "test+"))
-            .arg(new Arg("webDriver", null, "web driver path", false, "/usr/local/bin/chromedriver"))
+            .arg(new Arg("webDriver", null, "firefox web driver path", false, "/usr/local/bin/geckodriver"))
             .arg(new Arg("waitexp", null, "wait element by CSS-like element selector", false, "a[href]"))
             .arg(new Arg("hrefFilter", null, "sub-link filter", false, "demo"))
             .arg(new Arg("folder", null, "html file folder path", false, null))

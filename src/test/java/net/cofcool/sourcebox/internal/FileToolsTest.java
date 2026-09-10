@@ -1,8 +1,5 @@
 package net.cofcool.sourcebox.internal;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.Tool;
 import net.cofcool.sourcebox.Utils;
@@ -10,6 +7,11 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 class FileToolsTest extends BaseTest {
 
@@ -22,6 +24,16 @@ class FileToolsTest extends BaseTest {
     @Override
     protected Tool instance() {
         return new FileTools();
+    }
+
+    @Test
+    void runWithDup() throws Exception {
+        Files.write(tmpDir.resolve("dup.txt"), "xxx".getBytes());
+        tmpDir.resolve("dir").toFile().mkdirs();
+        Files.write(tmpDir.resolve("dir", "dup.txt"), "xxx".getBytes());
+        instance().run(args.arg("util", "dup")
+            .arg("path", tmpDir.toString())
+        );
     }
 
     @Test

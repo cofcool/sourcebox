@@ -1,5 +1,10 @@
 package net.cofcool.sourcebox.internal;
 
+import net.cofcool.sourcebox.Tool;
+import net.cofcool.sourcebox.ToolName;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -15,16 +20,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import net.cofcool.sourcebox.Tool;
-import net.cofcool.sourcebox.ToolName;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
 
 public class FileTools implements Tool {
 
-    private final Map<String, Util> utilMap = Map.of(
+    private final Map<String, SimpleTool> utilMap = Map.of(
         "split", new Split(),
-        "count", new FileCounter()
+        "count", new FileCounter(),
+        "dup", new FileDuplicateParser()
     );
 
     @Override
@@ -46,12 +48,7 @@ public class FileTools implements Tool {
         }
     }
 
-    private interface Util {
-
-        String run(Args args) throws Exception;
-    }
-
-    private record Split() implements Util {
+    private record Split() implements SimpleTool {
 
         @Override
         public String run(Args args) throws Exception {
@@ -79,7 +76,7 @@ public class FileTools implements Tool {
         }
     }
 
-    private class FileCounter implements Util {
+    private class FileCounter implements SimpleTool {
 
         @Override
         public String run(Args args) throws Exception {
@@ -149,6 +146,8 @@ public class FileTools implements Tool {
             .arg(new Arg("threadSize", "1", "count thread size, when using count, this parameter can be set", false, null))
             .arg(new Arg("splitIdx", null, "split by index, when using split, this parameter can be set", false, "2"))
             .arg(new Arg("splitChar", null, "split by character, when using split, this parameter can be set", false, "foo"))
-            .arg(new Arg("splitDirection", "forward", "split direction, when using split, this parameter can be set, forward or back", false, "forward"));
+            .arg(new Arg("splitDirection", "forward", "split direction, when using split, this parameter can be set, forward or back", false, "forward"))
+            .arg(new Arg("dupMinSize", "1", "file min size", false, null))
+            .arg(new Arg("dupIgnore", String.join(",", ".git", "__pycache__", ".DStore"), "ignore files", false, null));
     }
 }

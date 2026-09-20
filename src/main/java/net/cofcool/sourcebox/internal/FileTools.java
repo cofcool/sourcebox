@@ -148,6 +148,6 @@ public class FileTools implements Tool {
             .arg(new Arg("splitChar", null, "split by character, when using split, this parameter can be set", false, "foo"))
             .arg(new Arg("splitDirection", "forward", "split direction, when using split, this parameter can be set, forward or back", false, "forward"))
             .arg(new Arg("dupMinSize", "1", "file min size", false, null))
-            .arg(new Arg("dupIgnore", String.join(",", ".git", "__pycache__", ".DStore"), "ignore files", false, null));
+            .arg(new Arg("dupIgnore", String.join(",", ".git", "__pycache__", ".DS_Store"), "ignore files", false, null));
     }
 }

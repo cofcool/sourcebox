@@ -1,6 +1,5 @@
 package net.cofcool.sourcebox;
 
-import java.io.File;
 import net.cofcool.sourcebox.Tool.RunnerType;
 import net.cofcool.sourcebox.logging.Logger;
 import net.cofcool.sourcebox.logging.LoggerFactory;
@@ -8,6 +7,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+
+import java.io.File;
 
 class AppTest {
 
@@ -46,6 +47,31 @@ class AppTest {
     @Test
     void runWithHelp() throws Exception {
         App.main(new String[]{"--tool=" + ToolName.converts.name()});
+    }
+
+    @Test
+    void runWithCompletion() throws Exception {
+        App.main(new String[]{"--completion=zsh", "--completionOut=" + file.getAbsolutePath()});
+        Assertions.assertTrue(new File(file, "_sourcebox").exists());
+    }
+
+    @Test
+    void runWithCompletionDefaultDir() throws Exception {
+        var oldHome = System.getProperty("user.home");
+        var tempHome = new File(file, "home");
+        System.setProperty("user.home", tempHome.getAbsolutePath());
+        try {
+            App.generateCompletion("bash", null, "sb");
+            App.generateCompletion("zsh", null, "sb");
+            Assertions.assertTrue(new File(tempHome, ".local/share/bash-completion/completions/sourcebox").exists());
+            Assertions.assertTrue(new File(tempHome, ".zsh/completions/_sourcebox").exists());
+        } finally {
+            if (oldHome == null) {
+                System.clearProperty("user.home");
+            } else {
+                System.setProperty("user.home", oldHome);
+            }
+        }
     }
 
     @Test

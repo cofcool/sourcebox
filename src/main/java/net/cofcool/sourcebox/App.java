@@ -1,15 +1,5 @@
 package net.cofcool.sourcebox;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 import net.cofcool.sourcebox.Tool.Arg;
 import net.cofcool.sourcebox.Tool.Args;
 import net.cofcool.sourcebox.Tool.RunnerType;
@@ -22,6 +12,18 @@ import net.cofcool.sourcebox.runner.WebRunner;
 import net.cofcool.sourcebox.util.Utils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
+
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 
 @SuppressWarnings({"unchecked", "ConstantConditions"})
@@ -69,6 +71,9 @@ public class App {
                     .arg(new Arg("tool", null, "", false, "converts"))
                     .arg(new Arg("defaultConfig", null, "", false, ""))
                     .arg(new Arg("mode", RunnerType.CLI.name(), "interface type", false, null))
+                    .arg(new Arg("completion", null, "generate completion script: bash|zsh|all", false, "bash"))
+                    .arg(new Arg("completionOut", null, "output dir or file for completion script", false, ""))
+                    .arg(new Arg("completionAlias", "sourcebox", "command alias", false, ""))
             );
         LoggerFactory.setDebug(Boolean.parseBoolean(pArgs.readArg("debug").val()));
         var logger = new ConsoleLogger(App.class);
@@ -120,6 +125,18 @@ public class App {
         if (archive.isPresent() && archive.test(a -> a.equalsIgnoreCase("true"))) {
             Utils.zipDir(GLOBAL_CFG_DIR, ZIP_FILE);
             logger.info("Create archive file {0} ok", ZIP_FILE);
+            return;
+        }
+
+        var completion = pArgs.readArg("completion");
+        if (completion.isPresent()) {
+            try {
+                String out = pArgs.readArg("completionOut").val();
+                generateCompletion(completion.val(), out, pArgs.readArg("completionAlias").val());
+                logger.info("Generate completion for " + completion.val() + " finished");
+            } catch (Exception e) {
+                logger.error("Generate completion error", e);
+            }
             return;
         }
 
@@ -181,6 +198,7 @@ public class App {
         logger.info("Example: --tool=demo --path=tmp");
         logger.info("Help: --help='{COMMAND}', like: --help=rename");
         logger.info("Archive: --archive=true, archive config");
+        logger.info("Completion: --completion='{SHELL}', bash/zsh/all");
         logger.info("Default Config: --defaultConfig=, generate default config file when it does not exist");
         logger.info("Interface: --mode='{CLI}', support: "+ RUNNER_MAP.entrySet().stream()
             .map(e -> {
@@ -191,5 +209,153 @@ public class App {
         logger.info("Global config file path: --cfg={0}", GLOBAL_CFG);
         logger.info("Tools:\n    " + ALL_TOOLS.stream().map(Tool::name).map(ToolName::toString)
             .collect(Collectors.joining("\n    ")));
+    }
+
+    static void generateCompletion(String shell, String out, String commandName) throws Exception {
+        if (shell.equalsIgnoreCase("all")) {
+            generateShellCompletion("bash", out, commandName);
+            generateShellCompletion("zsh", out, commandName);
+        } else {
+            generateShellCompletion(shell, out, commandName);
+        }
+    }
+
+    private static void generateShellCompletion(String shell, String outPath, String commandName) throws Exception {
+        String content = switch (shell) {
+            case "bash" -> buildBashCompletion(commandName);
+            case "zsh"  -> buildZshCompletion(commandName);
+            default -> throw new IllegalArgumentException("Unknown shell: " + shell);
+        };
+
+        writeCompletionScript(shell, content, outPath, commandName);
+    }
+
+    private static void writeCompletionScript(String shell, String scriptContent, String outPath, String commandName) throws IOException {
+        if (StringUtils.isBlank(outPath)) {
+            String defaultDir = resolveCompletionDir(shell);
+            File dir = new File(defaultDir);
+            dir.mkdirs();
+            File target = new File(dir, resolveCompletionFileName(shell));
+            FileUtils.writeStringToFile(target, scriptContent, "utf-8");
+            return;
+        }
+
+        File f = new File(outPath);
+        if (f.isDirectory()) {
+            FileUtils.writeStringToFile(new File(f, resolveCompletionFileName(shell)), scriptContent, "utf-8");
+        } else {
+            FileUtils.writeStringToFile(f, scriptContent, "utf-8");
+        }
+    }
+
+    private static String resolveCompletionDir(String shell) {
+        return FilenameUtils.concat(System.getProperty("user.home"), switch (shell) {
+            case "bash" -> ".local/share/bash-completion/completions";
+            case "zsh"  -> ".zsh/completions";
+            default -> throw new IllegalArgumentException("Unknown shell: " + shell);
+        });
+    }
+
+    private static String resolveCompletionFileName(String shell) {
+        return switch (shell) {
+            case "bash" -> "sourcebox";
+            case "zsh"  -> "_sourcebox";
+            default -> throw new IllegalArgumentException("Unknown shell: " + shell);
+        };
+    }
+
+    private static String buildBashCompletion(String commandName) {
+        var sb = new StringBuilder();
+        sb.append("_sourcebox_completion() {\n");
+        sb.append("  local cur=${COMP_WORDS[COMP_CWORD]}\n");
+        sb.append("  local i\n");
+        String toolList = App.ALL_TOOLS.stream().map(t -> t.name().name()).collect(Collectors.joining(" "));
+        sb.append("  local TOOLS=\"").append(toolList).append("\"\n");
+        sb.append("  local GLOBAL_OPTS=\"--help --tool --mode --cfg --debug --archive --defaultConfig --completion --completionOut\"\n\n");
+
+        sb.append("  if [[ ${cur} == --tool=* ]] ; then\n");
+        sb.append("    local val=${cur#--tool=}\n");
+        sb.append("    COMPREPLY=( $(compgen -W \"${TOOLS}\" -- \"$val\") )\n");
+        sb.append("    return\n");
+        sb.append("  fi\n");
+        sb.append("  if [[ ${COMP_WORDS[COMP_CWORD-1]} == \"--tool\" ]]; then\n");
+        sb.append("    COMPREPLY=( $(compgen -W \"${TOOLS}\" -- \"$cur\") )\n");
+        sb.append("    return\n");
+        sb.append("  fi\n\n");
+
+        sb.append("  local selTool=\"\"\n");
+        sb.append("  for i in \"${COMP_WORDS[@]}\"; do\n");
+        sb.append("    case \"$i\" in --tool=*) selTool=${i#--tool=}; break;; esac\n");
+        sb.append("  done\n");
+        sb.append("  if [[ -n $selTool ]]; then\n");
+        sb.append("    case \"$selTool\" in\n");
+        for (Tool t : App.ALL_TOOLS) {
+            String name = t.name().name();
+            var args = t.config().values().stream().map(a -> "--" + a.key()).collect(Collectors.joining(" "));
+            if (args.isBlank()) args = "";
+            sb.append("      ").append(name).append(")\n");
+            sb.append("        COMPREPLY=( $(compgen -W \"" + args + "\" -- \"$cur\") )\n");
+            sb.append("        return\n");
+            sb.append("        ;;\n");
+        }
+        sb.append("    esac\n");
+        sb.append("  fi\n\n");
+        sb.append("  COMPREPLY=( $(compgen -W \"${GLOBAL_OPTS}\" -- \"$cur\") )\n");
+        sb.append("}\n");
+        sb.append("complete -F _sourcebox_completion ").append(commandName).append("\n");
+        return sb.toString();
+    }
+
+    private static String buildZshCompletion(String commandName) {
+        var sb = new StringBuilder();
+        String toolList = App.ALL_TOOLS.stream().map(t -> t.name().name()).collect(Collectors.joining(" "));
+        sb.append("#compdef ").append(commandName).append("\n\n");
+        sb.append("_sourcebox() {\n");
+        sb.append("  local state\n");
+        sb.append("  typeset -A opt_args\n");
+        sb.append("  local -a tools\n");
+        sb.append("  tools=( ").append(toolList).append(" )\n\n");
+        sb.append("  _arguments \\\n");
+        sb.append("    '--help[show help]' \\\n");
+        sb.append("    '--tool=[tool]:( ").append(toolList).append(" )' \\\n");
+        sb.append("    '--mode=[runner mode]' \\\n");
+        sb.append("    '--cfg=[config file]' \\\n");
+        sb.append("    '--completion=[generate completion: bash|zsh|all]' \\\n");
+        sb.append("    '*: :->rest' && return 0\n\n");
+        sb.append("  if [[ $state == rest ]]; then\n");
+        sb.append("    local selTool\n");
+        sb.append("    for w in \"${words[@]}\"; do\n");
+        sb.append("      case $w in --tool=*) selTool=${w#--tool=};; esac\n");
+        sb.append("    done\n\n");
+        sb.append("    if [[ -n $selTool ]]; then\n");
+        sb.append("      case $selTool in\n");
+        for (Tool t : App.ALL_TOOLS) {
+            String name = t.name().name();
+            sb.append("        ").append(name).append(")\n");
+            sb.append("          _arguments \\\n");
+            for (Arg arg : t.config().values()) {
+                String option = "--" + arg.key() + "=[" + escapeZshSingleQuotedText(arg.desc()) + "]";
+                sb.append("            '").append(option).append("' \\\n");
+            }
+            sb.append("            '*: :->rest'\n");
+            sb.append("          ;;\n");
+        }
+        sb.append("      esac\n");
+        sb.append("    fi\n");
+        sb.append("  fi\n");
+        sb.append("}\n\n");
+        sb.append("compdef _sourcebox ").append(commandName).append("\n");
+        return sb.toString();
+    }
+
+    private static String escapeZshSingleQuotedText(String text) {
+        if (text == null) {
+            return "";
+        }
+        return text.replace("\\", "\\\\")
+                .replace("[", "\\[")
+                .replace("]", "\\]")
+                .replace(",", "\\,")
+                .replace("'", "'\\''");
     }
 }

@@ -251,6 +251,21 @@
                                 </arguments>
                             </configuration>
                         </execution>
+                        <execution>
+                            <id>cp-tauri</id>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>exec</goal>
+                            </goals>
+                            <configuration>
+                                <executable>cp</executable>
+                                <workingDirectory>${project.basedir}</workingDirectory>
+                                <arguments>
+                                    <argument>${project.build.directory}/sourcebox-fat.jar</argument>
+                                    <argument>${project.basedir}/gui/tauri/resources/backend/sourcebox-fat.jar</argument>
+                                </arguments>
+                            </configuration>
+                        </execution>
                     </executions>
                 </plugin>
             </plugins>

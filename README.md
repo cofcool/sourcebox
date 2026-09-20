@@ -10,6 +10,12 @@
 
 * `./sourcebox.sh` 查看程序信息，`--help={COMMAND}` 查看具体命令的帮助信息, 如 `--help=converts`
 * `--debug=true` 打开调试模式
+* `--completion=zsh` 生成命令补全脚本，在 `~/.zshrc` 中加入
+    ```
+     fpath=(~/.zsh/completions $fpath)
+     autoload -Uz compinit
+     compinit
+     ```
 
 部分命令支持别名， 如 `--tool=converts --cmd=md5 --in=test` 的别名为 `--md5=test`，具体可查看帮助文档，也可借助命令助手配置别名
 
@@ -33,7 +39,7 @@
 
 ## 命令助手
 
-使用前需要把 `source ～/.sourcebox/alias` 添加到 shell 配置中
+使用前需要把 `source $HOME/.mytool/alias` 添加到 shell 配置中
 
 * 命令管理，方便管理日常使用的长命令，如查询，添加标签等
 * 别名管理，可针对长命令配置别名，并导出到当前环境
@@ -132,6 +138,7 @@
 
 * 统计一个文件内容在另一个文件中的数量，使用: `./sourcebox.sh --tool=fileTools --util=count --samplePath=sample.csv --path=data.csv`
 * 根据传入的字符或索引切割文件内容，使用: `./sourcebox.sh --tool=fileTools --util=split --path=data.csv --splitIdx=2`
+* 查找重复文件，使用: `./sourcebox.sh --tool=fileTools --util=dup --path=./`
 
 ## 网络工具
 

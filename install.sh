@@ -33,6 +33,9 @@ Restart=on-failure
 WantedBy=default.target
 EOF
 
+echo "generate completion script..."
+java -jar $TARGET_JAR --completion=all
+
 systemctl --user daemon-reexec
 systemctl --user daemon-reload
 

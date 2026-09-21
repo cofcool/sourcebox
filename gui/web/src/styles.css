@@ -1,0 +1,50 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Inter, system-ui, sans-serif; background: #f5f6f8; color: #20242a; }
+button { border: 0; border-radius: 7px; padding: 9px 18px; cursor: pointer; background: #20242a; color: white; }
+.app { display: flex; height: 100vh; overflow: hidden; }
+.sidebar { width: 230px; background: #fff; border-right: 1px solid #e5e7eb; padding: 16px 12px; flex-shrink: 0; }
+.brand { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; padding: 8px 10px 22px; }
+.brand-icon { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; background: #20242a; color: white; }
+nav { display: flex; flex-direction: column; gap: 3px; }
+nav a { display: flex; align-items: center; gap: 9px; padding: 9px 10px; color: #5b616b; text-decoration: none; border-radius: 7px; font-size: 14px; }
+nav a:hover, nav a.active { background: #eef0f3; color: #111827; }
+.nav-group { margin-top: 10px; }
+.nav-title { padding: 5px 10px; font-size: 11px; color: #9298a1; text-transform: uppercase; }
+.content { flex: 1; overflow: auto; padding: 34px 42px; max-width: 1400px; }
+h1 { margin: 0 0 8px; font-size: 27px; }
+h2 { display: flex; align-items: center; gap: 8px; font-size: 17px; }
+.muted { color: #737983; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; margin-top: 28px; }
+.card { display: flex; flex-direction: column; gap: 9px; background: white; border: 1px solid #e5e7eb; border-radius: 11px; padding: 20px; color: inherit; text-decoration: none; }
+.card:hover { border-color: #b9bec7; transform: translateY(-1px); }
+.card span { color: #777e88; font-size: 13px; }
+.panel { margin-top: 28px; background: white; border: 1px solid #e5e7eb; border-radius: 11px; padding: 20px; }
+.status { display: flex; align-items: center; gap: 8px; margin: 14px 0 7px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: #31a24c; }
+.tool-placeholder { min-height: 300px; }
+.error { background: #fff0f0; border: 1px solid #ffcaca; color: #a33; padding: 12px 14px; border-radius: 8px; margin-bottom: 20px; }
+.page-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+.todo-count { background: #e9f5ed; color: #28763b; border-radius: 999px; padding: 7px 12px; font-size: 13px; white-space: nowrap; }
+.todo-composer { display: flex; flex-direction: column; gap: 10px; }
+.todo-composer label { font-weight: 700; font-size: 14px; }
+.todo-composer textarea, .search-field input { border: 1px solid #d9dde3; border-radius: 7px; font: inherit; color: inherit; outline: none; }
+.todo-composer textarea { width: 100%; min-height: 88px; padding: 12px; resize: vertical; }
+.todo-composer textarea:focus, .search-field:focus-within { border-color: #20242a; box-shadow: 0 0 0 3px #eef0f3; }
+.todo-toolbar { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+.search-field { display: flex; align-items: center; gap: 9px; flex: 1; background: white; border: 1px solid #d9dde3; border-radius: 7px; padding: 0 12px; color: #737983; }
+.search-field input { width: 100%; border: 0; padding: 10px 0; box-shadow: none; }
+.search-field input:focus { outline: 0; }
+.save-button { display: inline-flex; align-items: center; gap: 7px; }
+button:disabled { cursor: not-allowed; opacity: .45; }
+.todo-list { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
+.todo-item { display: flex; align-items: center; gap: 12px; min-height: 58px; padding: 11px 14px; background: white; border: 1px solid #e5e7eb; border-radius: 9px; }
+.todo-item > span { flex: 1; overflow-wrap: anywhere; }
+.todo-item.completed > span { color: #9298a1; text-decoration: line-through; }
+.complete-button, .delete-button { display: grid; place-items: center; flex: 0 0 auto; padding: 0; border-radius: 50%; }
+.complete-button { width: 24px; height: 24px; border: 1px solid #c9ced6; background: white; color: white; }
+.todo-item.completed .complete-button { border-color: #31a24c; background: #31a24c; }
+.delete-button { width: 30px; height: 30px; background: transparent; color: #9298a1; }
+.delete-button:hover { background: #fff0f0; color: #a33; }
+.empty-todos { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 56px 20px; color: #737983; text-align: center; }
+.empty-todos strong { color: #40454d; }
+@media (max-width: 640px) { .content { padding: 24px 18px; } .todo-toolbar { align-items: stretch; flex-direction: column; } .save-button { justify-content: center; } .page-heading { flex-direction: column; gap: 10px; } }

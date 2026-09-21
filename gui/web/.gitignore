@@ -1,0 +1,30 @@
+# dependencies
+node_modules/
+
+# production builds
+build/
+dist/
+
+# environment files
+.env
+.env.*
+!.env.example
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# test coverage and caches
+coverage/
+.cache/
+.eslintcache
+.parcel-cache/
+.vite/
+
+# editor and OS files
+.DS_Store
+.idea/
+.vscode/
+*.swp

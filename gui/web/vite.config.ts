@@ -7,5 +7,13 @@ export default defineConfig({
   server: {
     port: 1420,
     strictPort: true,
+    proxy: {
+      "/proxy": {
+        target: "http://localhost:38080",
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/proxy/, "") || "/",
+      },
+    },
   },
 });

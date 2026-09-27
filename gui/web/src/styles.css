@@ -74,4 +74,22 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .empty-row { text-align: center !important; color: #737983; padding: 24px 10px; }
 .clipboard-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
 .helper-message { margin-top: 12px; color: #28763b; background: #edf7ef; border: 1px solid #ccead0; border-radius: 8px; padding: 10px 12px; }
+.timer-panel { display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 34px 24px; }
+.timer-phase { color: #54705c; font-size: 13px; font-weight: 700; text-transform: uppercase; }
+.timer-clock { color: #20242a; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 72px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.timer-panel.on-break .timer-phase { color: #a66b27; }
+.timer-durations { display: flex; align-items: end; justify-content: center; gap: 12px; flex-wrap: wrap; }
+.timer-durations label { display: grid; gap: 6px; color: #737983; font-size: 12px; }
+.timer-durations input { width: 150px; border: 1px solid #d9dde3; border-radius: 7px; padding: 10px 12px; color: #20242a; font: inherit; }
+.timer-durations input:focus { outline: 2px solid #dce9df; border-color: #54705c; }
+.timer-actions { justify-content: center; }
+.timer-statistics-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.timer-statistics-heading h2 { margin: 0; }
+.timer-table-wrap { overflow: auto; }
+.timer-break-overlay { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; background: rgb(18 24 20 / 94%); color: white; }
+.timer-break-content { display: flex; flex-direction: column; align-items: center; gap: 18px; text-align: center; }
+.timer-break-content span { color: #b9c8bc; font-size: 14px; }
+.timer-break-content strong { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 72px; font-variant-numeric: tabular-nums; }
+.timer-break-content button { background: #dce9df; color: #20242a; }
 @media (max-width: 640px) { .content { padding: 24px 18px; } .todo-toolbar { align-items: stretch; flex-direction: column; } .save-button { justify-content: center; } .page-heading { flex-direction: column; gap: 10px; } }
+@media (max-width: 640px) { .timer-clock, .timer-break-content strong { font-size: 56px; } .timer-durations { width: 100%; align-items: stretch; flex-direction: column; } .timer-durations label, .timer-durations input { width: 100%; } .timer-statistics-heading { align-items: flex-start; flex-direction: column; } }

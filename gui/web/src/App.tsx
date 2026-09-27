@@ -17,7 +17,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { api } from "./api/client";
-import type { SystemInfo, ToolInfo } from "./api/client";
+import type { SystemInfo, TimerStatistics, ToolInfo } from "./api/client";
 
 interface TodoItem {
   id: string;
@@ -138,6 +138,8 @@ function ToolPage({ tool }: { tool?: ToolInfo }) {
       return <CommandHelperPanel />;
     case "clipboard":
       return <ClipboardPanel />;
+    case "timer":
+      return <TimerPage />;
     case "htmlDown":
       return <HtmlDownPanel />;
     case "converts":
@@ -169,6 +171,201 @@ function SettingsPage({ system }: { system?: SystemInfo }) {
       </section>
     </div>
   );
+}
+
+function TimerPage() {
+  const savedDurations = readStoredJson("toolbox-timer-settings", { workMinutes: 40, breakMinutes: 5 });
+  const [workMinutes, setWorkMinutes] = useState(String(savedDurations.workMinutes));
+  const [breakMinutes, setBreakMinutes] = useState(String(savedDurations.breakMinutes));
+  const [durations, setDurations] = useState(savedDurations);
+  const [phase, setPhase] = useState<"work" | "break">("work");
+  const [timerState, setTimerState] = useState<"stopped" | "running" | "paused">("stopped");
+  const [remaining, setRemaining] = useState(durations.workMinutes * 60);
+  const [deadline, setDeadline] = useState<number>();
+  const [breakOverlay, setBreakOverlay] = useState(false);
+  const [statistics, setStatistics] = useState<TimerStatistics[]>([]);
+  const [error, setError] = useState<string>();
+  const [loadingStats, setLoadingStats] = useState(false);
+
+  useEffect(() => {
+    if (timerState !== "running" || deadline === undefined) return;
+
+    const tick = () => {
+      const secondsLeft = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+      setRemaining(secondsLeft);
+      if (secondsLeft > 0) return;
+
+      if (phase === "work") {
+        void saveTimerRecord(durations.workMinutes * 60, "finish");
+        setPhase("break");
+        setBreakOverlay(true);
+        setRemaining(durations.breakMinutes * 60);
+        setDeadline(Date.now() + durations.breakMinutes * 60_000);
+      } else {
+        setPhase("work");
+        setRemaining(durations.workMinutes * 60);
+        setDeadline(Date.now() + durations.workMinutes * 60_000);
+      }
+    };
+
+    tick();
+    const interval = window.setInterval(tick, 250);
+    return () => window.clearInterval(interval);
+  }, [deadline, durations, phase, timerState]);
+
+  function saveTimerRecord(durationSeconds: number, remark: string) {
+    if (durationSeconds <= 0) return;
+    const end = new Date();
+    const start = new Date(end.getTime() - durationSeconds * 1000);
+    const format = (date: Date) => {
+      const pad = (value: number) => String(value).padStart(2, "0");
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+    };
+
+    void api.timerRecord({
+      name: `workTime-${Math.floor(end.getTime() / 1000)}`,
+      state: "done",
+      type: "timer",
+      remark,
+      start: format(start),
+      end: format(end),
+      duration: durationSeconds,
+    }).catch((e) => setError(e instanceof Error ? e.message : String(e)));
+  }
+
+  function startOrToggle() {
+    if (timerState === "stopped") {
+      setPhase("work");
+      setRemaining(durations.workMinutes * 60);
+      setDeadline(Date.now() + durations.workMinutes * 60_000);
+      setTimerState("running");
+      return;
+    }
+
+    if (timerState === "running") {
+      setRemaining(Math.max(0, Math.ceil(((deadline ?? Date.now()) - Date.now()) / 1000)));
+      setDeadline(undefined);
+      setTimerState("paused");
+      return;
+    }
+
+    setDeadline(Date.now() + remaining * 1000);
+    setTimerState("running");
+  }
+
+  function resetTimer() {
+    if (phase === "work" && timerState !== "stopped") {
+      saveTimerRecord(durations.workMinutes * 60 - remaining, "reset");
+    }
+    setTimerState("stopped");
+    setPhase("work");
+    setDeadline(undefined);
+    setRemaining(durations.workMinutes * 60);
+    setBreakOverlay(false);
+  }
+
+  function applyDurations() {
+    const work = Number.parseInt(workMinutes, 10);
+    const rest = Number.parseInt(breakMinutes, 10);
+    if (!Number.isInteger(work) || !Number.isInteger(rest) || work < 1 || rest < 1) {
+      setError("工作和休息时长必须是大于 0 的整数分钟");
+      return;
+    }
+    const next = { workMinutes: work, breakMinutes: rest };
+    setDurations(next);
+    window.localStorage.setItem("toolbox-timer-settings", JSON.stringify(next));
+    setRemaining(work * 60);
+    setError(undefined);
+  }
+
+  async function loadStatistics() {
+    setLoadingStats(true);
+    setError(undefined);
+    try {
+      setStatistics(await api.timerStatistics());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoadingStats(false);
+    }
+  }
+
+  const displayTime = `${String(Math.floor(remaining / 60)).padStart(2, "0")}:${String(remaining % 60).padStart(2, "0")}`;
+
+  return (
+    <div className="tool-page timer-page">
+      <div className="page-heading">
+        <div>
+          <h1>番茄计时</h1>
+          <p className="muted">专注工作，按时休息。</p>
+        </div>
+      </div>
+
+      {error && <div className="error">{error}</div>}
+
+      <section className={`panel timer-panel ${phase === "break" ? "on-break" : ""}`}>
+        <div className="timer-phase">{phase === "work" ? "Work Time" : "Break Time"}</div>
+        <div className="timer-clock" aria-live="polite">{displayTime}</div>
+        <div className="timer-durations">
+          <label>工作时间（分钟）
+            <input type="number" min="1" step="1" value={workMinutes} disabled={timerState !== "stopped"} onChange={(event) => setWorkMinutes(event.target.value)} />
+          </label>
+          <label>休息时间（分钟）
+            <input type="number" min="1" step="1" value={breakMinutes} disabled={timerState !== "stopped"} onChange={(event) => setBreakMinutes(event.target.value)} />
+          </label>
+          <button className="secondary" onClick={applyDurations} disabled={timerState !== "stopped"}>应用</button>
+        </div>
+        <div className="action-row timer-actions">
+          <button onClick={startOrToggle}>
+            {timerState === "stopped" ? "开始" : timerState === "running" ? "暂停" : "继续"}
+          </button>
+          <button className="secondary" onClick={resetTimer}>重置</button>
+        </div>
+      </section>
+
+      <section className="panel timer-statistics">
+        <div className="timer-statistics-heading">
+          <h2>专注统计</h2>
+          <button className="secondary" onClick={() => void loadStatistics()} disabled={loadingStats}>
+            {loadingStats ? "加载中..." : "Statistics"}
+          </button>
+        </div>
+        <div className="timer-table-wrap">
+          <table className="helper-table">
+            <thead><tr><th>日期</th><th>次数</th><th>工作时长</th></tr></thead>
+            <tbody>
+              {statistics.length === 0 ? (
+                <tr><td colSpan={3} className="empty-row">暂无统计数据</td></tr>
+              ) : statistics.map((item) => (
+                <tr key={item.day}>
+                  <td>{item.day}</td>
+                  <td>{item.cnt}</td>
+                  <td>{formatDuration(item.total)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {breakOverlay && (
+        <div className="timer-break-overlay">
+          <div className="timer-break-content">
+            <span>休息时间</span>
+            <strong>{displayTime}</strong>
+            <button onClick={() => setBreakOverlay(false)} disabled={phase === "break"}>开始工作</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function formatDuration(totalSeconds: number) {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return [hours && `${hours}小时`, minutes && `${minutes}分钟`, seconds && `${seconds}秒`].filter(Boolean).join(" ") || "0秒";
 }
 
 function TodoPage() {

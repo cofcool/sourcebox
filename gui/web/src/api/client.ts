@@ -42,6 +42,12 @@ export interface CommandRecord {
   updateTime?: string | null;
 }
 
+export interface TimerStatistics {
+  day: string;
+  cnt: number;
+  total: number;
+}
+
 let baseUrl = import.meta.env.DEV ? "/proxy" : "http://localhost:38080";
 
 export function setBackendUrl(url: string) {
@@ -139,6 +145,23 @@ export const api = {
     await request<void>(`/action/${id}`, {
       method: "DELETE",
     });
+  },
+  timerRecord: async (record: {
+    name: string;
+    state: string;
+    type: string;
+    remark: string;
+    start: string;
+    end: string;
+    duration: number;
+  }): Promise<TodoRecord> => {
+    return request<TodoRecord>("/action", {
+      method: "POST",
+      body: JSON.stringify(record),
+    });
+  },
+  timerStatistics: async (): Promise<TimerStatistics[]> => {
+    return request<TimerStatistics[]>("/action/statistics/timer");
   },
   noteList: async (): Promise<NoteRecord[]> => {
     return request<NoteRecord[]>("/note/list");

@@ -1,9 +1,6 @@
 package net.cofcool.sourcebox.runner;
 
 import io.vertx.core.Vertx;
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.CustomLog;
 import lombok.SneakyThrows;
 import net.cofcool.sourcebox.App;
@@ -14,6 +11,10 @@ import net.cofcool.sourcebox.ToolRunner;
 import net.cofcool.sourcebox.WebTool;
 import org.apache.commons.io.FileUtils;
 
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 @CustomLog
 public class CLIRunner implements ToolRunner {
 
@@ -23,7 +24,7 @@ public class CLIRunner implements ToolRunner {
     }
 
     @Override
-    public boolean run(Args args) throws Exception {
+    public boolean run(Args args, Args globalArgs) throws Exception {
         args.context(new ConsoleToolContext());
         var run = new AtomicBoolean(false);
 
@@ -33,7 +34,10 @@ public class CLIRunner implements ToolRunner {
                 run.set(true);
                 log.debug("Start run " + name);
                 try {
-                    var newArgs = args.removePrefix(name).copyConfigFrom(tool.config());
+                    if (globalArgs != null) {
+                        args.copyConfigFrom(globalArgs.removePrefix(name));
+                    }
+                    var newArgs = args.copyConfigFrom(tool.config());
                     if (tool instanceof WebTool webTool && !ToolRunner.checkLocalAPIServer(
                         args.getArgVal(ADDRESS_KEY).orElse(null),
                         args.getArgVal(PORT_KEY).orElse(null)
@@ -70,6 +74,11 @@ public class CLIRunner implements ToolRunner {
         });
 
         return run.get();
+    }
+
+    @Override
+    public boolean run(Args args) throws Exception {
+        return run(args, null);
     }
 
     public static class ConsoleToolContext implements ToolContext {

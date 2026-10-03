@@ -81,5 +81,22 @@ class FileToolsTest extends BaseTest {
         Assertions.assertFalse(Files.exists(second));
     }
 
+    @Test
+    void runWithDeleteFromJson() throws Exception {
+        var remove = Files.writeString(tmpDir.resolve("remove.txt"), "remove");
+        var keep = Files.writeString(tmpDir.resolve("keep.txt"), "keep");
+        var list = Files.writeString(tmpDir.resolve("files.json"), """
+            [
+              {"file":"%s", "delete":true, "ext1":"a", "ext2":"b"},
+              {"file":"%s", "delete":false, "ext1":"c", "ext2":"d"}
+            ]
+            """.formatted(remove, keep));
+
+        instance().run(args.arg("util", "delete").arg("path", list.toString()));
+
+        Assertions.assertFalse(Files.exists(remove));
+        Assertions.assertTrue(Files.exists(keep));
+    }
+
 
 }

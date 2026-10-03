@@ -107,7 +107,6 @@ public class App {
                 return;
             }
         }
-        pArgs.copyConfigFrom(new Args(cfg));
 
         logger.debug("Args: {0}", pArgs);
 
@@ -148,7 +147,7 @@ public class App {
                 throw new IllegalArgumentException("Unknown mode: " + mode);
             }
             ToolRunner.initGlobalConfig();
-            notRun.set(!runner.run(pArgs));
+            notRun.set(!runner.run(pArgs, new Args(cfg)));
         } catch (Exception e) {
             notRun.set(false);
             logger.error(e);

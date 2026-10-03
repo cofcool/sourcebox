@@ -1,13 +1,14 @@
 package net.cofcool.sourcebox;
 
-import static net.cofcool.sourcebox.util.Utils.isLocalhost;
+import net.cofcool.sourcebox.Tool.Args;
+import net.cofcool.sourcebox.util.Utils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.net.http.HttpRequest.Builder;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import net.cofcool.sourcebox.Tool.Args;
-import net.cofcool.sourcebox.util.Utils;
-import org.apache.commons.lang3.StringUtils;
+
+import static net.cofcool.sourcebox.util.Utils.isLocalhost;
 
 public interface ToolRunner {
 
@@ -18,6 +19,10 @@ public interface ToolRunner {
     String WEB_FILE_SHARE_KEY = "web.fileshare";
     int DEFAULT_PORT = 38080;
     String DEFAULT_ADDRESS = "http://localhost";
+
+    default boolean run(Args args, Args globalArgs) throws Exception {
+        return run(args.copyConfigFrom(globalArgs));
+    }
 
     boolean run(Args args) throws Exception;
 

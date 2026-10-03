@@ -272,7 +272,7 @@ public class HtmlDownloader implements Tool {
         Document doc;
         if (url.startsWith("file")) {
             doc = Jsoup.parse(new File(url.substring(5)));
-        } else if (webDriver != null) {
+        } else if (webDriver != null && !"none".equals(webDriver)) {
             doc = loadDynamicWeb(url);
         } else {
             doc = getConnection().url(url).get();

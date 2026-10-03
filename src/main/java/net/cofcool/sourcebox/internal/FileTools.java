@@ -1,7 +1,9 @@
 package net.cofcool.sourcebox.internal;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import net.cofcool.sourcebox.Tool;
 import net.cofcool.sourcebox.ToolName;
+import net.cofcool.sourcebox.util.JsonUtil;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -14,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -84,10 +87,29 @@ public class FileTools implements Tool {
         @Override
         public String run(Args args) throws Exception {
             var filesArg = args.readArg("path");
-            List<String> lines = Files.readAllLines(Path.of(filesArg.val()), StandardCharsets.UTF_8);
+            var content = Files.readString(Path.of(filesArg.val()), StandardCharsets.UTF_8);
+            List<String> paths;
+            var jsonInput = content.stripLeading().startsWith("[");
+            if (jsonInput) {
+                var entries = JsonUtil.getObjectMapper().readTree(content);
+                if (!entries.isArray()) {
+                    throw new IllegalArgumentException("Delete JSON input must be an array");
+                }
+                paths = new ArrayList<>();
+                for (JsonNode entry : entries) {
+                    if (entry.path("delete").asBoolean(false)) {
+                        var file = entry.path("file").asText();
+                        if (!file.isBlank()) {
+                            paths.add(file);
+                        }
+                    }
+                }
+            } else {
+                paths = content.lines().toList();
+            }
 
             var deleted = new StringBuilder();
-            for (String raw : lines) {
+            for (String raw : paths) {
                 var path = raw.trim();
                 if (path.isEmpty() || path.startsWith("#")) {
                     continue;

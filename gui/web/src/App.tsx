@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { api } from "./api/client";
 import type { SystemInfo, TimerStatistics, ToolInfo } from "./api/client";
+import { invoke, isTauri } from "@tauri-apps/api/core";
 
 interface TodoItem {
   id: string;
@@ -291,6 +292,15 @@ function TimerPage() {
   }
 
   const displayTime = `${String(Math.floor(remaining / 60)).padStart(2, "0")}:${String(remaining % 60).padStart(2, "0")}`;
+
+  useEffect(() => {
+    if (!isTauri()) return;
+    const phaseLabel = phase === "work" ? "Work" : "Break";
+    const stateLabel = timerState === "running" ? "" : timerState === "paused" ? " (paused)" : " (stopped)";
+    void invoke("set_tray_timer", { text: `${phaseLabel}: ${displayTime}${stateLabel}` }).catch((e) => {
+      console.error("Failed to update timer tray tooltip", e);
+    });
+  }, [displayTime, phase, timerState]);
 
   return (
     <div className="tool-page timer-page">

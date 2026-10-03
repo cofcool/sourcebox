@@ -10,10 +10,12 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -26,7 +28,8 @@ public class FileTools implements Tool {
     private final Map<String, SimpleTool> utilMap = Map.of(
         "split", new Split(),
         "count", new FileCounter(),
-        "dup", new FileDuplicateParser()
+        "dup", new FileDuplicateParser(),
+        "delete", new Delete()
     );
 
     @Override
@@ -73,6 +76,30 @@ public class FileTools implements Tool {
                     }
                 })
                 .collect(Collectors.joining("\n"));
+        }
+    }
+
+    private record Delete() implements SimpleTool {
+
+        @Override
+        public String run(Args args) throws Exception {
+            var filesArg = args.readArg("path");
+            List<String> lines = Files.readAllLines(Path.of(filesArg.val()), StandardCharsets.UTF_8);
+
+            var deleted = new StringBuilder();
+            for (String raw : lines) {
+                var path = raw.trim();
+                if (path.isEmpty() || path.startsWith("#")) {
+                    continue;
+                }
+                if (Files.deleteIfExists(Path.of(path))) {
+                    if (!deleted.isEmpty()) {
+                        deleted.append('\n');
+                    }
+                    deleted.append(path);
+                }
+            }
+            return deleted.toString();
         }
     }
 

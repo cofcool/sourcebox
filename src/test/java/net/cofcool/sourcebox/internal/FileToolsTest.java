@@ -68,4 +68,18 @@ class FileToolsTest extends BaseTest {
         Assertions.assertTrue(FileUtils.readFileToString(new File(output), StandardCharsets.UTF_8).startsWith("道"));
     }
 
+    @Test
+    void runWithDeleteFromFileList() throws Exception {
+        var first = Files.writeString(tmpDir.resolve("first.txt"), "first");
+        var second = Files.writeString(tmpDir.resolve("second.txt"), "second");
+        var list = Files.writeString(tmpDir.resolve("files.txt"),
+            first + "\n# ignored\n\n" + second + "\n");
+
+        instance().run(args.arg("util", "delete").arg("path", list.toString()));
+
+        Assertions.assertFalse(Files.exists(first));
+        Assertions.assertFalse(Files.exists(second));
+    }
+
+
 }

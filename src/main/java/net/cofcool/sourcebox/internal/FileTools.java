@@ -24,6 +24,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class FileTools implements Tool {
@@ -32,7 +34,8 @@ public class FileTools implements Tool {
         "split", new Split(),
         "count", new FileCounter(),
         "dup", new FileDuplicateParser(),
-        "delete", new Delete()
+        "delete", new Delete(),
+        "foreach", new Foreach()
     );
 
     @Override
@@ -125,6 +128,135 @@ public class FileTools implements Tool {
         }
     }
 
+    private record Foreach() implements SimpleTool {
+
+        private static final Pattern PLACEHOLDER = Pattern.compile("[$%](filenoext|file|order|ext)");
+
+        @Override
+        public String run(Args args) throws Exception {
+            Path root = Path.of(args.readArg("path").val()).toAbsolutePath();
+            if (!Files.exists(root)) {
+                throw new IllegalArgumentException("Path not found: " + root);
+            }
+
+            String command = args.readArg("foreachDo").requiredVal("foreachDo must be specified");
+            Pattern filter = Pattern.compile(args.readArg("filter").optVal().orElse(".*"));
+            boolean folders = Boolean.parseBoolean(args.readArg("folder").optVal().orElse("false"));
+            boolean dryRun = Boolean.parseBoolean(args.readArg("dry-run").optVal().orElse("true"));
+            List<Path> targets;
+            try (var paths = Files.walk(root, 1)) {
+                targets = paths
+                    .filter(path -> folders ? Files.isDirectory(path) : Files.isRegularFile(path))
+                    .filter(path -> filter.matcher(path.getFileName().toString()).matches())
+                    .toList();
+            }
+
+            StringBuilder result = new StringBuilder();
+            for (int i = 0; i < targets.size(); i++) {
+                Path target = targets.get(i);
+                String fileName = target.getFileName().toString();
+                int extensionIndex = fileName.lastIndexOf('.');
+                String extension = extensionIndex > 0 ? fileName.substring(extensionIndex + 1) : "";
+                String fileNameWithoutExtension = extensionIndex > 0 ? fileName.substring(0, extensionIndex) : fileName;
+                String expandedCommand = expand(command, fileName, Integer.toString(i + 1),
+                    fileNameWithoutExtension, extension);
+
+                if (!result.isEmpty()) {
+                    result.append('\n');
+                }
+                if (dryRun) {
+                    result.append("dry-run: ").append(expandedCommand);
+                    continue;
+                }
+
+                List<String> commandParts = splitCommand(expandedCommand);
+                if (commandParts.isEmpty()) {
+                    throw new IllegalArgumentException("foreachDo command must not be blank");
+                }
+                Path workingDirectory = target.getParent();
+                Process process = new ProcessBuilder(commandParts)
+                    .directory(workingDirectory.toFile())
+                    .redirectInput(ProcessBuilder.Redirect.INHERIT)
+                    .redirectErrorStream(true)
+                    .start();
+                String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+                int exitCode = process.waitFor();
+                result.append(target).append(" (exit ").append(exitCode).append(')');
+                if (!output.isBlank()) {
+                    result.append('\n').append(output.stripTrailing());
+                }
+                if (exitCode != 0) {
+                    throw new IllegalStateException(expandedCommand + " command failed for " + target + " with exit code " + exitCode);
+                }
+            }
+            return result.toString();
+        }
+
+        private String expand(String command, String file, String order, String fileWithoutExtension, String extension) {
+            Matcher matcher = PLACEHOLDER.matcher(command);
+            StringBuilder expanded = new StringBuilder();
+            while (matcher.find()) {
+                String value = switch (matcher.group(1)) {
+                    case "file" -> file;
+                    case "order" -> order;
+                    case "filenoext" -> fileWithoutExtension;
+                    case "ext" -> extension;
+                    default -> throw new IllegalStateException("Unknown placeholder: " + matcher.group(1));
+                };
+                matcher.appendReplacement(expanded, Matcher.quoteReplacement(quoteArgument(value)));
+            }
+            matcher.appendTail(expanded);
+            return expanded.toString();
+        }
+
+        private String quoteArgument(String value) {
+            return "'" + value.replace("'", "'\\''") + "'";
+        }
+
+        private List<String> splitCommand(String command) {
+            List<String> parts = new ArrayList<>();
+            StringBuilder part = new StringBuilder();
+            char quote = 0;
+            boolean escaped = false;
+            boolean started = false;
+            for (char current : command.toCharArray()) {
+                if (escaped) {
+                    part.append(current);
+                    escaped = false;
+                    started = true;
+                } else if (current == '\\') {
+                    escaped = true;
+                } else if (quote != 0) {
+                    if (current == quote) {
+                        quote = 0;
+                    } else {
+                        part.append(current);
+                    }
+                    started = true;
+                } else if (current == '\'' || current == '"') {
+                    quote = current;
+                    started = true;
+                } else if (Character.isWhitespace(current)) {
+                    if (started) {
+                        parts.add(part.toString());
+                        part.setLength(0);
+                        started = false;
+                    }
+                } else {
+                    part.append(current);
+                    started = true;
+                }
+            }
+            if (escaped || quote != 0) {
+                throw new IllegalArgumentException("Unclosed escape or quote in foreachDo command");
+            }
+            if (started) {
+                parts.add(part.toString());
+            }
+            return parts;
+        }
+    }
+
     private class FileCounter implements SimpleTool {
 
         @Override
@@ -197,6 +329,12 @@ public class FileTools implements Tool {
             .arg(new Arg("splitChar", null, "split by character, when using split, this parameter can be set", false, "foo"))
             .arg(new Arg("splitDirection", "forward", "split direction, when using split, this parameter can be set, forward or back", false, "forward"))
             .arg(new Arg("dupMinSize", "1", "file min size", false, null))
-            .arg(new Arg("dupIgnore", String.join(",", ".git", "__pycache__", ".DS_Store"), "ignore files", false, null));
+            .arg(new Arg("dupOutjson", "false", "json output", false, null))
+            .arg(new Arg("dupOnlySameName", "false", "only compare filename", false, null))
+            .arg(new Arg("dupIgnore", String.join(",", ".git", "__pycache__", ".DS_Store"), "ignore files", false, null))
+            .arg(new Arg("foreachDo", null, "command to run for each matching file or folder: file, filenoext, order, ext", false, "zip $file.zip $file"))
+            .arg(new Arg("filter", ".*", "regular expression matched against each target name", false, ".*\\.txt"))
+            .arg(new Arg("folder", "false", "apply to folders instead of files", false, "true"))
+            .arg(new Arg("dry-run", "true", "print commands without executing them", false, "false"));
     }
 }

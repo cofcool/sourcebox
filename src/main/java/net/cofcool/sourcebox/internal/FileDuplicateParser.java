@@ -1,6 +1,7 @@
 package net.cofcool.sourcebox.internal;
 
 import net.cofcool.sourcebox.Tool;
+import net.cofcool.sourcebox.util.JsonUtil;
 import org.apache.commons.text.similarity.JaroWinklerSimilarity;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 
@@ -12,8 +13,12 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class FileDuplicateParser implements Tool.SimpleTool {
+
+    private boolean outjson;
+    private boolean onlySameName;
 
     @Override
     public String run(Tool.Args args) throws Exception {
@@ -21,6 +26,8 @@ public class FileDuplicateParser implements Tool.SimpleTool {
         long minSize = Long.parseLong(args.readArg("dupMinSize").val());
         Set<String> ignoreDirs = new HashSet<>();
         args.readArg("dupIgnore").accept(a -> ignoreDirs.addAll(List.of(a.val().split(","))));
+        outjson = args.readArg("dupOutjson").test(Boolean::parseBoolean);
+        onlySameName = args.readArg("dupOnlySameName").test(Boolean::parseBoolean);
 
 
         if (!Files.exists(root) || !Files.isDirectory(root)) {
@@ -59,39 +66,74 @@ public class FileDuplicateParser implements Tool.SimpleTool {
 
         for (int i = 0; i < files.size(); i++) {
             var book = files.get(i);
-            List<Path> list = groups.computeIfAbsent(book.original, k -> {
-                var l = new ArrayList<Path>();
-                l.add(book.file);
-                return l;
-            });
 
-            for (int j = i + 1; j < files.size(); j++) {
-                var file = files.get(j);
-                var r = BookSimilarity.compare(book, file);
-                if (r.isProbablySameBook()) {
-                    list.add(file.file);
+            if (onlySameName) {
+                groups.compute(book.original, (k,v) -> {
+                    var nv = (v == null) ? new ArrayList<Path>() : v;
+                    nv.add(book.file);
+                    return nv;
+                });
+            } else {
+                List<Path> list = groups.computeIfAbsent(book.original, k -> {
+                    var l = new ArrayList<Path>();
+                    l.add(book.file);
+                    return l;
+                });
+                for (int j = i + 1; j < files.size(); j++) {
+                    var file = files.get(j);
+                    var r = BookSimilarity.compare(book, file);
+                    if (r.isProbablySameBook()) {
+                        list.add(file.file);
+                    }
                 }
             }
         }
 
-        return groups.entrySet().stream()
+        Stream<Map.Entry<String, List<Path>>> stream = groups.entrySet().stream()
                 .filter(e -> e.getValue().size() >= 2)
-                .sorted(Map.Entry.comparingByKey())
-                .map(e -> {
-                    var str = new StringBuilder().append("---").append(e.getKey()).append("---").append("\n");
-                    for (Path p : e.getValue()) {
-                        String full;
-                        try {
-                            full = p.toRealPath().toString();
-                        } catch (IOException ex) {
-                            full = p.toAbsolutePath().normalize().toString();
+                .sorted(Map.Entry.comparingByKey());
+        if (outjson) {
+            return JsonUtil.toJson(
+                    stream
+                            .map(e ->
+                                    e.getValue()
+                                            .stream()
+                                            .map(s -> new GroupItem(getFull(s), false, e.getKey()))
+                                            .collect(Collectors.toList())
+                            )
+                            .reduce(new ArrayList<>(), (o1, o2) -> {
+                                o1.addAll(o2);
+                                return o1;
+                            })
+            );
+        } else {
+            return stream
+                    .map(e -> {
+                        var str = new StringBuilder().append("---").append(e.getKey()).append("---").append("\n");
+                        for (Path p : e.getValue()) {
+                            str.append(getFull(p)).append("\n");
                         }
-                        str.append(full).append("\n");
-                    }
-                    return str.toString();
-                })
-                .collect(Collectors.joining("\n\n"));
+                        return str.toString();
+                    })
+                    .collect(Collectors.joining("\n\n"));
+        }
     }
+
+    private static String getFull(Path p) {
+        String full;
+        try {
+            full = p.toRealPath().toString();
+        } catch (IOException ex) {
+            full = p.toAbsolutePath().normalize().toString();
+        }
+        return full;
+    }
+
+    public record GroupItem (
+            String file,
+            boolean delete,
+            String group
+    ){}
 
     static class BookNameParser {
 
@@ -111,12 +153,12 @@ public class FileDuplicateParser implements Tool.SimpleTool {
 
         private static final Pattern AUTHOR =
                 Pattern.compile(
-                        "(?i)(?:作者|author)\\s*[:：]\\s*(.+)"
+                        "(?i)(?:作者|author)\\s*(?:[:：=]|\\p{Pd})\\s*([^\\[\\]【】(){}《》,，;；|]+)"
                 );
 
         private static final Pattern BRACKET =
                 Pattern.compile(
-                        "(\\[[^\\]]+]|\\([^()]+\\)|\\{[^{}]+})"
+                        "\\[([^\\]]+)]|【([^】]+)】|\\(([^()]+)\\)|\\{([^{}]+)}|《([^》]+)》"
                 );
 
 
@@ -149,7 +191,7 @@ public class FileDuplicateParser implements Tool.SimpleTool {
 
 
             String author =
-                    extractAuthor(name, bracketInfo);
+                    extractAuthor(original, bracketInfo);
 
 
             String title =
@@ -185,17 +227,15 @@ public class FileDuplicateParser implements Tool.SimpleTool {
 
             while (matcher.find()) {
 
-                String value =
-                        matcher.group(1);
+                                String value = null;
+                                for (int group = 1; group <= matcher.groupCount(); group++) {
+                                        if (matcher.group(group) != null) {
+                                                value = matcher.group(group).trim();
+                                                break;
+                                        }
+                                }
 
-                value = value
-                        .replaceAll(
-                                "^[\\[\\(\\{]|[\\]\\)\\}]$",
-                                ""
-                        )
-                        .trim();
-
-                if (!value.isEmpty()) {
+                                if (value != null && !value.isEmpty()) {
                     result.add(value);
                 }
             }
@@ -285,6 +325,13 @@ public class FileDuplicateParser implements Tool.SimpleTool {
                 return clean(matcher.group(1));
             }
 
+                        for (String feature : bracketInfo) {
+                                matcher = AUTHOR.matcher(feature);
+                                if (matcher.find()) {
+                                        return clean(matcher.group(1));
+                                }
+                        }
+
 
             if (bracketInfo.size() == 1) {
 
@@ -349,7 +396,7 @@ public class FileDuplicateParser implements Tool.SimpleTool {
 
         private static String cleanTitle(String title) {
             title = title.replaceAll(
-                    "\\[[^\\]]*]",
+                    "\\[[^\\]]*]|【[^】]*】|《[^》]*》",
                     " "
             );
 
@@ -594,15 +641,26 @@ public class FileDuplicateParser implements Tool.SimpleTool {
                             b.tokens()
                     );
 
+            boolean hasFeatures = hasComparableFeatures(a, b);
 
-            double score =
-                    titleScore * 0.60 +
-                            authorScore * 0.15 +
-                            yearScore * 0.05 +
-                            volumeScore * 0.10 +
-                            levenshtein * 0.05 +
-                            jaro * 0.025 +
-                            jaccard * 0.025;
+            double score;
+            if (hasFeatures) {
+                score =
+                        titleScore * 0.70 +
+                                authorScore * 0.1 +
+                                yearScore * 0.05 +
+                                volumeScore * 0.05 +
+                                levenshtein * 0.05 +
+                                jaro * 0.025 +
+                                jaccard * 0.025;
+            } else {
+                score = (
+                        titleScore * 0.70 +
+                                levenshtein * 0.05 +
+                                jaro * 0.025 +
+                                jaccard * 0.025
+                ) / 0.8;
+            }
 
 
             if (a.volume() != null &&
@@ -645,6 +703,12 @@ public class FileDuplicateParser implements Tool.SimpleTool {
                     reasons
             );
         }
+
+                private static boolean hasComparableFeatures(ParsedBook a, ParsedBook b) {
+                    return (!a.author().isBlank() && !b.author().isBlank())
+                            || (a.year() != null && b.year() != null)
+                            || (a.volume() != null && b.volume() != null);
+                }
 
         private static List<String> buildReasons(
                 double title,
@@ -840,11 +904,69 @@ public class FileDuplicateParser implements Tool.SimpleTool {
             double contains =
                     contains(a, b);
 
+            double character =
+                    characterSimilarity(a, b);
+
             return
-                    levenshtein * 0.35 +
-                            jaro * 0.25 +
-                            jaccard * 0.25 +
-                            contains * 0.15;
+                    levenshtein * 0.30 +
+                            jaro * 0.20 +
+                            jaccard * 0.15 +
+                            contains * 0.10 +
+                            character * 0.25;
+        }
+
+        private static double characterSimilarity(
+                String a,
+                String b
+        ) {
+            String first = a.replaceAll("\\s+", "");
+            String second = b.replaceAll("\\s+", "");
+
+            if (first.equals(second)) {
+                return 1;
+            }
+
+            int firstLength = first.codePointCount(0, first.length());
+            int secondLength = second.codePointCount(0, second.length());
+            if (firstLength == 0 || secondLength == 0) {
+                return 0;
+            }
+
+            double unigram = characterNgramDice(first, second, 1);
+            if (Math.min(firstLength, secondLength) <= 2) {
+                return unigram;
+            }
+
+            double bigram = characterNgramDice(first, second, 2);
+            return unigram * 0.4 + bigram * 0.6;
+        }
+
+        private static double characterNgramDice(
+                String a,
+                String b,
+                int n
+        ) {
+            Map<String, Integer> first = characterNgrams(a, n);
+            Map<String, Integer> second = characterNgrams(b, n);
+            int shared = first.entrySet().stream()
+                    .mapToInt(entry -> Math.min(entry.getValue(), second.getOrDefault(entry.getKey(), 0)))
+                    .sum();
+            int total = first.values().stream().mapToInt(Integer::intValue).sum()
+                    + second.values().stream().mapToInt(Integer::intValue).sum();
+            return total == 0 ? 0 : 2.0 * shared / total;
+        }
+
+        private static Map<String, Integer> characterNgrams(
+                String text,
+                int n
+        ) {
+            int[] codePoints = text.codePoints().toArray();
+            Map<String, Integer> result = new HashMap<>();
+            for (int i = 0; i <= codePoints.length - n; i++) {
+                String gram = new String(codePoints, i, n);
+                result.merge(gram, 1, Integer::sum);
+            }
+            return result;
         }
     }
 

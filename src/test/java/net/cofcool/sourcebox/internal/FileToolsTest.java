@@ -28,11 +28,54 @@ class FileToolsTest extends BaseTest {
 
     @Test
     void runWithDup() throws Exception {
+        Files.write(tmpDir.resolve("computer-xx-2-2021.txt"), "xxx".getBytes());
+        tmpDir.resolve("dir").toFile().mkdirs();
+        Files.write(tmpDir.resolve("dir", "computer-xx-1-2022.txt"), "xxx".getBytes());
+        instance().run(args.arg("util", "dup")
+            .arg("path", tmpDir.toString())
+        );
+    }
+
+    @Test
+    void runWithDupExtractsDelimitedFeatures() {
+        var book = FileDuplicateParser.BookNameParser.parse(Path.of("【作者-张三】长夜难明-2021.epub"));
+        var plain = FileDuplicateParser.BookNameParser.parse(Path.of("无标记书名.txt"));
+
+        Assertions.assertEquals("张三", book.author());
+        Assertions.assertEquals("长夜难明", book.title());
+        Assertions.assertEquals(2021, book.year());
+        Assertions.assertTrue(book.bracketInfo().contains("作者-张三"));
+        Assertions.assertEquals("", plain.author());
+        Assertions.assertTrue(plain.bracketInfo().isEmpty());
+
+        var similarPlain = FileDuplicateParser.BookNameParser.parse(Path.of("无标记书名修订.txt"));
+        var result = FileDuplicateParser.BookSimilarity.compare(plain, similarPlain);
+        double expected = Math.round((result.titleScore() * 0.70
+            + result.overallLevenshtein() * 0.05
+            + result.jaroWinkler() * 0.025
+            + result.jaccard() * 0.025) / 0.8 * 10000) / 10000.0;
+        Assertions.assertEquals(expected, result.score());
+    }
+
+    @Test
+    void runWithDupSameName() throws Exception {
         Files.write(tmpDir.resolve("dup.txt"), "xxx".getBytes());
         tmpDir.resolve("dir").toFile().mkdirs();
         Files.write(tmpDir.resolve("dir", "dup.txt"), "xxx".getBytes());
         instance().run(args.arg("util", "dup")
             .arg("path", tmpDir.toString())
+            .arg("dupOnlySameName", "true")
+        );
+    }
+
+    @Test
+    void runWithDupToJson() throws Exception {
+        Files.write(tmpDir.resolve("dup.txt"), "xxx".getBytes());
+        tmpDir.resolve("dir").toFile().mkdirs();
+        Files.write(tmpDir.resolve("dir", "dup.txt"), "xxx".getBytes());
+        instance().run(args.arg("util", "dup")
+            .arg("path", tmpDir.toString())
+            .arg("dupOutjson", "true")
         );
     }
 
@@ -96,6 +139,39 @@ class FileToolsTest extends BaseTest {
 
         Assertions.assertFalse(Files.exists(remove));
         Assertions.assertTrue(Files.exists(keep));
+    }
+
+    @Test
+    void runWithForeachDryRunAndPlaceholders() throws Exception {
+        var target = Files.writeString(tmpDir.resolve("alpha.txt"), "alpha");
+        Files.writeString(tmpDir.resolve("skip.bin"), "skip");
+        var foreachArgs = args.arg("util", "foreach")
+            .arg("path", tmpDir.toString())
+            .arg("filter", "alpha\\.txt")
+            .arg("foreachDo", "touch $order-$filenoext.$ext.processed $file.processed %file.percentprocessed");
+
+        instance().run(foreachArgs);
+        Assertions.assertFalse(Files.exists(tmpDir.resolve("1-alpha.txt.processed")));
+        Assertions.assertFalse(Files.exists(tmpDir.resolve("alpha.txt.processed")));
+        Assertions.assertFalse(Files.exists(tmpDir.resolve("alpha.txt.percentprocessed")));
+
+        instance().run(foreachArgs.arg("dry-run", "false"));
+        Assertions.assertTrue(Files.exists(tmpDir.resolve("1-alpha.txt.processed")));
+        Assertions.assertTrue(Files.exists(tmpDir.resolve("alpha.txt.processed")));
+        Assertions.assertTrue(Files.exists(tmpDir.resolve("alpha.txt.percentprocessed")));
+        Assertions.assertTrue(Files.exists(target));
+    }
+
+    @Test
+    void runWithForeachFolders() throws Exception {
+        Files.createDirectories(tmpDir.resolve("child"));
+
+        instance().run(args.arg("util", "foreach")
+            .arg("path", tmpDir.toString())
+            .arg("folder", "true")
+            .arg("filter", "child")
+            .arg("dry-run", "false")
+            .arg("foreachDo", "test -d $file"));
     }
 
 

@@ -1,43 +1,54 @@
-name: Java CI
+name: Maven Build and Release
 
 on:
   push:
-    tags:
-      - "*.*.*"
+
+permissions:
+  contents: write
 
 jobs:
-  package:
+  build-and-release:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
-      - uses: actions/checkout@v3
+      - name: Check out repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: graalvm/setup-graalvm@v1
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
         with:
-          java-version: '21'
-          distribution: 'graalvm'
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          native-image-job-reports: 'true'
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-            go-version: '1.22'
-      - name: Cache Maven packages
-        uses: actions/cache@v2
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
-      - name: Build Zip Package
-        run: mvn clean test package
-      - name: Create Release
-        uses: ncipollo/release-action@v1
-        id: create_release
-        with:
-          allowUpdates: true
-          draft: false
-          prerelease: false
-          artifacts: "./target/*.zip"
-          bodyFile: "./target/changelog.md"
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Build package
+        run: mvn clean package
+
+      - name: Create and push hourly tag
+        id: tag
+        shell: bash
+        run: |
+          tag="$(date -u +'%Y%m%d%H')"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "$tag"
+          git push origin "$tag"
+
+      - name: Create release and upload artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: gh release create "$TAG" target/sourcebox-bin.zip --title "$TAG" --notes "Automated build release for $TAG"
+
+      - name: Keep only the five newest tags and releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          mapfile -t tags < <(git tag --list --sort=-creatordate)
+          for tag in "${tags[@]:5}"; do
+            gh release delete "$tag" --yes 2>/dev/null || true
+            git push origin --delete "$tag" 2>/dev/null || true
+          done

@@ -139,6 +139,7 @@
 * 统计一个文件内容在另一个文件中的数量，使用: `./sourcebox.sh --tool=fileTools --util=count --samplePath=sample.csv --path=data.csv`
 * 根据传入的字符或索引切割文件内容，使用: `./sourcebox.sh --tool=fileTools --util=split --path=data.csv --splitIdx=2`
 * 查找重复文件，使用: `./sourcebox.sh --tool=fileTools --util=dup --path=./`
+* 遍历文件并对其执行自定义命令，使用 `./sourcebox.sh --tool=fileTools --util=foreach  --path=./ --foreachDo='file $file'`
 
 ## 网络工具
 

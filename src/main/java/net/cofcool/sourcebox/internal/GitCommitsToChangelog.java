@@ -1,20 +1,17 @@
 package net.cofcool.sourcebox.internal;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayDeque;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import net.cofcool.sourcebox.Tool;
 import net.cofcool.sourcebox.ToolName;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * git-log PRETTY FORMATS
@@ -41,6 +38,7 @@ public class GitCommitsToChangelog implements Tool {
         var logFile = args.readArg("log");
         var requiredTag = args.readArg("tag");
         var noTag = args.readArg("noTag").val().equalsIgnoreCase("true");
+        var latestTag = args.readArg("latest").val().equalsIgnoreCase("true");
         var full = requiredTag.isPresent() || noTag || args.readArg("full").val().equalsIgnoreCase("true");
         var style = Style.valueOf(args.readArg("style").val());
         var logId = args.readArg("logId");
@@ -83,8 +81,8 @@ public class GitCommitsToChangelog implements Tool {
                     c.tag().filter(t -> !noTag).ifPresent(currentTag::set);
                     return new Commit(c.username, currentTag.get(), c.hash, c.message);
                 })
-                .sorted(Comparator.comparing(Commit::ref).reversed())
-                .filter(c -> full || !c.ref.equalsIgnoreCase(LATEST))
+                .sorted(Comparator.comparing(Commit::refValue).reversed())
+                .filter(c -> full || latestTag || !c.ref.equalsIgnoreCase(LATEST))
                 .filter(c -> args.readArg("user").test(u -> u.equalsIgnoreCase(c.username())))
                 .collect(Collectors.groupingBy(Commit::ref, LinkedHashMap::new, Collectors.toList()))
                 .entrySet()
@@ -129,6 +127,7 @@ public class GitCommitsToChangelog implements Tool {
             .arg(new Arg("noTag", "false", "if true, read all commit log and write into file", false, null))
             .arg(new Arg("logId", null, "mark the commit history as the changelog", false, "#log"))
             .arg(new Arg("full", "false", "if true, read all tags and commit log, then write into file", false, null))
+            .arg(new Arg("latest", "false", "if true, read all commit log after the last tag", false, null))
             .arg(new Arg("style", Style.simple.name(), "changelog file format, like " + Arrays.toString(Style.values()), false, null))
             .alias("gitLog", name(), "path", null);
     }
@@ -166,6 +165,10 @@ public class GitCommitsToChangelog implements Tool {
                         .map(a -> a.split(":")[1].trim()).findAny();
             }
             return Optional.empty();
+        }
+
+        public String refValue() {
+            return ref.startsWith("v") || ref.startsWith("V") ? ref.substring(1) : ref;
         }
 
         public Optional<String> styleId(Style style) {

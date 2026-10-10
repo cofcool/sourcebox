@@ -40,7 +40,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.tag.outputs.tag }}
-        run: gh release create "$TAG" target/sourcebox-bin.zip --title "$TAG" --notes "Automated build release for $TAG"
+        run: gh release create "$TAG" target/sourcebox-bin.zip --title "$TAG" --notes-file ./target/changelog-runWithLatest.md
 
       - name: Keep only the five newest tags and releases
         env:

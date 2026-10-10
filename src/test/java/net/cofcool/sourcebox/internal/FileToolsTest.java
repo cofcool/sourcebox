@@ -164,14 +164,17 @@ class FileToolsTest extends BaseTest {
 
     @Test
     void runWithForeachFolders() throws Exception {
-        Files.createDirectories(tmpDir.resolve("child"));
+        var child = Files.createDirectories(tmpDir.resolve("child"));
 
         instance().run(args.arg("util", "foreach")
             .arg("path", tmpDir.toString())
             .arg("folder", "true")
-            .arg("filter", "child")
+            .arg("filter", ".*")
             .arg("dry-run", "false")
-            .arg("foreachDo", "test -d $file"));
+            .arg("foreachDo", "touch $file/.visited"));
+
+        Assertions.assertFalse(Files.exists(tmpDir.resolve(".visited")));
+        Assertions.assertTrue(Files.exists(child.resolve(".visited")));
     }
 
 

@@ -146,6 +146,7 @@ public class FileTools implements Tool {
             List<Path> targets;
             try (var paths = Files.walk(root, 1)) {
                 targets = paths
+                    .filter(path -> !folders || !path.equals(root))
                     .filter(path -> folders ? Files.isDirectory(path) : Files.isRegularFile(path))
                     .filter(path -> filter.matcher(path.getFileName().toString()).matches())
                     .toList();

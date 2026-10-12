@@ -6,13 +6,12 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
-import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.multipart.MultipartForm;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
-import java.util.Queue;
+import net.cofcool.sourcebox.App;
 import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.Tool.Args;
 import net.cofcool.sourcebox.Tool.RunnerType;
@@ -27,6 +26,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import java.util.Queue;
 
 @ExtendWith(VertxExtension.class)
 class WebRunnerTest extends BaseTest {
@@ -148,6 +149,28 @@ class WebRunnerTest extends BaseTest {
                 r.body().onSuccess(res -> System.out.println(res.toJsonObject()));
                 testContext.completeNow();
             })));
+    }
+
+    @Test
+    void reqHelpHtml(Vertx vertx, VertxTestContext testContext) {
+        vertx.createHttpClient()
+            .request(HttpMethod.GET, Integer.parseInt(getPort()), "127.0.0.1", "/help.html")
+            .compose(HttpClientRequest::send)
+            .onComplete(testContext.succeeding(r ->
+                r.body().onComplete(testContext.succeeding(body -> testContext.verify(() -> {
+                    var html = body.toString();
+                    var expectedArg = App.supportTools(RunnerType.WEB).stream()
+                        .flatMap(tool -> tool.config().values().stream())
+                        .findFirst()
+                        .orElseThrow();
+                    Assertions.assertEquals(200, r.statusCode());
+                    Assertions.assertTrue(r.getHeader("Content-Type").startsWith("text/html"));
+                    Assertions.assertTrue(html.contains("<table>"));
+                    Assertions.assertTrue(html.contains("参数帮助"));
+                    Assertions.assertTrue(html.contains("--" + expectedArg.key()));
+                    testContext.completeNow();
+                })))
+            ));
     }
 
     @Test

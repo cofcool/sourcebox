@@ -1,14 +1,6 @@
 package net.cofcool.sourcebox.runner;
 
-import static net.cofcool.sourcebox.ToolRunner.PASSWD_KEY;
-import static net.cofcool.sourcebox.ToolRunner.USER_KEY;
-
-import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Context;
-import io.vertx.core.Future;
-import io.vertx.core.Promise;
-import io.vertx.core.Verticle;
-import io.vertx.core.Vertx;
+import io.vertx.core.*;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.authentication.CredentialValidationException;
 import io.vertx.ext.auth.authentication.Credentials;
@@ -17,25 +9,24 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.FileSystemAccess;
 import io.vertx.ext.web.handler.LoggerHandler;
 import io.vertx.ext.web.handler.StaticHandler;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Objects;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.Function;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import net.cofcool.sourcebox.App;
-import net.cofcool.sourcebox.Tool;
+import net.cofcool.sourcebox.*;
 import net.cofcool.sourcebox.Tool.Args;
 import net.cofcool.sourcebox.Tool.RunnerType;
-import net.cofcool.sourcebox.ToolContext;
-import net.cofcool.sourcebox.ToolRunner;
-import net.cofcool.sourcebox.WebTool;
 import net.cofcool.sourcebox.WebTool.RouterTypeManger;
 import net.cofcool.sourcebox.util.SqlRepository;
 import net.cofcool.sourcebox.util.VertxDeployer;
 import net.cofcool.sourcebox.util.VertxUtils;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Function;
+
+import static net.cofcool.sourcebox.ToolRunner.PASSWD_KEY;
+import static net.cofcool.sourcebox.ToolRunner.USER_KEY;
 
 @CustomLog
 @RequiredArgsConstructor
@@ -137,6 +128,12 @@ public class WebVerticle extends AbstractVerticle implements VertxDeployer {
                 )
             );
 
+        router.get("/help.html").handler(r ->
+            r.response()
+                .putHeader("Content-Type", "text/html; charset=utf-8")
+                .end(helpHtml(tools))
+        );
+
         router.get("/resource/:name")
             .handler(r -> {
                 var name = r.pathParam("name");
@@ -216,5 +213,39 @@ public class WebVerticle extends AbstractVerticle implements VertxDeployer {
             }
         }
         return router;
+    }
+
+    private static String helpHtml(Collection<Tool> tools) {
+        var html = new StringBuilder("<!doctype html><html lang=\"zh-CN\"><head>")
+            .append("<meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">")
+            .append("<title>帮助文档</title><style>")
+            .append("body{font:15px/1.5 sans-serif;margin:2rem auto;padding:0 1rem;max-width:1000px;color:#222}")
+            .append("h1{font-size:1.8rem}h2{font-size:1.25rem;margin:1.5rem 0 .5rem}")
+            .append("table{border-collapse:collapse;width:100%;margin-bottom:1.5rem}th,td{border:1px solid #ccc;padding:.5rem;text-align:left;vertical-align:top}")
+            .append("th{background:#f2f2f2}code{overflow-wrap:anywhere}@media(max-width:600px){body{margin:1rem auto}table{font-size:.9rem}}")
+            .append("</style></head><body><h1>参数帮助</h1>");
+        for (Tool tool : tools) {
+            html.append("<section><h2>").append(escapeHtml(tool.name().name())).append("</h2>")
+                .append("<table><thead><tr><th>参数</th><th>说明</th><th>要求</th><th>默认值</th><th>示例</th></tr></thead><tbody>");
+            tool.config().values().forEach(arg -> html.append("<tr><td><code>--")
+                .append(escapeHtml(arg.key())).append("</code></td><td>")
+                .append(escapeHtml(arg.desc())).append("</td><td>")
+                .append(arg.required() ? "必填" : "可选").append("</td><td>")
+                .append(escapeHtml(arg.val())).append("</td><td>")
+                .append(escapeHtml(arg.demo())).append("</td></tr>"));
+            html.append("</tbody></table></section>");
+        }
+        return html.append("</body></html>").toString();
+    }
+
+    private static String escapeHtml(String value) {
+        if (value == null || value.isEmpty()) {
+            return "-";
+        }
+        return value.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&#39;");
     }
 }

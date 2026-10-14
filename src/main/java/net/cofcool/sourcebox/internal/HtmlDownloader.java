@@ -38,7 +38,6 @@ import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.*;
@@ -233,8 +232,8 @@ public class HtmlDownloader implements Tool {
             // snap firefox should use /snap/bin/firefox.geckodriver
             System.setProperty("webdriver.gecko.driver", webDriver);
             var options = new FirefoxOptions()
-                    .addArguments("--headless")
-                    .addArguments("--profile").addArguments(Files.createTempDirectory("ff-tmp-").toString());
+                    .addArguments("-headless");
+//                    .addArguments("--profile").addArguments(Files.createTempDirectory("ff-tmp-").toString());
             if (proxy != null) {
                 var val = proxy.getHostName() + ":" + proxy.getPort();
                 var fp = new org.openqa.selenium.Proxy()

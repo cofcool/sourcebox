@@ -24,5 +24,5 @@ fi
 if [ "$run_go" = "true" ]; then
   "$PRGDIR"/lib/the-source-box "$@"
 else
-  java -Dlogging.type=net.cofcool.sourcebox.logging.JULLogger -jar "$PRGDIR"/lib/sourcebox-fat.jar "$@"
+  java --enable-native-access=ALL-UNNAMED -Dlogging.type=net.cofcool.sourcebox.logging.JULLogger -jar "$PRGDIR"/lib/sourcebox-fat.jar "$@"
 fi

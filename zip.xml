@@ -37,14 +37,6 @@
             </includes>
         </fileSet>
         <fileSet>
-            <directory>target</directory>
-            <outputDirectory>/</outputDirectory>
-            <includes>
-                <include>changelog.md</include>
-                <include>sourcebox</include>
-            </includes>
-        </fileSet>
-        <fileSet>
             <directory>target/classes</directory>
             <outputDirectory>/</outputDirectory>
             <includes>

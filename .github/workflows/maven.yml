@@ -41,14 +41,3 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.tag.outputs.tag }}
         run: gh release create "$TAG" target/sourcebox-bin.zip --title "$TAG" --notes-file ./target/changelog-runWithLatest.md
-
-      - name: Keep only the five newest tags and releases
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          mapfile -t tags < <(git tag --list --sort=-creatordate)
-          for tag in "${tags[@]:5}"; do
-            gh release delete "$tag" --yes 2>/dev/null || true
-            git push origin --delete "$tag" 2>/dev/null || true
-          done

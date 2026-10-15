@@ -3,12 +3,9 @@ package net.cofcool.sourcebox.runner;
 import io.vertx.core.Vertx;
 import lombok.CustomLog;
 import lombok.SneakyThrows;
-import net.cofcool.sourcebox.App;
+import net.cofcool.sourcebox.*;
 import net.cofcool.sourcebox.Tool.Args;
 import net.cofcool.sourcebox.Tool.RunnerType;
-import net.cofcool.sourcebox.ToolContext;
-import net.cofcool.sourcebox.ToolRunner;
-import net.cofcool.sourcebox.WebTool;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -31,6 +28,9 @@ public class CLIRunner implements ToolRunner {
         args.readArg("tool").ifPresent(a -> {
             var name = a.val();
             App.getTool(name).ifPresent(tool -> {
+                if (tool.getClass().isAnnotationPresent(Tool.Experiment.class)) {
+                    args.getContext().write("Note: This is a experimental tool!!!");
+                }
                 run.set(true);
                 log.debug("Start run " + name);
                 try {

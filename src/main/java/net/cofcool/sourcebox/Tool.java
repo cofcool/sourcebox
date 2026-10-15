@@ -7,6 +7,10 @@ import net.cofcool.sourcebox.logging.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
@@ -304,5 +308,11 @@ public interface Tool {
     interface SimpleTool {
 
         String run(Args args) throws Exception;
+    }
+
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.TYPE)
+    @interface Experiment {
+        String value () default "";
     }
 }

@@ -2,14 +2,6 @@ package net.cofcool.sourcebox.runner;
 
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 import lombok.CustomLog;
 import net.cofcool.sourcebox.Tool.Args;
 import net.cofcool.sourcebox.Tool.RunnerType;
@@ -18,6 +10,15 @@ import net.cofcool.sourcebox.ToolRunner;
 import net.cofcool.sourcebox.util.VertxUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomStringUtils;
+
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 
 @CustomLog
@@ -63,7 +64,7 @@ public class WebRunner implements ToolRunner {
             } else if (out.size() == 1) {
                 name = out.values().toArray(String[]::new)[0];
             } else {
-                name = VertxUtils.resourcePath(RandomStringUtils.randomAlphabetic(10) + ".zip");
+                name = VertxUtils.resourcePath(RandomStringUtils.secure().nextAlphabetic(10) + ".zip");
                 try (var zipOut = new ZipOutputStream(new FileOutputStream(name))) {
                     for (Entry<String, String> entry : out.entrySet()) {
                         zipOut.putNextEntry(new ZipEntry(entry.getKey()));

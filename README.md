@@ -1,6 +1,12 @@
-# 秘源宝箱
-
-**包含众多小工具的宝箱，借用秘源之力解放自我  🎉🎉🎉**
+<div align="center">
+  <h1>秘源宝箱</h1>
+  <p><strong>包含众多小工具的宝箱，借用秘源之力解放自我  🎉🎉🎉</strong></p>
+  <p>
+    <img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/cofcool/sourcebox/maven.yml">
+    <a href="https://github.com/cofcool/sourcebox/releases/latest"><img src="https://img.shields.io/github/v/release/cofcool/sourcebox" alt="Latest release" /></a>
+    <a href="LICENSE"><img alt="GitHub License" src="https://img.shields.io/github/license/cofcool/sourcebox"></a>
+  </p>
+</div>
 
 ---
 
@@ -101,6 +107,36 @@
 ## 简单 Web 文件服务器
 
 使用 `./sourcebox.sh --tool=dirWebServer`, `WEB` 模式下配置全局变量 `web.fileshare` 后可通过 `/fileshare/` URL 路径进行文件共享
+
+## 局域网点对点文件分享
+
+`lanShare` 可在局域网设备间双向发送文件或目录。先在接收设备启动接收端：
+
+```bash
+./sourcebox.sh --tool=lanShare --mode=receive --dir=./received
+```
+
+接收端会显示局域网访问地址和令牌。默认 `--port=0`，由操作系统自动分配可用端口；也可通过 `--port=43127` 指定端口。此服务独立于现有 Web 服务，不使用其默认端口 `38080`。保持接收进程运行，在发送设备执行：
+
+```bash
+./sourcebox.sh --tool=lanShare --mode=send --to=http://192.168.1.20:43127 --token=接收端显示的令牌 --path=./photos
+```
+
+`--path` 可以是文件或目录。未压缩时逐项传输，目录结构和顶层名称会保留；默认 `--compress=false`。需要先压缩为 ZIP 再传输时，发送端加 `--compress=true`：
+
+```bash
+./sourcebox.sh --tool=lanShare --mode=send --to=http://192.168.1.20:43127 --token=接收端显示的令牌 --path=./photos --compress=true
+```
+
+发送端会为每个未压缩文件或压缩后的 ZIP 计算 SHA-256，接收端校验通过后才保存；校验失败时会报告期望值和实际值并拒绝该数据。
+
+文件冲突策略由接收端设置，默认为跳过并在发送端打印冲突路径；可在接收端用 `--conflict=overwrite` 覆盖已存在文件：
+
+```bash
+./sourcebox.sh --tool=lanShare --mode=receive --dir=./received --conflict=overwrite
+```
+
+接收完成后可按 `Ctrl+C` 关闭接收端。传输使用 HTTP，请只在可信任的局域网中使用。
 
 ## JSON 生成对象
 

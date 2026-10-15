@@ -11,6 +11,7 @@ public enum ToolName {
     converts("some simple utilities about string, like base64 encode", Converts.class),
     json2POJO("convert json structure to POJO class", JsonToPojo.class),
     dirWebServer("start a simple web directory server", DirWebServer.class),
+    lanShare("send files or directories to another LAN peer", LanFileShare.class),
     rename("rename file conveniently", FileNameFormatter.class),
     note("simple web notebook, routes: /note, /action", SimpleNote.class),
     json("make json more readable", JsonFormatter.class),

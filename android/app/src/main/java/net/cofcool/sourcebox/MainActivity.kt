@@ -1,0 +1,681 @@
+package net.cofcool.sourcebox
+
+import android.net.Uri
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.DataObject
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Note
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import net.cofcool.sourcebox.data.CommandRecord
+import net.cofcool.sourcebox.data.NoteRecord
+import net.cofcool.sourcebox.data.ToolInfo
+import net.cofcool.sourcebox.data.TodoRecord
+import net.cofcool.sourcebox.ui.ToolboxViewModel
+import net.cofcool.sourcebox.ui.HistoryEntry
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent { SourceboxApp() }
+    }
+}
+
+private val pages = listOf(
+    "tools" to "工具",
+    "todos" to "待办",
+    "notes" to "便笺",
+    "commands" to "命令",
+    "history" to "历史"
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
+    var page by remember { mutableStateOf("tools") }
+    var selectedTool by remember { mutableStateOf<ToolInfo?>(null) }
+    var settingsUrl by remember { mutableStateOf(vm.baseUrl) }
+    var settingsUser by remember { mutableStateOf(vm.username) }
+    var settingsPassword by remember { mutableStateOf(vm.password) }
+    var fileResult by remember { mutableStateOf("") }
+    val snackbar = remember { SnackbarHostState() }
+
+    LaunchedEffect(vm.message) {
+        if (vm.message.isNotBlank()) snackbar.showSnackbar(vm.message)
+    }
+
+    MaterialTheme(
+        colorScheme = if (androidx.compose.foundation.isSystemInDarkTheme()) {
+            darkColorScheme()
+        } else {
+            lightColorScheme()
+        }
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            when (page) {
+                                "tool" -> selectedTool?.id ?: "工具"
+                                "json" -> "JSON 格式化"
+                                "files" -> "文件工具"
+                                "file-result" -> "文件内容"
+                                "settings" -> "连接设置"
+                                else -> pages.firstOrNull { it.first == page }?.second ?: "The Source Box"
+                            }
+                        )
+                    },
+                    navigationIcon = {
+                        if (page !in pages.map { it.first }) {
+                            IconButton(onClick = { page = "tools" }) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                            }
+                        }
+                    },
+                    actions = {
+                        if (page == "tools") {
+                            IconButton(onClick = {
+                                settingsUrl = vm.baseUrl
+                                settingsUser = vm.username
+                                settingsPassword = vm.password
+                                page = "settings"
+                            }) {
+                                Icon(Icons.Default.Settings, contentDescription = "设置")
+                            }
+                        }
+                    }
+                )
+            },
+            bottomBar = {
+                NavigationBar {
+                    pages.forEach { (destination, label) ->
+                        val icon = when (destination) {
+                            "tools" -> Icons.Default.Home
+                            "todos" -> Icons.AutoMirrored.Filled.List
+                            "notes" -> Icons.Default.Description
+                            "commands" -> Icons.Default.Code
+                            else -> Icons.Default.History
+                        }
+                        NavigationBarItem(
+                            selected = page == destination,
+                            onClick = {
+                                page = destination
+                                when (destination) {
+                                    "tools" -> vm.refreshTools()
+                                    "todos" -> vm.refreshTodos()
+                                    "notes" -> vm.refreshNotes()
+                                    "commands" -> vm.refreshCommands()
+                                }
+                            },
+                            icon = { Icon(icon, contentDescription = label) },
+                            label = { Text(label) }
+                        )
+                    }
+                }
+            },
+            snackbarHost = { SnackbarHost(snackbar) }
+        ) { padding ->
+            when (page) {
+                "tools" -> HomeScreen(
+                    vm = vm,
+                    modifier = Modifier.padding(padding),
+                    onSelectTool = { selectedTool = it; page = "tool" },
+                    onJson = { page = "json" },
+                    onFiles = { page = "files" }
+                )
+                "tool" -> selectedTool?.let { tool ->
+                    ToolScreen(tool, vm, Modifier.padding(padding))
+                }
+                "todos" -> TodosScreen(vm, Modifier.padding(padding))
+                "notes" -> NotesScreen(vm, Modifier.padding(padding))
+                "commands" -> CommandsScreen(vm, Modifier.padding(padding))
+                "history" -> HistoryScreen(vm.history, vm::clearHistory, Modifier.padding(padding))
+                "json" -> JsonScreen(vm, Modifier.padding(padding))
+                "files" -> FilesScreen(
+                    modifier = Modifier.padding(padding),
+                    onRead = { name, content ->
+                        fileResult = content
+                        vm.addLocalHistory("读取文件：$name", "", content.take(3000), "file")
+                        page = "file-result"
+                    }
+                )
+                "file-result" -> SelectionContainer {
+                    Text(fileResult, Modifier.padding(padding).padding(16.dp).verticalScroll(rememberScrollState()))
+                }
+                "settings" -> SettingsScreen(
+                    modifier = Modifier.padding(padding),
+                    url = settingsUrl,
+                    onUrl = { settingsUrl = it },
+                    username = settingsUser,
+                    onUsername = { settingsUser = it },
+                    password = settingsPassword,
+                    onPassword = { settingsPassword = it },
+                    onSave = { vm.saveConnection(settingsUrl, settingsUser, settingsPassword); page = "tools" }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeScreen(
+    vm: ToolboxViewModel,
+    modifier: Modifier,
+    onSelectTool: (ToolInfo) -> Unit,
+    onJson: () -> Unit,
+    onFiles: () -> Unit
+) {
+    Column(modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+        Text("开发工具箱", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        Text(
+            if (vm.baseUrl.isBlank()) "尚未连接后端" else "后端：${vm.baseUrl}",
+            style = MaterialTheme.typography.bodySmall
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 12.dp)) {
+            OutlinedButton(onClick = onJson, modifier = Modifier.weight(1f)) {
+                Icon(Icons.Default.DataObject, contentDescription = null)
+                Spacer(Modifier.width(6.dp))
+                Text("JSON")
+            }
+            OutlinedButton(onClick = onFiles, modifier = Modifier.weight(1f)) {
+                Icon(Icons.Default.FolderOpen, contentDescription = null)
+                Spacer(Modifier.width(6.dp))
+                Text("文件")
+            }
+            IconButton(onClick = vm::refreshTools) {
+                Icon(Icons.Default.Refresh, contentDescription = "刷新工具")
+            }
+        }
+        Text("服务端工具", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 8.dp))
+        if (vm.busy && vm.tools.isEmpty()) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else if (vm.tools.isEmpty()) {
+            EmptyState("连接后端后会在这里显示可用工具。请检查连接设置和服务状态。")
+        } else {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(vm.tools.filterNot { it.id == "note" || it.id == "todo" }, key = { it.id }) { tool ->
+                    Card(onClick = { onSelectTool(tool) }, modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            Modifier.padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.Build, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Spacer(Modifier.width(12.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(tool.id, fontWeight = FontWeight.SemiBold)
+                                if (tool.description.isNotBlank()) {
+                                    Text(tool.description, style = MaterialTheme.typography.bodySmall)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ToolScreen(tool: ToolInfo, vm: ToolboxViewModel, modifier: Modifier) {
+    val values = remember(tool.id) {
+        mutableStateMapOf<String, String>().apply {
+            tool.arguments.forEach { put(it.key, it.defaultValue) }
+        }
+    }
+    Column(
+        modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        if (tool.description.isNotBlank()) Text(tool.description)
+        if (tool.arguments.isEmpty()) {
+            Text("此工具没有可配置参数。")
+        } else {
+            tool.arguments.forEach { argument ->
+                OutlinedTextField(
+                    value = values[argument.key].orEmpty(),
+                    onValueChange = { values[argument.key] = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text(if (argument.required) "${argument.key} *" else argument.key) },
+                    supportingText = {
+                        val hint = argument.description.ifBlank { argument.demo }
+                        if (hint.isNotBlank()) Text(hint)
+                    },
+                    minLines = if (argument.key in setOf("in", "input", "url", "config")) 2 else 1
+                )
+            }
+        }
+        Button(
+            onClick = { vm.runTool(tool, values.toMap()) },
+            enabled = !vm.busy,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            if (vm.busy) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+            else Text("执行工具")
+        }
+        if (vm.lastToolOutput.isNotBlank()) {
+            Text("执行结果", style = MaterialTheme.typography.titleMedium)
+            SelectionContainer { Text(vm.lastToolOutput) }
+        }
+    }
+}
+
+@Composable
+private fun TodosScreen(vm: ToolboxViewModel, modifier: Modifier) {
+    var name by remember { mutableStateOf("") }
+    var remark by remember { mutableStateOf("") }
+    var query by remember { mutableStateOf("") }
+    Column(modifier.fillMaxSize().padding(16.dp)) {
+        OutlinedTextField(name, { name = it }, Modifier.fillMaxWidth(), label = { Text("待办事项") }, singleLine = true)
+        OutlinedTextField(remark, { remark = it }, Modifier.fillMaxWidth(), label = { Text("备注（可选）") }, minLines = 2)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(
+                onClick = { vm.addTodo(name, remark); name = ""; remark = "" },
+                enabled = !vm.busy
+            ) { Text("添加待办") }
+            OutlinedButton(onClick = vm::refreshTodos) { Text("刷新") }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                query,
+                { query = it },
+                modifier = Modifier.weight(1f),
+                label = { Text("搜索待办") },
+                singleLine = true
+            )
+            IconButton(onClick = { vm.refreshTodos(query) }) {
+                Icon(Icons.Default.Search, contentDescription = "搜索")
+            }
+        }
+        if (vm.todos.isEmpty()) {
+            EmptyState("暂无待办事项")
+        } else {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(vm.todos, key = { it.id }) { todo ->
+                    TodoCard(todo, onComplete = { vm.completeTodo(todo) })
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TodoCard(todo: TodoRecord, onComplete: () -> Unit) {
+    Card(Modifier.fillMaxWidth()) {
+        Row(
+            Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Switch(checked = todo.state == "done", onCheckedChange = { if (it) onComplete() })
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text(todo.name, fontWeight = FontWeight.SemiBold)
+                if (!todo.remark.isNullOrBlank()) {
+                    Text(todo.remark, style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NotesScreen(vm: ToolboxViewModel, modifier: Modifier) {
+    var selected by remember { mutableStateOf<NoteRecord?>(null) }
+    var content by remember { mutableStateOf("") }
+    Column(modifier.fillMaxSize().padding(16.dp)) {
+        OutlinedTextField(
+            content,
+            { content = it },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("便笺内容") },
+            minLines = 4
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(
+                onClick = {
+                    vm.saveNote(NoteRecord(id = selected?.id.orEmpty(), content = content))
+                    selected = null
+                    content = ""
+                },
+                enabled = content.isNotBlank() && !vm.busy
+            ) { Text("保存") }
+            OutlinedButton(onClick = { selected = null; content = "" }) { Text("新建") }
+            IconButton(onClick = vm::refreshNotes) {
+                Icon(Icons.Default.Refresh, contentDescription = "刷新便笺")
+            }
+            if (selected != null) {
+                IconButton(onClick = {
+                    vm.deleteNote(selected!!.id)
+                    selected = null
+                    content = ""
+                }) {
+                    Icon(Icons.Default.Delete, contentDescription = "删除便笺")
+                }
+            }
+        }
+        Text("已保存便笺", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(vertical = 8.dp))
+        if (vm.notes.isEmpty()) {
+            EmptyState("暂无便笺")
+        } else {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(vm.notes, key = { it.id }) { note ->
+                    Card(
+                        onClick = { selected = note; content = note.content },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(Modifier.padding(12.dp)) {
+                            Text(note.content, maxLines = 4)
+                            if (!note.date.isNullOrBlank()) {
+                                Text(note.date, style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CommandsScreen(vm: ToolboxViewModel, modifier: Modifier) {
+    var query by remember { mutableStateOf("") }
+    var command by remember { mutableStateOf("") }
+    var alias by remember { mutableStateOf("") }
+    var tags by remember { mutableStateOf("") }
+    Column(modifier.fillMaxSize().padding(16.dp)) {
+        OutlinedTextField(command, { command = it }, Modifier.fillMaxWidth(), label = { Text("命令") }, minLines = 2)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(alias, { alias = it }, Modifier.weight(1f), label = { Text("别名（可选）") }, singleLine = true)
+            OutlinedTextField(tags, { tags = it }, Modifier.weight(1f), label = { Text("标签，逗号分隔") }, singleLine = true)
+        }
+        Button(
+            onClick = {
+                vm.saveCommand(
+                    CommandRecord(
+                        cmd = command.trim(),
+                        alias = alias.trim().ifBlank { null },
+                        tags = tags.split(",").map(String::trim).filter(String::isNotBlank)
+                    )
+                )
+                command = ""
+                alias = ""
+                tags = ""
+            },
+            enabled = command.isNotBlank() && !vm.busy
+        ) { Text("保存命令") }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                query,
+                { query = it },
+                modifier = Modifier.weight(1f),
+                label = { Text("搜索命令或标签") },
+                singleLine = true
+            )
+            IconButton(onClick = { vm.refreshCommands(query) }) {
+                Icon(Icons.Default.Search, contentDescription = "搜索命令")
+            }
+            TextButton(onClick = vm::storeCommands, enabled = !vm.busy) { Text("收集历史") }
+        }
+        if (vm.commands.isEmpty()) {
+            EmptyState("暂无命令记录")
+        } else {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(vm.commands, key = { it.id ?: it.cmd }) { item ->
+                    Card(Modifier.fillMaxWidth()) {
+                        Row(
+                            Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text(item.cmd, fontWeight = FontWeight.Medium)
+                                val details = listOfNotNull(item.alias, item.tags.takeIf { it.isNotEmpty() }?.joinToString(" "))
+                                    .joinToString(" · ")
+                                if (details.isNotBlank()) Text(details, style = MaterialTheme.typography.bodySmall)
+                            }
+                            if (!item.id.isNullOrBlank()) {
+                                IconButton(onClick = { vm.deleteCommand(item.id) }) {
+                                    Icon(Icons.Default.Delete, contentDescription = "删除命令")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HistoryScreen(history: List<HistoryEntry>, clear: () -> Unit, modifier: Modifier) {
+    Column(modifier.fillMaxSize().padding(16.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("最近 ${history.size} 条记录", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+            TextButton(onClick = clear) { Text("清空") }
+        }
+        if (history.isEmpty()) {
+            EmptyState("暂无执行历史")
+        } else {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(history, key = { it.id }) { entry ->
+                    Card(Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(entry.title, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(entry.time)),
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                            Text("来源：${entry.source}", style = MaterialTheme.typography.labelSmall)
+                            SelectionContainer { Text(entry.output.take(800), style = MaterialTheme.typography.bodySmall) }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun JsonScreen(vm: ToolboxViewModel, modifier: Modifier) {
+    var input by remember { mutableStateOf("") }
+    var output by remember { mutableStateOf("") }
+    var compact by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf("") }
+    val formatter = remember(compact) { Json { prettyPrint = !compact } }
+    Column(modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        OutlinedTextField(
+            input,
+            { input = it; error = "" },
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            label = { Text("输入 JSON") },
+            placeholder = { Text("{\"hello\":\"world\"}") },
+            minLines = 4
+        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("压缩输出")
+            Spacer(Modifier.width(8.dp))
+            Switch(checked = compact, onCheckedChange = { compact = it })
+            Spacer(Modifier.weight(1f))
+            Button(onClick = {
+                try {
+                    val parsed = Json.parseToJsonElement(input)
+                    output = formatter.encodeToString(JsonElement.serializer(), parsed)
+                    error = ""
+                    vm.addLocalHistory("JSON 格式化", input, output, "local")
+                } catch (exception: SerializationException) {
+                    error = exception.message ?: "JSON 格式无效"
+                    output = ""
+                }
+            }) { Text("格式化") }
+        }
+        if (error.isNotBlank()) Text(error, color = MaterialTheme.colorScheme.error)
+        OutlinedTextField(
+            output,
+            {},
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            label = { Text("输出") },
+            readOnly = true,
+            minLines = 4
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(onClick = { input = ""; output = ""; error = "" }, modifier = Modifier.weight(1f)) {
+                Text("清空")
+            }
+            OutlinedButton(onClick = { input = output }, modifier = Modifier.weight(1f)) {
+                Text("输出转输入")
+            }
+        }
+    }
+}
+
+@Composable
+private fun FilesScreen(modifier: Modifier, onRead: (String, String) -> Unit) {
+    val context = LocalContext.current
+    var status by remember { mutableStateOf("通过系统文件选择器读取文本、JSON 或 XML 文件。") }
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+        if (uri != null) {
+            try {
+                val text = context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+                    ?: error("无法打开所选文件")
+                onRead(uri.lastPathSegment ?: "selected-file", text)
+                status = "已读取 ${text.length} 个字符"
+            } catch (exception: Exception) {
+                status = "读取失败：${exception.message ?: "未知错误"}"
+            }
+        }
+    }
+    Column(
+        modifier.fillMaxSize().padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Icon(Icons.Default.FolderOpen, contentDescription = null, Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary)
+        Text("本地文件", style = MaterialTheme.typography.headlineSmall)
+        Text("使用 Android 系统文件选择器，不需要申请共享存储权限。")
+        Button(onClick = { picker.launch(arrayOf("text/*", "application/json", "application/xml")) }) {
+            Text("选择文件")
+        }
+        Text(status, style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+@Composable
+private fun SettingsScreen(
+    modifier: Modifier,
+    url: String,
+    onUrl: (String) -> Unit,
+    username: String,
+    onUsername: (String) -> Unit,
+    password: String,
+    onPassword: (String) -> Unit,
+    onSave: () -> Unit
+) {
+    Column(
+        modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text("后端连接", style = MaterialTheme.typography.headlineSmall)
+        Text("Android 模拟器访问开发电脑通常使用 http://10.0.2.2:38080。")
+        OutlinedTextField(
+            url,
+            onUrl,
+            Modifier.fillMaxWidth(),
+            label = { Text("后端根地址") },
+            placeholder = { Text("http://10.0.2.2:38080") },
+            singleLine = true
+        )
+        OutlinedTextField(username, onUsername, Modifier.fillMaxWidth(), label = { Text("用户名（可选）") }, singleLine = true)
+        OutlinedTextField(
+            password,
+            onPassword,
+            Modifier.fillMaxWidth(),
+            label = { Text("密码（可选）") },
+            visualTransformation = PasswordVisualTransformation(),
+            singleLine = true
+        )
+        Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) { Text("保存并连接") }
+        Text("接口与桌面端一致：工具、便笺、待办和命令助手使用 Sourcebox 服务端 API。")
+        Text("使用局域网或生产服务时，建议启用 HTTPS 并保护服务端访问凭据。", style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+@Composable
+private fun EmptyState(text: String) {
+    Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+        Text(text, style = MaterialTheme.typography.bodyMedium)
+    }
+}

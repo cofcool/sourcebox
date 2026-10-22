@@ -19,6 +19,7 @@ import net.cofcool.sourcebox.util.SqlRepository;
 import net.cofcool.sourcebox.util.VertxDeployer;
 import net.cofcool.sourcebox.util.VertxUtils;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Queue;
@@ -168,7 +169,7 @@ public class WebVerticle extends AbstractVerticle implements VertxDeployer {
             router.get("/fileshare/*").handler(
                 StaticHandler
                     .create(FileSystemAccess.ROOT, v)
-                    .setDirectoryTemplate(VertxUtils.webrootPath() + "/vertx-web-directory.html")
+                    .setDirectoryTemplate(VertxUtils.webrootPath() + File.separator + "vertx-web-directory.html")
                     .setDirectoryListing(true)
             );
         });

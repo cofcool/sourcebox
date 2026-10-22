@@ -27,7 +27,8 @@
 
 项目构建:
 
-* `mvn package` 构建 jar 包，同时构建 Go 版实现
+* 安装 JDK 25、Maven、Node.js 和 npm 后运行 `mvn package` 构建项目
+* 启动后台服务后，可通过 `http://localhost:38080/web/` 访问 Web 前端
 
 **TODO**
 
@@ -229,5 +230,4 @@ Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到
 ![sourcebox-flow](./imgs/mytoolbox-flow.svg)
 
 ## 致谢
-
 

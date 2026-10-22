@@ -150,6 +150,8 @@ public class WebVerticle extends AbstractVerticle implements VertxDeployer {
                 c.json(a);
             });
 
+        router.route("/web/*").handler(VertxUtils.webrootHandler());
+
         VertxUtils.uploadRoute(
             router,
             (f, r) -> f.uploadedFileName(),

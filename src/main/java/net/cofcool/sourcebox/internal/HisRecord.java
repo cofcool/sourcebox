@@ -1,13 +1,5 @@
 package net.cofcool.sourcebox.internal;
 
-import static net.cofcool.sourcebox.internal.api.entity.ActionRecord.toPrintStr;
-
-import java.io.Writer;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 import lombok.CustomLog;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -25,6 +17,16 @@ import net.cofcool.sourcebox.util.Repl.CommandRegistry;
 import net.cofcool.sourcebox.util.Repl.Inputs;
 import net.cofcool.sourcebox.util.Repl.PromptStore;
 import net.cofcool.sourcebox.util.Utils;
+
+import java.io.Writer;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.util.EnumSet;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+
+import static net.cofcool.sourcebox.internal.api.entity.ActionRecord.toPrintStr;
 
 @CustomLog
 public class HisRecord implements WebTool {
@@ -131,7 +133,8 @@ public class HisRecord implements WebTool {
             .arg(new Arg("del", null, "delete item by item id", false,
                 "d5ebeacf9a0aa3319560c7aa78e8751c"))
             .arg(new Arg("comment", null, "add comment to this record", false,
-                "d5ebeacf9a0aa3319560c7aa78e8751c:add comment"));
+                "d5ebeacf9a0aa3319560c7aa78e8751c:add comment"))
+            .runnerTypes(EnumSet.allOf(RunnerType.class));
     }
 
     @Override

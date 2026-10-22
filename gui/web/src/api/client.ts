@@ -48,6 +48,32 @@ export interface TimerStatistics {
   total: number;
 }
 
+export interface ActionRecord {
+  id: string;
+  name: string;
+  type: string;
+  state: string;
+  category?: string | null;
+  labels?: string | null;
+  remark?: string | null;
+  start?: string | null;
+  end?: string | null;
+  duration?: number | null;
+}
+
+export interface ActionComment {
+  id: string;
+  actionId: string;
+  content: string;
+  createTime?: string | null;
+}
+
+export interface ActionType {
+  id: string;
+  name: string;
+  type: string;
+}
+
 let baseUrl = import.meta.env.DEV ? "/proxy" : "http://localhost:38080";
 
 export function setBackendUrl(url: string) {
@@ -162,6 +188,32 @@ export const api = {
   },
   timerStatistics: async (): Promise<TimerStatistics[]> => {
     return request<TimerStatistics[]>("/action/statistics/timer");
+  },
+  recordList: async (): Promise<ActionRecord[]> => {
+    return request<ActionRecord[]>("/action?type=record");
+  },
+  recordSave: async (record: Partial<ActionRecord>): Promise<ActionRecord> => {
+    return request<ActionRecord>("/action", {
+      method: "POST",
+      body: JSON.stringify({
+        ...record,
+        type: "record",
+        state: record.state ?? "todo",
+        labels: record.labels ?? "",
+      }),
+    });
+  },
+  actionTypes: async (): Promise<{ types: ActionType[]; states: string }> => {
+    return request<{ types: ActionType[]; states: string }>("/action/types");
+  },
+  recordComments: async (id: string): Promise<ActionComment[]> => {
+    return request<ActionComment[]>(`/action/comment/${encodeURIComponent(id)}`);
+  },
+  recordCommentAdd: async (id: string, content: string): Promise<ActionComment> => {
+    return request<ActionComment>(`/action/comment/${encodeURIComponent(id)}`, {
+      method: "POST",
+      body: JSON.stringify({ content }),
+    });
   },
   noteList: async (): Promise<NoteRecord[]> => {
     return request<NoteRecord[]>("/note/list");

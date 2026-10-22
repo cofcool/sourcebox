@@ -1,24 +1,26 @@
-import { useEffect, useMemo, useState } from "react";
-import { NavLink, Route, Routes, useLocation } from "react-router-dom";
+import {useEffect, useMemo, useState} from "react";
+import {NavLink, Route, Routes, useLocation} from "react-router-dom";
 import {
-  Activity,
-  Check,
-  Clipboard,
-  FileText,
-  Home as HomeIcon,
-  ListTodo,
-  NotebookPen,
-  Pencil,
-  Plus,
-  Save,
-  Search,
-  Settings,
-  Trash2,
-  Wrench,
+    Activity,
+    Check,
+    Clipboard,
+    FileText,
+    Home as HomeIcon,
+    ListTodo,
+    MessageCircle,
+    NotebookPen,
+    Pencil,
+    Plus,
+    Save,
+    Search,
+    Settings,
+    Trash2,
+    Wrench,
+    X,
 } from "lucide-react";
-import { api } from "./api/client";
-import type { SystemInfo, TimerStatistics, ToolInfo } from "./api/client";
-import { invoke, isTauri } from "@tauri-apps/api/core";
+import type {ActionComment, ActionRecord, SystemInfo, TimerStatistics, ToolInfo} from "./api/client";
+import {api} from "./api/client";
+import {invoke, isTauri} from "@tauri-apps/api/core";
 
 interface TodoItem {
   id: string;
@@ -72,7 +74,7 @@ function Sidebar({ tools }: { tools: ToolInfo[] }) {
     <aside className="sidebar">
       <div className="brand">
         <div className="brand-icon"><Wrench size={20} /></div>
-        <span>Toolbox</span>
+        <span>TheSourceBox</span>
       </div>
 
       <nav>
@@ -135,6 +137,8 @@ function ToolPage({ tool }: { tool?: ToolInfo }) {
       return <NotePanel />;
     case "todo":
       return <TodoPage />;
+    case "hisRecord":
+      return <RecordBoard />;
     case "cHelper":
       return <CommandHelperPanel />;
     case "clipboard":
@@ -172,6 +176,223 @@ function SettingsPage({ system }: { system?: SystemInfo }) {
       </section>
     </div>
   );
+}
+
+function RecordBoard() {
+  const [records, setRecords] = useState<ActionRecord[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [title, setTitle] = useState("");
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<ActionRecord>();
+  const [comments, setComments] = useState<ActionComment[]>([]);
+  const [reply, setReply] = useState("");
+  const [error, setError] = useState<string>();
+  const [saving, setSaving] = useState(false);
+
+  async function loadRecords() {
+    try {
+      setRecords(await api.recordList());
+      setError(undefined);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  useEffect(() => {
+    void loadRecords();
+    api.actionTypes()
+      .then((result) => setCategories(result.types.filter((item) => item.type === "category").map((item) => item.name)))
+      .catch(() => setCategories([]));
+  }, []);
+
+  async function addRecord(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const name = title.trim();
+    if (!name) return;
+    setSaving(true);
+    try {
+      const now = formatRecordDateTime(new Date());
+      await api.recordSave({ id: generateId().replace(/-/g, ""), name, state: "todo", start: now, end: null, duration: 0 });
+      setTitle("");
+      await loadRecords();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function openRecord(record: ActionRecord) {
+    setSelected(record);
+    setReply("");
+    try {
+      setComments(await api.recordComments(record.id));
+    } catch (e) {
+      setComments([]);
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  async function saveRecord(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selected) return;
+    setSaving(true);
+    try {
+      const saved = await api.recordSave(selected);
+      setSelected(saved);
+      await loadRecords();
+      setError(undefined);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function addReply(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selected || !reply.trim()) return;
+    setSaving(true);
+    try {
+      const saved = await api.recordCommentAdd(selected.id, reply.trim());
+      setComments((current) => [...current, saved]);
+      setReply("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const filtered = records.filter((record) => {
+    const text = [record.name, record.remark, record.labels, record.category].filter(Boolean).join(" ").toLocaleLowerCase();
+    return text.includes(query.trim().toLocaleLowerCase());
+  });
+
+  return (
+    <div className="tool-page record-board">
+      <div className="page-heading">
+        <div>
+          <h1>历史记录</h1>
+          <p className="muted">记录事项、整理进度，并在卡片下持续补充回复。</p>
+        </div>
+      </div>
+
+      {error && <div className="error">{error}</div>}
+
+      <form className="panel record-create" onSubmit={(event) => void addRecord(event)}>
+        <input
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+          placeholder="卡片名称"
+          aria-label="卡片名称"
+        />
+        <button type="submit" disabled={!title.trim() || saving}>添加卡片</button>
+      </form>
+
+      <div className="record-search">
+        <Search size={17} />
+        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索卡片名称、备注、标签或类别" aria-label="搜索卡片" />
+        <span>{filtered.length}</span>
+      </div>
+
+      <section className="record-grid" aria-live="polite">
+        {filtered.length === 0 ? (
+          <div className="record-empty">{query ? "没有匹配的卡片" : "还没有卡片，添加一条记录开始使用"}</div>
+        ) : filtered.map((record) => (
+          <button className="record-card" key={record.id} onClick={() => void openRecord(record)}>
+            <strong>{record.name}</strong>
+            {record.remark && <span className="record-card-remark">{record.remark}</span>}
+            <div className="record-card-tags">
+              {record.category && <span className="record-category">{record.category}</span>}
+              {(record.labels ?? "").split(",").map((label) => label.trim()).filter(Boolean).map((label) => <span className="record-label" key={label}>{label}</span>)}
+            </div>
+            <span className="record-card-date">{record.start ? record.start.slice(0, 10) : "未设置日期"}</span>
+          </button>
+        ))}
+      </section>
+
+      {selected && (
+        <div className="record-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelected(undefined); }}>
+          <section className="record-modal" role="dialog" aria-modal="true" aria-labelledby="record-modal-title">
+            <header className="record-modal-header">
+              <div>
+                <h2 id="record-modal-title">编辑卡片</h2>
+                <span className="muted">更新信息并查看回复</span>
+              </div>
+              <button className="icon-button" type="button" onClick={() => setSelected(undefined)} aria-label="关闭"><X size={19} /></button>
+            </header>
+
+            <div className="record-modal-columns">
+              <form className="record-details" onSubmit={(event) => void saveRecord(event)}>
+                <label>卡片名称
+                  <input value={selected.name ?? ""} onChange={(event) => setSelected({ ...selected, name: event.target.value })} required />
+                </label>
+                <label>备注信息
+                  <textarea value={selected.remark ?? ""} onChange={(event) => setSelected({ ...selected, remark: event.target.value })} rows={4} />
+                </label>
+                <label>标签
+                  <input value={selected.labels ?? ""} onChange={(event) => setSelected({ ...selected, labels: event.target.value })} placeholder="多个标签以逗号分隔" />
+                </label>
+                <label>类别
+                  <input list="record-category-options" value={selected.category ?? ""} onChange={(event) => setSelected({ ...selected, category: event.target.value })} />
+                  <datalist id="record-category-options">{categories.map((category) => <option value={category} key={category} />)}</datalist>
+                </label>
+                <div className="record-date-fields">
+                  <label>开始时间
+                    <input type="datetime-local" required value={dateTimeInput(selected.start)} onChange={(event) => setSelected({ ...selected, start: fromDateTimeInput(event.target.value) })} />
+                  </label>
+                  <label>结束时间
+                    <input type="datetime-local" value={dateTimeInput(selected.end)} onChange={(event) => setSelected({ ...selected, end: fromDateTimeInput(event.target.value) })} />
+                  </label>
+                </div>
+                <label>持续时长（分钟）
+                  <input
+                    type="number"
+                    min="0"
+                    value={selected.duration == null ? "" : Math.round(selected.duration / 60)}
+                    onChange={(event) => setSelected({ ...selected, duration: event.target.value === "" ? null : Number(event.target.value) * 60 })}
+                  />
+                </label>
+                <div className="record-detail-actions">
+                  <button type="submit" disabled={saving || !selected.name.trim()}>{saving ? "保存中..." : "保存信息"}</button>
+                </div>
+              </form>
+
+              <section className="record-replies">
+                <h3><MessageCircle size={17} /> 回复</h3>
+                <form className="record-reply-form" onSubmit={(event) => void addReply(event)}>
+                  <textarea value={reply} onChange={(event) => setReply(event.target.value)} rows={3} placeholder="添加回复..." />
+                  <button type="submit" disabled={saving || !reply.trim()}>添加回复</button>
+                </form>
+                <div className="record-reply-list">
+                  {comments.length === 0 ? <div className="record-reply-empty">还没有回复</div> : comments.map((comment) => (
+                    <article className="record-reply" key={comment.id}>
+                      <p>{comment.content}</p>
+                      <time>{comment.createTime ?? ""}</time>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            </div>
+          </section>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function dateTimeInput(value?: string | null) {
+  return value ? value.replace(" ", "T").slice(0, 16) : "";
+}
+
+function fromDateTimeInput(value: string) {
+  return value ? `${value.replace("T", " ")}:00` : null;
+}
+
+function formatRecordDateTime(date: Date) {
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 }
 
 function TimerPage() {

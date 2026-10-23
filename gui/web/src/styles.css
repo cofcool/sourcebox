@@ -98,6 +98,8 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .record-search { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 12px; border: 1px solid #d9dde3; border-radius: 6px; background: white; color: #737983; }
 .record-search input { flex: 1; border: 0; outline: 0; padding: 10px 0; }
 .record-search span { min-width: 24px; color: #737983; font-size: 12px; text-align: right; }
+.record-pagination { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 18px; }
+.record-pagination span { min-width: 110px; color: #737983; font-size: 13px; text-align: center; }
 .record-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); align-items: start; gap: 12px; }
 .record-card { display: flex; flex-direction: column; align-items: stretch; gap: 10px; min-height: 138px; padding: 15px; border: 1px solid #e0e3e7; border-radius: 6px; background: white; color: #20242a; text-align: left; transition: border-color .15s ease, transform .15s ease; }
 .record-card:hover { border-color: #8c9b8e; transform: translateY(-2px); }

@@ -179,10 +179,15 @@ function SettingsPage({ system }: { system?: SystemInfo }) {
 }
 
 function RecordBoard() {
+  const pageSize = 10;
   const [records, setRecords] = useState<ActionRecord[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [title, setTitle] = useState("");
   const [query, setQuery] = useState("");
+  const [appliedQuery, setAppliedQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [loadingRecords, setLoadingRecords] = useState(false);
   const [selected, setSelected] = useState<ActionRecord>();
   const [comments, setComments] = useState<ActionComment[]>([]);
   const [checklists, setChecklists] = useState<ActionCheckList[]>([]);
@@ -193,17 +198,25 @@ function RecordBoard() {
   const [error, setError] = useState<string>();
   const [saving, setSaving] = useState(false);
 
-  async function loadRecords() {
+  async function loadRecords(searchQuery = appliedQuery, pageNumber = page) {
+    setLoadingRecords(true);
     try {
-      setRecords(await api.recordList());
+      const result = await api.recordList(searchQuery, pageNumber, pageSize + 1);
+      setRecords(result.slice(0, pageSize));
+      setHasNextPage(result.length > pageSize);
       setError(undefined);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoadingRecords(false);
     }
   }
 
   useEffect(() => {
     void loadRecords();
+  }, [appliedQuery, page]);
+
+  useEffect(() => {
     api.actionTypes()
       .then((result) => setCategories(result.types.filter((item) => item.type === "category").map((item) => item.name)))
       .catch(() => setCategories([]));
@@ -224,6 +237,17 @@ function RecordBoard() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function searchRecords(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const nextQuery = query.trim();
+    if (nextQuery === appliedQuery && page === 1) {
+      void loadRecords(nextQuery, 1);
+      return;
+    }
+    setAppliedQuery(nextQuery);
+    setPage(1);
   }
 
   async function openRecord(record: ActionRecord) {
@@ -335,11 +359,6 @@ function RecordBoard() {
     }
   }
 
-  const filtered = records.filter((record) => {
-    const text = [record.name, record.remark, record.labels, record.category].filter(Boolean).join(" ").toLocaleLowerCase();
-    return text.includes(query.trim().toLocaleLowerCase());
-  });
-
   return (
     <div className="tool-page record-board">
       <div className="page-heading">
@@ -361,16 +380,16 @@ function RecordBoard() {
         <button type="submit" disabled={!title.trim() || saving}>添加卡片</button>
       </form>
 
-      <div className="record-search">
+      <form className="record-search" onSubmit={searchRecords}>
         <Search size={17} />
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索卡片名称、备注、标签或类别" aria-label="搜索卡片" />
-        <span>{filtered.length}</span>
-      </div>
+        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="name=xxx&state=done" aria-label="卡片查询条件" />
+        <button type="submit" disabled={loadingRecords}>查询</button>
+      </form>
 
       <section className="record-grid" aria-live="polite">
-        {filtered.length === 0 ? (
-          <div className="record-empty">{query ? "没有匹配的卡片" : "还没有卡片，添加一条记录开始使用"}</div>
-        ) : filtered.map((record) => (
+        {records.length === 0 ? (
+          <div className="record-empty">{loadingRecords ? "加载中..." : appliedQuery ? "没有匹配的卡片" : "还没有卡片，添加一条记录开始使用"}</div>
+        ) : records.map((record) => (
           <button className="record-card" key={record.id} onClick={() => void openRecord(record)}>
             <strong>{record.name}</strong>
             {record.remark && <span className="record-card-remark">{record.remark}</span>}
@@ -382,6 +401,11 @@ function RecordBoard() {
           </button>
         ))}
       </section>
+      <nav className="record-pagination" aria-label="卡片分页">
+        <button type="button" className="secondary" disabled={page <= 1 || loadingRecords} onClick={() => setPage((current) => current - 1)}>上一页</button>
+        <span>第 {page} 页 · {records.length} 条</span>
+        <button type="button" className="secondary" disabled={!hasNextPage || loadingRecords} onClick={() => setPage((current) => current + 1)}>下一页</button>
+      </nav>
 
       {selected && (
         <div className="record-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelected(undefined); }}>

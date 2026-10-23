@@ -25,6 +25,9 @@ import java.util.stream.Collectors;
 @CustomLog
 public class ActionService {
 
+    public static final int DEFAULT_PAGE = 1;
+    public static final int DEFAULT_PAGE_SIZE = 10;
+
     private final SqlRepository<ActionRecord> actionRecordSqlRepository;
     private final SqlRepository<Comment> commentSqlRepository;
     private final SqlRepository<ActionType> actionTypeSqlRepository;
@@ -152,11 +155,23 @@ public class ActionService {
     }
 
     public Future<List<ActionRecord>> find(ActionRecord record) {
+        return find(record, DEFAULT_PAGE, DEFAULT_PAGE_SIZE);
+    }
+
+    public Future<List<ActionRecord>> find(ActionRecord record, int page, int size) {
+        if (page < 1 || size < 1) {
+            return Future.failedFuture("page and size must be positive");
+        }
+
+        long offset = (long) (page - 1) * size;
         var builder = QueryBuilder.builder().select().from(ActionRecord.class)
             .orderBy("create_time desc")
-            .limit(50);
+            .limit(size);
+        if (offset > 0) {
+            builder.offset(offset);
+        }
         if (StringUtils.isNotBlank(record.name())) {
-            builder.and("name like '%" + record.name() + "%'");
+            builder.and("name like ?", "%" + record.name() + "%");
         }
         if (StringUtils.isNotBlank(record.id()) && record.checkId()) {
             builder.and("id=?", record.id());

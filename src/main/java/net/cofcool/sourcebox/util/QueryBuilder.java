@@ -1,9 +1,10 @@
 package net.cofcool.sourcebox.util;
 
+import lombok.Getter;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import lombok.Getter;
 
 public final class QueryBuilder {
 
@@ -15,6 +16,7 @@ public final class QueryBuilder {
     private String orderByClause;
     private String groupByClause;
     private Integer limit;
+    private Long offset;
 
     private QueryBuilder() {
     }
@@ -78,6 +80,11 @@ public final class QueryBuilder {
         return this;
     }
 
+    public QueryBuilder offset(long offset) {
+        this.offset = offset;
+        return this;
+    }
+
     public QueryBuilder count() {
         return select("count(1)");
     }
@@ -112,6 +119,10 @@ public final class QueryBuilder {
 
         if (limit != null) {
             sb.append(" LIMIT ").append(limit);
+        }
+
+        if (offset != null) {
+            sb.append(" OFFSET ").append(offset);
         }
 
         return sb.toString().trim() + ";";

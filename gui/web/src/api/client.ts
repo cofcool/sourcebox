@@ -198,8 +198,12 @@ export const api = {
   timerStatistics: async (): Promise<TimerStatistics[]> => {
     return request<TimerStatistics[]>("/action/statistics/timer");
   },
-  recordList: async (): Promise<ActionRecord[]> => {
-    return request<ActionRecord[]>("/action?type=record");
+  recordList: async (query = "", page = 1, size = 10): Promise<ActionRecord[]> => {
+    const params = new URLSearchParams(query.trim().replace(/^\?/, ""));
+    params.set("type", "record");
+    params.set("page", String(page));
+    params.set("size", String(size));
+    return request<ActionRecord[]>(`/action?${params.toString()}`);
   },
   recordSave: async (record: Partial<ActionRecord>): Promise<ActionRecord> => {
     return request<ActionRecord>("/action", {

@@ -73,8 +73,19 @@ public class ActionIndex {
             .type(type == null ? map.get("type") : type.name())
             .name(map.get("name"))
             .state(map.get("state"))
+            .category(map.get("category"))
             .id(id == null ? ActionRecord.GENERATED : id)
             .build();
-        return actionService.find(condition);
+        try {
+            int page = parsePageParameter(map.get("page"), ActionService.DEFAULT_PAGE);
+            int size = parsePageParameter(map.get("size"), ActionService.DEFAULT_PAGE_SIZE);
+            return actionService.find(condition, page, size);
+        } catch (NumberFormatException e) {
+            return Future.failedFuture(e);
+        }
+    }
+
+    private int parsePageParameter(String value, int defaultValue) {
+        return value == null ? defaultValue : Integer.parseInt(value);
     }
 }

@@ -1,5 +1,6 @@
 package net.cofcool.sourcebox.internal.api;
 
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.IntStream;
 
 @ExtendWith(VertxExtension.class)
 class ActionServiceTest extends BaseTest {
@@ -105,6 +107,46 @@ class ActionServiceTest extends BaseTest {
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertNotNull(r);
                 System.out.println(r);
+                testContext.completeNow();
+            })));
+    }
+
+    @Test
+    void findByRecordPage(Vertx vertx, VertxTestContext testContext) {
+        LocalDateTime baseTime = LocalDateTime.of(2025, 1, 1, 0, 0);
+        List<ActionRecord> records = IntStream.range(0, 3)
+            .mapToObj(i -> new ActionRecord(
+                "pagination-" + i,
+                null,
+                null,
+                "mac",
+                Type.record.name(),
+                "pagination-test",
+                "doing",
+                baseTime.plusDays(i),
+                null,
+                null,
+                5,
+                null,
+                null,
+                null,
+                baseTime.plusDays(i)
+            ))
+            .toList();
+        ActionRecord condition = ActionRecord.builder().category("pagination-test").build();
+
+        actionService.saveAll(records)
+            .compose(ignored -> Future.all(
+                actionService.find(condition, 1, 2),
+                actionService.find(condition, 2, 2)
+            ))
+            .onComplete(testContext.succeeding(pages -> testContext.verify(() -> {
+                List<ActionRecord> firstPage = pages.resultAt(0);
+                List<ActionRecord> secondPage = pages.resultAt(1);
+                Assertions.assertEquals(List.of("pagination-2", "pagination-1"),
+                    firstPage.stream().map(ActionRecord::name).toList());
+                Assertions.assertEquals(List.of("pagination-0"),
+                    secondPage.stream().map(ActionRecord::name).toList());
                 testContext.completeNow();
             })));
     }

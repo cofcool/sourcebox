@@ -6,9 +6,6 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.FileSystemAccess;
 import io.vertx.ext.web.handler.LoggerHandler;
 import io.vertx.ext.web.handler.StaticHandler;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import lombok.CustomLog;
 import net.cofcool.sourcebox.ToolName;
 import net.cofcool.sourcebox.WebTool;
@@ -16,6 +13,10 @@ import net.cofcool.sourcebox.WebTool.WebRouter;
 import net.cofcool.sourcebox.util.VertxDeployer;
 import net.cofcool.sourcebox.util.VertxUtils;
 import org.apache.commons.io.FilenameUtils;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 @CustomLog
 public class DirWebServer implements WebTool, WebRouter {
@@ -28,6 +29,11 @@ public class DirWebServer implements WebTool, WebRouter {
     @Override
     public void run(Args args) throws Exception {
 
+    }
+
+    @Override
+    public boolean needDatabase() {
+        return false;
     }
 
     @Override

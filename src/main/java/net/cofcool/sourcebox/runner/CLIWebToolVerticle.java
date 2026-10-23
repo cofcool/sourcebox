@@ -22,12 +22,16 @@ public class CLIWebToolVerticle extends AbstractVerticle {
     @Override
     public void stop() throws Exception {
         super.stop();
-        SqlRepository.closePool();
+        if (tool.needDatabase()) {
+            SqlRepository.closePool();
+        }
     }
 
     @Override
     public void start(Promise<Void> startPromise) throws Exception {
-        SqlRepository.init(vertx);
+        if (tool.needDatabase()) {
+            SqlRepository.init(vertx);
+        }
         VertxUtils
             .initHttpServer(
                 vertx,

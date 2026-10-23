@@ -4,16 +4,17 @@ import io.vertx.core.Future;
 import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
+import net.cofcool.sourcebox.util.JsonUtil;
+import net.cofcool.sourcebox.util.Utils;
+import net.cofcool.sourcebox.util.VertxDeployer;
+import net.cofcool.sourcebox.util.VertxUtils;
+
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpRequest.Builder;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import net.cofcool.sourcebox.util.JsonUtil;
-import net.cofcool.sourcebox.util.Utils;
-import net.cofcool.sourcebox.util.VertxDeployer;
-import net.cofcool.sourcebox.util.VertxUtils;
 
 public interface WebTool extends Tool, VertxDeployer {
 
@@ -26,6 +27,10 @@ public interface WebTool extends Tool, VertxDeployer {
 
     default boolean supportCommand() {
         return false;
+    }
+
+    default boolean needDatabase() {
+        return true;
     }
 
     @Override

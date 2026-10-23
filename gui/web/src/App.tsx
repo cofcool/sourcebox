@@ -19,7 +19,7 @@ import {
     X,
 } from "lucide-react";
 import type {ActionCheckList, ActionComment, ActionRecord, SystemInfo, TimerStatistics, ToolInfo} from "./api/client";
-import {api} from "./api/client";
+import {api, getBackendUrl} from "./api/client";
 import {invoke, isTauri} from "@tauri-apps/api/core";
 
 interface TodoItem {
@@ -171,7 +171,7 @@ function SettingsPage({ system }: { system?: SystemInfo }) {
       <h1>设置</h1>
       <section className="panel">
         <h2>后端</h2>
-        <p>Java Backend: <strong>localhost:38080</strong></p>
+        <p>Java Backend: <strong>{getBackendUrl()}</strong></p>
         {system && <p className="muted">Java {system.javaVersion}</p>}
       </section>
     </div>

@@ -85,12 +85,10 @@ export interface ActionType {
   type: string;
 }
 
-let baseUrl = import.meta.env.DEV ? "/proxy" : "http://localhost:38080";
+let baseUrl = import.meta.env.DEV ? "/proxy" : window.location.origin;
 
 export function setBackendUrl(url: string) {
-  baseUrl = import.meta.env.DEV
-    ? url.replace(/\/+$/, "").replace(/^http:\/\/localhost:38080$/, "/proxy")
-    : url.replace(/\/+$/, "");
+  baseUrl = url.replace(/\/+$/, "") || (import.meta.env.DEV ? "/proxy" : window.location.origin);
 }
 
 export function getBackendUrl() {

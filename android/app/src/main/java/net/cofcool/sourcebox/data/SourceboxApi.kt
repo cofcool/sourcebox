@@ -70,6 +70,51 @@ data class CommandRecord(
 )
 
 @Serializable
+data class ActionRecord(
+    val id: String = "",
+    val name: String,
+    val type: String = "record",
+    val state: String = "todo",
+    val category: String? = null,
+    val labels: String? = "",
+    val remark: String? = null,
+    val start: String? = null,
+    val end: String? = null,
+    val duration: Int? = null
+)
+
+@Serializable
+data class ActionComment(
+    val id: String = "",
+    val actionId: String = "",
+    val content: String = "",
+    val createTime: String? = null
+)
+
+@Serializable
+data class ActionCheckList(
+    val id: String = "",
+    val actionId: String = "",
+    val content: String = "",
+    val first: Int = 0,
+    val last: Int = 0,
+    val current: Int = 0
+)
+
+@Serializable
+data class ActionType(
+    val id: String = "",
+    val name: String,
+    val type: String
+)
+
+@Serializable
+data class ActionTypeResponse(
+    val types: List<ActionType> = emptyList(),
+    val states: String = ""
+)
+
+@Serializable
 data class ToolEvent(
     val source: JsonElement? = null,
     val tool: String = "",
@@ -221,6 +266,57 @@ class SourceboxApi(context: Context) {
 
     suspend fun storeCommands() {
         request("/cmd/store/ALL")
+    }
+
+    suspend fun recordList(query: String, page: Int, size: Int): List<ActionRecord> {
+        val queryParameters = Uri.Builder()
+            .appendQueryParameter("type", "record")
+            .appendQueryParameter("page", page.toString())
+            .appendQueryParameter("size", size.toString())
+        query.trim().removePrefix("?").split("&")
+            .filter(String::isNotBlank)
+            .forEach { item ->
+                val separator = item.indexOf('=')
+                if (separator < 0) queryParameters.appendQueryParameter(item, "")
+                else queryParameters.appendQueryParameter(
+                    Uri.decode(item.substring(0, separator)),
+                    Uri.decode(item.substring(separator + 1))
+                )
+            }
+        return json.decodeFromString<List<ActionRecord>>(
+            request("/action?${queryParameters.build().encodedQuery}")
+        )
+    }
+
+    suspend fun recordTypes(): List<String> =
+        json.decodeFromString<ActionTypeResponse>(request("/action/types"))
+            .types.filter { it.type == "category" }.map { it.name }
+
+    suspend fun saveRecord(record: ActionRecord): ActionRecord {
+        val payload = record.copy(type = "record", labels = record.labels.orEmpty())
+        return json.decodeFromString(request("/action", "POST", json.encodeToString(payload)))
+    }
+
+    suspend fun recordComments(actionId: String): List<ActionComment> =
+        json.decodeFromString<List<ActionComment>>(request("/action/comment/${Uri.encode(actionId)}"))
+
+    suspend fun addRecordComment(actionId: String, content: String): ActionComment {
+        val body = buildJsonObject { put("content", content) }
+        return json.decodeFromString(
+            request("/action/comment/${Uri.encode(actionId)}", "POST", json.encodeToString(body))
+        )
+    }
+
+    suspend fun recordChecklists(actionId: String): List<ActionCheckList> =
+        json.decodeFromString<List<ActionCheckList>>(request("/action/checklist/${Uri.encode(actionId)}"))
+
+    suspend fun saveRecordChecklist(actionId: String, checklist: ActionCheckList): ActionCheckList =
+        json.decodeFromString(
+            request("/action/checklist/${Uri.encode(actionId)}", "POST", json.encodeToString(checklist))
+        )
+
+    suspend fun deleteRecordChecklist(id: String) {
+        request("/action/checklist/${Uri.encode(id)}", "DELETE")
     }
 
     private suspend fun request(path: String, method: String = "GET", body: String? = null): String =

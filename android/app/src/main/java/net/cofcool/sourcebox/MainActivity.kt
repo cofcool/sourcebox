@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -76,6 +77,8 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import net.cofcool.sourcebox.data.CommandRecord
+import net.cofcool.sourcebox.data.ActionCheckList
+import net.cofcool.sourcebox.data.ActionRecord
 import net.cofcool.sourcebox.data.NoteRecord
 import net.cofcool.sourcebox.data.ToolInfo
 import net.cofcool.sourcebox.data.TodoRecord
@@ -105,6 +108,7 @@ private val pages = listOf(
 private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
     var page by remember { mutableStateOf("tools") }
     var selectedTool by remember { mutableStateOf<ToolInfo?>(null) }
+    var selectedRecord by remember { mutableStateOf<ActionRecord?>(null) }
     var settingsUrl by remember { mutableStateOf(vm.baseUrl) }
     var settingsUser by remember { mutableStateOf(vm.username) }
     var settingsPassword by remember { mutableStateOf(vm.password) }
@@ -113,6 +117,10 @@ private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
 
     LaunchedEffect(vm.message) {
         if (vm.message.isNotBlank()) snackbar.showSnackbar(vm.message)
+    }
+    LaunchedEffect(vm.savedRecord) {
+        val saved = vm.savedRecord
+        if (saved != null && selectedRecord?.id == saved.id) selectedRecord = saved
     }
 
     MaterialTheme(
@@ -128,7 +136,11 @@ private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
                     title = {
                         Text(
                             when (page) {
-                                "tool" -> selectedTool?.id ?: "工具"
+                                "tool" -> when (selectedTool?.id) {
+                                    "hisRecord" -> "历史记录"
+                                    else -> selectedTool?.id ?: "工具"
+                                }
+                                "record-detail" -> "编辑卡片"
                                 "json" -> "JSON 格式化"
                                 "files" -> "文件工具"
                                 "file-result" -> "文件内容"
@@ -139,7 +151,13 @@ private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
                     },
                     navigationIcon = {
                         if (page !in pages.map { it.first }) {
-                            IconButton(onClick = { page = "tools" }) {
+                            IconButton(onClick = {
+                                page = if (page == "record-detail" && selectedTool?.id == "hisRecord") {
+                                    "tool"
+                                } else {
+                                    "tools"
+                                }
+                            }) {
                                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                             }
                         }
@@ -159,29 +177,31 @@ private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
                 )
             },
             bottomBar = {
-                NavigationBar {
-                    pages.forEach { (destination, label) ->
-                        val icon = when (destination) {
-                            "tools" -> Icons.Default.Home
-                            "todos" -> Icons.AutoMirrored.Filled.List
-                            "notes" -> Icons.Default.Description
-                            "commands" -> Icons.Default.Code
-                            else -> Icons.Default.History
+                if (page != "record-detail") {
+                    NavigationBar {
+                        pages.forEach { (destination, label) ->
+                            val icon = when (destination) {
+                                "tools" -> Icons.Default.Home
+                                "todos" -> Icons.AutoMirrored.Filled.List
+                                "notes" -> Icons.Default.Description
+                                "commands" -> Icons.Default.Code
+                                else -> Icons.Default.History
+                            }
+                            NavigationBarItem(
+                                selected = page == destination,
+                                onClick = {
+                                    page = destination
+                                    when (destination) {
+                                        "tools" -> vm.refreshTools()
+                                        "todos" -> vm.refreshTodos()
+                                        "notes" -> vm.refreshNotes()
+                                        "commands" -> vm.refreshCommands()
+                                    }
+                                },
+                                icon = { Icon(icon, contentDescription = label) },
+                                label = { Text(label) }
+                            )
                         }
-                        NavigationBarItem(
-                            selected = page == destination,
-                            onClick = {
-                                page = destination
-                                when (destination) {
-                                    "tools" -> vm.refreshTools()
-                                    "todos" -> vm.refreshTodos()
-                                    "notes" -> vm.refreshNotes()
-                                    "commands" -> vm.refreshCommands()
-                                }
-                            },
-                            icon = { Icon(icon, contentDescription = label) },
-                            label = { Text(label) }
-                        )
                     }
                 }
             },
@@ -196,7 +216,47 @@ private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
                     onFiles = { page = "files" }
                 )
                 "tool" -> selectedTool?.let { tool ->
-                    ToolScreen(tool, vm, Modifier.padding(padding))
+                    if (tool.id == "hisRecord") {
+                        RecordBoardScreen(
+                            vm,
+                            Modifier.padding(padding),
+                            onOpenRecord = {
+                                selectedRecord = it
+                                vm.loadRecordDetails(it)
+                                page = "record-detail"
+                            }
+                        )
+                    } else {
+                        ToolScreen(tool, vm, Modifier.padding(padding))
+                    }
+                }
+                "record-detail" -> selectedRecord?.let { record ->
+                    RecordDetails(
+                        modifier = Modifier.padding(padding),
+                        record = record,
+                        categories = vm.recordCategories,
+                        comments = vm.recordComments,
+                        checklists = vm.recordChecklists,
+                        busy = vm.busy,
+                        onRecordChange = { selectedRecord = it },
+                        onSave = { vm.saveRecord(record, "", 1) },
+                        onAddComment = { vm.addRecordComment(record.id, it) },
+                        onAddChecklist = { content, first, last ->
+                            vm.saveRecordChecklist(
+                                record.id,
+                                ActionCheckList(
+                                    actionId = record.id,
+                                    content = content,
+                                    first = first,
+                                    last = last,
+                                    current = first
+                                )
+                            )
+                        },
+                        onSaveChecklist = { vm.saveRecordChecklist(record.id, it) },
+                        onDeleteChecklist = vm::deleteRecordChecklist,
+                        onClose = { page = "tool" }
+                    )
                 }
                 "todos" -> TodosScreen(vm, Modifier.padding(padding))
                 "notes" -> NotesScreen(vm, Modifier.padding(padding))
@@ -332,6 +392,344 @@ private fun ToolScreen(tool: ToolInfo, vm: ToolboxViewModel, modifier: Modifier)
         if (vm.lastToolOutput.isNotBlank()) {
             Text("执行结果", style = MaterialTheme.typography.titleMedium)
             SelectionContainer { Text(vm.lastToolOutput) }
+        }
+    }
+}
+
+@Composable
+private fun RecordBoardScreen(
+    vm: ToolboxViewModel,
+    modifier: Modifier,
+    onOpenRecord: (ActionRecord) -> Unit
+) {
+    var query by remember { mutableStateOf("") }
+    var appliedQuery by remember { mutableStateOf("") }
+    var page by remember { mutableStateOf(1) }
+    var newRecordName by remember { mutableStateOf("") }
+
+    LaunchedEffect(appliedQuery, page) {
+        vm.refreshRecords(appliedQuery, page)
+    }
+    LaunchedEffect(Unit) {
+        vm.refreshRecordCategories()
+    }
+    Column(
+        modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text("历史记录", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        Text("记录事项、整理进度，并在卡片下持续补充回复。", style = MaterialTheme.typography.bodySmall)
+
+        OutlinedTextField(
+            value = newRecordName,
+            onValueChange = { newRecordName = it },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("卡片名称") },
+            singleLine = true
+        )
+        Button(
+            onClick = {
+                vm.createRecord(newRecordName, appliedQuery, page)
+                newRecordName = ""
+            },
+            enabled = newRecordName.isNotBlank() && !vm.busy,
+            modifier = Modifier.fillMaxWidth()
+        ) { Text("添加卡片") }
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                modifier = Modifier.weight(1f),
+                label = { Text("查询条件") },
+                placeholder = { Text("name=xxx&state=done") },
+                singleLine = true
+            )
+            IconButton(
+                onClick = {
+                    appliedQuery = query.trim()
+                    page = 1
+                },
+                enabled = !vm.busy
+            ) { Icon(Icons.Default.Search, contentDescription = "查询记录") }
+        }
+
+        if (vm.records.isEmpty()) {
+            EmptyState(if (appliedQuery.isNotBlank()) "没有匹配的记录" else "还没有记录，添加一条开始使用")
+        } else {
+            vm.records.forEach { record ->
+                Card(
+                    onClick = { onOpenRecord(record) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(record.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        if (!record.remark.isNullOrBlank()) {
+                            Text(record.remark, style = MaterialTheme.typography.bodySmall)
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            record.category?.takeIf(String::isNotBlank)?.let { AssistChipLabel(it) }
+                            record.labels.orEmpty().split(",").map(String::trim).filter(String::isNotBlank)
+                                .forEach { AssistChipLabel(it) }
+                        }
+                        Text(record.start?.take(10) ?: "未设置日期", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedButton(onClick = { if (page > 1) page-- }, enabled = page > 1 && !vm.busy) {
+                Text("上一页")
+            }
+            Text("第 $page 页 · ${vm.records.size} 条")
+            OutlinedButton(onClick = { page++ }, enabled = vm.recordHasNextPage && !vm.busy) {
+                Text("下一页")
+            }
+        }
+
+    }
+}
+
+@Composable
+private fun AssistChipLabel(text: String) {
+    androidx.compose.material3.AssistChip(
+        onClick = {},
+        label = { Text(text) }
+    )
+}
+
+@Composable
+private fun RecordDetails(
+    modifier: Modifier,
+    record: ActionRecord,
+    categories: List<String>,
+    comments: List<net.cofcool.sourcebox.data.ActionComment>,
+    checklists: List<ActionCheckList>,
+    busy: Boolean,
+    onRecordChange: (ActionRecord) -> Unit,
+    onSave: () -> Unit,
+    onAddComment: (String) -> Unit,
+    onAddChecklist: (String, Int, Int) -> Unit,
+    onSaveChecklist: (ActionCheckList) -> Unit,
+    onDeleteChecklist: (String) -> Unit,
+    onClose: () -> Unit
+) {
+    var reply by remember(record.id) { mutableStateOf("") }
+    var checklistName by remember(record.id) { mutableStateOf("") }
+    var checklistFirst by remember(record.id) { mutableStateOf("0") }
+    var checklistLast by remember(record.id) { mutableStateOf("") }
+
+    Column(
+        modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text("编辑记录及其 Checklist、回复。", style = MaterialTheme.typography.bodySmall)
+        Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("编辑卡片", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
+                TextButton(onClick = onClose) { Text("关闭") }
+            }
+            OutlinedTextField(
+                record.name,
+                { onRecordChange(record.copy(name = it)) },
+                Modifier.fillMaxWidth(),
+                label = { Text("卡片名称") },
+                singleLine = true
+            )
+            OutlinedTextField(
+                record.remark.orEmpty(),
+                { onRecordChange(record.copy(remark = it.ifBlank { null })) },
+                Modifier.fillMaxWidth(),
+                label = { Text("备注信息") },
+                minLines = 3
+            )
+            OutlinedTextField(
+                record.labels.orEmpty(),
+                { onRecordChange(record.copy(labels = it)) },
+                Modifier.fillMaxWidth(),
+                label = { Text("标签") },
+                supportingText = { Text("多个标签以逗号分隔") },
+                singleLine = true
+            )
+            OutlinedTextField(
+                record.category.orEmpty(),
+                { onRecordChange(record.copy(category = it.ifBlank { null })) },
+                Modifier.fillMaxWidth(),
+                label = { Text("类别") },
+                singleLine = true
+            )
+            if (categories.isNotEmpty()) {
+                Row(
+                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    categories.forEach { category ->
+                        androidx.compose.material3.AssistChip(
+                            onClick = { onRecordChange(record.copy(category = category)) },
+                            label = { Text(category) }
+                        )
+                    }
+                }
+            }
+            OutlinedTextField(
+                record.start.orEmpty(),
+                { onRecordChange(record.copy(start = it.ifBlank { null })) },
+                Modifier.fillMaxWidth(),
+                label = { Text("开始时间（yyyy-MM-dd HH:mm:ss）") },
+                singleLine = true
+            )
+            OutlinedTextField(
+                record.end.orEmpty(),
+                { onRecordChange(record.copy(end = it.ifBlank { null })) },
+                Modifier.fillMaxWidth(),
+                label = { Text("结束时间（yyyy-MM-dd HH:mm:ss，可选）") },
+                singleLine = true
+            )
+            OutlinedTextField(
+                record.duration?.let { (it / 60).toString() }.orEmpty(),
+                { value ->
+                    val minutes = value.toIntOrNull()
+                    onRecordChange(
+                        record.copy(duration = minutes?.takeIf { it in 0..(Int.MAX_VALUE / 60) }?.times(60))
+                    )
+                },
+                Modifier.fillMaxWidth(),
+                label = { Text("持续时长（分钟）") },
+                singleLine = true
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(
+                    "todo" to "待办",
+                    "doing" to "进行中",
+                    "done" to "已完成",
+                    "cancel" to "已取消"
+                ).forEach { (state, label) ->
+                    androidx.compose.material3.FilterChip(
+                        selected = record.state == state,
+                        onClick = { onRecordChange(record.copy(state = state)) },
+                        label = { Text(label) }
+                    )
+                }
+            }
+            Button(
+                onClick = onSave,
+                enabled = !busy && record.name.isNotBlank(),
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("保存信息") }
+
+            androidx.compose.material3.HorizontalDivider()
+            Text("Checklist", style = MaterialTheme.typography.titleMedium)
+            OutlinedTextField(
+                checklistName,
+                { checklistName = it },
+                Modifier.fillMaxWidth(),
+                label = { Text("Checklist 名称") },
+                singleLine = true
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    checklistFirst,
+                    { checklistFirst = it },
+                    Modifier.weight(1f),
+                    label = { Text("开始") },
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    checklistLast,
+                    { checklistLast = it },
+                    Modifier.weight(1f),
+                    label = { Text("结束") },
+                    singleLine = true
+                )
+            }
+            val first = checklistFirst.toIntOrNull()
+            val last = checklistLast.toIntOrNull()
+            Button(
+                onClick = {
+                    if (first != null && last != null && first <= last && checklistName.isNotBlank()) {
+                        onAddChecklist(checklistName.trim(), first, last)
+                        checklistName = ""
+                        checklistLast = ""
+                    }
+                },
+                enabled = !busy && checklistName.isNotBlank() &&
+                    first != null && last != null && first <= last,
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("添加 Checklist") }
+            if (checklists.isEmpty()) Text("还没有 Checklist", style = MaterialTheme.typography.bodySmall)
+            checklists.forEach { checklist ->
+                ChecklistItem(checklist, busy, onSaveChecklist, onDeleteChecklist)
+            }
+
+            androidx.compose.material3.HorizontalDivider()
+            Text("回复", style = MaterialTheme.typography.titleMedium)
+            OutlinedTextField(
+                reply,
+                { reply = it },
+                Modifier.fillMaxWidth(),
+                label = { Text("添加回复") },
+                minLines = 2
+            )
+            Button(
+                onClick = { onAddComment(reply); reply = "" },
+                enabled = !busy && reply.isNotBlank(),
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("添加回复") }
+            if (comments.isEmpty()) Text("还没有回复", style = MaterialTheme.typography.bodySmall)
+            comments.forEach { comment ->
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(comment.content)
+                    Text(comment.createTime.orEmpty(), style = MaterialTheme.typography.labelSmall)
+                    androidx.compose.material3.HorizontalDivider()
+                }
+            }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChecklistItem(
+    checklist: ActionCheckList,
+    busy: Boolean,
+    onSave: (ActionCheckList) -> Unit,
+    onDelete: (String) -> Unit
+) {
+    var current by remember(checklist.id, checklist.current) { mutableStateOf(checklist.current.toString()) }
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(checklist.content, fontWeight = FontWeight.SemiBold)
+            Text("范围：${checklist.first} – ${checklist.last}")
+            OutlinedTextField(
+                current,
+                { current = it },
+                Modifier.fillMaxWidth(),
+                label = { Text("当前进度") },
+                singleLine = true
+            )
+            val value = current.toIntOrNull()
+            Text(
+                if (value == checklist.last) "已完成" else "进行中",
+                color = if (value == checklist.last) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(
+                    onClick = { value?.let { onSave(checklist.copy(current = it)) } },
+                    enabled = !busy && value != null && value in checklist.first..checklist.last,
+                    modifier = Modifier.weight(1f)
+                ) { Text("保存进度") }
+                OutlinedButton(
+                    onClick = { onDelete(checklist.id) },
+                    enabled = !busy,
+                    modifier = Modifier.weight(1f)
+                ) { Text("删除") }
+            }
         }
     }
 }

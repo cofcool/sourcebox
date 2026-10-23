@@ -7,11 +7,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import net.cofcool.sourcebox.data.CommandRecord
+import net.cofcool.sourcebox.data.ActionCheckList
+import net.cofcool.sourcebox.data.ActionComment
+import net.cofcool.sourcebox.data.ActionRecord
 import net.cofcool.sourcebox.data.NoteRecord
 import net.cofcool.sourcebox.data.SourceboxApi
 import net.cofcool.sourcebox.data.ToolInfo
@@ -40,6 +45,18 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
     var todos by mutableStateOf<List<TodoRecord>>(emptyList())
         private set
     var commands by mutableStateOf<List<CommandRecord>>(emptyList())
+        private set
+    var records by mutableStateOf<List<ActionRecord>>(emptyList())
+        private set
+    var recordCategories by mutableStateOf<List<String>>(emptyList())
+        private set
+    var recordComments by mutableStateOf<List<ActionComment>>(emptyList())
+        private set
+    var recordChecklists by mutableStateOf<List<ActionCheckList>>(emptyList())
+        private set
+    var recordHasNextPage by mutableStateOf(false)
+        private set
+    var savedRecord by mutableStateOf<ActionRecord?>(null)
         private set
     var message by mutableStateOf("")
         private set
@@ -136,6 +153,83 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         message = "历史命令已收集"
     }
 
+    fun refreshRecords(query: String = "", page: Int = 1) = perform {
+        val result = api.recordList(query, page, 11)
+        records = result.take(10)
+        recordHasNextPage = result.size > 10
+    }
+
+    fun refreshRecordCategories() = perform {
+        recordCategories = api.recordTypes()
+    }
+
+    fun loadRecordDetails(record: ActionRecord) = perform {
+        recordComments = emptyList()
+        recordChecklists = emptyList()
+        val (comments, checklists) = coroutineScope {
+            val commentsDeferred = async { api.recordComments(record.id) }
+            val checklistsDeferred = async { api.recordChecklists(record.id) }
+            commentsDeferred.await() to checklistsDeferred.await()
+        }
+        recordComments = comments
+        recordChecklists = checklists
+    }
+
+    fun createRecord(name: String, query: String, page: Int) = perform(
+        onSuccess = {
+            savedRecord = it
+            refreshRecords(query, page)
+            message = "记录已添加"
+        }
+    ) {
+        require(name.isNotBlank()) { "记录名称不能为空" }
+        api.saveRecord(
+            ActionRecord(
+                id = UUID.randomUUID().toString().replace("-", ""),
+                name = name.trim(),
+                start = currentRecordDateTime()
+            )
+        )
+    }
+
+    fun saveRecord(record: ActionRecord, query: String, page: Int) = perform(
+        onSuccess = {
+            savedRecord = it
+            refreshRecords(query, page)
+            message = "记录已保存"
+        }
+    ) {
+        require(record.name.isNotBlank()) { "记录名称不能为空" }
+        api.saveRecord(record)
+    }
+
+    fun addRecordComment(actionId: String, content: String) = perform(
+        onSuccess = { recordComments = recordComments + it; message = "回复已添加" }
+    ) {
+        require(content.isNotBlank()) { "回复内容不能为空" }
+        api.addRecordComment(actionId, content.trim())
+    }
+
+    fun saveRecordChecklist(actionId: String, checklist: ActionCheckList) = perform(
+        onSuccess = { saved ->
+            recordChecklists = recordChecklists.map { if (it.id == saved.id) saved else it }
+            if (recordChecklists.none { it.id == saved.id }) recordChecklists = recordChecklists + saved
+            message = "Checklist 已保存"
+        }
+    ) {
+        require(checklist.content.isNotBlank()) { "Checklist 名称不能为空" }
+        require(checklist.first <= checklist.current && checklist.current <= checklist.last) {
+            "当前值必须在开始和结束范围内"
+        }
+        api.saveRecordChecklist(actionId, checklist)
+    }
+
+    fun deleteRecordChecklist(id: String) = perform {
+        api.deleteRecordChecklist(id)
+        recordChecklists = recordChecklists.filterNot { it.id == id }
+        message = "Checklist 已删除"
+    }
+
     fun saveConnection(url: String, user: String, secret: String) {
         api.saveConnection(url, user, secret)
         baseUrl = api.baseUrl()
@@ -186,4 +280,8 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
     private fun persistHistory() {
         preferences.edit().putString("history", json.encodeToString(history)).apply()
     }
+
+    private fun currentRecordDateTime(): String =
+        java.time.LocalDateTime.now()
+            .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
 }

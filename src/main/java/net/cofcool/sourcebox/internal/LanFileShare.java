@@ -4,6 +4,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import net.cofcool.sourcebox.Tool;
 import net.cofcool.sourcebox.ToolName;
+import net.cofcool.sourcebox.util.DataSize;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -338,7 +339,7 @@ public class LanFileShare implements Tool {
         return relative;
     }
 
-    private static Path safeResolve(Path destination, Path relative) throws IOException {
+    private static Path safeResolve(Path destination, Path relative) {
         Path target = destination.resolve(relative).normalize();
         if (!target.startsWith(destination)) {
             throw new IllegalArgumentException("Invalid transfer path: " + relative);
@@ -411,7 +412,7 @@ public class LanFileShare implements Tool {
                 Files.deleteIfExists(archive);
             }
         } else {
-            Path uploadRoot = Files.isDirectory(source) ? source.getFileName() : source.getFileName();
+            Path uploadRoot = source.getFileName();
             if (uploadRoot == null) {
                 uploadRoot = Path.of("root");
             }
@@ -542,17 +543,7 @@ public class LanFileShare implements Tool {
     }
 
     private static String formatBytes(long bytes) {
-        if (bytes < 1024) {
-            return bytes + " B";
-        }
-        String[] units = {"KiB", "MiB", "GiB", "TiB"};
-        double value = bytes;
-        int unit = -1;
-        do {
-            value /= 1024;
-            unit++;
-        } while (value >= 1024 && unit < units.length - 1);
-        return String.format(java.util.Locale.ROOT, "%.1f %s", value, units[unit]);
+        return DataSize.of(String.valueOf(bytes)).toString();
     }
 
     private static String sha256(Path file) throws IOException {

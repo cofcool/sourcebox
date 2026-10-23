@@ -25,6 +25,29 @@ jobs:
       - name: Build package
         run: mvn clean package
 
+      - name: Set up JDK for Android
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build Android APK
+        working-directory: android
+        run: ./gradlew --no-daemon :app:assembleDebug
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: TheSourceBox
+          path: android/app/build/outputs/apk/debug/TheSourceBox.apk
+          if-no-files-found: error
+
       - name: Create and push hourly tag
         id: tag
         shell: bash
@@ -40,4 +63,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.tag.outputs.tag }}
-        run: gh release create "$TAG" target/sourcebox-bin.zip --title "$TAG" --notes-file ./target/changelog-runWithLatest.md
+        run: gh release create "$TAG" target/sourcebox-bin.zip android/app/build/outputs/apk/debug/TheSourceBox.apk --title "$TAG" --notes-file ./target/changelog-runWithLatest.md

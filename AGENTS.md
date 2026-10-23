@@ -6,6 +6,7 @@
 - `desktop-gui`: KMP
 - `gui/web`: TypeScript, React 
 - `gui/tauri` Rust
+- `android` Android, Kotlin
 
 ## Setup commands
 - Install deps: `apt install openjdk-25-jdk maven`

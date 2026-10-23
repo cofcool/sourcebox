@@ -1,6 +1,13 @@
 package net.cofcool.sourcebox.util;
 
 import io.vertx.core.Future;
+import lombok.SneakyThrows;
+import org.apache.commons.io.FilenameUtils;
+
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.DESedeKeySpec;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -26,12 +33,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
-import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.DESedeKeySpec;
-import lombok.SneakyThrows;
-import org.apache.commons.io.FilenameUtils;
 
 public abstract class Utils {
 
@@ -156,12 +157,12 @@ public abstract class Utils {
         }
     }
 
-    public static <T> T requestAPI(String addr, String port, String methodPath, Class<T> bodyType, Function<Builder, Builder> requestAction, Consumer<Exception> errorAction) {
+    public static <T> T requestAPI(String url, String methodPath, Class<T> bodyType, Function<Builder, Builder> requestAction, Consumer<Exception> errorAction) {
         try (var client = HttpClient.newHttpClient()){
             var builder = requestAction.apply(
                 HttpRequest
                     .newBuilder()
-                    .uri(new URI(addr + ":" + port + methodPath))
+                    .uri(new URI(url + methodPath))
             );
 
             var response = client.send(builder.build(), HttpResponse.BodyHandlers.ofByteArray());
@@ -181,6 +182,10 @@ public abstract class Utils {
         }
 
         return null;
+    }
+
+    public static <T> T requestAPI(String addr, String port, String methodPath, Class<T> bodyType, Function<Builder, Builder> requestAction, Consumer<Exception> errorAction) {
+        return requestAPI(addr + ":" + port, methodPath, bodyType, requestAction, errorAction);
     }
 
     public static boolean isLocalhost(String address) {

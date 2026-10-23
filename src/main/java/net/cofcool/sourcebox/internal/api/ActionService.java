@@ -273,7 +273,7 @@ public class ActionService {
         return commentSqlRepository.save(Comment.builder()
             .id(System.currentTimeMillis() + "")
             .actionId(actionId).content(pojo.content())
-            .createTime(LocalDateTime.now()).updateTime(LocalDateTime.now())
+            .createTime(pojo.createTime() != null ? pojo.createTime() : LocalDateTime.now()).updateTime(LocalDateTime.now())
             .build()
         );
     }

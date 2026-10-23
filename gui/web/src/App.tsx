@@ -18,7 +18,7 @@ import {
     Wrench,
     X,
 } from "lucide-react";
-import type {ActionComment, ActionRecord, SystemInfo, TimerStatistics, ToolInfo} from "./api/client";
+import type {ActionCheckList, ActionComment, ActionRecord, SystemInfo, TimerStatistics, ToolInfo} from "./api/client";
 import {api} from "./api/client";
 import {invoke, isTauri} from "@tauri-apps/api/core";
 
@@ -185,7 +185,11 @@ function RecordBoard() {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<ActionRecord>();
   const [comments, setComments] = useState<ActionComment[]>([]);
+  const [checklists, setChecklists] = useState<ActionCheckList[]>([]);
   const [reply, setReply] = useState("");
+  const [checklistName, setChecklistName] = useState("");
+  const [checklistStart, setChecklistStart] = useState("0");
+  const [checklistEnd, setChecklistEnd] = useState("");
   const [error, setError] = useState<string>();
   const [saving, setSaving] = useState(false);
 
@@ -225,10 +229,16 @@ function RecordBoard() {
   async function openRecord(record: ActionRecord) {
     setSelected(record);
     setReply("");
+    setChecklists([]);
+    setChecklistName("");
     try {
-      setComments(await api.recordComments(record.id));
+      const [recordComments, recordChecklists] = await Promise.all([
+        api.recordComments(record.id),
+        api.recordCheckLists(record.id),
+      ]);
+      setComments(recordComments);
+      setChecklists(recordChecklists);
     } catch (e) {
-      setComments([]);
       setError(e instanceof Error ? e.message : String(e));
     }
   }
@@ -257,6 +267,67 @@ function RecordBoard() {
       const saved = await api.recordCommentAdd(selected.id, reply.trim());
       setComments((current) => [...current, saved]);
       setReply("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function addCheckList(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selected) return;
+    const name = checklistName.trim();
+    const first = Number(checklistStart);
+    const last = Number(checklistEnd);
+    if (!name || !Number.isInteger(first) || !Number.isInteger(last) || first > last) {
+      setError("请输入名称，并确保开始和结束是有效整数，且开始不大于结束");
+      return;
+    }
+    setSaving(true);
+    try {
+      const saved = await api.recordCheckListSave(selected.id, {
+        content: name,
+        first,
+        last,
+        current: first,
+      });
+      setChecklists((current) => [...current, saved]);
+      setChecklistName("");
+      setChecklistEnd("");
+      setError(undefined);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveCheckListProgress(event: React.FormEvent<HTMLFormElement>, checklist: ActionCheckList) {
+    event.preventDefault();
+    if (!selected) return;
+    if (!Number.isInteger(checklist.current) || checklist.current < checklist.first || checklist.current > checklist.last) {
+      setError(`“${checklist.content}”的当前值必须在开始和结束范围内`);
+      return;
+    }
+    setSaving(true);
+    try {
+      const saved = await api.recordCheckListSave(selected.id, checklist);
+      setChecklists((current) => current.map((item) => item.id === saved.id ? saved : item));
+      setError(undefined);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function deleteCheckList(checklist: ActionCheckList) {
+    setSaving(true);
+    try {
+      await api.recordCheckListDelete(checklist.id);
+      setChecklists((current) => current.filter((item) => item.id !== checklist.id));
+      setError(undefined);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -360,6 +431,55 @@ function RecordBoard() {
               </form>
 
               <section className="record-replies">
+                <h3><Check size={17} /> Checklist</h3>
+                <form className="record-checklist-create" onSubmit={(event) => void addCheckList(event)}>
+                  <input value={checklistName} onChange={(event) => setChecklistName(event.target.value)} placeholder="Checklist 名称" aria-label="Checklist 名称" />
+                  <div className="record-checklist-range">
+                    <label>开始
+                      <input type="number" step="1" value={checklistStart} onChange={(event) => setChecklistStart(event.target.value)} required />
+                    </label>
+                    <label>结束
+                      <input type="number" step="1" value={checklistEnd} onChange={(event) => setChecklistEnd(event.target.value)} required />
+                    </label>
+                  </div>
+                  <button type="submit" disabled={saving || !checklistName.trim()}>添加 Checklist</button>
+                </form>
+                <div className="record-checklist-list">
+                  {checklists.length === 0 ? <div className="record-reply-empty">还没有 Checklist</div> : checklists.map((checklist) => {
+                    const completed = checklist.current === checklist.last;
+                    return (
+                      <form className="record-checklist-item" key={checklist.id} onSubmit={(event) => void saveCheckListProgress(event, checklist)}>
+                        <div className="record-checklist-title">
+                          <strong>{checklist.content}</strong>
+                          <span className={completed ? "record-checklist-status completed" : "record-checklist-status"}>
+                            {completed ? "已完成" : "进行中"}
+                          </span>
+                        </div>
+                        <div className="record-checklist-progress">
+                          <span>{checklist.first} – {checklist.last}</span>
+                          <label>当前
+                            <input
+                              type="number"
+                              step="1"
+                              min={checklist.first}
+                              max={checklist.last}
+                              value={Number.isNaN(checklist.current) ? "" : checklist.current}
+                              onChange={(event) => setChecklists((current) => current.map((item) =>
+                                item.id === checklist.id
+                                  ? { ...item, current: event.target.value === "" ? Number.NaN : Number(event.target.value) }
+                                  : item
+                              ))}
+                            />
+                          </label>
+                        </div>
+                        <div className="record-checklist-actions">
+                          <button type="submit" className="secondary" disabled={saving}>保存进度</button>
+                          <button type="button" className="secondary" disabled={saving} onClick={() => void deleteCheckList(checklist)}>删除</button>
+                        </div>
+                      </form>
+                    );
+                  })}
+                </div>
                 <h3><MessageCircle size={17} /> 回复</h3>
                 <form className="record-reply-form" onSubmit={(event) => void addReply(event)}>
                   <textarea value={reply} onChange={(event) => setReply(event.target.value)} rows={3} placeholder="添加回复..." />

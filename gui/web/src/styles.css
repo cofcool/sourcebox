@@ -131,6 +131,16 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .record-reply p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.5; }
 .record-reply time { display: block; margin-top: 8px; color: #9298a1; font-size: 11px; }
 .record-reply-empty { padding: 22px 12px; color: #9298a1; text-align: center; font-size: 13px; }
+.record-checklist-create, .record-checklist-item { display: grid; gap: 9px; padding: 11px; border: 1px solid #e3e6e3; border-radius: 6px; background: white; }
+.record-checklist-create input, .record-checklist-progress input { min-width: 0; border: 1px solid #d9dde3; border-radius: 6px; padding: 8px 9px; color: #20242a; font: inherit; }
+.record-checklist-range, .record-checklist-progress { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.record-checklist-range label, .record-checklist-progress label { display: grid; gap: 5px; color: #737983; font-size: 12px; }
+.record-checklist-title, .record-checklist-progress, .record-checklist-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.record-checklist-title strong { overflow-wrap: anywhere; font-size: 13px; }
+.record-checklist-status { color: #8a651e; font-size: 11px; }
+.record-checklist-status.completed { color: #47634d; }
+.record-checklist-actions button { padding: 7px 10px; font-size: 12px; }
+.record-checklist-list { display: grid; gap: 9px; }
 @media (max-width: 640px) { .content { padding: 24px 18px; } .todo-toolbar { align-items: stretch; flex-direction: column; } .save-button { justify-content: center; } .page-heading { flex-direction: column; gap: 10px; } }
 @media (max-width: 640px) { .timer-clock, .timer-break-content strong { font-size: 56px; } .timer-durations { width: 100%; align-items: stretch; flex-direction: column; } .timer-durations label, .timer-durations input { width: 100%; } .timer-statistics-heading { align-items: flex-start; flex-direction: column; } }
 @media (max-width: 760px) { .record-create { align-items: stretch; flex-direction: column; } .record-modal-backdrop { padding: 10px; } .record-modal { max-height: calc(100vh - 20px); } .record-modal-columns { grid-template-columns: 1fr; } .record-details { border-right: 0; border-bottom: 1px solid #e3e6e3; } }

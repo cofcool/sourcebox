@@ -3,19 +3,22 @@ package net.cofcool.sourcebox.internal.api;
 import io.vertx.core.Vertx;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
-import java.time.LocalDateTime;
-import java.util.List;
 import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.internal.api.entity.ActionRecord;
 import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
+import net.cofcool.sourcebox.internal.api.entity.CheckList;
 import net.cofcool.sourcebox.internal.api.entity.Comment;
 import net.cofcool.sourcebox.internal.api.entity.RefType;
 import net.cofcool.sourcebox.logging.LoggerFactory;
 import net.cofcool.sourcebox.util.SqlRepository;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @ExtendWith(VertxExtension.class)
 class ActionServiceTest extends BaseTest {
@@ -73,6 +76,7 @@ class ActionServiceTest extends BaseTest {
     }
 
     @Test
+    @Order(Integer.MAX_VALUE)
     void find(Vertx vertx, VertxTestContext testContext) {
         actionService
             .find()
@@ -181,6 +185,13 @@ class ActionServiceTest extends BaseTest {
     void saveComment(Vertx vertx, VertxTestContext testContext) {
         actionService
             .saveComment(defaultRecord.id(), Comment.builder().content("aaaaaa").build())
+            .onComplete(testContext.succeeding(r -> testContext.verify(testContext::completeNow)));
+    }
+
+    @Test
+    void saveCheckList(Vertx vertx, VertxTestContext testContext) {
+        actionService
+            .saveCheckList(defaultRecord.id(), CheckList.builder().content("01").first(0).last(10).current(2).build())
             .onComplete(testContext.succeeding(r -> testContext.verify(testContext::completeNow)));
     }
 

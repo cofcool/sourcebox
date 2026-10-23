@@ -5,13 +5,15 @@ import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
-import java.util.List;
 import lombok.CustomLog;
 import net.cofcool.sourcebox.internal.api.entity.ActionRecord;
 import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
+import net.cofcool.sourcebox.internal.api.entity.CheckList;
 import net.cofcool.sourcebox.internal.api.entity.Comment;
 import net.cofcool.sourcebox.util.JsonUtil;
 import net.cofcool.sourcebox.util.VertxUtils;
+
+import java.util.List;
 
 @CustomLog
 public class ActionIndex {
@@ -29,6 +31,11 @@ public class ActionIndex {
 
         router.get("/example").respond(r -> actionService.example());
         router.get("/types").respond(r -> actionService.findAllType());
+
+        router.get("/checklist/:actionId").respond(r -> actionService.findCheckList(r.pathParam("actionId")));
+        router.post("/checklist/:actionId")
+            .respond(r -> actionService.saveCheckList(r.pathParam("actionId"), r.body().asPojo(CheckList.class)));
+        router.delete("/checklist/:id").respond(r -> actionService.deleteCheckList(r.pathParam("id")));
 
         router.get("/comment/:actionId").respond(r -> actionService.findComment(r.pathParam("actionId")));
         router.post("/comment/:actionId")

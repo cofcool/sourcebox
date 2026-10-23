@@ -6,11 +6,8 @@ import lombok.SneakyThrows;
 import net.cofcool.sourcebox.ToolName;
 import net.cofcool.sourcebox.WebTool;
 import net.cofcool.sourcebox.internal.api.NoteIndex;
-import net.cofcool.sourcebox.internal.api.entity.ActionRecord;
-import net.cofcool.sourcebox.internal.api.entity.ActionState;
+import net.cofcool.sourcebox.internal.api.entity.*;
 import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
-import net.cofcool.sourcebox.internal.api.entity.Comment;
-import net.cofcool.sourcebox.internal.api.entity.ListData;
 import net.cofcool.sourcebox.util.Repl;
 import net.cofcool.sourcebox.util.Repl.Command;
 import net.cofcool.sourcebox.util.Repl.CommandRegistry;
@@ -90,6 +87,9 @@ public class HisRecord implements WebTool {
             cr.register(new DeleteCommand());
             cr.register(new FindCommand());
             cr.register(new CommentCommand());
+            cr.register(new CheckListFindCommand());
+            cr.register(new CheckListAddCommand());
+            cr.register(new CheckListUpdateCommand());
             getRepl().launch(cr);
         }
     }
@@ -151,6 +151,10 @@ public class HisRecord implements WebTool {
 
     }
 
+    public static class CheckLists extends ListData<CheckList> {
+
+    }
+
     class CommentCommand implements Command {
 
         @Override
@@ -173,6 +177,95 @@ public class HisRecord implements WebTool {
             return postRequestLocalData("/action/comment/" + inputs.getString("id"),
                 Comment.builder().content(inputs.getString("content")).build(),
                 Comment.class
+            );
+        }
+    }
+
+    class CheckListAddCommand implements Command {
+
+        @Override
+        public String name() {
+            return "checklist-add";
+        }
+
+        @Override
+        public void prompt(PromptStore store) {
+            store.record("actionId", null)
+                .record("content", null)
+                .record("first", null)
+                .record("last", null);
+        }
+
+        @Override
+        public void execute(Inputs inputs, Writer writer) {
+            request(inputs);
+        }
+
+        public CheckList request(Inputs inputs) {
+            return postRequestLocalData("/action/checklist/" + inputs.getString("actionId"),
+                CheckList.builder()
+                    .content(inputs.getString("content"))
+                    .first(inputs.getInt("first"))
+                    .last(inputs.getInt("last"))
+                    .current(inputs.getInt("first"))
+                    .build(),
+                CheckList.class
+            );
+        }
+    }
+
+    class CheckListFindCommand implements Command {
+
+        @Override
+        public String name() {
+            return "checklist-find";
+        }
+
+        @Override
+        public void prompt(PromptStore store) {
+            store.record("actionId", null);
+        }
+
+
+        @SneakyThrows
+        @Override
+        public void execute(Inputs inputs, Writer writer) {
+            writer.write(CheckList.toPrintStr(request(inputs)));
+        }
+
+        public CheckLists request(Inputs inputs) {
+            return getRequestLocalData("/action/checklist/" + inputs.getString("actionId"),
+                CheckLists.class
+            );
+        }
+    }
+
+    class CheckListUpdateCommand implements Command {
+
+        @Override
+        public String name() {
+            return "checklist-update";
+        }
+
+        @Override
+        public void prompt(PromptStore store) {
+            store.record("actionId", null)
+                .record("id", null)
+                .record("current", null);
+        }
+
+        @Override
+        public void execute(Inputs inputs, Writer writer) {
+            request(inputs);
+        }
+
+        public CheckList request(Inputs inputs) {
+            return postRequestLocalData("/action/checklist/" + inputs.getString("actionId"),
+                CheckList.builder()
+                    .id(inputs.getString("id"))
+                    .current(inputs.getInt("current"))
+                    .build(),
+                CheckList.class
             );
         }
     }

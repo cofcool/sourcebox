@@ -2,12 +2,6 @@ package net.cofcool.sourcebox.internal.api.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.vertx.sqlclient.Row;
-import java.sql.JDBCType;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 import lombok.Builder;
 import net.cofcool.sourcebox.util.EntityAction;
 import net.cofcool.sourcebox.util.LogseqOutStr;
@@ -17,6 +11,13 @@ import net.cofcool.sourcebox.util.TableInfoHelper.Entity;
 import net.cofcool.sourcebox.util.TableInfoHelper.ID;
 import net.cofcool.sourcebox.util.Utils;
 import org.apache.commons.lang3.StringUtils;
+
+import java.sql.JDBCType;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Builder
 @Entity(name = "action_record")
@@ -193,11 +194,12 @@ public record ActionRecord(
     public record RecordRet(
         ActionRecord record,
         List<Comment> comments,
+        List<CheckList> checklists,
         Object other
     ){
 
-        public RecordRet(ActionRecord record, List<Comment> comments) {
-            this(record, comments, null);
+        public RecordRet(ActionRecord record, List<Comment> comments,  List<CheckList> checklists) {
+            this(record, comments, checklists, null);
         }
     }
 }

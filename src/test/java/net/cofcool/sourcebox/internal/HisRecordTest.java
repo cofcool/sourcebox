@@ -4,7 +4,6 @@ import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
-import java.io.PrintWriter;
 import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.Tool;
 import net.cofcool.sourcebox.Tool.Args;
@@ -13,12 +12,10 @@ import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
 import net.cofcool.sourcebox.runner.CLIRunner.ConsoleToolContext;
 import net.cofcool.sourcebox.runner.CLIWebToolVerticle;
 import net.cofcool.sourcebox.util.Repl;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import java.io.PrintWriter;
 
 @ExtendWith(VertxExtension.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -105,6 +102,27 @@ class HisRecordTest extends BaseTest {
             r.addInput("find");
             r.addInput("test");
             r.addInput("record");
+            t.run(args);
+            testContext.completeNow();
+        });
+    }
+
+    @Test
+    void replCheckList(Vertx vertx, VertxTestContext testContext) throws Exception {
+        var ar = ActionRecord.builder().name("test").type(Type.record.name()).build();
+        testContext.verify(() -> {
+            var t = new HisRecord();
+            var r = new FakeLineReader();
+            t.setRepl(new Repl(r, new PrintWriter(System.out), false));
+            r.addInput("checklist-add");
+            r.addInput(ar.id());
+            r.addInput("test-01");
+            r.addInput("01");
+            r.addInput("10");
+            t.run(args);
+
+            r.addInput("checklist-find");
+            r.addInput(ar.id());
             t.run(args);
             testContext.completeNow();
         });

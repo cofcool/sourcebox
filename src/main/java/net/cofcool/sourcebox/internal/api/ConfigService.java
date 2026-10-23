@@ -1,25 +1,22 @@
 package net.cofcool.sourcebox.internal.api;
 
 import io.vertx.core.Future;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 import lombok.CustomLog;
 import net.cofcool.sourcebox.internal.api.entity.Config;
 import net.cofcool.sourcebox.util.JsonUtil;
 import net.cofcool.sourcebox.util.SqlRepository;
 import net.cofcool.sourcebox.util.VertxUtils.JDBCPoolConfig;
 
+import java.sql.*;
+import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 @CustomLog
 public class ConfigService {
 
-    static final int DB_VERSION = 7;
+    static final int DB_VERSION = 8;
 
     private static final class ServiceHolder {
         private static final ConfigService SERVICE = new ConfigService();
@@ -87,6 +84,10 @@ public class ConfigService {
 
         migrationSteps.put(7, List.of(
             "ALTER TABLE action_record ADD COLUMN category VARCHAR(50) null"
+        ));
+
+        migrationSteps.put(DB_VERSION, List.of(
+            "DROP TABLE check_list"
         ));
 
         try (Connection conn = DriverManager.getConnection(config.getUrl());

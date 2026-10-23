@@ -68,6 +68,17 @@ export interface ActionComment {
   createTime?: string | null;
 }
 
+export interface ActionCheckList {
+  id: string;
+  actionId: string;
+  content: string;
+  first: number;
+  last: number;
+  current: number;
+  createTime?: string | null;
+  updateTime?: string | null;
+}
+
 export interface ActionType {
   id: string;
   name: string;
@@ -213,6 +224,20 @@ export const api = {
     return request<ActionComment>(`/action/comment/${encodeURIComponent(id)}`, {
       method: "POST",
       body: JSON.stringify({ content }),
+    });
+  },
+  recordCheckLists: async (id: string): Promise<ActionCheckList[]> => {
+    return request<ActionCheckList[]>(`/action/checklist/${encodeURIComponent(id)}`);
+  },
+  recordCheckListSave: async (actionId: string, checklist: Partial<ActionCheckList>): Promise<ActionCheckList> => {
+    return request<ActionCheckList>(`/action/checklist/${encodeURIComponent(actionId)}`, {
+      method: "POST",
+      body: JSON.stringify(checklist),
+    });
+  },
+  recordCheckListDelete: async (id: string): Promise<void> => {
+    await request<void>(`/action/checklist/${encodeURIComponent(id)}`, {
+      method: "DELETE",
     });
   },
   noteList: async (): Promise<NoteRecord[]> => {

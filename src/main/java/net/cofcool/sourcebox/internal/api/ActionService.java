@@ -5,30 +5,22 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.sqlclient.Row;
-import java.io.IOException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.Function;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
 import lombok.CustomLog;
-import net.cofcool.sourcebox.internal.api.entity.ActionRecord;
-import net.cofcool.sourcebox.internal.api.entity.ActionState;
-import net.cofcool.sourcebox.internal.api.entity.ActionType;
+import net.cofcool.sourcebox.internal.api.entity.*;
 import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
-import net.cofcool.sourcebox.internal.api.entity.Comment;
-import net.cofcool.sourcebox.internal.api.entity.Note;
-import net.cofcool.sourcebox.internal.api.entity.RefType;
 import net.cofcool.sourcebox.util.QueryBuilder;
 import net.cofcool.sourcebox.util.SqlRepository;
 import net.cofcool.sourcebox.util.Utils;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
+
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 @CustomLog
 public class ActionService {
@@ -36,6 +28,7 @@ public class ActionService {
     private final SqlRepository<ActionRecord> actionRecordSqlRepository;
     private final SqlRepository<Comment> commentSqlRepository;
     private final SqlRepository<ActionType> actionTypeSqlRepository;
+    private final SqlRepository<CheckList>  checklistSqlRepository;
 
     private final List<ActionInterceptor> saveInterceptors = List.of(new LinkInterceptor(), new RecordInterceptor());
 
@@ -45,6 +38,7 @@ public class ActionService {
         this.actionRecordSqlRepository = SqlRepository.create(ActionRecord.class);
         this.commentSqlRepository = SqlRepository.create(Comment.class);
         this.actionTypeSqlRepository = SqlRepository.create(ActionType.class);
+        this.checklistSqlRepository = SqlRepository.create(CheckList.class);
         this.noteService = noteService;
     }
 
@@ -99,6 +93,10 @@ public class ActionService {
 
     public Future<List<Comment>> findComment(String actionId) {
         return commentSqlRepository.find(new Comment(actionId));
+    }
+
+    public Future<List<CheckList>> findCheckList(String actionId) {
+        return checklistSqlRepository.find(new CheckList(actionId));
     }
 
     public Future<List<RecordStatistics>> findRecordStatistics(Type t) {
@@ -178,8 +176,8 @@ public class ActionService {
     public Future<ActionRecord.RecordRet> find(String id) {
         return actionRecordSqlRepository.find(id)
             .compose(a ->
-                findComment(a.id())
-                    .compose(c -> Future.succeededFuture(new ActionRecord.RecordRet(a, c))))
+                Future.all(findComment(a.id()), findCheckList(a.id()))
+                    .compose(c -> Future.succeededFuture(new ActionRecord.RecordRet(a, c.resultAt(0), c.resultAt(1)))))
             .compose(a -> {
                 var ref = RefType.parse(a.record().refs());
                 var refObj = switch (ref.getKey()) {
@@ -188,7 +186,7 @@ public class ActionService {
                     default -> Future.succeededFuture();
                 };
                 return refObj.compose(f -> Future.succeededFuture(
-                    new ActionRecord.RecordRet(a.record(), a.comments(), f)
+                    new ActionRecord.RecordRet(a.record(), a.comments(), a.checklists(), f)
                 ));
             });
     }
@@ -201,7 +199,9 @@ public class ActionService {
     }
 
     public Future<Boolean> deleteActions(String id) {
-        return delete(id, actionRecordSqlRepository::delete).compose(a -> deleteCommentsByActionId(id));
+        return delete(id, actionRecordSqlRepository::delete)
+            .compose(a -> deleteCommentsByActionId(id))
+            .compose(a -> deleteCheckListByActionId(id));
     }
 
     public Future<Boolean> deleteComments(String id) {
@@ -217,19 +217,34 @@ public class ActionService {
             .compose(a -> Future.succeededFuture(true));
     }
 
+    public Future<Boolean> deleteCheckList(String id) {
+        return delete(id, checklistSqlRepository::delete);
+    }
+
+    public Future<Boolean> deleteCheckListByActionId(String actionId) {
+        return checklistSqlRepository
+            .find(
+                QueryBuilder.builder().from(CheckList.class).select().and("action_id=?", actionId))
+            .compose(
+                a -> Future.all(a.stream().map(c -> checklistSqlRepository.delete(c.id())).toList()))
+            .compose(a -> Future.succeededFuture(true));
+    }
+
     private Future<Boolean> delete(String id, Function<String, Future<Boolean>> deleteFunc) {
         return deleteFunc.apply(id).compose(a -> Future.succeededFuture(true));
     }
 
     private <T, R, A> Future<R> findAll(Function<ActionRecord.RecordRet, T> mapper, Collector<? super T, A, R> collector) {
-        return Future.all(actionRecordSqlRepository.find(), commentSqlRepository.find())
+        return Future.all(actionRecordSqlRepository.find(), commentSqlRepository.find(), checklistSqlRepository.find())
             .compose(a -> {
                 List<ActionRecord> r = a.result().resultAt(0);
                 List<Comment> c = a.result().resultAt(1);
                 var commentMap = c.stream().collect(Collectors.groupingBy(Comment::actionId));
+                List<CheckList> cl = a.result().resultAt(2);
+                var checkListMap = cl.stream().collect(Collectors.groupingBy(CheckList::actionId));
                 return Future.succeededFuture(r
                     .stream()
-                    .map(record -> new ActionRecord.RecordRet(record, commentMap.getOrDefault(record.id(), List.of())))
+                    .map(record -> new ActionRecord.RecordRet(record, commentMap.getOrDefault(record.id(), List.of()), checkListMap.getOrDefault(record.id(), List.of())))
                     .map(mapper)
                     .collect(collector)
                 );
@@ -260,6 +275,27 @@ public class ActionService {
             .actionId(actionId).content(pojo.content())
             .createTime(LocalDateTime.now()).updateTime(LocalDateTime.now())
             .build()
+        );
+    }
+
+    public Future<CheckList> saveCheckList(String actionId, CheckList pojo) {
+        return checklistSqlRepository.save(CheckList.builder()
+            .id(StringUtils.isBlank(pojo.id()) ? System.currentTimeMillis() + "" : pojo.id())
+            .actionId(actionId)
+            .content(pojo.content())
+            .first(pojo.first())
+            .last(pojo.last())
+            .current(pojo.current())
+            .createTime(LocalDateTime.now()).updateTime(LocalDateTime.now())
+            .build()
+        ).onSuccess( c ->
+            saveComment(
+                c.actionId(),
+                Comment.builder()
+                    .actionId(actionId)
+                    .content(String.format("当前进度为 %s - %d", c.content(), c.current()))
+                    .build()
+            )
         );
     }
 

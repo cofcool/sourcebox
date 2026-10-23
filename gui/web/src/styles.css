@@ -5,7 +5,12 @@ button.secondary { background: #eef0f3; color: #1f2937; }
 button.danger { background: #fff0f0; color: #ab2c34; }
 button.small { padding: 7px 10px; font-size: 12px; }
 .app { display: flex; height: 100vh; overflow: hidden; }
-.sidebar { width: 230px; height: 100vh; display: flex; flex-direction: column; background: #fff; border-right: 1px solid #e5e7eb; padding: 16px 12px; flex-shrink: 0; }
+.sidebar { width: 230px; height: 100vh; display: flex; flex-direction: column; background: #fff; border-right: 1px solid #e5e7eb; padding: 16px 12px; flex-shrink: 0; transition: width .18s ease, transform .18s ease; }
+.sidebar.sidebar-collapsed { width: 68px; }
+.sidebar-collapsed .brand { justify-content: center; padding-inline: 0; }
+.sidebar-collapsed .brand > span, .sidebar-collapsed nav a > span, .sidebar-collapsed .nav-title { display: none; }
+.sidebar-collapsed nav a { justify-content: center; padding-inline: 8px; }
+.sidebar-collapsed .nav-group { margin-top: 6px; }
 .brand { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; padding: 8px 10px 22px; }
 .brand-icon { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; background: #20242a; color: white; }
 nav { display: flex; flex-direction: column; gap: 3px; flex: 1; overflow-y: auto; padding-bottom: 8px; }
@@ -13,7 +18,11 @@ nav a { display: flex; align-items: center; gap: 9px; padding: 9px 10px; color: 
 nav a:hover, nav a.active { background: #eef0f3; color: #111827; }
 .nav-group { margin-top: 10px; }
 .nav-title { padding: 5px 10px; font-size: 11px; color: #9298a1; text-transform: uppercase; }
-.content { flex: 1; overflow: auto; padding: 34px 42px; max-width: 1400px; }
+.content { position: relative; z-index: 1; flex: 1; overflow: auto; padding: 34px 42px; max-width: 1400px; }
+.app-toolbar { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; min-height: 42px; margin-bottom: 16px; background: #f5f6f8; }
+.sidebar-toggle { display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 1px solid #e0e3e7; background: white; color: #40454d; }
+.sidebar-toggle:hover { background: #eef0f3; }
+.sidebar-backdrop { display: none; }
 h1 { margin: 0 0 8px; font-size: 27px; }
 h2 { display: flex; align-items: center; gap: 8px; font-size: 17px; }
 .muted { color: #737983; }
@@ -146,3 +155,13 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 @media (max-width: 640px) { .content { padding: 24px 18px; } .todo-toolbar { align-items: stretch; flex-direction: column; } .save-button { justify-content: center; } .page-heading { flex-direction: column; gap: 10px; } }
 @media (max-width: 640px) { .timer-clock, .timer-break-content strong { font-size: 56px; } .timer-durations { width: 100%; align-items: stretch; flex-direction: column; } .timer-durations label, .timer-durations input { width: 100%; } .timer-statistics-heading { align-items: flex-start; flex-direction: column; } }
 @media (max-width: 760px) { .record-create { align-items: stretch; flex-direction: column; } .record-modal-backdrop { padding: 10px; } .record-modal { max-height: calc(100vh - 20px); } .record-modal-columns { grid-template-columns: 1fr; } .record-details { border-right: 0; border-bottom: 1px solid #e3e6e3; } }
+@media (max-width: 760px) {
+  .sidebar, .sidebar.sidebar-collapsed { position: fixed; top: 0; bottom: 0; left: 0; z-index: 20; width: min(280px, 85vw); height: 100vh; transform: translateX(-100%); box-shadow: 8px 0 28px rgb(16 24 18 / 12%); }
+  .sidebar.sidebar-open { transform: translateX(0); }
+  .sidebar.sidebar-collapsed .brand { justify-content: flex-start; padding: 8px 10px 22px; }
+  .sidebar.sidebar-collapsed .brand > span, .sidebar.sidebar-collapsed nav a > span { display: inline; }
+  .sidebar.sidebar-collapsed .nav-title { display: block; }
+  .sidebar.sidebar-collapsed nav a { justify-content: flex-start; padding: 9px 10px; }
+  .sidebar-backdrop { position: fixed; inset: 0; z-index: 10; display: block; width: 100%; height: 100%; padding: 0; border-radius: 0; background: rgb(24 29 26 / 48%); }
+  .app-toolbar { top: 0; }
+}

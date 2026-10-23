@@ -1,22 +1,23 @@
 import {useEffect, useMemo, useState} from "react";
 import {NavLink, Route, Routes, useLocation} from "react-router-dom";
 import {
-    Activity,
-    Check,
-    Clipboard,
-    FileText,
-    Home as HomeIcon,
-    ListTodo,
-    MessageCircle,
-    NotebookPen,
-    Pencil,
-    Plus,
-    Save,
-    Search,
-    Settings,
-    Trash2,
-    Wrench,
-    X,
+  Activity,
+  Check,
+  Clipboard,
+  FileText,
+  Home as HomeIcon,
+  ListTodo,
+  Menu,
+  MessageCircle,
+  NotebookPen,
+  Pencil,
+  Plus,
+  Save,
+  Search,
+  Settings,
+  Trash2,
+  Wrench,
+  X,
 } from "lucide-react";
 import type {ActionCheckList, ActionComment, ActionRecord, SystemInfo, TimerStatistics, ToolInfo} from "./api/client";
 import {api, getBackendUrl} from "./api/client";
@@ -67,31 +68,36 @@ function generateId() {
   return `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-function Sidebar({ tools }: { tools: ToolInfo[] }) {
+function Sidebar({ tools, collapsed, mobile, onNavigate }: {
+  tools: ToolInfo[];
+  collapsed: boolean;
+  mobile: boolean;
+  onNavigate: () => void;
+}) {
   const categories = useMemo(() => Array.from(new Set(tools.map((tool) => tool.category))), [tools]);
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar${collapsed ? " sidebar-collapsed" : ""}${mobile && !collapsed ? " sidebar-open" : ""}`}>
       <div className="brand">
         <div className="brand-icon"><Wrench size={20} /></div>
         <span>TheSourceBox</span>
       </div>
 
       <nav>
-        <NavLink to="/" end><HomeIcon size={17} />首页</NavLink>
+        <NavLink to="/" end onClick={onNavigate}><HomeIcon size={17} /><span>首页</span></NavLink>
 
         {categories.map((category) => (
           <div className="nav-group" key={category}>
             <div className="nav-title">{category}</div>
             {tools.filter((tool) => tool.category === category).map((tool) => (
-              <NavLink key={tool.id} to={`/tools/${tool.id}`}>
-                <Wrench size={15} />{tool.name}
+              <NavLink key={tool.id} to={`/tools/${tool.id}`} onClick={onNavigate}>
+                <Wrench size={15} /><span>{tool.name}</span>
               </NavLink>
             ))}
           </div>
         ))}
 
-        <NavLink to="/settings"><Settings size={17} />设置</NavLink>
+        <NavLink to="/settings" onClick={onNavigate}><Settings size={17} /><span>设置</span></NavLink>
       </nav>
     </aside>
   );
@@ -1396,7 +1402,19 @@ export default function App() {
   const [tools, setTools] = useState<ToolInfo[]>([]);
   const [system, setSystem] = useState<SystemInfo>();
   const [error, setError] = useState<string>();
+  const [mobile, setMobile] = useState(() => window.matchMedia("(max-width: 760px)").matches);
+  const [sidebarOpen, setSidebarOpen] = useState(() => !window.matchMedia("(max-width: 760px)").matches);
   const location = useLocation();
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 760px)");
+    const updateViewport = (event: MediaQueryListEvent) => {
+      setMobile(event.matches);
+      setSidebarOpen(!event.matches);
+    };
+    media.addEventListener("change", updateViewport);
+    return () => media.removeEventListener("change", updateViewport);
+  }, []);
 
   useEffect(() => {
     Promise.all([api.systemInfo(), api.tools()])
@@ -1409,8 +1427,25 @@ export default function App() {
 
   return (
     <div className="app">
-      <Sidebar tools={tools} />
+      {mobile && sidebarOpen && <button className="sidebar-backdrop" aria-label="关闭导航菜单" onClick={() => setSidebarOpen(false)} />}
+      <Sidebar
+        tools={tools}
+        collapsed={!sidebarOpen}
+        mobile={mobile}
+        onNavigate={() => { if (mobile) setSidebarOpen(false); }}
+      />
       <main className="content">
+        <header className="app-toolbar">
+          <button
+            className="sidebar-toggle"
+            type="button"
+            aria-label={sidebarOpen ? "收起侧边栏" : "展开侧边栏"}
+            aria-expanded={sidebarOpen}
+            onClick={() => setSidebarOpen((open) => !open)}
+          >
+            {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </header>
         {error && <div className="error">Java Backend 连接失败：{error}</div>}
         <Routes>
           <Route path="/" element={<Home system={system} tools={tools} />} />

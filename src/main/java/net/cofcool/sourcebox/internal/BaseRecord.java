@@ -1,9 +1,5 @@
 package net.cofcool.sourcebox.internal;
 
-import static net.cofcool.sourcebox.internal.api.entity.ActionRecord.toPrintStr;
-
-import java.time.LocalDateTime;
-import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.CustomLog;
 import net.cofcool.sourcebox.WebTool;
 import net.cofcool.sourcebox.internal.api.NoteIndex;
@@ -14,6 +10,11 @@ import net.cofcool.sourcebox.internal.api.entity.ListData;
 import net.cofcool.sourcebox.util.Utils;
 import org.apache.commons.lang3.StringUtils;
 
+import java.time.LocalDateTime;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static net.cofcool.sourcebox.internal.api.entity.ActionRecord.toPrintStr;
+
 @CustomLog
 public abstract class BaseRecord implements WebTool {
 
@@ -23,7 +24,7 @@ public abstract class BaseRecord implements WebTool {
 
         args.readArg("add").ifPresent(a -> {
             flag.set(true);
-            callAdd(a);
+            args.getContext().write(callAdd(a));
         });
 
         args.readArg("done").ifPresent(a -> {
@@ -57,18 +58,20 @@ public abstract class BaseRecord implements WebTool {
         return false;
     }
 
-    protected void callAdd(Arg a) {
+    protected String callAdd(Arg a) {
+        var id = "";
         if (a.val().isBlank()) {
             var name = Utils.readLine("name");
             var remark = Utils.readLine("remark");
-            saveRecord(ActionState.todo, name, remark, null);
+            id = saveRecord(ActionState.todo, name, remark, null).id();
         } else {
-            saveRecord(ActionState.todo, a.val(), null, null);
+            id = saveRecord(ActionState.todo, a.val(), null, null).id();
         }
+        return id;
     }
 
-    protected void updateState(ActionRecord record) {
-        postRequestLocalData(
+    protected ActionRecord updateState(ActionRecord record) {
+        return postRequestLocalData(
             "/action",
             record,
             ActionRecord.class);
@@ -84,7 +87,7 @@ public abstract class BaseRecord implements WebTool {
         );
     }
 
-    protected void saveRecord(ActionState state, String name, String remark, String category) {
+    protected ActionRecord saveRecord(ActionState state, String name, String remark, String category) {
         if (StringUtils.isBlank(name)) {
             throw new IllegalArgumentException("name must not be null");
         }
@@ -103,7 +106,7 @@ public abstract class BaseRecord implements WebTool {
             .start(LocalDateTime.now())
             .end(LocalDateTime.now())
             .build();
-        updateState(param);
+        return updateState(param);
     }
 
     protected abstract Type currentType();

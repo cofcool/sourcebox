@@ -111,7 +111,7 @@ public class TrelloToLogseqImporter implements Tool {
     }
 
     private void importRecord(Trello trello, ListsItem cardBoard, CardsItem card, String category, LocalDateTime createdAt, String url) {
-        var actionId = Utils.md5(card.name() + Type.record.name());
+        var actionId = Utils.generateShortUUID();
         var labels = card.labels().stream().map(LabelsItem::name).collect(Collectors.joining(","));
         var record = ActionRecord.builder()
             .id(actionId)

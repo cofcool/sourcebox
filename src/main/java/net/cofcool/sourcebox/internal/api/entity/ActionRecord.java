@@ -72,7 +72,7 @@ public record ActionRecord(
         List<String> comments, String labels, String refs, String remark, LocalDateTime createTime,
         LocalDateTime updateTime) {
         this.id = StringUtils.isBlank(id) && !StringUtils.isBlank(name) && !StringUtils.isBlank(type) ?
-            Utils.md5(name + type) : id;
+            Utils.generateShortUUID() : id;
         this.name = name;
         this.icon = icon;
         this.index = index;

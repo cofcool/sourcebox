@@ -42,6 +42,8 @@ public class ActionIndex {
             .respond(r -> actionService.saveComment(r.pathParam("actionId"), r.body().asPojo(Comment.class)));
         router.delete("/comment/:id").respond(r -> actionService.deleteComments(r.pathParam("id")));
 
+        router.get("/exportAll").respond(context -> actionService.find());
+
         router.get("/:actionId").respond(r -> actionService.find(r.pathParam("actionId")));
 
         router.get("/refs/:actionId").respond(r -> actionService.findAllRefs(r.pathParam("actionId")));
@@ -59,8 +61,6 @@ public class ActionIndex {
         router.post().respond(r -> actionService.saveAction(r.body().asPojo(ActionRecord.class)));
 
         router.delete("/:actionId").respond(r -> actionService.deleteActions(r.pathParam("actionId")));
-
-        router.get("/exportAll").respond(context -> actionService.find());
 
         parentRouter.route("/action/*").subRouter(router);
 

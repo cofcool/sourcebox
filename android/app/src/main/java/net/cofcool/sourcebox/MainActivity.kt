@@ -419,6 +419,32 @@ private fun RecordBoardScreen(
     ) {
         Text("历史记录", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Text("记录事项、整理进度，并在卡片下持续补充回复。", style = MaterialTheme.typography.bodySmall)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("本地数据库：${vm.localActionCount} 条")
+                Text(
+                    vm.lastActionSync?.let { "最近同步：$it" } ?: "尚未同步",
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+            OutlinedButton(onClick = vm::syncAllData, enabled = !vm.busy) {
+                Text("立即同步")
+            }
+        }
+        Text(
+            "行动 ${vm.localActionCount} · 便笺 ${vm.localNoteCount} · 命令 ${vm.localCommandCount}",
+            style = MaterialTheme.typography.labelSmall
+        )
+        Text(
+            "便笺：${vm.lastNoteSync ?: "尚未同步"} · 命令：${vm.lastCommandSync ?: "尚未同步"}",
+            style = MaterialTheme.typography.labelSmall
+        )
+        Text(
+            "待上传的离线修改：${vm.pendingChangeCount}",
+            style = MaterialTheme.typography.labelSmall,
+            color = if (vm.pendingChangeCount > 0) MaterialTheme.colorScheme.error
+            else MaterialTheme.colorScheme.onSurfaceVariant
+        )
 
         OutlinedTextField(
             value = newRecordName,
@@ -902,7 +928,10 @@ private fun CommandsScreen(vm: ToolboxViewModel, modifier: Modifier) {
                         ) {
                             Column(Modifier.weight(1f)) {
                                 Text(item.cmd, fontWeight = FontWeight.Medium)
-                                val details = listOfNotNull(item.alias, item.tags.takeIf { it.isNotEmpty() }?.joinToString(" "))
+                                val details = listOfNotNull(
+                                    item.alias,
+                                    item.tags?.takeIf { it.isNotEmpty() }?.joinToString(" ")
+                                )
                                     .joinToString(" · ")
                                 if (details.isNotBlank()) Text(details, style = MaterialTheme.typography.bodySmall)
                             }

@@ -23,6 +23,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 @Serializable
@@ -64,23 +65,33 @@ data class CommandRecord(
     val id: String? = null,
     val cmd: String,
     val alias: String? = null,
-    val tags: List<String> = emptyList(),
+    val tags: List<String>? = emptyList(),
     val remark: String? = null,
-    val frequency: Int? = null
+    val frequency: Int? = null,
+    val createTime: String? = null,
+    val updateTime: String? = null
 )
 
 @Serializable
 data class ActionRecord(
     val id: String = "",
     val name: String,
+    val icon: String? = null,
+    val index: String? = null,
+    val device: String? = null,
     val type: String = "record",
     val state: String = "todo",
     val category: String? = null,
+    val rating: Int? = null,
+    val comments: List<String> = emptyList(),
     val labels: String? = "",
+    val refs: String? = null,
     val remark: String? = null,
     val start: String? = null,
     val end: String? = null,
-    val duration: Int? = null
+    val duration: Int? = null,
+    val createTime: String? = null,
+    val updateTime: String? = null
 )
 
 @Serializable
@@ -102,16 +113,11 @@ data class ActionCheckList(
 )
 
 @Serializable
-data class ActionType(
-    val id: String = "",
-    val name: String,
-    val type: String
-)
-
-@Serializable
-data class ActionTypeResponse(
-    val types: List<ActionType> = emptyList(),
-    val states: String = ""
+data class ActionExport(
+    val record: ActionRecord,
+    val comments: List<ActionComment> = emptyList(),
+    val checklists: List<ActionCheckList> = emptyList(),
+    val other: JsonElement? = null
 )
 
 @Serializable
@@ -206,14 +212,17 @@ class SourceboxApi(context: Context) {
         throw IOException("等待工具执行结果超时")
     }
 
-    suspend fun notes(): List<NoteRecord> =
-        json.decodeFromString<List<NoteRecord>>(request("/note/list"))
-            .filter { it.state == "NORMAL" }
+    suspend fun exportAllNotes(): List<NoteRecord> =
+        json.decodeFromString<List<NoteRecord>>(request("/note/exportAll"))
 
     suspend fun saveNote(note: NoteRecord): NoteRecord {
         val date = java.time.LocalDateTime.now()
             .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-        val updated = note.copy(date = date, state = "NORMAL")
+        val updated = note.copy(
+            id = note.id.ifBlank { UUID.randomUUID().toString() },
+            date = date,
+            state = "NORMAL"
+        )
         return json.decodeFromString(request("/note/note", "POST", json.encodeToString(updated)))
     }
 
@@ -221,18 +230,11 @@ class SourceboxApi(context: Context) {
         request("/note/note/${Uri.encode(id)}", "DELETE")
     }
 
-    suspend fun todos(query: String = ""): List<TodoRecord> {
-        val path = buildString {
-            append("/action?state=todo&type=todo")
-            if (query.isNotBlank()) append("&name=${Uri.encode(query)}")
-        }
-        return json.decodeFromString(request(path))
-    }
-
-    suspend fun addTodo(name: String, remark: String) {
+    suspend fun addTodo(name: String, remark: String, id: String): ActionRecord {
         val now = java.time.LocalDateTime.now()
             .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
         val body = buildJsonObject {
+            put("id", id)
             put("name", name)
             put("remark", remark)
             put("state", "todo")
@@ -240,25 +242,22 @@ class SourceboxApi(context: Context) {
             put("start", now)
             put("end", now)
         }
-        request("/action", "POST", json.encodeToString(body))
+        return json.decodeFromString(request("/action", "POST", json.encodeToString(body)))
     }
 
-    suspend fun completeTodo(id: String) {
+    suspend fun completeTodo(id: String): ActionRecord {
         val body = buildJsonObject {
             put("id", id)
             put("state", "done")
         }
-        request("/action", "POST", json.encodeToString(body))
+        return json.decodeFromString(request("/action", "POST", json.encodeToString(body)))
     }
 
-    suspend fun commands(query: String): List<CommandRecord> {
-        val path = if (query.isBlank()) "/cmd/quick" else "/cmd/quick?q=${Uri.encode(query)}"
-        return json.decodeFromString(request(path))
-    }
+    suspend fun exportAllCommands(): List<CommandRecord> =
+        json.decodeFromString<List<CommandRecord>>(request("/cmd/exportAll"))
 
-    suspend fun saveCommand(command: CommandRecord) {
-        request("/cmd", "POST", json.encodeToString(command))
-    }
+    suspend fun saveCommand(command: CommandRecord): CommandRecord =
+        json.decodeFromString(request("/cmd", "POST", json.encodeToString(command)))
 
     suspend fun deleteCommand(id: String) {
         request("/cmd/${Uri.encode(id)}", "DELETE")
@@ -268,37 +267,16 @@ class SourceboxApi(context: Context) {
         request("/cmd/store/ALL")
     }
 
-    suspend fun recordList(query: String, page: Int, size: Int): List<ActionRecord> {
-        val queryParameters = Uri.Builder()
-            .appendQueryParameter("type", "record")
-            .appendQueryParameter("page", page.toString())
-            .appendQueryParameter("size", size.toString())
-        query.trim().removePrefix("?").split("&")
-            .filter(String::isNotBlank)
-            .forEach { item ->
-                val separator = item.indexOf('=')
-                if (separator < 0) queryParameters.appendQueryParameter(item, "")
-                else queryParameters.appendQueryParameter(
-                    Uri.decode(item.substring(0, separator)),
-                    Uri.decode(item.substring(separator + 1))
-                )
-            }
-        return json.decodeFromString<List<ActionRecord>>(
-            request("/action?${queryParameters.build().encodedQuery}")
-        )
-    }
-
-    suspend fun recordTypes(): List<String> =
-        json.decodeFromString<ActionTypeResponse>(request("/action/types"))
-            .types.filter { it.type == "category" }.map { it.name }
+    suspend fun exportAllActions(): List<ActionExport> =
+        json.decodeFromString<List<ActionExport>>(request("/action/exportAll"))
 
     suspend fun saveRecord(record: ActionRecord): ActionRecord {
         val payload = record.copy(type = "record", labels = record.labels.orEmpty())
-        return json.decodeFromString(request("/action", "POST", json.encodeToString(payload)))
+        return saveAction(payload)
     }
 
-    suspend fun recordComments(actionId: String): List<ActionComment> =
-        json.decodeFromString<List<ActionComment>>(request("/action/comment/${Uri.encode(actionId)}"))
+    suspend fun saveAction(action: ActionRecord): ActionRecord =
+        json.decodeFromString(request("/action", "POST", json.encodeToString(action)))
 
     suspend fun addRecordComment(actionId: String, content: String): ActionComment {
         val body = buildJsonObject { put("content", content) }
@@ -306,9 +284,6 @@ class SourceboxApi(context: Context) {
             request("/action/comment/${Uri.encode(actionId)}", "POST", json.encodeToString(body))
         )
     }
-
-    suspend fun recordChecklists(actionId: String): List<ActionCheckList> =
-        json.decodeFromString<List<ActionCheckList>>(request("/action/checklist/${Uri.encode(actionId)}"))
 
     suspend fun saveRecordChecklist(actionId: String, checklist: ActionCheckList): ActionCheckList =
         json.decodeFromString(
@@ -341,7 +316,10 @@ class SourceboxApi(context: Context) {
             client.newCall(builder.build()).execute().use { response ->
                 val content = response.body?.string().orEmpty()
                 if (!response.isSuccessful) {
-                    throw IOException("HTTP ${response.code}: ${content.take(300)}")
+                    throw ServerResponseException(
+                        response.code,
+                        "HTTP ${response.code}: ${content.take(300)}"
+                    )
                 }
                 content
             }
@@ -379,4 +357,8 @@ class SourceboxApi(context: Context) {
     private fun JsonElement.displayValue(): String =
         if (this is kotlinx.serialization.json.JsonPrimitive && isString) content else toString()
 
+}
+
+class ServerResponseException(val statusCode: Int, message: String) : Exception(message) {
+    val isRetryable: Boolean = statusCode == 408 || statusCode == 429 || statusCode >= 500
 }

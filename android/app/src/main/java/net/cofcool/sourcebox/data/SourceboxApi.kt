@@ -263,10 +263,6 @@ class SourceboxApi(context: Context) {
         request("/cmd/${Uri.encode(id)}", "DELETE")
     }
 
-    suspend fun storeCommands() {
-        request("/cmd/store/ALL")
-    }
-
     suspend fun exportAllActions(): List<ActionExport> =
         json.decodeFromString<List<ActionExport>>(request("/action/exportAll"))
 

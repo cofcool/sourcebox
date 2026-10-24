@@ -229,13 +229,6 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
                     canonicalPayload = json.encodeToString(api.saveCommand(command))
                 }
                 "command" to "delete" -> api.deleteCommand(change.entityId)
-                "command" to "store" -> {
-                    api.storeCommands()
-                    val exported = api.exportAllCommands()
-                    withContext(Dispatchers.IO) {
-                        actionDatabase.replaceCommands(exported, currentRecordDateTime())
-                    }
-                }
                 "action" to "save" -> {
                     val action = json.decodeFromString<ActionExport>(change.payload).record
                     val saved = api.saveAction(action)
@@ -424,45 +417,6 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         commands = withContext(Dispatchers.IO) { actionDatabase.commands("") }
         refreshPendingCount()
         message = if (isDirty) "命令已在本地删除，等待联网同步" else "命令已删除"
-    }
-
-    fun storeCommands() = perform {
-        val isDirty = syncMutex.withLock {
-            if (withContext(Dispatchers.IO) { actionDatabase.pendingChangeCount() } > 0) {
-                try {
-                    uploadPendingChanges()
-                } catch (error: Exception) {
-                    message = "待同步修改上传失败：${error.message ?: "连接失败"}"
-                }
-            }
-            if (withContext(Dispatchers.IO) { actionDatabase.pendingChangeCount() } > 0) {
-                withContext(Dispatchers.IO) { actionDatabase.markCommandHistoryCollectionDirty() }
-                true
-            } else {
-                try {
-                    api.storeCommands()
-                    val exported = api.exportAllCommands()
-                    val syncedAt = currentRecordDateTime()
-                    withContext(Dispatchers.IO) {
-                        actionDatabase.replaceCommands(exported, syncedAt)
-                    }
-                    lastCommandSync = syncedAt
-                    false
-                } catch (error: Exception) {
-                    if (error !is IOException && (error !is ServerResponseException || !error.isRetryable)) {
-                        throw error
-                    }
-                    withContext(Dispatchers.IO) {
-                        actionDatabase.markCommandHistoryCollectionDirty()
-                    }
-                    true
-                }
-            }
-        }
-        commands = withContext(Dispatchers.IO) { actionDatabase.commands("") }
-        localCommandCount = withContext(Dispatchers.IO) { actionDatabase.commandCount() }
-        refreshPendingCount()
-        message = if (isDirty) "命令历史收集任务已保存，等待联网同步" else "历史命令已收集"
     }
 
     fun refreshRecords(query: String = "", page: Int = 1) = perform {

@@ -920,7 +920,6 @@ private fun CommandsScreen(vm: ToolboxViewModel, modifier: Modifier) {
             IconButton(onClick = { vm.refreshCommands(query) }) {
                 Icon(Icons.Default.Search, contentDescription = "搜索命令")
             }
-            TextButton(onClick = vm::storeCommands, enabled = !vm.busy) { Text("收集历史") }
         }
         if (vm.commands.isEmpty()) {
             EmptyState("暂无命令记录")

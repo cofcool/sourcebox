@@ -5,13 +5,14 @@ import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
-import java.util.List;
 import lombok.CustomLog;
 import net.cofcool.sourcebox.App;
 import net.cofcool.sourcebox.WebTool.WebRouter;
 import net.cofcool.sourcebox.internal.api.CommandService.ImportParam;
 import net.cofcool.sourcebox.internal.api.entity.CommandRecord;
 import net.cofcool.sourcebox.util.VertxUtils;
+
+import java.util.List;
 
 @CustomLog
 public class CommandIndex implements WebRouter {
@@ -44,6 +45,8 @@ public class CommandIndex implements WebRouter {
         });
 
         router.get("/export").respond(r -> commandService.exportHis());
+
+        router.get("/exportAll").respond(r -> commandService.find());
 
         router.post("/enter/:id")
             .respond(r ->  commandService.enter(r.pathParam("id")));

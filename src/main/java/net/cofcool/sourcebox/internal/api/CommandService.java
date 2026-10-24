@@ -2,16 +2,6 @@ package net.cofcool.sourcebox.internal.api;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.vertx.core.Future;
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.CustomLog;
 import net.cofcool.sourcebox.internal.api.entity.CommandRecord;
 import net.cofcool.sourcebox.util.JsonUtil;
@@ -20,6 +10,13 @@ import net.cofcool.sourcebox.util.SqlRepository;
 import net.cofcool.sourcebox.util.Utils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @CustomLog
 public class CommandService {
@@ -102,6 +99,10 @@ public class CommandService {
 
     public Future<List<CommandRecord>> find(CommandRecord record) {
         return repository.find(record);
+    }
+
+    public Future<List<CommandRecord>> find() {
+        return repository.find();
     }
 
     public Future<List<CommandRecord>> find(String aliasTags) {
@@ -271,4 +272,3 @@ public class CommandService {
         String tag
     ){}
 }
-

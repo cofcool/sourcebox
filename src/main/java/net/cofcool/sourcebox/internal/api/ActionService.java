@@ -270,16 +270,9 @@ public class ActionService {
         return findAll(ActionRecord::toMarkdown, Collectors.joining("\n"));
     }
 
-    public Future<List<ActionRecord>> find() {
-        return findAll(a -> {
-                ActionRecord record = a.record();
-                return new ActionRecord(record.id(), record.name(), record.icon(),
-                    record.index(), record.device(), record.type(), record.category(), record.state(), record.start(),
-                    record.end(),
-                    record.duration(), record.rating(),
-                    a.comments().stream().map(Comment::content).toList(), record.labels(),
-                    record.refs(), record.remark(), record.createTime(), LocalDateTime.now());
-            },
+    public Future<List<ActionRecord.RecordRet>> find() {
+        return findAll(
+            a -> a,
             Collectors.toList()
         );
     }

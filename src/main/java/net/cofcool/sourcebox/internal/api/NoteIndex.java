@@ -29,6 +29,8 @@ public class NoteIndex implements WebRouter {
             noteService.find(null).andThen(it -> Json.encodeToBuffer(it.result()))
         );
 
+        router.get("/exportAll").respond(context -> noteService.find());
+
         router.post("/note").respond(context ->
             noteService.save(context.body().asPojo(Note.class))
                 .andThen(it -> Json.encodeToBuffer(it.result()))

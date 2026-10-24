@@ -60,6 +60,8 @@ public class ActionIndex {
 
         router.delete("/:actionId").respond(r -> actionService.deleteActions(r.pathParam("actionId")));
 
+        router.get("/exportAll").respond(context -> actionService.find());
+
         parentRouter.route("/action/*").subRouter(router);
 
         return router;

@@ -32,7 +32,6 @@ import androidx.compose.material.icons.filled.DataObject
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.FolderOpen
-import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Note
 import androidx.compose.material.icons.filled.Refresh
@@ -83,10 +82,6 @@ import net.cofcool.sourcebox.data.NoteRecord
 import net.cofcool.sourcebox.data.ToolInfo
 import net.cofcool.sourcebox.data.TodoRecord
 import net.cofcool.sourcebox.ui.ToolboxViewModel
-import net.cofcool.sourcebox.ui.HistoryEntry
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -100,7 +95,7 @@ private val pages = listOf(
     "todos" to "待办",
     "notes" to "便笺",
     "commands" to "命令",
-    "history" to "历史"
+    "task" to "任务"
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -109,6 +104,7 @@ private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
     var page by remember { mutableStateOf("tools") }
     var selectedTool by remember { mutableStateOf<ToolInfo?>(null) }
     var selectedRecord by remember { mutableStateOf<ActionRecord?>(null) }
+    var recordReturnPage by remember { mutableStateOf("task") }
     var settingsUrl by remember { mutableStateOf(vm.baseUrl) }
     var settingsUser by remember { mutableStateOf(vm.username) }
     var settingsPassword by remember { mutableStateOf(vm.password) }
@@ -137,10 +133,11 @@ private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
                         Text(
                             when (page) {
                                 "tool" -> when (selectedTool?.id) {
-                                    "hisRecord" -> "历史记录"
+                                    "hisRecord" -> "任务"
                                     else -> selectedTool?.id ?: "工具"
                                 }
-                                "record-detail" -> "编辑卡片"
+                                "task" -> "任务"
+                                "record-detail" -> "编辑任务"
                                 "json" -> "JSON 格式化"
                                 "files" -> "文件工具"
                                 "file-result" -> "文件内容"
@@ -152,8 +149,8 @@ private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
                     navigationIcon = {
                         if (page !in pages.map { it.first }) {
                             IconButton(onClick = {
-                                page = if (page == "record-detail" && selectedTool?.id == "hisRecord") {
-                                    "tool"
+                                page = if (page == "record-detail") {
+                                    recordReturnPage
                                 } else {
                                     "tools"
                                 }
@@ -185,7 +182,7 @@ private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
                                 "todos" -> Icons.AutoMirrored.Filled.List
                                 "notes" -> Icons.Default.Description
                                 "commands" -> Icons.Default.Code
-                                else -> Icons.Default.History
+                                else -> Icons.Default.Build
                             }
                             NavigationBarItem(
                                 selected = page == destination,
@@ -222,6 +219,7 @@ private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
                             Modifier.padding(padding),
                             onOpenRecord = {
                                 selectedRecord = it
+                                recordReturnPage = page
                                 vm.loadRecordDetails(it)
                                 page = "record-detail"
                             }
@@ -255,19 +253,27 @@ private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
                         },
                         onSaveChecklist = { vm.saveRecordChecklist(record.id, it) },
                         onDeleteChecklist = vm::deleteRecordChecklist,
-                        onClose = { page = "tool" }
+                        onClose = { page = recordReturnPage }
                     )
                 }
+                "task" -> RecordBoardScreen(
+                    vm,
+                    Modifier.padding(padding),
+                    onOpenRecord = {
+                        selectedRecord = it
+                        recordReturnPage = "task"
+                        vm.loadRecordDetails(it)
+                        page = "record-detail"
+                    }
+                )
                 "todos" -> TodosScreen(vm, Modifier.padding(padding))
                 "notes" -> NotesScreen(vm, Modifier.padding(padding))
                 "commands" -> CommandsScreen(vm, Modifier.padding(padding))
-                "history" -> HistoryScreen(vm.history, vm::clearHistory, Modifier.padding(padding))
-                "json" -> JsonScreen(vm, Modifier.padding(padding))
+                "json" -> JsonScreen(Modifier.padding(padding))
                 "files" -> FilesScreen(
                     modifier = Modifier.padding(padding),
-                    onRead = { name, content ->
+                    onRead = { content ->
                         fileResult = content
-                        vm.addLocalHistory("读取文件：$name", "", content.take(3000), "file")
                         page = "file-result"
                     }
                 )
@@ -417,7 +423,7 @@ private fun RecordBoardScreen(
         modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text("历史记录", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        Text("任务", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Text("记录事项、整理进度，并在卡片下持续补充回复。", style = MaterialTheme.typography.bodySmall)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
@@ -949,36 +955,7 @@ private fun CommandsScreen(vm: ToolboxViewModel, modifier: Modifier) {
 }
 
 @Composable
-private fun HistoryScreen(history: List<HistoryEntry>, clear: () -> Unit, modifier: Modifier) {
-    Column(modifier.fillMaxSize().padding(16.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("最近 ${history.size} 条记录", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-            TextButton(onClick = clear) { Text("清空") }
-        }
-        if (history.isEmpty()) {
-            EmptyState("暂无执行历史")
-        } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(history, key = { it.id }) { entry ->
-                    Card(Modifier.fillMaxWidth()) {
-                        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(entry.title, fontWeight = FontWeight.SemiBold)
-                            Text(
-                                SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(entry.time)),
-                                style = MaterialTheme.typography.labelSmall
-                            )
-                            Text("来源：${entry.source}", style = MaterialTheme.typography.labelSmall)
-                            SelectionContainer { Text(entry.output.take(800), style = MaterialTheme.typography.bodySmall) }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun JsonScreen(vm: ToolboxViewModel, modifier: Modifier) {
+private fun JsonScreen(modifier: Modifier) {
     var input by remember { mutableStateOf("") }
     var output by remember { mutableStateOf("") }
     var compact by remember { mutableStateOf(false) }
@@ -1003,7 +980,6 @@ private fun JsonScreen(vm: ToolboxViewModel, modifier: Modifier) {
                     val parsed = Json.parseToJsonElement(input)
                     output = formatter.encodeToString(JsonElement.serializer(), parsed)
                     error = ""
-                    vm.addLocalHistory("JSON 格式化", input, output, "local")
                 } catch (exception: SerializationException) {
                     error = exception.message ?: "JSON 格式无效"
                     output = ""
@@ -1031,7 +1007,7 @@ private fun JsonScreen(vm: ToolboxViewModel, modifier: Modifier) {
 }
 
 @Composable
-private fun FilesScreen(modifier: Modifier, onRead: (String, String) -> Unit) {
+private fun FilesScreen(modifier: Modifier, onRead: (String) -> Unit) {
     val context = LocalContext.current
     var status by remember { mutableStateOf("通过系统文件选择器读取文本、JSON 或 XML 文件。") }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
@@ -1039,7 +1015,7 @@ private fun FilesScreen(modifier: Modifier, onRead: (String, String) -> Unit) {
             try {
                 val text = context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
                     ?: error("无法打开所选文件")
-                onRead(uri.lastPathSegment ?: "selected-file", text)
+                onRead(text)
                 status = "已读取 ${text.length} 个字符"
             } catch (exception: Exception) {
                 status = "读取失败：${exception.message ?: "未知错误"}"

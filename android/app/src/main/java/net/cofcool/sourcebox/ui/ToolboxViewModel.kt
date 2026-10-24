@@ -18,7 +18,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import net.cofcool.sourcebox.data.CommandRecord
@@ -40,20 +39,9 @@ import java.nio.charset.StandardCharsets
 
 private const val DIRTY_SYNC_RETRY_INTERVAL = 30_000L
 
-@kotlinx.serialization.Serializable
-data class HistoryEntry(
-    val id: String,
-    val title: String,
-    val input: String,
-    val output: String,
-    val time: Long = System.currentTimeMillis(),
-    val source: String = "server"
-)
-
 class ToolboxViewModel(application: Application) : AndroidViewModel(application) {
     private val api = SourceboxApi(application)
     private val actionDatabase = ActionExportDatabase(application)
-    private val preferences = application.getSharedPreferences("sourcebox", Context.MODE_PRIVATE)
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     private val syncMutex = Mutex()
     private val connectivityManager =
@@ -85,8 +73,6 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
     var savedRecord by mutableStateOf<ActionRecord?>(null)
         private set
     var message by mutableStateOf("")
-        private set
-    var history by mutableStateOf(loadHistory())
         private set
     var busy by mutableStateOf(false)
         private set
@@ -290,15 +276,6 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
             val missing = tool.arguments.firstOrNull { it.required && values[it.key].isNullOrBlank() }
             require(missing == null) { "请填写必填参数：${missing?.key}" }
             val output = api.executeTool(tool.id, values)
-            history = (listOf(
-                HistoryEntry(
-                    id = UUID.randomUUID().toString(),
-                    title = tool.id,
-                    input = values.filterValues { it.isNotEmpty() }.toString(),
-                    output = output
-                )
-            ) + history).take(100)
-            persistHistory()
             message = "工具执行完成"
             output
             },
@@ -657,19 +634,6 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         syncAllData()
     }
 
-    fun addLocalHistory(title: String, input: String, output: String, source: String = "local") {
-        history = (listOf(
-            HistoryEntry(UUID.randomUUID().toString(), title, input, output, source = source)
-        ) + history).take(100)
-        persistHistory()
-    }
-
-    fun clearHistory() {
-        history = emptyList()
-        persistHistory()
-        message = "历史记录已清空"
-    }
-
     private fun <T> perform(onSuccess: (T) -> Unit = {}, action: suspend () -> T) {
         viewModelScope.launch {
             busy = true
@@ -685,20 +649,6 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
 
     var lastToolOutput by mutableStateOf("")
         private set
-
-    private fun loadHistory(): List<HistoryEntry> {
-        val stored = preferences.getString("history", "[]") ?: "[]"
-        return try {
-            json.decodeFromString<List<HistoryEntry>>(stored)
-        } catch (error: SerializationException) {
-            message = "本地历史记录无法解析：${error.message}"
-            emptyList()
-        }
-    }
-
-    private fun persistHistory() {
-        preferences.edit().putString("history", json.encodeToString(history)).apply()
-    }
 
     override fun onCleared() {
         connectivityManager.unregisterNetworkCallback(networkCallback)

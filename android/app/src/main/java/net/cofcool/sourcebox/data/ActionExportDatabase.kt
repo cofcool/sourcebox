@@ -4,12 +4,10 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.io.IOException
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
-import java.io.IOException
 import java.security.MessageDigest
 
 data class PendingChange(
@@ -145,15 +143,25 @@ class ActionExportDatabase(context: Context) :
     fun actions(prefix: String, query: String, page: Int = 1, size: Int = 50): List<ActionRecord> {
         require(page > 0 && size > 0) { "page and size must be positive" }
         val parameters = parseQuery(query)
+        val nameSearch = if (prefix == "record") {
+            parameters["name"] ?: query.takeUnless { it.contains('=') }?.trim().orEmpty()
+        } else {
+            parameters["name"].orEmpty()
+        }
         val actions = readPayloads(TABLE_ACTIONS, ActionExport.serializer())
             .map { it.record }
             .filter { action ->
-                action.type == prefix &&
-                    (parameters["id"].isNullOrBlank() || action.id == parameters["id"]) &&
-                    (parameters["name"].isNullOrBlank() ||
-                        action.name.contains(parameters.getValue("name"), ignoreCase = true)) &&
-                    (parameters["state"].isNullOrBlank() || action.state == parameters["state"]) &&
-                    (parameters["category"].isNullOrBlank() || action.category == parameters["category"])
+                if (prefix == "record") {
+                    action.type == prefix &&
+                        (nameSearch.isBlank() || action.name.contains(nameSearch, ignoreCase = true))
+                } else {
+                    action.type == prefix &&
+                        (parameters["id"].isNullOrBlank() || action.id == parameters["id"]) &&
+                        (parameters["name"].isNullOrBlank() ||
+                            action.name.contains(parameters.getValue("name"), ignoreCase = true)) &&
+                        (parameters["state"].isNullOrBlank() || action.state == parameters["state"]) &&
+                        (parameters["category"].isNullOrBlank() || action.category == parameters["category"])
+                }
             }
             .sortedByDescending { it.createTime.orEmpty() }
         val offset = (page - 1L) * size

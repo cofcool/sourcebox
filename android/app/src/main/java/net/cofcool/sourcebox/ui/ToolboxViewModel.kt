@@ -12,30 +12,28 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import net.cofcool.sourcebox.data.CommandRecord
 import net.cofcool.sourcebox.data.ActionCheckList
 import net.cofcool.sourcebox.data.ActionComment
-import net.cofcool.sourcebox.data.ActionRecord
 import net.cofcool.sourcebox.data.ActionExport
 import net.cofcool.sourcebox.data.ActionExportDatabase
+import net.cofcool.sourcebox.data.ActionRecord
+import net.cofcool.sourcebox.data.CommandRecord
 import net.cofcool.sourcebox.data.NoteRecord
-import net.cofcool.sourcebox.data.PendingChange
-import net.cofcool.sourcebox.data.SourceboxApi
 import net.cofcool.sourcebox.data.ServerResponseException
-import net.cofcool.sourcebox.data.ToolInfo
+import net.cofcool.sourcebox.data.SourceboxApi
 import net.cofcool.sourcebox.data.TodoRecord
-import java.util.UUID
+import net.cofcool.sourcebox.data.ToolInfo
 import java.io.IOException
-import java.security.MessageDigest
 import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
+import java.util.UUID
 
 private const val DIRTY_SYNC_RETRY_INTERVAL = 30_000L
 
@@ -535,7 +533,7 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
             "当前值必须在开始和结束范围内"
         }
         val prepared = checklist.copy(
-            id = checklist.id.ifBlank { UUID.randomUUID().toString() },
+            id = checklist.id.ifBlank { UUID.randomUUID().toString().replace("-", "") },
             actionId = actionId
         )
         val progressComment = ActionComment(

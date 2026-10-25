@@ -213,6 +213,10 @@ public class ActionService {
             ));
     }
 
+    public Future<List<ActionType>> findType(ActionType type) {
+        return actionTypeSqlRepository.find(type);
+    }
+
     public Future<Boolean> deleteActions(String id) {
         return delete(id, actionRecordSqlRepository::delete)
             .compose(a -> deleteCommentsByActionId(id))

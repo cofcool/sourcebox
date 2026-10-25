@@ -7,11 +7,13 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import lombok.CustomLog;
 import net.cofcool.sourcebox.internal.api.entity.ActionRecord;
+import net.cofcool.sourcebox.internal.api.entity.ActionType;
 import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
 import net.cofcool.sourcebox.internal.api.entity.CheckList;
 import net.cofcool.sourcebox.internal.api.entity.Comment;
 import net.cofcool.sourcebox.util.JsonUtil;
 import net.cofcool.sourcebox.util.VertxUtils;
+import org.apache.commons.lang3.ObjectUtils;
 
 import java.util.List;
 
@@ -30,7 +32,7 @@ public class ActionIndex {
         var router = VertxUtils.createBodyRouter(vertx);
 
         router.get("/example").respond(r -> actionService.example());
-        router.get("/types").respond(r -> actionService.findAllType());
+        router.get("/types").respond(this::findType);
 
         router.get("/checklist/:actionId").respond(r -> actionService.findCheckList(r.pathParam("actionId")));
         router.post("/checklist/:actionId")
@@ -89,5 +91,14 @@ public class ActionIndex {
 
     private int parsePageParameter(String value, int defaultValue) {
         return value == null ? defaultValue : Integer.parseInt(value);
+    }
+
+    private Future<?> findType(RoutingContext r) {
+        var type = r.queryParam("type");
+        if (ObjectUtils.isEmpty(type)) {
+            return actionService.findAllType();
+        } else {
+            return actionService.findType(ActionType.builder().type(type.get(0)).build());
+        }
     }
 }

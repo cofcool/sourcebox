@@ -27,7 +27,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.DataObject
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
@@ -83,7 +82,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import net.cofcool.sourcebox.data.ActionCheckList
 import net.cofcool.sourcebox.data.ActionRecord
-import net.cofcool.sourcebox.data.CommandRecord
 import net.cofcool.sourcebox.data.NoteRecord
 import net.cofcool.sourcebox.data.TodoRecord
 import net.cofcool.sourcebox.data.ToolInfo
@@ -100,7 +98,6 @@ private val pages = listOf(
     "tools" to "工具",
     "todos" to "待办",
     "notes" to "便笺",
-    "commands" to "命令",
     "task" to "任务"
 )
 
@@ -192,7 +189,6 @@ private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
                                 "tools" -> Icons.Default.Home
                                 "todos" -> Icons.AutoMirrored.Filled.List
                                 "notes" -> Icons.Default.Description
-                                "commands" -> Icons.Default.Code
                                 else -> Icons.Default.Build
                             }
                             NavigationBarItem(
@@ -203,7 +199,6 @@ private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
                                         "tools" -> vm.refreshTools()
                                         "todos" -> vm.refreshTodos()
                                         "notes" -> vm.refreshNotes()
-                                        "commands" -> vm.refreshCommands()
                                     }
                                 },
                                 icon = { Icon(icon, contentDescription = label) },
@@ -241,6 +236,8 @@ private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
                                 page = "record-detail"
                             }
                         )
+                    } else if (tool.id == "cHelper") {
+                        CommandsScreen(vm, Modifier.padding(padding))
                     } else {
                         ToolScreen(tool, vm, Modifier.padding(padding))
                     }
@@ -292,7 +289,7 @@ private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
                 )
                 "todos" -> TodosScreen(vm, Modifier.padding(padding))
                 "notes" -> NotesScreen(vm, Modifier.padding(padding))
-                "commands" -> CommandsScreen(vm, Modifier.padding(padding))
+                "cHelper" -> CommandsScreen(vm, Modifier.padding(padding))
                 "json" -> JsonScreen(Modifier.padding(padding))
                 "files" -> FilesScreen(
                     modifier = Modifier.padding(padding),
@@ -362,7 +359,10 @@ private fun HomeScreen(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(vm.tools.filterNot { it.id == "note" || it.id == "todo" }, key = { it.id }) { tool ->
+                items(
+                    vm.tools.filterNot { it.id in setOf("note", "todo", "hisRecord") },
+                    key = { it.id }
+                ) { tool ->
                     Card(onClick = { onSelectTool(tool) }, modifier = Modifier.fillMaxWidth()) {
                         Row(
                             Modifier.padding(14.dp),
@@ -976,30 +976,7 @@ private fun NotesScreen(vm: ToolboxViewModel, modifier: Modifier) {
 @Composable
 private fun CommandsScreen(vm: ToolboxViewModel, modifier: Modifier) {
     var query by remember { mutableStateOf("") }
-    var command by remember { mutableStateOf("") }
-    var alias by remember { mutableStateOf("") }
-    var tags by remember { mutableStateOf("") }
     Column(modifier.fillMaxSize().padding(16.dp)) {
-        OutlinedTextField(command, { command = it }, Modifier.fillMaxWidth(), label = { Text("命令") }, minLines = 2)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedTextField(alias, { alias = it }, Modifier.weight(1f), label = { Text("别名（可选）") }, singleLine = true)
-            OutlinedTextField(tags, { tags = it }, Modifier.weight(1f), label = { Text("标签，逗号分隔") }, singleLine = true)
-        }
-        Button(
-            onClick = {
-                vm.saveCommand(
-                    CommandRecord(
-                        cmd = command.trim(),
-                        alias = alias.trim().ifBlank { null },
-                        tags = tags.split(",").map(String::trim).filter(String::isNotBlank)
-                    )
-                )
-                command = ""
-                alias = ""
-                tags = ""
-            },
-            enabled = command.isNotBlank() && !vm.busy
-        ) { Text("保存命令") }
         Row(verticalAlignment = Alignment.CenterVertically) {
             OutlinedTextField(
                 query,
@@ -1167,7 +1144,7 @@ private fun SettingsScreen(
             Spacer(Modifier.width(8.dp))
             Text("查看崩溃日志")
         }
-        Text("接口与桌面端一致：工具、便笺、待办和命令助手使用 Sourcebox 服务端 API。")
+        Text("接口与桌面端一致，使用 TheSourceBox 服务端 API。")
         Text("使用局域网或生产服务时，建议启用 HTTPS 并保护服务端访问凭据。", style = MaterialTheme.typography.bodySmall)
     }
 }

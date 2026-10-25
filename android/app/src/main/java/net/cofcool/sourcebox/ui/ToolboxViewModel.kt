@@ -355,9 +355,8 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         val (saved, isDirty) = writeWithOfflineFallback(
             server = {
                 api.addTodo(pendingAction.name, pendingAction.remark.orEmpty(), pendingAction.id)
-                    .also { saved ->
-                        withContext(Dispatchers.IO) { actionDatabase.saveAction(saved) }
-                    }
+                withContext(Dispatchers.IO) { actionDatabase.saveAction(pendingAction) }
+                pendingAction
             },
             offline = {
                 withContext(Dispatchers.IO) { actionDatabase.markActionDirty(pendingAction) }

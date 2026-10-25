@@ -242,7 +242,7 @@ class SourceboxApi(context: Context) {
         request("/note/note/${Uri.encode(id)}", "DELETE")
     }
 
-    suspend fun addTodo(name: String, remark: String, id: String): ActionRecord {
+    suspend fun addTodo(name: String, remark: String, id: String) {
         val now = java.time.LocalDateTime.now()
             .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
         val body = buildJsonObject {
@@ -254,7 +254,7 @@ class SourceboxApi(context: Context) {
             put("start", now)
             put("end", now)
         }
-        return json.decodeFromString(request("/action", "POST", json.encodeToString(body)))
+        request("/action", "POST", json.encodeToString(body))
     }
 
     suspend fun completeTodo(action: ActionRecord): ActionRecord =

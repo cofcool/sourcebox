@@ -6,7 +6,6 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import kotlinx.serialization.json.Json
 import java.io.IOException
-import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 
@@ -549,8 +548,8 @@ class ActionExportDatabase(context: Context) :
             .mapNotNull { pair ->
                 val separator = pair.indexOf('=')
                 if (separator < 0) return@mapNotNull null
-                val key = URLDecoder.decode(pair.substring(0, separator), StandardCharsets.UTF_8)
-                val value = URLDecoder.decode(pair.substring(separator + 1), StandardCharsets.UTF_8)
+                val key = pair.substring(0, separator)
+                val value = pair.substring(separator + 1)
                 key.lowercase() to value
             }
             .toMap()

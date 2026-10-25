@@ -6,7 +6,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +13,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -30,14 +31,18 @@ import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.DataObject
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -61,6 +66,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -69,6 +75,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -139,6 +148,7 @@ private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
                                 "files" -> "文件工具"
                                 "file-result" -> "文件内容"
                                 "settings" -> "连接设置"
+                                "crash-logs" -> "崩溃日志"
                                 else -> pages.firstOrNull { it.first == page }?.second ?: "The Source Box"
                             }
                         )
@@ -148,6 +158,8 @@ private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
                             IconButton(onClick = {
                                 page = if (page == "record-detail") {
                                     recordReturnPage
+                                } else if (page == "crash-logs") {
+                                    "settings"
                                 } else {
                                     "tools"
                                 }
@@ -230,6 +242,7 @@ private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
                         modifier = Modifier.padding(padding),
                         record = record,
                         categories = vm.recordCategories,
+                        labels = vm.recordLabels,
                         comments = vm.recordComments,
                         checklists = vm.recordChecklists,
                         busy = vm.busy,
@@ -285,8 +298,10 @@ private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
                     onUsername = { settingsUser = it },
                     password = settingsPassword,
                     onPassword = { settingsPassword = it },
-                    onSave = { vm.saveConnection(settingsUrl, settingsUser, settingsPassword); page = "tools" }
+                    onSave = { vm.saveConnection(settingsUrl, settingsUser, settingsPassword); page = "tools" },
+                    onViewCrashLogs = { page = "crash-logs" }
                 )
+                "crash-logs" -> CrashLogsScreen(Modifier.padding(padding))
             }
         }
     }
@@ -439,7 +454,7 @@ private fun RecordBoardScreen(
             style = MaterialTheme.typography.labelSmall
         )
         Text(
-            "便笺：${vm.lastNoteSync ?: "尚未同步"} · 命令：${vm.lastCommandSync ?: "尚未同步"}",
+            "便笺：${vm.lastNoteSync ?: "尚未同步"} · 命令：${vm.lastCommandSync ?: "尚未同步"} · 类型：${vm.lastTypeSync ?: "尚未同步"}",
             style = MaterialTheme.typography.labelSmall
         )
         Text(
@@ -537,6 +552,7 @@ private fun RecordDetails(
     modifier: Modifier,
     record: ActionRecord,
     categories: List<String>,
+    labels: List<String>,
     comments: List<net.cofcool.sourcebox.data.ActionComment>,
     checklists: List<ActionCheckList>,
     busy: Boolean,
@@ -578,34 +594,28 @@ private fun RecordDetails(
                 label = { Text("备注信息") },
                 minLines = 3
             )
-            OutlinedTextField(
-                record.labels.orEmpty(),
-                { onRecordChange(record.copy(labels = it)) },
-                Modifier.fillMaxWidth(),
-                label = { Text("标签") },
-                supportingText = { Text("多个标签以逗号分隔") },
-                singleLine = true
-            )
-            OutlinedTextField(
-                record.category.orEmpty(),
-                { onRecordChange(record.copy(category = it.ifBlank { null })) },
-                Modifier.fillMaxWidth(),
-                label = { Text("类别") },
-                singleLine = true
-            )
-            if (categories.isNotEmpty()) {
-                Row(
-                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    categories.forEach { category ->
-                        androidx.compose.material3.AssistChip(
-                            onClick = { onRecordChange(record.copy(category = category)) },
-                            label = { Text(category) }
-                        )
-                    }
+            EditableDropdownField(
+                value = record.labels.orEmpty(),
+                options = labels,
+                label = "标签",
+                supportingText = "多个标签以逗号分隔；可选择已有标签或手动填写",
+                onValueChange = { onRecordChange(record.copy(labels = it)) },
+                onOptionSelected = { selected ->
+                    val current = record.labels.orEmpty().split(",")
+                        .map(String::trim)
+                        .filter(String::isNotBlank)
+                    val updated = (current + selected).distinct().joinToString(", ")
+                    onRecordChange(record.copy(labels = updated))
                 }
-            }
+            )
+            EditableDropdownField(
+                value = record.category.orEmpty(),
+                options = categories,
+                label = "分类",
+                supportingText = "可选择已有分类或手动填写",
+                onValueChange = { onRecordChange(record.copy(category = it.ifBlank { null })) },
+                onOptionSelected = { onRecordChange(record.copy(category = it)) }
+            )
             OutlinedTextField(
                 record.start.orEmpty(),
                 { onRecordChange(record.copy(start = it.ifBlank { null })) },
@@ -718,6 +728,52 @@ private fun RecordDetails(
                     androidx.compose.material3.HorizontalDivider()
                 }
             }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EditableDropdownField(
+    value: String,
+    options: List<String>,
+    label: String,
+    supportingText: String,
+    onValueChange: (String) -> Unit,
+    onOptionSelected: (String) -> Unit
+) {
+    var expanded by remember(label) { mutableStateOf(false) }
+    Box(Modifier.fillMaxWidth()) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(label) },
+            supportingText = { Text(supportingText) },
+            singleLine = true,
+            trailingIcon = if (options.isNotEmpty()) {
+                {
+                    IconButton(onClick = { expanded = true }) {
+                        Icon(Icons.Default.KeyboardArrowDown, contentDescription = "选择$label")
+                    }
+                }
+            } else {
+                null
+            }
+        )
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.heightIn(max = 280.dp)
+        ) {
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option) },
+                    onClick = {
+                        onOptionSelected(option)
+                        expanded = false
+                    }
+                )
             }
         }
     }
@@ -1041,7 +1097,8 @@ private fun SettingsScreen(
     onUsername: (String) -> Unit,
     password: String,
     onPassword: (String) -> Unit,
-    onSave: () -> Unit
+    onSave: () -> Unit,
+    onViewCrashLogs: () -> Unit
 ) {
     Column(
         modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
@@ -1067,8 +1124,149 @@ private fun SettingsScreen(
             singleLine = true
         )
         Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) { Text("保存并连接") }
+        OutlinedButton(onClick = onViewCrashLogs, modifier = Modifier.fillMaxWidth()) {
+            Icon(Icons.Default.ErrorOutline, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text("查看崩溃日志")
+        }
         Text("接口与桌面端一致：工具、便笺、待办和命令助手使用 Sourcebox 服务端 API。")
         Text("使用局域网或生产服务时，建议启用 HTTPS 并保护服务端访问凭据。", style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+@Composable
+private fun CrashLogsScreen(modifier: Modifier) {
+    val context = LocalContext.current
+    val store = remember(context) { CrashLogStore(context) }
+    val scope = rememberCoroutineScope()
+    var logs by remember { mutableStateOf<List<CrashLog>>(emptyList()) }
+    var selectedLog by remember { mutableStateOf<CrashLog?>(null) }
+    var selectedContent by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf("") }
+    var loading by remember { mutableStateOf(false) }
+
+    fun refreshLogs() {
+        scope.launch {
+            loading = true
+            error = ""
+            try {
+                logs = withContext(Dispatchers.IO) { store.list() }
+                if (selectedLog?.name !in logs.map { it.name }) {
+                    selectedLog = null
+                    selectedContent = ""
+                }
+            } catch (exception: Exception) {
+                error = "加载崩溃日志失败：${exception.message ?: "未知错误"}"
+            } finally {
+                loading = false
+            }
+        }
+    }
+
+    LaunchedEffect(store) { refreshLogs() }
+
+    Column(
+        modifier.fillMaxSize().padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("崩溃日志（${logs.size}）", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
+            IconButton(onClick = ::refreshLogs, enabled = !loading) {
+                Icon(Icons.Default.Refresh, contentDescription = "刷新")
+            }
+            TextButton(
+                onClick = {
+                    scope.launch {
+                        try {
+                            withContext(Dispatchers.IO) { store.deleteAll() }
+                            logs = emptyList()
+                            selectedLog = null
+                            selectedContent = ""
+                            error = ""
+                        } catch (exception: Exception) {
+                            error = "清理崩溃日志失败：${exception.message ?: "未知错误"}"
+                        }
+                    }
+                },
+                enabled = logs.isNotEmpty() && !loading
+            ) { Text("清空") }
+        }
+        Text(
+            "崩溃日志仅保存在本机，最多保留最近 20 份。",
+            style = MaterialTheme.typography.bodySmall
+        )
+        if (error.isNotBlank()) {
+            Text(error, color = MaterialTheme.colorScheme.error)
+        } else if (logs.isEmpty() && !loading) {
+            EmptyState("暂无崩溃日志")
+        }
+        if (loading) CircularProgressIndicator(Modifier.size(24.dp))
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(logs, key = { it.name }) { log ->
+                Card(
+                    onClick = {
+                        scope.launch {
+                            try {
+                                selectedContent = withContext(Dispatchers.IO) { store.read(log) }
+                                selectedLog = log
+                                error = ""
+                            } catch (exception: Exception) {
+                                error = "读取崩溃日志失败：${exception.message ?: "未知错误"}"
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(start = 12.dp, end = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(Modifier.weight(1f).padding(vertical = 12.dp)) {
+                            Text(log.name, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                java.text.SimpleDateFormat(
+                                    "yyyy-MM-dd HH:mm:ss",
+                                    java.util.Locale.getDefault()
+                                ).format(java.util.Date(log.timestamp)),
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
+                        IconButton(
+                            onClick = {
+                                scope.launch {
+                                    try {
+                                        withContext(Dispatchers.IO) { store.delete(log) }
+                                        if (selectedLog?.name == log.name) {
+                                            selectedLog = null
+                                            selectedContent = ""
+                                        }
+                                        logs = withContext(Dispatchers.IO) { store.list() }
+                                        error = ""
+                                    } catch (exception: Exception) {
+                                        error = "删除崩溃日志失败：${exception.message ?: "未知错误"}"
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(Icons.Default.Delete, contentDescription = "删除日志")
+                        }
+                    }
+                }
+            }
+        }
+        selectedLog?.let { log ->
+            Text(log.name, style = MaterialTheme.typography.titleMedium)
+            SelectionContainer {
+                Text(
+                    selectedContent,
+                    Modifier.fillMaxWidth().height(220.dp).verticalScroll(rememberScrollState()),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
     }
 }
 

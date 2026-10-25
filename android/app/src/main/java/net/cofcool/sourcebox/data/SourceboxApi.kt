@@ -5,8 +5,6 @@ import android.net.Uri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -110,6 +108,20 @@ data class ActionCheckList(
     val first: Int = 0,
     val last: Int = 0,
     val current: Int = 0
+)
+
+@Serializable
+data class ActionTypeRecord(
+    val id: String = "",
+    val name: String = "",
+    val type: String = "",
+    val createTime: String? = null
+)
+
+@Serializable
+data class ActionTypeResponse(
+    val types: List<ActionTypeRecord> = emptyList(),
+    val states: String = ""
 )
 
 @Serializable
@@ -245,13 +257,8 @@ class SourceboxApi(context: Context) {
         return json.decodeFromString(request("/action", "POST", json.encodeToString(body)))
     }
 
-    suspend fun completeTodo(id: String): ActionRecord {
-        val body = buildJsonObject {
-            put("id", id)
-            put("state", "done")
-        }
-        return json.decodeFromString(request("/action", "POST", json.encodeToString(body)))
-    }
+    suspend fun completeTodo(action: ActionRecord): ActionRecord =
+        saveAction(action.copy(state = "done"))
 
     suspend fun exportAllCommands(): List<CommandRecord> =
         json.decodeFromString<List<CommandRecord>>(request("/cmd/exportAll"))
@@ -265,6 +272,9 @@ class SourceboxApi(context: Context) {
 
     suspend fun exportAllActions(): List<ActionExport> =
         json.decodeFromString<List<ActionExport>>(request("/action/exportAll"))
+
+    suspend fun actionTypes(): ActionTypeResponse =
+        json.decodeFromString(request("/action/types"))
 
     suspend fun saveRecord(record: ActionRecord): ActionRecord {
         val payload = record.copy(type = "record", labels = record.labels.orEmpty())

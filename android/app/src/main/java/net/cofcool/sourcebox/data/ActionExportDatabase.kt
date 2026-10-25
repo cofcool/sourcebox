@@ -25,6 +25,7 @@ class ActionExportDatabase(context: Context) :
         createTable(db, TABLE_ACTIONS)
         createTable(db, TABLE_NOTES)
         createTable(db, TABLE_COMMANDS)
+        createTypesTable(db)
         createSyncTable(db)
         createPendingChangesTable(db)
     }
@@ -47,12 +48,16 @@ class ActionExportDatabase(context: Context) :
             }
             createPendingChangesTable(db)
         }
+        if (oldVersion < 4) {
+            createTypesTable(db)
+        }
     }
 
     fun replaceExportData(
         actions: List<ActionExport>,
         notes: List<NoteRecord>,
         commands: List<CommandRecord>,
+        actionTypes: ActionTypeResponse,
         syncedAt: String
     ) {
         validateIds(actions.map { it.record.id }, "行动记录")
@@ -67,7 +72,8 @@ class ActionExportDatabase(context: Context) :
             replaceRows(db, TABLE_ACTIONS, actions.map { it.record.id to json.encodeToString(it) })
             replaceRows(db, TABLE_NOTES, notes.map { it.id to json.encodeToString(it) })
             replaceRows(db, TABLE_COMMANDS, commands.map { it.id!! to json.encodeToString(it) })
-            listOf("actions", "notes", "commands").forEach { dataset ->
+            replaceTypes(db, actionTypes)
+            listOf("actions", "notes", "commands", "types").forEach { dataset ->
                 val syncValues = ContentValues().apply {
                     put("dataset", dataset)
                     put("synced_at", syncedAt)
@@ -170,10 +176,25 @@ class ActionExportDatabase(context: Context) :
     }
 
     fun actionCategories(): List<String> =
-        readPayloads(TABLE_ACTIONS, ActionExport.serializer())
-            .mapNotNull { it.record.category?.takeIf(String::isNotBlank) }
+        actionTypes().types.filter { it.type == "category" }
+            .map { it.name }
             .distinct()
             .sorted()
+
+    fun actionLabels(): List<String> =
+        actionTypes().types.filter { it.type == "label" }
+            .map { it.name }
+            .distinct()
+            .sorted()
+
+    fun actionTypes(): ActionTypeResponse =
+        readableDatabase.rawQuery(
+            "SELECT payload FROM $TABLE_TYPES WHERE id = 1",
+            null
+        ).use { cursor ->
+            if (cursor.moveToFirst()) json.decodeFromString(ActionTypeResponse.serializer(), cursor.getString(0))
+            else ActionTypeResponse()
+        }
 
     fun actionDetails(actionId: String): ActionExport? =
         readPayload(TABLE_ACTIONS, actionId, ActionExport.serializer())
@@ -576,15 +597,37 @@ class ActionExportDatabase(context: Context) :
         )
     }
 
+    private fun createTypesTable(db: SQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS $TABLE_TYPES (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                payload TEXT NOT NULL
+            )
+            """.trimIndent()
+        )
+    }
+
+    private fun replaceTypes(db: SQLiteDatabase, types: ActionTypeResponse) {
+        val values = ContentValues().apply {
+            put("id", 1)
+            put("payload", json.encodeToString(types))
+        }
+        check(db.insertWithOnConflict(TABLE_TYPES, null, values, SQLiteDatabase.CONFLICT_REPLACE) != -1L) {
+            "保存行动类型失败"
+        }
+    }
+
     companion object {
         private const val DATABASE_NAME = "sourcebox-local.db"
-        private const val DATABASE_VERSION = 3
+        private const val DATABASE_VERSION = 4
         private const val TABLE_ACTIONS = "exported_actions"
         private const val TABLE_NOTES = "exported_notes"
         private const val TABLE_COMMANDS = "exported_commands"
         private const val TABLE_SYNC = "sync_metadata"
         private const val TABLE_SYNC_ALL = "dataset_sync_metadata"
         private const val TABLE_PENDING = "pending_changes"
+        private const val TABLE_TYPES = "exported_action_types"
         const val COMMAND_HISTORY_COLLECTION_ID = "__command_history_collection__"
         private val json = Json {
             encodeDefaults = true

@@ -24,6 +24,7 @@ import net.cofcool.sourcebox.data.ActionComment
 import net.cofcool.sourcebox.data.ActionExport
 import net.cofcool.sourcebox.data.ActionExportDatabase
 import net.cofcool.sourcebox.data.ActionRecord
+import net.cofcool.sourcebox.data.ActionTypeResponse
 import net.cofcool.sourcebox.data.CommandRecord
 import net.cofcool.sourcebox.data.NoteRecord
 import net.cofcool.sourcebox.data.ServerResponseException
@@ -36,6 +37,13 @@ import java.security.MessageDigest
 import java.util.UUID
 
 private const val DIRTY_SYNC_RETRY_INTERVAL = 30_000L
+
+private data class ExportData(
+    val actions: List<ActionExport>,
+    val notes: List<NoteRecord>,
+    val commands: List<CommandRecord>,
+    val types: ActionTypeResponse
+)
 
 class ToolboxViewModel(application: Application) : AndroidViewModel(application) {
     private val api = SourceboxApi(application)
@@ -61,6 +69,8 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
     var records by mutableStateOf<List<ActionRecord>>(emptyList())
         private set
     var recordCategories by mutableStateOf<List<String>>(emptyList())
+        private set
+    var recordLabels by mutableStateOf<List<String>>(emptyList())
         private set
     var recordComments by mutableStateOf<List<ActionComment>>(emptyList())
         private set
@@ -94,6 +104,8 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         private set
     var lastCommandSync by mutableStateOf(actionDatabase.lastSyncedAt("commands"))
         private set
+    var lastTypeSync by mutableStateOf(actionDatabase.lastSyncedAt("types"))
+        private set
 
     init {
         connectivityManager.registerDefaultNetworkCallback(networkCallback)
@@ -117,29 +129,33 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         perform {
             syncMutex.withLock {
                 uploadPendingChanges()
-                val (exportedActions, exportedNotes, exportedCommands) = coroutineScope {
+                val exported = coroutineScope {
                     val actions = async { api.exportAllActions() }
                     val notes = async { api.exportAllNotes() }
                     val commands = async { api.exportAllCommands() }
-                    Triple(actions.await(), notes.await(), commands.await())
+                    val types = async { api.actionTypes() }
+                    ExportData(actions.await(), notes.await(), commands.await(), types.await())
                 }
                 val syncedAt = currentRecordDateTime()
                 withContext(Dispatchers.IO) {
                     actionDatabase.replaceExportData(
-                        exportedActions,
-                        exportedNotes,
-                        exportedCommands,
-                        syncedAt
+                        actions = exported.actions,
+                        notes = exported.notes,
+                        commands = exported.commands,
+                        actionTypes = exported.types,
+                        syncedAt = syncedAt
                     )
                 }
-                localActionCount = exportedActions.size
+                localActionCount = exported.actions.size
                 lastActionSync = syncedAt
-                localNoteCount = exportedNotes.size
+                localNoteCount = exported.notes.size
                 lastNoteSync = syncedAt
-                localCommandCount = exportedCommands.size
+                localCommandCount = exported.commands.size
                 lastCommandSync = syncedAt
+                lastTypeSync = syncedAt
                 refreshPendingCount()
-                message = "已同步 ${exportedActions.size} 条行动、${exportedNotes.size} 条便笺、${exportedCommands.size} 条命令"
+                recordCategories = withContext(Dispatchers.IO) { actionDatabase.actionCategories() }
+                message = "已同步 ${exported.actions.size} 条行动、${exported.notes.size} 条便笺、${exported.commands.size} 条命令、${exported.types.types.size} 个类型"
             }
         }
     }
@@ -362,7 +378,7 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         val updatedLocal = current.copy(state = "done")
         val (updated, isDirty) = writeWithOfflineFallback(
             server = {
-                api.completeTodo(todo.id).also { saved ->
+                api.completeTodo(updatedLocal).also { saved ->
                     withContext(Dispatchers.IO) { actionDatabase.saveAction(saved) }
                 }
             },
@@ -427,6 +443,7 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
 
     fun refreshRecordCategories() = perform {
         recordCategories = withContext(Dispatchers.IO) { actionDatabase.actionCategories() }
+        recordLabels = withContext(Dispatchers.IO) { actionDatabase.actionLabels() }
     }
 
     fun loadRecordDetails(record: ActionRecord) = perform {

@@ -216,8 +216,9 @@ export const api = {
       }),
     });
   },
-  actionTypes: async (): Promise<{ types: ActionType[]; states: string }> => {
-    return request<{ types: ActionType[]; states: string }>("/action/types");
+  actionTypes: async (type: string): Promise<ActionType[]> => {
+    const query = new URLSearchParams({ type });
+    return request<ActionType[]>(`/action/types?${query.toString()}`);
   },
   recordComments: async (id: string): Promise<ActionComment[]> => {
     return request<ActionComment[]>(`/action/comment/${encodeURIComponent(id)}`);

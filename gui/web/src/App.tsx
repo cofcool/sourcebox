@@ -188,6 +188,7 @@ function RecordBoard() {
   const pageSize = 10;
   const [records, setRecords] = useState<ActionRecord[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const [labels, setLabels] = useState<string[]>([]);
   const [title, setTitle] = useState("");
   const [query, setQuery] = useState("");
   const [appliedQuery, setAppliedQuery] = useState("");
@@ -223,9 +224,12 @@ function RecordBoard() {
   }, [appliedQuery, page]);
 
   useEffect(() => {
-    api.actionTypes()
-      .then((result) => setCategories(result.types.filter((item) => item.type === "category").map((item) => item.name)))
-      .catch(() => setCategories([]));
+    Promise.all([api.actionTypes("category"), api.actionTypes("label")])
+      .then(([categoryTypes, labelTypes]) => {
+        setCategories(categoryTypes.map((item) => item.name));
+        setLabels(labelTypes.map((item) => item.name));
+      })
+      .catch((e) => setError(e instanceof Error ? e.message : String(e)));
   }, []);
 
   async function addRecord(event: React.FormEvent<HTMLFormElement>) {
@@ -433,11 +437,39 @@ function RecordBoard() {
                   <textarea value={selected.remark ?? ""} onChange={(event) => setSelected({ ...selected, remark: event.target.value })} rows={4} />
                 </label>
                 <label>标签
-                  <input value={selected.labels ?? ""} onChange={(event) => setSelected({ ...selected, labels: event.target.value })} placeholder="多个标签以逗号分隔" />
+                  <input
+                    value={selected.labels ?? ""}
+                    onChange={(event) => setSelected({ ...selected, labels: event.target.value })}
+                    placeholder="手动输入标签，多个标签以逗号分隔"
+                  />
+                  <select
+                    aria-label="选择已有标签"
+                    value=""
+                    onChange={(event) => {
+                      const label = event.target.value;
+                      if (!label) return;
+                      const currentLabels = (selected.labels ?? "").split(",").map((item) => item.trim()).filter(Boolean);
+                      if (!currentLabels.includes(label)) {
+                        setSelected({ ...selected, labels: [...currentLabels, label].join(", ") });
+                      }
+                    }}
+                  >
+                    <option value="">选择已有标签</option>
+                    {labels.map((label) => <option value={label} key={label}>{label}</option>)}
+                  </select>
                 </label>
                 <label>类别
-                  <input list="record-category-options" value={selected.category ?? ""} onChange={(event) => setSelected({ ...selected, category: event.target.value })} />
-                  <datalist id="record-category-options">{categories.map((category) => <option value={category} key={category} />)}</datalist>
+                  <input value={selected.category ?? ""} onChange={(event) => setSelected({ ...selected, category: event.target.value })} placeholder="手动输入类别" />
+                  <select
+                    aria-label="选择已有类别"
+                    value=""
+                    onChange={(event) => {
+                      if (event.target.value) setSelected({ ...selected, category: event.target.value });
+                    }}
+                  >
+                    <option value="">选择已有类别</option>
+                    {categories.map((category) => <option value={category} key={category}>{category}</option>)}
+                  </select>
                 </label>
                 <div className="record-date-fields">
                   <label>开始时间

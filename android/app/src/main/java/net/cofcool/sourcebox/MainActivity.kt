@@ -111,6 +111,8 @@ private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
     var selectedTool by remember { mutableStateOf<ToolInfo?>(null) }
     var selectedRecord by remember { mutableStateOf<ActionRecord?>(null) }
     var recordReturnPage by remember { mutableStateOf("task") }
+    var appliedCategory by remember { mutableStateOf<String?>(null) }
+    var appliedLabel by remember { mutableStateOf<String?>(null) }
     var settingsUrl by remember { mutableStateOf(vm.baseUrl) }
     var settingsUser by remember { mutableStateOf(vm.username) }
     var settingsPassword by remember { mutableStateOf(vm.password) }
@@ -226,6 +228,12 @@ private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
                         RecordBoardScreen(
                             vm,
                             Modifier.padding(padding),
+                            appliedCategory = appliedCategory,
+                            appliedLabel = appliedLabel,
+                            onFilterChanged = { category, label ->
+                                appliedCategory = category
+                                appliedLabel = label
+                            },
                             onOpenRecord = {
                                 selectedRecord = it
                                 recordReturnPage = page
@@ -247,7 +255,7 @@ private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
                         checklists = vm.recordChecklists,
                         busy = vm.busy,
                         onRecordChange = { selectedRecord = it },
-                        onSave = { vm.saveRecord(record, "", 1) },
+                        onSave = { vm.saveRecord(record, "", 1, appliedCategory, appliedLabel) },
                         onAddComment = { vm.addRecordComment(record.id, it) },
                         onAddChecklist = { content, first, last ->
                             vm.saveRecordChecklist(
@@ -269,6 +277,12 @@ private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
                 "task" -> RecordBoardScreen(
                     vm,
                     Modifier.padding(padding),
+                    appliedCategory = appliedCategory,
+                    appliedLabel = appliedLabel,
+                    onFilterChanged = { category, label ->
+                        appliedCategory = category
+                        appliedLabel = label
+                    },
                     onOpenRecord = {
                         selectedRecord = it
                         recordReturnPage = "task"
@@ -418,6 +432,9 @@ private fun ToolScreen(tool: ToolInfo, vm: ToolboxViewModel, modifier: Modifier)
 private fun RecordBoardScreen(
     vm: ToolboxViewModel,
     modifier: Modifier,
+    appliedCategory: String?,
+    appliedLabel: String?,
+    onFilterChanged: (String?, String?) -> Unit,
     onOpenRecord: (ActionRecord) -> Unit
 ) {
     var query by remember { mutableStateOf("") }
@@ -425,8 +442,8 @@ private fun RecordBoardScreen(
     var page by remember { mutableStateOf(1) }
     var newRecordName by remember { mutableStateOf("") }
 
-    LaunchedEffect(appliedQuery, page) {
-        vm.refreshRecords(appliedQuery, page)
+    LaunchedEffect(appliedQuery, appliedCategory, appliedLabel, page) {
+        vm.refreshRecords(appliedQuery, page, appliedCategory, appliedLabel)
     }
     LaunchedEffect(Unit) {
         vm.refreshRecordCategories()
@@ -473,7 +490,7 @@ private fun RecordBoardScreen(
         )
         Button(
             onClick = {
-                vm.createRecord(newRecordName, appliedQuery, page)
+                vm.createRecord(newRecordName, appliedQuery, page, appliedCategory, appliedLabel)
                 newRecordName = ""
             },
             enabled = newRecordName.isNotBlank() && !vm.busy,
@@ -492,6 +509,7 @@ private fun RecordBoardScreen(
             IconButton(
                 onClick = {
                     appliedQuery = query.trim()
+                    onFilterChanged(null, null)
                     page = 1
                 },
                 enabled = !vm.busy
@@ -499,7 +517,13 @@ private fun RecordBoardScreen(
         }
 
         if (vm.records.isEmpty()) {
-            EmptyState(if (appliedQuery.isNotBlank()) "没有匹配的记录" else "还没有记录，添加一条开始使用")
+            EmptyState(
+                if (appliedQuery.isNotBlank() || appliedCategory != null || appliedLabel != null) {
+                    "没有匹配的记录"
+                } else {
+                    "还没有记录，添加一条开始使用"
+                }
+            )
         } else {
             vm.records.forEach { record ->
                 Card(
@@ -512,9 +536,23 @@ private fun RecordBoardScreen(
                             Text(record.remark, style = MaterialTheme.typography.bodySmall)
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            record.category?.takeIf(String::isNotBlank)?.let { AssistChipLabel(it) }
+                            record.category?.takeIf(String::isNotBlank)?.let {
+                                AssistChipLabel(it) {
+                                    query = ""
+                                    appliedQuery = ""
+                                    onFilterChanged(it, null)
+                                    page = 1
+                                }
+                            }
                             record.labels.orEmpty().split(",").map(String::trim).filter(String::isNotBlank)
-                                .forEach { AssistChipLabel(it) }
+                                .forEach { label ->
+                                    AssistChipLabel(label) {
+                                        query = ""
+                                        appliedQuery = ""
+                                        onFilterChanged(null, label)
+                                        page = 1
+                                    }
+                                }
                         }
                         Text(record.start?.take(10) ?: "未设置日期", style = MaterialTheme.typography.labelSmall)
                     }
@@ -540,9 +578,9 @@ private fun RecordBoardScreen(
 }
 
 @Composable
-private fun AssistChipLabel(text: String) {
+private fun AssistChipLabel(text: String, onClick: () -> Unit) {
     androidx.compose.material3.AssistChip(
-        onClick = {},
+        onClick = onClick,
         label = { Text(text) }
     )
 }

@@ -158,7 +158,12 @@ class ActionExportDatabase(context: Context) :
             .filter { action ->
                 if (prefix == "record") {
                     action.type == prefix &&
-                        (nameSearch.isBlank() || action.name.contains(nameSearch, ignoreCase = true))
+                        (nameSearch.isBlank() || action.name.contains(nameSearch, ignoreCase = true)) &&
+                        (parameters["category"].isNullOrBlank() || action.category == parameters["category"]) &&
+                        (parameters["label"].isNullOrBlank() ||
+                            action.labels.orEmpty().split(",").any {
+                                it.trim().equals(parameters["label"], ignoreCase = true)
+                            })
                 } else {
                     action.type == prefix &&
                         (parameters["id"].isNullOrBlank() || action.id == parameters["id"]) &&

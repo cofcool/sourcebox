@@ -432,9 +432,22 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         message = if (isDirty) "命令已在本地删除，等待联网同步" else "命令已删除"
     }
 
-    fun refreshRecords(query: String = "", page: Int = 1) = perform {
+    fun refreshRecords(
+        query: String = "",
+        page: Int = 1,
+        category: String? = null,
+        label: String? = null
+    ) = perform {
+        val filters = buildList {
+            query.takeIf(String::isNotBlank)?.let {
+                add("name=${it}")
+            }
+            category?.let { add("category=${it}") }
+            label?.let { add("label=${it}") }
+        }
+        val localQuery = filters.joinToString("&")
         val result = withContext(Dispatchers.IO) {
-            actionDatabase.actions("record", query, page, 11)
+            actionDatabase.actions("record", localQuery, page, 11)
         }
         records = result.take(10)
         recordHasNextPage = result.size > 10
@@ -454,10 +467,16 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         recordChecklists = details.checklists
     }
 
-    fun createRecord(name: String, query: String, page: Int) = perform(
+    fun createRecord(
+        name: String,
+        query: String,
+        page: Int,
+        category: String? = null,
+        label: String? = null
+    ) = perform(
         onSuccess = {
             savedRecord = it.first
-            refreshRecords(query, page)
+            refreshRecords(query, page, category, label)
             message = if (it.second) "记录已添加到本地，等待联网同步" else "记录已添加"
         }
     ) {
@@ -483,10 +502,16 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         saved to isDirty
     }
 
-    fun saveRecord(record: ActionRecord, query: String, page: Int) = perform(
+    fun saveRecord(
+        record: ActionRecord,
+        query: String,
+        page: Int,
+        category: String? = null,
+        label: String? = null
+    ) = perform(
         onSuccess = {
             savedRecord = it.first
-            refreshRecords(query, page)
+            refreshRecords(query, page, category, label)
             message = if (it.second) "记录已保存到本地，等待联网同步" else "记录已保存"
         }
     ) {

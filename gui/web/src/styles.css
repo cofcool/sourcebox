@@ -50,8 +50,10 @@ h2 { display: flex; align-items: center; gap: 8px; font-size: 17px; }
 button:disabled { cursor: not-allowed; opacity: .45; }
 .todo-list { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
 .todo-item { display: flex; align-items: center; gap: 12px; min-height: 58px; padding: 11px 14px; background: white; border: 1px solid #e5e7eb; border-radius: 9px; }
-.todo-item > span { flex: 1; overflow-wrap: anywhere; }
-.todo-item.completed > span { color: #9298a1; text-decoration: line-through; }
+.todo-content { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.todo-content > span { display: block; }
+.todo-remark { margin: 4px 0 0; color: #737983; font-size: 13px; white-space: pre-wrap; }
+.todo-item.completed .todo-content > span { color: #9298a1; text-decoration: line-through; }
 .complete-button, .delete-button { display: grid; place-items: center; flex: 0 0 auto; padding: 0; border-radius: 50%; }
 .complete-button { width: 24px; height: 24px; border: 1px solid #c9ced6; background: white; color: white; }
 .todo-item.completed .complete-button { border-color: #31a24c; background: #31a24c; }

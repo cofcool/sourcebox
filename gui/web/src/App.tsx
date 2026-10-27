@@ -783,6 +783,7 @@ function formatDuration(totalSeconds: number) {
 
 function TodoPage() {
   const [input, setInput] = useState("");
+  const [remark, setRemark] = useState("");
   const [search, setSearch] = useState("");
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [error, setError] = useState<string>();
@@ -812,11 +813,12 @@ function TodoPage() {
     try {
       await api.todoCreate({
         name: text,
-        remark: "",
+        remark: remark.trim(),
         state: "todo",
         type: "todo",
       });
       setInput("");
+      setRemark("");
       await loadTodos(search);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -873,6 +875,14 @@ function TodoPage() {
           placeholder="今天想完成什么？"
           rows={3}
         />
+        <label htmlFor="todo-remark">备注（可选）</label>
+        <textarea
+          id="todo-remark"
+          value={remark}
+          onChange={(event) => setRemark(event.target.value)}
+          placeholder="补充说明"
+          rows={2}
+        />
       </section>
 
       <div className="todo-toolbar">
@@ -906,7 +916,10 @@ function TodoPage() {
             >
               {todo.state === "done" && <Check size={15} />}
             </button>
-            <span>{todo.name}</span>
+            <div className="todo-content">
+              <span>{todo.name}</span>
+              {todo.remark && <p className="todo-remark">{todo.remark}</p>}
+            </div>
             <button
               className="delete-button"
               onClick={() => void deleteTodo(todo)}

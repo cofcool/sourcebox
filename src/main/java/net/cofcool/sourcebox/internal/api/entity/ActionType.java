@@ -31,6 +31,6 @@ public record ActionType(
     }
 
     public enum Type {
-        category, device, state, label, todo, link, record, timer
+        category, device, state, label, todo, record, timer
     }
 }

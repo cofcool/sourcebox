@@ -33,7 +33,7 @@ public class ActionService {
     private final SqlRepository<ActionType> actionTypeSqlRepository;
     private final SqlRepository<CheckList>  checklistSqlRepository;
 
-    private final List<ActionInterceptor> saveInterceptors = List.of(new LinkInterceptor(), new RecordInterceptor());
+    private final List<ActionInterceptor> saveInterceptors = List.of(new LinkInterceptor(), new RecordInterceptor(), new LinkLabelInterceptor());
 
     private final NoteService noteService;
 
@@ -185,6 +185,9 @@ public class ActionService {
         if (StringUtils.isNotBlank(record.category())) {
             builder.and("category=?", record.category());
         }
+        if (StringUtils.isNotBlank(record.labels())) {
+            builder.and("labels=?", record.labels());
+        }
         return actionRecordSqlRepository.find(builder);
     }
 
@@ -311,6 +314,21 @@ public class ActionService {
         );
     }
 
+    private static class LinkLabelInterceptor implements ActionInterceptor {
+
+        @Override
+        public ActionRecord apply(ActionRecord actionRecord) {
+            String label = actionRecord.labels();
+            if (actionRecord.remark() != null && actionRecord.remark().toLowerCase().startsWith("http")) {
+                if (StringUtils.isBlank(label)) {
+                    label = "link";
+                } else {
+                    label = String.join(",",label, "link");
+                }
+            }
+            return actionRecord.withLabels(label);
+        }
+    }
     private static class LinkInterceptor implements ActionInterceptor {
 
         @Override

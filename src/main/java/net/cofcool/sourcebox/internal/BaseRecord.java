@@ -37,6 +37,11 @@ public abstract class BaseRecord implements WebTool {
             updateState(a.val(),ActionState.cancel);
         });
 
+        args.readArg("delete").ifPresent(a -> {
+            flag.set(true);
+            deleteRequestLocalData("/action/"+a.val());
+        });
+
         if (callOthers(args)) {
             flag.set(true);
         }
@@ -121,6 +126,8 @@ public abstract class BaseRecord implements WebTool {
             .arg(new Arg("done", null, "mark item done by item id", false,
                 "d5ebeacf9a0aa3319560c7aa78e8751c"))
             .arg(new Arg("cancel", null, "mark item cancel by item id", false,
+                "d5ebeacf9a0aa3319560c7aa78e8751c"))
+            .arg(new Arg("delete", null, "delete item cancel by item id", false,
                 "d5ebeacf9a0aa3319560c7aa78e8751c"));
     }
 

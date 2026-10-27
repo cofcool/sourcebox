@@ -58,7 +58,6 @@ public class ActionIndex {
 
         router.get().respond(r -> finaAction(r, null));
         router.get("/todo").respond(r -> finaAction(r, Type.todo));
-        router.get("/link").respond(r -> finaAction(r, Type.link));
 
         router.post().respond(r -> actionService.saveAction(r.body().asPojo(ActionRecord.class)));
 
@@ -78,6 +77,7 @@ public class ActionIndex {
             .name(map.get("name"))
             .state(map.get("state"))
             .category(map.get("category"))
+            .labels(map.get("labels"))
             .id(id == null ? ActionRecord.GENERATED : id)
             .build();
         try {

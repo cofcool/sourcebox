@@ -3,6 +3,7 @@ package net.cofcool.sourcebox.internal.api.entity;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.vertx.sqlclient.Row;
 import lombok.Builder;
+import lombok.With;
 import net.cofcool.sourcebox.util.EntityAction;
 import net.cofcool.sourcebox.util.LogseqOutStr;
 import net.cofcool.sourcebox.util.TableInfoHelper.Column;
@@ -20,6 +21,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Builder
+@With
 @Entity(name = "action_record")
 public record ActionRecord(
     @ID

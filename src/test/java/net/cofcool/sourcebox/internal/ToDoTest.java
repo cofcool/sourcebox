@@ -11,6 +11,8 @@ import net.cofcool.sourcebox.runner.CLIWebToolVerticle;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
@@ -58,10 +60,12 @@ class ToDoTest extends BaseTest {
     }
 
     @Test
+    @Order(value = Integer.MAX_VALUE-10)
     void list(Vertx vertx, VertxTestContext testContext) throws Exception {
         testContext.verify(() -> {
             instance().run(args);
             instance().run(args.arg("find", "state=todo"));
+            instance().run(args.arg("find", "labels=link"));
             testContext.completeNow();
         });
     }
@@ -107,6 +111,15 @@ class ToDoTest extends BaseTest {
     }
 
     @Test
+    @Disabled
+    void delete(Vertx vertx, VertxTestContext testContext) throws Exception {
+        testContext.verify(() -> {
+            instance().run(args.arg("delete", ID));
+            testContext.completeNow();
+        });
+    }
+
+    @Test
     void importTest(Vertx vertx, VertxTestContext testContext) throws Exception {
         testContext.verify(() -> {
             var p = FilenameUtils.concat(tmpDir.getAbsolutePath(), "importTest.csv");
@@ -120,7 +133,7 @@ class ToDoTest extends BaseTest {
                     "test4,com",test4 xxxx
                     """,
                 StandardCharsets.UTF_8);
-            instance().run(args.arg("import", p));
+            instance().run(args.arg("importTodo", p));
             testContext.completeNow();
         });
     }

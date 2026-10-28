@@ -30,7 +30,6 @@ import java.util.zip.ZipException;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
-@Tool.Experiment
 public class LanFileShare implements Tool {
 
     private static final String UPLOAD_PATH = "/upload";
@@ -47,28 +46,27 @@ public class LanFileShare implements Tool {
 
     @Override
     public void run(Args args) throws Exception {
-        switch (args.readArg("mode").val()) {
+        switch (args.readArg("type").val()) {
             case "send" -> send(args);
             case "receive" -> receive(args);
-            default -> throw new IllegalArgumentException("mode must be send or receive");
+            default -> throw new IllegalArgumentException("type must be send or receive");
         }
     }
 
     @Override
     public Args config() {
         return new Args()
-            .arg(new Arg("mode", "receive", "send or receive", false, "receive"))
-            .arg(new Arg("path", null, "file or directory to send", false, "./photos"))
+            .arg(new Arg("type", "receive", "send or receive", false, "receive"))
+            .arg(new Arg("path", null, "file or directory to send or receive", true, "./photos"))
             .arg(new Arg("to", null, "receiver base URL, for example http://192.168.1.20:43127", false, null))
             .arg(new Arg("token", null, "receiver's one-time token", false, null))
-            .arg(new Arg("dir", null, "directory where received files are stored", false, "./received"))
             .arg(new Arg("port", "0", "receiver port; 0 selects an available port", false, "0"))
             .arg(new Arg("compress", "false", "compress the upload as a ZIP archive", false, "true"))
             .arg(new Arg("conflict", "skip", "receiver conflict policy: skip or overwrite", false, "overwrite"));
     }
 
     private void receive(Args args) throws Exception {
-        Path destination = Path.of(args.readArg("dir").requiredVal("dir is required in receive mode"))
+        Path destination = Path.of(args.readArg("path").requiredVal("path is required in receive type"))
             .toAbsolutePath().normalize();
         Files.createDirectories(destination);
         destination = destination.toRealPath();
@@ -79,7 +77,7 @@ public class LanFileShare implements Tool {
             throw new IllegalArgumentException("port must be between 0 and 65535");
         }
 
-        String token = args.getArgVal("token").filter(s -> !s.isBlank()).orElseGet(LanFileShare::newToken);
+        String token = args.readArg("token").optVal().filter(s -> !s.isBlank()).orElseGet(LanFileShare::newToken);
         HttpServer server = startReceiver(destination, token, requestedPort, conflictPolicy);
         ExecutorService executor = Executors.newCachedThreadPool(task -> {
             Thread thread = new Thread(task, "lan-share-http");

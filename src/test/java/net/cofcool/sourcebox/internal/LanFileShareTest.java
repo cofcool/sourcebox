@@ -68,7 +68,7 @@ class LanFileShareTest {
 
         LanFileShare tool = new LanFileShare();
         Args args = new Args().copyConfigFrom(tool.config())
-            .arg("mode", "send")
+            .arg("type", "send")
             .arg("path", source.toString())
             .arg("to", "http://127.0.0.1:" + server.getAddress().getPort())
             .arg("token", "secret")
@@ -90,7 +90,7 @@ class LanFileShareTest {
 
         LanFileShare tool = new LanFileShare();
         Args args = new Args().copyConfigFrom(tool.config())
-            .arg("mode", "send")
+            .arg("type", "send")
             .arg("path", source.toString())
             .arg("to", "http://127.0.0.1:" + server.getAddress().getPort())
             .arg("token", "secret")
@@ -113,7 +113,7 @@ class LanFileShareTest {
 
         LanFileShare tool = new LanFileShare();
         Args args = new Args().copyConfigFrom(tool.config())
-            .arg("mode", "send")
+            .arg("type", "send")
             .arg("path", source.toString())
             .arg("to", "http://127.0.0.1:" + server.getAddress().getPort())
             .arg("token", "secret")

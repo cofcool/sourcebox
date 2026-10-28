@@ -34,13 +34,13 @@
 
 软件截图
 
-<center>
+<div style="text-align: center;">
 <figure>
 <img src="./imgs/i1.png" width=200>
 <img src="./imgs/web.png" width=200>
 <img src="./imgs/android.png" height=200>
 </figure>
-<center>
+</div>
 
 ---
 
@@ -114,13 +114,13 @@
 `lanShare` 可在局域网设备间双向发送文件或目录。先在接收设备启动接收端：
 
 ```bash
-./sourcebox.sh --tool=lanShare --mode=receive --dir=./received
+./sourcebox.sh --tool=lanShare --type=receive --dir=./received
 ```
 
 接收端会显示局域网访问地址和令牌。默认 `--port=0`，由操作系统自动分配可用端口；也可通过 `--port=43127` 指定端口。此服务独立于现有 Web 服务，不使用其默认端口 `38080`。保持接收进程运行，在发送设备执行：
 
 ```bash
-./sourcebox.sh --tool=lanShare --mode=send --to=http://192.168.1.20:43127 --token=接收端显示的令牌 --path=./photos
+./sourcebox.sh --tool=lanShare --type=send --to=http://192.168.1.20:43127 --token=接收端显示的令牌 --path=./photos
 ```
 
 `--path` 可以是文件或目录。未压缩时逐项传输，目录结构和顶层名称会保留；默认 `--compress=false`。需要先压缩为 ZIP 再传输时，发送端加 `--compress=true`

@@ -1,15 +1,23 @@
 package net.cofcool.sourcebox.ui
 
+import android.Manifest
 import android.app.Application
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
+import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.Network
+import android.os.Build
+import android.os.SystemClock
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -37,6 +45,18 @@ import java.security.MessageDigest
 import java.util.UUID
 
 private const val DIRTY_SYNC_RETRY_INTERVAL = 30_000L
+private const val TIMER_NOTIFICATION_CHANNEL = "pomodoro_timer"
+private const val TIMER_NOTIFICATION_ID = 1001
+
+data class PomodoroTimerState(
+    val workMinutes: Int = 40,
+    val breakMinutes: Int = 5,
+    val isWorkPhase: Boolean = true,
+    val remainingSeconds: Long = 40 * 60L,
+    val isRunning: Boolean = false,
+    val isPaused: Boolean = false,
+    val completedCycles: Int = 0
+)
 
 private data class ExportData(
     val actions: List<ActionExport>,
@@ -47,8 +67,26 @@ private data class ExportData(
 class ToolboxViewModel(application: Application) : AndroidViewModel(application) {
     private val api = SourceboxApi(application)
     private val actionDatabase = ActionExportDatabase(application)
+    private val timerPreferences = application.getSharedPreferences("pomodoro_timer", Context.MODE_PRIVATE)
+    private val notificationManager =
+        application.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     private val syncMutex = Mutex()
+    private var timerJob: Job? = null
+    private var timerDeadlineElapsed = 0L
+    var timerState by mutableStateOf(
+        timerPreferences.getInt("work_minutes", 40).coerceIn(1, 240).let { workMinutes ->
+            val breakMinutes = timerPreferences.getInt("break_minutes", 5).coerceIn(1, 240)
+            PomodoroTimerState(
+                workMinutes = workMinutes,
+                breakMinutes = breakMinutes,
+                remainingSeconds = workMinutes * 60L
+            )
+        }
+    )
+        private set
+    var timerRecords by mutableStateOf<List<ActionRecord>>(emptyList())
+        private set
     private val connectivityManager =
         application.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
@@ -103,6 +141,7 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         private set
 
     init {
+        createTimerNotificationChannel()
         connectivityManager.registerDefaultNetworkCallback(networkCallback)
         refreshTools()
         syncAllData()
@@ -117,6 +156,195 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
     fun refreshTools() = perform {
         tools = api.tools()
         message = "已连接，加载 ${tools.size} 个工具"
+    }
+
+    fun refreshTimerRecords() = perform {
+        timerRecords = withContext(Dispatchers.IO) {
+            actionDatabase.actions("timer", "", size = 500)
+                .sortedByDescending { it.end.orEmpty() }
+                .take(10)
+        }
+    }
+
+    fun startPomodoro(workMinutes: Int, breakMinutes: Int) {
+        if (timerState.isRunning) return
+        if (timerState.isPaused) {
+            beginTimerCountdown(timerState.remainingSeconds)
+            return
+        }
+        if (workMinutes !in 1..240 || breakMinutes !in 1..240) {
+            message = "专注和休息时长必须在 1 到 240 分钟之间"
+            return
+        }
+        timerPreferences.edit()
+            .putInt("work_minutes", workMinutes)
+            .putInt("break_minutes", breakMinutes)
+            .apply()
+        timerState = timerState.copy(
+            workMinutes = workMinutes,
+            breakMinutes = breakMinutes,
+            isWorkPhase = true,
+            remainingSeconds = workMinutes * 60L,
+            isPaused = false
+        )
+        beginTimerCountdown(timerState.remainingSeconds)
+    }
+
+    fun pausePomodoro() {
+        if (!timerState.isRunning) return
+        val remaining = ((timerDeadlineElapsed - SystemClock.elapsedRealtime() + 999) / 1000)
+            .coerceIn(0, timerState.remainingSeconds)
+        timerJob?.cancel()
+        timerJob = null
+        timerState = timerState.copy(
+            remainingSeconds = remaining,
+            isRunning = false,
+            isPaused = true
+        )
+    }
+
+    fun resetPomodoro() {
+        val current = timerState
+        if (current.isRunning || current.isPaused) {
+            val targetSeconds = phaseDurationSeconds(current)
+            val elapsedSeconds = (targetSeconds - current.remainingSeconds).coerceAtLeast(0)
+            if (elapsedSeconds > 0) {
+                saveTimerPhase(current.isWorkPhase, elapsedSeconds, "reset")
+            }
+        }
+        timerJob?.cancel()
+        timerJob = null
+        timerState = timerState.copy(
+            isWorkPhase = true,
+            remainingSeconds = timerState.workMinutes * 60L,
+            isRunning = false,
+            isPaused = false
+        )
+    }
+
+    private fun beginTimerCountdown(seconds: Long) {
+        timerJob?.cancel()
+        timerDeadlineElapsed = SystemClock.elapsedRealtime() + seconds * 1000
+        timerState = timerState.copy(isRunning = true, isPaused = false)
+        timerJob = viewModelScope.launch {
+            while (timerState.isRunning) {
+                delay(1_000)
+                val remaining = ((timerDeadlineElapsed - SystemClock.elapsedRealtime() + 999) / 1000)
+                    .coerceAtLeast(0)
+                timerState = timerState.copy(remainingSeconds = remaining)
+                if (remaining == 0L) {
+                    completeTimerPhase()
+                    break
+                }
+            }
+        }
+    }
+
+    private fun completeTimerPhase() {
+        val finished = timerState
+        val durationSeconds = phaseDurationSeconds(finished)
+        saveTimerPhase(finished.isWorkPhase, durationSeconds, "finish")
+        if (finished.isWorkPhase) {
+            notifyTimer("专注时间结束", "休息时间到了，请放松一下。")
+            timerState = finished.copy(
+                isWorkPhase = false,
+                remainingSeconds = finished.breakMinutes * 60L,
+                isRunning = false,
+                isPaused = false
+            )
+            beginTimerCountdown(timerState.remainingSeconds)
+        } else {
+            notifyTimer("休息时间结束", "本轮番茄钟已完成，可以开始下一轮专注。")
+            timerState = finished.copy(
+                isWorkPhase = true,
+                remainingSeconds = finished.workMinutes * 60L,
+                isRunning = false,
+                isPaused = false,
+                completedCycles = finished.completedCycles + 1
+            )
+        }
+    }
+
+    private fun phaseDurationSeconds(state: PomodoroTimerState): Long =
+        (if (state.isWorkPhase) state.workMinutes else state.breakMinutes) * 60L
+
+    private fun saveTimerPhase(isWorkPhase: Boolean, durationSeconds: Long, result: String) {
+        if (durationSeconds <= 0) return
+        viewModelScope.launch {
+            try {
+                val end = java.time.LocalDateTime.now()
+                val start = end.minusSeconds(durationSeconds)
+                val endText = end.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                val startText = start.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                val phase = if (isWorkPhase) "workTime" else "breakTime"
+                val action = ActionRecord(
+                    id = UUID.randomUUID().toString().replace("-", ""),
+                    name = "$phase-${System.currentTimeMillis() / 1000}",
+                    type = "timer",
+                    state = "done",
+                    start = startText,
+                    end = endText,
+                    duration = durationSeconds.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
+                    remark = when {
+                        result == "reset" -> "reset"
+                        isWorkPhase -> "finish"
+                        else -> "break-finish"
+                    }
+                )
+                val (_, isDirty) = writeWithOfflineFallback(
+                    server = {
+                        api.saveAction(action).also { saved ->
+                            withContext(Dispatchers.IO) { actionDatabase.saveAction(saved) }
+                        }
+                    },
+                    offline = {
+                        withContext(Dispatchers.IO) { actionDatabase.markActionDirty(action) }
+                        action
+                    }
+                )
+                timerRecords = withContext(Dispatchers.IO) {
+                    actionDatabase.actions("timer", "", size = 500)
+                        .sortedByDescending { it.end.orEmpty() }
+                        .take(10)
+                }
+                localActionCount = withContext(Dispatchers.IO) { actionDatabase.actionCount() }
+                refreshPendingCount()
+                message = if (isDirty) "番茄阶段数据已保存到本地，等待联网同步" else "番茄阶段数据已保存并上传"
+            } catch (error: Exception) {
+                message = "番茄阶段数据保存失败：${error.message ?: "未知错误"}"
+            }
+        }
+    }
+
+    private fun createTimerNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            notificationManager.createNotificationChannel(
+                NotificationChannel(
+                    TIMER_NOTIFICATION_CHANNEL,
+                    "番茄钟提醒",
+                    NotificationManager.IMPORTANCE_DEFAULT
+                )
+            )
+        }
+    }
+
+    private fun notifyTimer(title: String, text: String) {
+        if (
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            getApplication<Application>().checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            message = "阶段已结束；请开启通知权限以接收番茄钟提醒"
+            return
+        }
+        val notification = Notification.Builder(getApplication(), TIMER_NOTIFICATION_CHANNEL)
+            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+            .setContentTitle(title)
+            .setContentText(text)
+            .setCategory(Notification.CATEGORY_REMINDER)
+            .setAutoCancel(true)
+            .build()
+        notificationManager.notify(TIMER_NOTIFICATION_ID, notification)
     }
 
     fun syncAllData() {
@@ -146,6 +374,11 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
                 lastTypeSync = syncedAt
                 refreshPendingCount()
                 recordCategories = withContext(Dispatchers.IO) { actionDatabase.actionCategories() }
+                timerRecords = withContext(Dispatchers.IO) {
+                    actionDatabase.actions("timer", "", size = 500)
+                        .sortedByDescending { it.end.orEmpty() }
+                        .take(10)
+                }
                 message = "已同步 ${exported.actions.size} 条行动、${exported.notes.size} 条便笺、${exported.types.types.size} 个类型"
             }
         }
@@ -612,6 +845,7 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         private set
 
     override fun onCleared() {
+        timerJob?.cancel()
         connectivityManager.unregisterNetworkCallback(networkCallback)
         actionDatabase.close()
         super.onCleared()

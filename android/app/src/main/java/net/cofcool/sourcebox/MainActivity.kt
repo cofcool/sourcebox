@@ -1,8 +1,11 @@
 package net.cofcool.sourcebox
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.webkit.WebChromeClient
@@ -28,13 +31,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.DataObject
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.ErrorOutline
@@ -44,6 +47,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -86,9 +90,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.SerializationException
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonElement
 import net.cofcool.sourcebox.data.ActionCheckList
 import net.cofcool.sourcebox.data.ActionRecord
 import net.cofcool.sourcebox.data.NoteRecord
@@ -149,6 +150,23 @@ private fun SourceboxApp(
     var settingsPassword by remember { mutableStateOf(vm.password) }
     var fileResult by remember { mutableStateOf("") }
     val snackbar = remember { SnackbarHostState() }
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (!granted) coroutineScope.launch {
+            snackbar.showSnackbar("通知权限未开启，番茄钟阶段结束时无法显示通知")
+        }
+    }
+    val requestNotificationPermission = {
+        if (
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
 
     LaunchedEffect(vm.message) {
         if (vm.message.isNotBlank()) snackbar.showSnackbar(vm.message)
@@ -180,7 +198,7 @@ private fun SourceboxApp(
                                 "tool" -> selectedTool?.id ?: "工具"
                                 "task" -> "任务"
                                 "record-detail" -> "编辑任务"
-                                "json" -> "JSON 格式化"
+                                "timer" -> "番茄钟"
                                 "files" -> "文件工具"
                                 "file-result" -> "文件内容"
                                 "settings" -> "连接设置"
@@ -252,7 +270,7 @@ private fun SourceboxApp(
                     vm = vm,
                     modifier = Modifier.padding(padding),
                     onSelectTool = { selectedTool = it; page = "tool" },
-                    onJson = { page = "json" },
+                    onTimer = { page = "timer" },
                     onFiles = { page = "files" }
                 )
                 "tool" -> selectedTool?.let { tool ->
@@ -317,7 +335,11 @@ private fun SourceboxApp(
                     onShareConsumed = onShareConsumed
                 )
                 "notes" -> NotesScreen(vm, Modifier.padding(padding))
-                "json" -> JsonScreen(Modifier.padding(padding))
+                "timer" -> TimerScreen(
+                    vm = vm,
+                    modifier = Modifier.padding(padding),
+                    onRequestNotificationPermission = requestNotificationPermission
+                )
                 "files" -> FilesScreen(
                     modifier = Modifier.padding(padding),
                     onRead = { content ->
@@ -387,7 +409,7 @@ private fun HomeScreen(
     vm: ToolboxViewModel,
     modifier: Modifier,
     onSelectTool: (ToolInfo) -> Unit,
-    onJson: () -> Unit,
+    onTimer: () -> Unit,
     onFiles: () -> Unit
 ) {
     Column(modifier
@@ -399,10 +421,10 @@ private fun HomeScreen(
             style = MaterialTheme.typography.bodySmall
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 12.dp)) {
-            OutlinedButton(onClick = onJson, modifier = Modifier.weight(1f)) {
-                Icon(Icons.Default.DataObject, contentDescription = null)
+            OutlinedButton(onClick = onTimer, modifier = Modifier.weight(1f)) {
+                Icon(Icons.Default.Timer, contentDescription = null)
                 Spacer(Modifier.width(6.dp))
-                Text("JSON")
+                Text("番茄钟")
             }
             OutlinedButton(onClick = onFiles, modifier = Modifier.weight(1f)) {
                 Icon(Icons.Default.FolderOpen, contentDescription = null)
@@ -426,7 +448,7 @@ private fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(
-                    vm.tools.filterNot { it.id in setOf("note", "todo", "hisRecord") },
+                    vm.tools.filterNot { it.id in setOf("note", "todo", "hisRecord", "timer") },
                     key = { it.id }
                 ) { tool ->
                     Card(onClick = { onSelectTool(tool) }, modifier = Modifier.fillMaxWidth()) {
@@ -1157,61 +1179,116 @@ private fun NotesScreen(vm: ToolboxViewModel, modifier: Modifier) {
 }
 
 @Composable
-private fun JsonScreen(modifier: Modifier) {
-    var input by remember { mutableStateOf("") }
-    var output by remember { mutableStateOf("") }
-    var compact by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf("") }
-    val formatter = remember(compact) { Json { prettyPrint = !compact } }
-    Column(modifier
-        .fillMaxSize()
-        .padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        OutlinedTextField(
-            input,
-            { input = it; error = "" },
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-            label = { Text("输入 JSON") },
-            placeholder = { Text("{\"hello\":\"world\"}") },
-            minLines = 4
+private fun TimerScreen(
+    vm: ToolboxViewModel,
+    modifier: Modifier,
+    onRequestNotificationPermission: () -> Unit
+) {
+    val timer = vm.timerState
+    var workInput by remember(timer.workMinutes) { mutableStateOf(timer.workMinutes.toString()) }
+    var breakInput by remember(timer.breakMinutes) { mutableStateOf(timer.breakMinutes.toString()) }
+
+    LaunchedEffect(Unit) {
+        vm.refreshTimerRecords()
+    }
+
+    val totalFocusSeconds = vm.timerRecords
+        .filter { it.name.startsWith("workTime-") }
+        .sumOf { it.duration ?: 0 }
+
+    Column(
+        modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(18.dp)
+    ) {
+        Text(
+            when {
+                timer.isPaused -> if (timer.isWorkPhase) "专注已暂停" else "休息已暂停"
+                timer.isRunning -> if (timer.isWorkPhase) "专注中" else "休息中"
+                else -> if (timer.isWorkPhase) "准备专注" else "准备休息"
+            },
+            style = MaterialTheme.typography.titleLarge
         )
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("压缩输出")
-            Spacer(Modifier.width(8.dp))
-            Switch(checked = compact, onCheckedChange = { compact = it })
-            Spacer(Modifier.weight(1f))
-            Button(onClick = {
-                try {
-                    val parsed = Json.parseToJsonElement(input)
-                    output = formatter.encodeToString(JsonElement.serializer(), parsed)
-                    error = ""
-                } catch (exception: SerializationException) {
-                    error = exception.message ?: "JSON 格式无效"
-                    output = ""
-                }
-            }) { Text("格式化") }
+        Text(
+            "%02d:%02d".format(timer.remainingSeconds / 60, timer.remainingSeconds % 60),
+            style = MaterialTheme.typography.displayLarge,
+            fontWeight = FontWeight.Bold
+        )
+
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            OutlinedTextField(
+                value = workInput,
+                onValueChange = { workInput = it.filter(Char::isDigit).take(3) },
+                modifier = Modifier.weight(1f),
+                label = { Text("专注（分钟）") },
+                keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                enabled = !timer.isRunning && !timer.isPaused,
+                singleLine = true
+            )
+            OutlinedTextField(
+                value = breakInput,
+                onValueChange = { breakInput = it.filter(Char::isDigit).take(3) },
+                modifier = Modifier.weight(1f),
+                label = { Text("休息（分钟）") },
+                keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                enabled = !timer.isRunning && !timer.isPaused,
+                singleLine = true
+            )
         }
-        if (error.isNotBlank()) Text(error, color = MaterialTheme.colorScheme.error)
-        OutlinedTextField(
-            output,
-            {},
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-            label = { Text("输出") },
-            readOnly = true,
-            minLines = 4
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = { input = ""; output = ""; error = "" }, modifier = Modifier.weight(1f)) {
-                Text("清空")
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Button(
+                onClick = {
+                    if (timer.isRunning) {
+                        vm.pausePomodoro()
+                    } else {
+                        onRequestNotificationPermission()
+                        vm.startPomodoro(
+                            workInput.toIntOrNull() ?: 0,
+                            breakInput.toIntOrNull() ?: 0
+                        )
+                    }
+                },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(if (timer.isRunning) "暂停" else if (timer.isPaused) "继续" else "开始")
             }
-            OutlinedButton(onClick = { input = output }, modifier = Modifier.weight(1f)) {
-                Text("输出转输入")
+            OutlinedButton(onClick = vm::resetPomodoro, modifier = Modifier.weight(1f)) {
+                Text("重置")
+            }
+        }
+        Text("已完成 ${timer.completedCycles} 个周期 · 累计专注 ${formatTimerDuration(totalFocusSeconds.toLong())}")
+        Text("完成的专注/休息阶段会保存为 timer 类型行动并自动同步。", style = MaterialTheme.typography.bodySmall)
+
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("最近阶段记录", style = MaterialTheme.typography.titleMedium)
+            if (vm.timerRecords.isEmpty()) {
+                Text("暂无计时记录", style = MaterialTheme.typography.bodySmall)
+            } else {
+                vm.timerRecords.forEach { record ->
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                when {
+                                    record.name.startsWith("workTime-") -> "专注 · ${record.remark.orEmpty()}"
+                                    else -> "休息 · ${record.remark.orEmpty()}"
+                                }
+                            )
+                            Text(record.end.orEmpty(), style = MaterialTheme.typography.labelSmall)
+                        }
+                        Text(formatTimerDuration(record.duration?.toLong() ?: 0))
+                    }
+                }
             }
         }
     }
+}
+
+private fun formatTimerDuration(seconds: Long): String {
+    val hours = seconds / 3600
+    val minutes = (seconds % 3600) / 60
+    val remainingSeconds = seconds % 60
+    return if (hours > 0) "%d:%02d:%02d".format(hours, minutes, remainingSeconds)
+    else "%d:%02d".format(minutes, remainingSeconds)
 }
 
 @Composable

@@ -4,6 +4,7 @@ import io.vertx.core.Future;
 import lombok.CustomLog;
 import net.cofcool.sourcebox.internal.api.entity.Config;
 import net.cofcool.sourcebox.util.JsonUtil;
+import net.cofcool.sourcebox.util.RepositoryUtil;
 import net.cofcool.sourcebox.util.SqlRepository;
 import net.cofcool.sourcebox.util.VertxUtils.JDBCPoolConfig;
 
@@ -26,7 +27,7 @@ public class ConfigService {
         return ServiceHolder.SERVICE;
     }
 
-    private final SqlRepository<Config> repository = SqlRepository.create(Config.class);
+    private final SqlRepository<Config> repository = RepositoryUtil.getRepository(Config.class);
 
     public Future<Config> put(String key, String val) {
         return repository.save(new Config(key, val, LocalDateTime.now()));

@@ -21,6 +21,7 @@ public class NoteIndex implements WebRouter {
     public Router buildRouter(Vertx vertx) {
         var noteService = new NoteService(vertx);
         var actionIndex = new ActionIndex(vertx, noteService);
+        var searchService = LuceneSearchService.get(vertx);
         vertx.eventBus().registerDefaultCodec(Note.class, new NoteCodec());
 
         var router = VertxUtils.createBodyRouter(vertx);
@@ -56,6 +57,11 @@ public class NoteIndex implements WebRouter {
         var rootRouter = Router.router(vertx);
         rootRouter.route("/note/*").subRouter(router);
         var actionRouter = actionIndex.mountRoute(rootRouter);
+
+        rootRouter.get("/search").respond(r -> {
+            var params = r.queryParams();
+            return searchService.search(params.get("q"), params.get("type"));
+        });
 
         rootRouter.get("/develop/routes").respond(r ->
             Future.succeededFuture(Map.of(

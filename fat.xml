@@ -14,6 +14,11 @@
             <scope>runtime</scope>
         </dependencySet>
     </dependencySets>
+    <containerDescriptorHandlers>
+        <containerDescriptorHandler>
+            <handlerName>metaInf-services</handlerName>
+        </containerDescriptorHandler>
+    </containerDescriptorHandlers>
     <fileSets>
         <fileSet>
             <directory>${project.build.outputDirectory}</directory>

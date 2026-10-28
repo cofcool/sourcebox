@@ -5,11 +5,8 @@ import io.vertx.core.Vertx;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import net.cofcool.sourcebox.BaseTest;
-import net.cofcool.sourcebox.internal.api.entity.ActionRecord;
+import net.cofcool.sourcebox.internal.api.entity.*;
 import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
-import net.cofcool.sourcebox.internal.api.entity.CheckList;
-import net.cofcool.sourcebox.internal.api.entity.Comment;
-import net.cofcool.sourcebox.internal.api.entity.RefType;
 import net.cofcool.sourcebox.logging.LoggerFactory;
 import net.cofcool.sourcebox.util.SqlRepository;
 import org.junit.jupiter.api.Assertions;
@@ -96,6 +93,32 @@ class ActionServiceTest extends BaseTest {
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertNotNull(r);
                 System.out.println(r);
+                testContext.completeNow();
+            })));
+    }
+
+    @Test
+    void fullTextSearchIndexesActionFieldsAndComments(Vertx vertx, VertxTestContext testContext) {
+        LuceneSearchService.get(vertx)
+            .search("first", "action")
+            .onComplete(testContext.succeeding(results -> testContext.verify(() -> {
+                Assertions.assertTrue(results.stream().anyMatch(result ->
+                    result.id().equals(defaultRecord.id()) && result.data() instanceof ActionRecord
+                ));
+                testContext.completeNow();
+            })));
+    }
+
+    @Test
+    void fullTextSearchIndexesNoteContent(Vertx vertx, VertxTestContext testContext) {
+        Note note = Note.init("这是用于 Lucene 全文搜索的测试内容");
+        NoteService noteService = new NoteService(vertx);
+        noteService.save(note)
+            .compose(saved -> LuceneSearchService.get(vertx).search("全文搜索", "note"))
+            .onComplete(testContext.succeeding(results -> testContext.verify(() -> {
+                Assertions.assertTrue(results.stream().anyMatch(result ->
+                    result.id().equals(note.id()) && result.data() instanceof Note
+                ));
                 testContext.completeNow();
             })));
     }

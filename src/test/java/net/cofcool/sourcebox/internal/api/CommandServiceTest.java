@@ -1,15 +1,8 @@
 package net.cofcool.sourcebox.internal.api;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import io.vertx.core.Vertx;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
 import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.internal.api.CommandService.ImportParam;
 import net.cofcool.sourcebox.internal.api.entity.CommandRecord;
@@ -24,6 +17,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 @ExtendWith(VertxExtension.class)
 class CommandServiceTest extends BaseTest {
 
@@ -36,6 +37,7 @@ class CommandServiceTest extends BaseTest {
         LoggerFactory.setDebug(true);
         SqlRepository.init(vertx);
         commandManager = new CommandService(
+            vertx,
             FilenameUtils.concat(file.getAbsolutePath(), "cmd.json"),
             FilenameUtils.concat(file.getAbsolutePath(), ".mytools")
         );
@@ -123,6 +125,15 @@ class CommandServiceTest extends BaseTest {
             .findByCmd("kafka")
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 Assertions.assertFalse(r.isEmpty());
+                testContext.completeNow();
+            })));
+    }
+
+    @Test
+    void fullTextSearchIndexesCommandFields(VertxTestContext testContext) {
+        commandManager.search("kafka")
+            .onComplete(testContext.succeeding(results -> testContext.verify(() -> {
+                assertTrue(results.stream().anyMatch(result -> result.cmd().contains("kafka")));
                 testContext.completeNow();
             })));
     }

@@ -8,6 +8,7 @@ import net.cofcool.sourcebox.App;
 import net.cofcool.sourcebox.ToolRunner;
 import net.cofcool.sourcebox.WebTool;
 import net.cofcool.sourcebox.WebTool.RouterTypeManger;
+import net.cofcool.sourcebox.internal.api.LuceneSearchService;
 import net.cofcool.sourcebox.util.SqlRepository;
 import net.cofcool.sourcebox.util.VertxUtils;
 
@@ -20,10 +21,18 @@ public class CLIWebToolVerticle extends AbstractVerticle {
     private final RouterTypeManger manger = new RouterTypeManger();
 
     @Override
-    public void stop() throws Exception {
-        super.stop();
+    public void stop(Promise<Void> stopPromise) {
         if (tool.needDatabase()) {
-            SqlRepository.closePool();
+            LuceneSearchService.close(vertx).onComplete(result -> {
+                SqlRepository.closePool();
+                if (result.succeeded()) {
+                    stopPromise.complete();
+                } else {
+                    stopPromise.fail(result.cause());
+                }
+            });
+        } else {
+            stopPromise.complete();
         }
     }
 

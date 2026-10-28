@@ -1,15 +1,8 @@
 package net.cofcool.sourcebox.util;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import io.vertx.core.Vertx;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
-import java.sql.JDBCType;
-import java.time.LocalDateTime;
-import java.util.List;
 import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.logging.LoggerFactory;
 import net.cofcool.sourcebox.util.TableInfoHelper.Column;
@@ -18,6 +11,12 @@ import net.cofcool.sourcebox.util.TableInfoHelper.ID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import java.sql.JDBCType;
+import java.time.LocalDateTime;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(VertxExtension.class)
 class SqlRepositoryTest extends BaseTest {
@@ -29,8 +28,9 @@ class SqlRepositoryTest extends BaseTest {
     static void create(Vertx vertx, VertxTestContext testContext) {
         LoggerFactory.setDebug(true);
         SqlRepository.init(vertx);
-        repository = SqlRepository.create(User.class);
-        tmpRepository = SqlRepository.create(Tmp.class);
+        repository = RepositoryUtil.getRepository(User.class);
+        tmpRepository = RepositoryUtil.getRepository(Tmp.class);
+        assertSame(repository, RepositoryUtil.getRepository(User.class));
         repository.save(new User("1", "test1", "12345"))
             .onComplete(testContext.succeeding(t -> testContext.completeNow()));
     }

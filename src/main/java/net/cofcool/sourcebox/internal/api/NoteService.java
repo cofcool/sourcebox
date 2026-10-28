@@ -4,6 +4,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import lombok.CustomLog;
 import net.cofcool.sourcebox.internal.api.entity.Note;
+import net.cofcool.sourcebox.util.RepositoryUtil;
 import net.cofcool.sourcebox.util.SqlRepository;
 import org.apache.commons.lang3.StringUtils;
 
@@ -13,9 +14,11 @@ import java.util.List;
 public class NoteService {
 
     private final SqlRepository<Note> noteRepository;
+    private final LuceneSearchService searchService;
 
     public NoteService(Vertx vertx) {
-        noteRepository = SqlRepository.create(Note.class);
+        noteRepository = RepositoryUtil.getRepository(Note.class);
+        searchService = LuceneSearchService.get(vertx);
     }
 
     public Future<Note> save(Note note)  {
@@ -23,15 +26,19 @@ public class NoteService {
         if (StringUtils.isBlank(n.id())) {
             n = Note.init(n.content());
         }
-        return noteRepository.save(n);
+        return noteRepository.save(n)
+            .compose(saved -> searchService.indexNote(saved).map(saved));
     }
 
     public Future<Void> save(List<Note> notes) {
-        return noteRepository.save(notes);
+        return noteRepository.save(notes)
+            .compose(ignored -> Future.all(notes.stream().map(searchService::indexNote).toList()))
+            .mapEmpty();
     }
 
     Future<Boolean> delete(Note note) {
-        return noteRepository.delete(note.id());
+        return noteRepository.delete(note.id())
+            .compose(deleted -> searchService.delete("note", note.id()).map(deleted));
     }
 
     Future<Void> logicDelete(Note note) {
@@ -39,7 +46,7 @@ public class NoteService {
             .compose(n ->
                 noteRepository.save(new Note(n.id(), n.content(), n.date(), Note.NoteState.DELETE_FLAG.name()))
             )
-            .compose(n -> n == null ? Future.failedFuture("Update error") : Future.succeededFuture());
+            .compose(n -> n == null ? Future.failedFuture("Update error") : searchService.indexNote(n));
     }
 
     public Future<List<Note>> find() {

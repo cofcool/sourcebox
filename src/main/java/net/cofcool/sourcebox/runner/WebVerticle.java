@@ -15,6 +15,7 @@ import net.cofcool.sourcebox.*;
 import net.cofcool.sourcebox.Tool.Args;
 import net.cofcool.sourcebox.Tool.RunnerType;
 import net.cofcool.sourcebox.WebTool.RouterTypeManger;
+import net.cofcool.sourcebox.internal.api.LuceneSearchService;
 import net.cofcool.sourcebox.util.SqlRepository;
 import net.cofcool.sourcebox.util.VertxDeployer;
 import net.cofcool.sourcebox.util.VertxUtils;
@@ -48,9 +49,15 @@ public class WebVerticle extends AbstractVerticle implements VertxDeployer {
     }
 
     @Override
-    public void stop() throws Exception {
-        super.stop();
-        SqlRepository.closePool();
+    public void stop(Promise<Void> stopPromise) {
+        LuceneSearchService.close(vertx).onComplete(result -> {
+            SqlRepository.closePool();
+            if (result.succeeded()) {
+                stopPromise.complete();
+            } else {
+                stopPromise.fail(result.cause());
+            }
+        });
     }
 
     @Override

@@ -2,14 +2,13 @@ package net.cofcool.sourcebox.internal.api;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.vertx.core.Future;
+import io.vertx.core.Vertx;
 import lombok.CustomLog;
 import net.cofcool.sourcebox.internal.api.entity.CommandRecord;
-import net.cofcool.sourcebox.util.JsonUtil;
-import net.cofcool.sourcebox.util.QueryBuilder;
-import net.cofcool.sourcebox.util.SqlRepository;
-import net.cofcool.sourcebox.util.Utils;
+import net.cofcool.sourcebox.util.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,15 +37,18 @@ public class CommandService {
 
     private final SqlRepository<CommandRecord> repository;
     private final String aliasPath;
+    private final LuceneSearchService searchService;
 
-    public CommandService(String path, String aliasPath) {
-        repository = SqlRepository.create(CommandRecord.class);
+    public CommandService(Vertx vertx, String path, String aliasPath) {
+        repository = RepositoryUtil.getRepository(CommandRecord.class);
+        searchService = LuceneSearchService.get(vertx);
         loadOrInitData(path);
         this.aliasPath = aliasPath;
     }
 
     public Future<CommandRecord> save(CommandRecord command) {
-        return repository.save(command);
+        return repository.save(command)
+            .compose(saved -> searchService.indexCommand(saved).map(saved));
     }
 
     public Future<CommandRecord> enter(String id) {
@@ -82,7 +84,7 @@ public class CommandService {
             CommandRecord.builder()
                 .cmd(String.join(" ", Arrays.copyOfRange(split, sIdx, eIdx)))
                 .frequency(0).alias(alias).tags(tags).build()
-        );
+        ).compose(saved -> searchService.indexCommand(saved).map(saved));
     }
 
     public Future<List<CommandRecord>> findByCmd(String cmd) {
@@ -95,6 +97,18 @@ public class CommandService {
                 .orderBy("frequency desc")
                 .and("cmd like '%" + cmd + "%'")
         );
+    }
+
+    public Future<List<CommandRecord>> search(String query) {
+        if (StringUtils.isBlank(query) || Strings.CI.equals(query.trim(), "ALL")) {
+            return find((String) null);
+        }
+        return searchService.search(query, "command")
+            .map(results -> results.stream()
+                .map(LuceneSearchService.SearchResult::data)
+                .filter(CommandRecord.class::isInstance)
+                .map(CommandRecord.class::cast)
+                .toList());
     }
 
     public Future<List<CommandRecord>> find(CommandRecord record) {
@@ -129,7 +143,8 @@ public class CommandService {
     }
 
     public Future<Boolean> delete(String alias) {
-        return repository.delete(alias);
+        return repository.delete(alias)
+            .compose(deleted -> searchService.delete("command", alias).map(deleted));
     }
 
     public Future<Boolean> store(String alias) {
@@ -187,6 +202,7 @@ public class CommandService {
     }
 
     private void loadOrInitData(String path) {
+        Future<Void> dataLoaded = Future.succeededFuture();
         try {
             var file = new File(path);
             if (file.exists()) {
@@ -200,7 +216,8 @@ public class CommandService {
                         )
                     )
                     .toList();
-                repository.save(data)
+                if (!data.isEmpty()) {
+                    dataLoaded = repository.save(data)
                     .onSuccess(i -> {
                         var np = path + ".bak";
                         var s = file.renameTo(new File(np));
@@ -209,19 +226,23 @@ public class CommandService {
                         }
                     })
                     .onFailure(e -> log.error("save old command data error", e));
+                }
             }
         } catch (IOException e) {
             log.error("load old command data error", e);
         }
-        repository
-            .count(QueryBuilder.builder().count().from(CommandRecord.class))
-            .compose(i -> {
-                if (i == 0) {
+        dataLoaded
+            .compose(ignored -> repository.count(QueryBuilder.builder().count().from(CommandRecord.class)))
+            .compose(count -> {
+                if (count == 0) {
                     log.info("Init default commands");
                     return repository.save(INIT_CMDS);
                 }
                 return Future.succeededFuture();
-            });
+            })
+            .compose(ignored -> repository.find())
+            .compose(commands -> Future.all(commands.stream().map(searchService::indexCommand).toList()).mapEmpty())
+            .onFailure(error -> log.error("Initialize command search index failed", error));
     }
 
     public Future<List<String>> exportHis() {

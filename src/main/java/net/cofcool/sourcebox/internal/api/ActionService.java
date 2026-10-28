@@ -9,6 +9,7 @@ import lombok.CustomLog;
 import net.cofcool.sourcebox.internal.api.entity.*;
 import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
 import net.cofcool.sourcebox.util.QueryBuilder;
+import net.cofcool.sourcebox.util.RepositoryUtil;
 import net.cofcool.sourcebox.util.SqlRepository;
 import net.cofcool.sourcebox.util.Utils;
 import org.apache.commons.lang3.StringUtils;
@@ -32,17 +33,19 @@ public class ActionService {
     private final SqlRepository<Comment> commentSqlRepository;
     private final SqlRepository<ActionType> actionTypeSqlRepository;
     private final SqlRepository<CheckList>  checklistSqlRepository;
+    private final LuceneSearchService searchService;
 
     private final List<ActionInterceptor> saveInterceptors = List.of(new LinkInterceptor(), new RecordInterceptor(), new LinkLabelInterceptor());
 
     private final NoteService noteService;
 
     public ActionService(Vertx vertx, NoteService noteService) {
-        this.actionRecordSqlRepository = SqlRepository.create(ActionRecord.class);
-        this.commentSqlRepository = SqlRepository.create(Comment.class);
-        this.actionTypeSqlRepository = SqlRepository.create(ActionType.class);
-        this.checklistSqlRepository = SqlRepository.create(CheckList.class);
+        this.actionRecordSqlRepository = RepositoryUtil.getRepository(ActionRecord.class);
+        this.commentSqlRepository = RepositoryUtil.getRepository(Comment.class);
+        this.actionTypeSqlRepository = RepositoryUtil.getRepository(ActionType.class);
+        this.checklistSqlRepository = RepositoryUtil.getRepository(CheckList.class);
         this.noteService = noteService;
+        this.searchService = LuceneSearchService.get(vertx);
     }
 
     public Future<Void> saveAll(List<ActionRecord> records) {
@@ -59,13 +62,16 @@ public class ActionService {
         for (ActionInterceptor interceptor : saveInterceptors) {
             record = interceptor.apply(record);
         }
-        var ret = actionRecordSqlRepository.save(record);
-        ret.onSuccess(a -> {
+        return actionRecordSqlRepository.save(record).compose(a -> {
+            Future<Void> saveComments = Future.succeededFuture();
             if (a.comments() != null) {
                 var comments = a.comments().stream().map(c ->
                     new Comment(Utils.generateShortUUID(), a.id(), c, LocalDateTime.now(), LocalDateTime.now())
                 ).toList();
-                commentSqlRepository.save(comments).onFailure(new Log("Save comment error"));
+                if (!comments.isEmpty()) {
+                    saveComments = commentSqlRepository.save(comments)
+                        .onFailure(new Log("Save comment error"));
+                }
             }
             if (a.category() != null) {
                 saveType(a.category(), Type.category, "Save actionType error");
@@ -78,9 +84,11 @@ public class ActionService {
                     saveType(s, Type.label, "Save label error");
                 }
             }
+            return saveComments
+                .compose(ignored -> commentSqlRepository.find(new Comment(a.id())))
+                .compose(comments -> searchService.indexAction(a, comments))
+                .map(a);
         });
-
-        return ret;
     }
 
     private void saveType(String a, Type label, String error) {
@@ -223,11 +231,14 @@ public class ActionService {
     public Future<Boolean> deleteActions(String id) {
         return delete(id, actionRecordSqlRepository::delete)
             .compose(a -> deleteCommentsByActionId(id))
-            .compose(a -> deleteCheckListByActionId(id));
+            .compose(a -> deleteCheckListByActionId(id))
+            .compose(a -> searchService.delete("action", id).map(true));
     }
 
     public Future<Boolean> deleteComments(String id) {
-        return delete(id, commentSqlRepository::delete);
+        return commentSqlRepository.find(id)
+            .compose(comment -> commentSqlRepository.delete(id)
+                .compose(deleted -> refreshActionIndex(comment.actionId()).map(true)));
     }
 
     public Future<Boolean> deleteCommentsByActionId(String actionId) {
@@ -290,7 +301,13 @@ public class ActionService {
             .actionId(actionId).content(pojo.content())
             .createTime(pojo.createTime() != null ? pojo.createTime() : LocalDateTime.now()).updateTime(LocalDateTime.now())
             .build()
-        );
+        ).compose(comment -> refreshActionIndex(actionId).map(comment));
+    }
+
+    private Future<Void> refreshActionIndex(String actionId) {
+        return actionRecordSqlRepository.find(actionId)
+            .compose(action -> commentSqlRepository.find(new Comment(actionId))
+                .compose(comments -> searchService.indexAction(action, comments)));
     }
 
     public Future<CheckList> saveCheckList(String actionId, CheckList pojo) {

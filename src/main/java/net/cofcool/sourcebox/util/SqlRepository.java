@@ -3,28 +3,20 @@ package net.cofcool.sourcebox.util;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.jdbcclient.JDBCPool;
-import io.vertx.sqlclient.Pool;
-import io.vertx.sqlclient.PreparedQuery;
-import io.vertx.sqlclient.Row;
-import io.vertx.sqlclient.RowSet;
-import io.vertx.sqlclient.Tuple;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import io.vertx.sqlclient.*;
 import lombok.CustomLog;
 import net.cofcool.sourcebox.App;
 import net.cofcool.sourcebox.internal.api.ConfigService;
 import net.cofcool.sourcebox.util.TableInfoHelper.TableInfo;
 import net.cofcool.sourcebox.util.TableInfoHelper.TableProperty;
 import net.cofcool.sourcebox.util.VertxUtils.JDBCPoolConfig;
+
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 
 // do not support composite entity
@@ -34,6 +26,7 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
     private static VertxUtils.JDBCPoolConfig poolConfig;
 
     public static synchronized void init(Vertx vertx) {
+        RepositoryUtil.clear();
         var dir = App.globalCfgDir("data.db");
         var url = "jdbc:hsqldb:file:" + dir;
         poolConfig = new JDBCPoolConfig(vertx, url, "sa", "");

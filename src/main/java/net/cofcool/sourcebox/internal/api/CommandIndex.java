@@ -17,16 +17,17 @@ import java.util.List;
 @CustomLog
 public class CommandIndex implements WebRouter {
 
-    private final CommandService commandService;
+    private CommandService commandService;
 
     public CommandIndex() {
-        this.commandService = new CommandService(
-            App.globalCfgDir( "commands.json"),
-            App.globalCfgDir( "alias")
-        );
     }
 
     public Router bind(Vertx vertx) {
+        commandService = new CommandService(
+            vertx,
+            App.globalCfgDir("commands.json"),
+            App.globalCfgDir("alias")
+        );
         var router = VertxUtils.createBodyRouter(vertx);
 
         router.get("/quick").respond(r -> {
@@ -36,7 +37,7 @@ public class CommandIndex implements WebRouter {
                 return commandService.findByCmd(cmd);
             }
 
-            return commandService.find(p.get("q"));
+            return commandService.search(p.get("q"));
         });
 
         router.post("/import").respond(r -> {

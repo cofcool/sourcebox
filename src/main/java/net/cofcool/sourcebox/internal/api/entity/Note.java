@@ -2,14 +2,17 @@ package net.cofcool.sourcebox.internal.api.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.vertx.sqlclient.Row;
-import java.sql.JDBCType;
-import java.time.LocalDateTime;
-import java.util.UUID;
+import lombok.Builder;
 import net.cofcool.sourcebox.util.TableInfoHelper.Column;
 import net.cofcool.sourcebox.util.TableInfoHelper.DefaultMapper;
 import net.cofcool.sourcebox.util.TableInfoHelper.Entity;
 import net.cofcool.sourcebox.util.TableInfoHelper.ID;
 
+import java.sql.JDBCType;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Builder
 @Entity(name = "note")
 public record Note(
     @ID
@@ -38,6 +41,6 @@ public record Note(
     }
 
     public enum NoteState {
-        NORMAL, DELETED, DELETE_FLAG, MEMORY
+        NORMAL, DELETE_FLAG, MEMORY
     }
 }

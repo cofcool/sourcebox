@@ -27,7 +27,8 @@ public class NoteIndex implements WebRouter {
         var router = VertxUtils.createBodyRouter(vertx);
 
         router.get("/list").respond(context ->
-            noteService.find(null).andThen(it -> Json.encodeToBuffer(it.result()))
+            noteService.find(Note.builder().state(Note.NoteState.NORMAL.name()).build())
+                .andThen(it -> Json.encodeToBuffer(it.result()))
         );
 
         router.get("/exportAll").respond(context -> noteService.find());
@@ -37,7 +38,7 @@ public class NoteIndex implements WebRouter {
                 .andThen(it -> Json.encodeToBuffer(it.result()))
         );
 
-        router.delete("/note/:id").handler(context ->
+        router.delete("/:id").handler(context ->
             noteService
                 .logicDelete(new Note(context.pathParam("id"), null, null, null))
                 .andThen(a -> context.response().end("ok"))

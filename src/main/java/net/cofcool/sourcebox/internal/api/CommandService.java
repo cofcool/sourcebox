@@ -134,7 +134,7 @@ public class CommandService {
                 } else if (s.startsWith("#")) {
                     builder.and("? in (unnest(tags))", s);
                 } else {
-                    builder.and("id=?", Utils.md5(s));;
+                    builder.and("id=?", Utils.md5(s));
                 }
             }
         }

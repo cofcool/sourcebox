@@ -79,10 +79,25 @@ export interface ActionCheckList {
   updateTime?: string | null;
 }
 
+export interface ActionRecordDetail {
+  record: ActionRecord;
+  comments: ActionComment[];
+  checklists: ActionCheckList[];
+  other?: unknown;
+}
+
 export interface ActionType {
   id: string;
   name: string;
   type: string;
+}
+
+export interface SearchResult<T> {
+  type: string;
+  id: string;
+  title: string;
+  score: number;
+  data: T;
 }
 
 let baseUrl = import.meta.env.DEV ? "/proxy" : window.location.origin;
@@ -116,6 +131,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.text() as unknown as T;
 }
 
+async function search<T>(query: string, type: string): Promise<SearchResult<T>[]> {
+  const params = new URLSearchParams({ q: query.trim(), type });
+  return request<SearchResult<T>[]>(`/search?${params.toString()}`);
+}
+
 function normalizeTools(raw: string[]): ToolInfo[] {
   return raw.map((toolId) => ({
     id: toolId,
@@ -139,15 +159,22 @@ export const api = {
     return normalizeTools(raw);
   },
   todoList: async (query = ""): Promise<TodoRecord[]> => {
+    if (query.trim()) {
+      const results = await search<ActionRecord>(query, "action");
+      return results
+        .map((result) => result.data)
+        .filter((record) => record.type === "todo" && record.state === "todo")
+        .map((record) => ({
+          ...record,
+          start: record.start ?? undefined,
+          end: record.end ?? undefined,
+        }));
+    }
+
     const params = new URLSearchParams({
       state: "todo",
       type: "todo",
     });
-
-    if (query.trim()) {
-      params.set("name", query.trim());
-    }
-
     return request<TodoRecord[]>(`/action?${params.toString()}`);
   },
   todoCreate: async (todo: Partial<TodoRecord>): Promise<TodoRecord> => {
@@ -199,6 +226,16 @@ export const api = {
     return request<TimerStatistics[]>("/action/statistics/timer");
   },
   recordList: async (query = "", page = 1, size = 10): Promise<ActionRecord[]> => {
+    if (query.trim()) {
+      const results = await search<ActionRecord>(query, "action");
+      const records = results
+        .map((result) => result.data)
+        .filter((record) => record.type === "record");
+      const pageSize = Math.max(size - 1, 1);
+      const start = (page - 1) * pageSize;
+      return records.slice(start, start + size);
+    }
+
     const params = new URLSearchParams(query.trim().replace(/^\?/, ""));
     params.set("type", "record");
     params.set("page", String(page));
@@ -215,6 +252,9 @@ export const api = {
         labels: record.labels ?? "",
       }),
     });
+  },
+  recordDetail: async (id: string): Promise<ActionRecordDetail> => {
+    return request<ActionRecordDetail>(`/action/${encodeURIComponent(id)}`);
   },
   actionTypes: async (type: string): Promise<ActionType[]> => {
     const query = new URLSearchParams({ type });
@@ -246,6 +286,10 @@ export const api = {
   noteList: async (): Promise<NoteRecord[]> => {
     return request<NoteRecord[]>("/note/list");
   },
+  noteSearch: async (query: string): Promise<NoteRecord[]> => {
+    const results = await search<NoteRecord>(query, "note");
+    return results.map((result) => result.data);
+  },
   noteSave: async (note: Partial<NoteRecord>): Promise<NoteRecord> => {
     return request<NoteRecord>("/note/note", {
       method: "POST",
@@ -262,12 +306,13 @@ export const api = {
     });
   },
   commandSearch: async (query = ""): Promise<CommandRecord[]> => {
-    const params = new URLSearchParams();
     if (query.trim()) {
-      params.set("q", query.trim());
+      const results = await search<CommandRecord>(query, "command");
+      return results.map((result) => result.data);
     }
-    const suffix = params.toString() ? `?${params.toString()}` : "";
-    return request<CommandRecord[]>(`/cmd/quick${suffix}`);
+
+    const params = new URLSearchParams();
+    return request<CommandRecord[]>(`/cmd/quick${params.toString() ? `?${params.toString()}` : ""}`);
   },
   commandSave: async (command: Partial<CommandRecord>): Promise<CommandRecord> => {
     return request<CommandRecord>("/cmd", {

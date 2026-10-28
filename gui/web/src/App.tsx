@@ -195,6 +195,7 @@ function RecordBoard() {
   const [page, setPage] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(false);
   const [loadingRecords, setLoadingRecords] = useState(false);
+  const [loadingDetail, setLoadingDetail] = useState(false);
   const [selected, setSelected] = useState<ActionRecord>();
   const [comments, setComments] = useState<ActionComment[]>([]);
   const [checklists, setChecklists] = useState<ActionCheckList[]>([]);
@@ -261,19 +262,22 @@ function RecordBoard() {
   }
 
   async function openRecord(record: ActionRecord) {
-    setSelected(record);
+    setSelected(undefined);
     setReply("");
+    setComments([]);
     setChecklists([]);
     setChecklistName("");
+    setLoadingDetail(true);
+    setError(undefined);
     try {
-      const [recordComments, recordChecklists] = await Promise.all([
-        api.recordComments(record.id),
-        api.recordCheckLists(record.id),
-      ]);
-      setComments(recordComments);
-      setChecklists(recordChecklists);
+      const detail = await api.recordDetail(record.id);
+      setSelected(detail.record);
+      setComments(detail.comments ?? []);
+      setChecklists(detail.checklists ?? []);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoadingDetail(false);
     }
   }
 
@@ -392,7 +396,7 @@ function RecordBoard() {
 
       <form className="record-search" onSubmit={searchRecords}>
         <Search size={17} />
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="name=xxx&state=done" aria-label="卡片查询条件" />
+        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索卡片、备注、标签或回复" aria-label="搜索卡片" />
         <button type="submit" disabled={loadingRecords}>查询</button>
       </form>
 
@@ -400,7 +404,7 @@ function RecordBoard() {
         {records.length === 0 ? (
           <div className="record-empty">{loadingRecords ? "加载中..." : appliedQuery ? "没有匹配的卡片" : "还没有卡片，添加一条记录开始使用"}</div>
         ) : records.map((record) => (
-          <button className="record-card" key={record.id} onClick={() => void openRecord(record)}>
+          <button className="record-card" key={record.id} onClick={() => void openRecord(record)} disabled={loadingDetail}>
             <strong>{record.name}</strong>
             {record.remark && <span className="record-card-remark">{record.remark}</span>}
             <div className="record-card-tags">
@@ -416,6 +420,8 @@ function RecordBoard() {
         <span>第 {page} 页 · {records.length} 条</span>
         <button type="button" className="secondary" disabled={!hasNextPage || loadingRecords} onClick={() => setPage((current) => current + 1)}>下一页</button>
       </nav>
+
+      {loadingDetail && <div className="record-detail-loading" role="status">正在从服务器加载卡片详情...</div>}
 
       {selected && (
         <div className="record-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelected(undefined); }}>
@@ -936,14 +942,15 @@ function TodoPage() {
 
 function NotePanel() {
   const [notes, setNotes] = useState<NoteItem[]>([]);
+  const [query, setQuery] = useState("");
   const [draft, setDraft] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<string>();
 
-  async function loadNotes() {
+  async function loadNotes(search = "") {
     try {
       setError(undefined);
-      const list = await api.noteList();
+      const list = search.trim() ? await api.noteSearch(search) : await api.noteList();
       setNotes(list.map((item) => ({
         id: item.id,
         content: item.content,
@@ -956,8 +963,8 @@ function NotePanel() {
   }
 
   useEffect(() => {
-    void loadNotes();
-  }, []);
+    void loadNotes(query);
+  }, [query]);
 
   async function saveNote() {
     const content = draft.trim();
@@ -972,7 +979,7 @@ function NotePanel() {
       });
       setDraft("");
       setSelectedId(null);
-      await loadNotes();
+      await loadNotes(query);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -984,7 +991,7 @@ function NotePanel() {
       await api.noteDelete(selectedId);
       setDraft("");
       setSelectedId(null);
-      await loadNotes();
+      await loadNotes(query);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -1017,10 +1024,16 @@ function NotePanel() {
       </section>
 
       <section className="panel note-list-section">
-        <div className="panel-headline"><NotebookPen size={18} /> 已保存</div>
+        <div className="note-list-heading">
+          <div className="panel-headline"><NotebookPen size={18} /> 已保存</div>
+          <div className="helper-search">
+            <Search size={17} />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索便签" aria-label="搜索便签" />
+          </div>
+        </div>
         <div className="note-list">
           {notes.length === 0 ? (
-            <div className="empty-todos"><strong>没有笔记</strong><span>在上方添加第一条便签内容</span></div>
+            <div className="empty-todos"><strong>{query ? "没有匹配便签" : "没有笔记"}</strong><span>{query ? "试试其他关键词" : "在上方添加第一条便签内容"}</span></div>
           ) : (
             notes.map((note) => (
               <div

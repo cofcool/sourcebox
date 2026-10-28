@@ -260,9 +260,6 @@ class SourceboxApi(context: Context) {
     suspend fun completeTodo(action: ActionRecord): ActionRecord =
         saveAction(action.copy(state = "done"))
 
-    suspend fun exportAllCommands(): List<CommandRecord> =
-        json.decodeFromString<List<CommandRecord>>(request("/cmd/exportAll"))
-
     suspend fun saveCommand(command: CommandRecord): CommandRecord =
         json.decodeFromString(request("/cmd", "POST", json.encodeToString(command)))
 

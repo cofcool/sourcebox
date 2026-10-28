@@ -41,7 +41,6 @@ private const val DIRTY_SYNC_RETRY_INTERVAL = 30_000L
 private data class ExportData(
     val actions: List<ActionExport>,
     val notes: List<NoteRecord>,
-    val commands: List<CommandRecord>,
     val types: ActionTypeResponse
 )
 
@@ -98,11 +97,7 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         private set
     var lastNoteSync by mutableStateOf(actionDatabase.lastSyncedAt("notes"))
         private set
-    var localCommandCount by mutableStateOf(actionDatabase.commandCount())
-        private set
     var pendingChangeCount by mutableStateOf(actionDatabase.pendingChangeCount())
-        private set
-    var lastCommandSync by mutableStateOf(actionDatabase.lastSyncedAt("commands"))
         private set
     var lastTypeSync by mutableStateOf(actionDatabase.lastSyncedAt("types"))
         private set
@@ -132,16 +127,14 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
                 val exported = coroutineScope {
                     val actions = async { api.exportAllActions() }
                     val notes = async { api.exportAllNotes() }
-                    val commands = async { api.exportAllCommands() }
                     val types = async { api.actionTypes() }
-                    ExportData(actions.await(), notes.await(), commands.await(), types.await())
+                    ExportData(actions.await(), notes.await(), types.await())
                 }
                 val syncedAt = currentRecordDateTime()
                 withContext(Dispatchers.IO) {
                     actionDatabase.replaceExportData(
                         actions = exported.actions,
                         notes = exported.notes,
-                        commands = exported.commands,
                         actionTypes = exported.types,
                         syncedAt = syncedAt
                     )
@@ -150,12 +143,10 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
                 lastActionSync = syncedAt
                 localNoteCount = exported.notes.size
                 lastNoteSync = syncedAt
-                localCommandCount = exported.commands.size
-                lastCommandSync = syncedAt
                 lastTypeSync = syncedAt
                 refreshPendingCount()
                 recordCategories = withContext(Dispatchers.IO) { actionDatabase.actionCategories() }
-                message = "已同步 ${exported.actions.size} 条行动、${exported.notes.size} 条便笺、${exported.commands.size} 条命令、${exported.types.types.size} 个类型"
+                message = "已同步 ${exported.actions.size} 条行动、${exported.notes.size} 条便笺、${exported.types.types.size} 个类型"
             }
         }
     }
@@ -238,11 +229,7 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
                     canonicalPayload = json.encodeToString(api.saveNote(note))
                 }
                 "note" to "delete" -> api.deleteNote(change.entityId)
-                "command" to "save" -> {
-                    val command = json.decodeFromString<CommandRecord>(change.payload)
-                    canonicalPayload = json.encodeToString(api.saveCommand(command))
-                }
-                "command" to "delete" -> api.deleteCommand(change.entityId)
+                "command" to "save", "command" to "delete", "command" to "store" -> Unit
                 "action" to "save" -> {
                     val action = json.decodeFromString<ActionExport>(change.payload).record
                     val saved = api.saveAction(action)
@@ -269,7 +256,6 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         }
         localActionCount = withContext(Dispatchers.IO) { actionDatabase.actionCount() }
         localNoteCount = withContext(Dispatchers.IO) { actionDatabase.noteCount() }
-        localCommandCount = withContext(Dispatchers.IO) { actionDatabase.commandCount() }
     }
 
     private suspend fun refreshPendingCount() {
@@ -401,35 +387,17 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
     fun saveCommand(command: CommandRecord) = perform {
         require(command.cmd.isNotBlank()) { "命令内容不能为空" }
         val prepared = command.withStableId()
-        val (saved, isDirty) = writeWithOfflineFallback(
-            server = {
-                api.saveCommand(prepared).also { saved ->
-                    withContext(Dispatchers.IO) { actionDatabase.saveCommand(saved) }
-                }
-            },
-            offline = {
-                withContext(Dispatchers.IO) { actionDatabase.markCommandDirty(prepared) }
-                prepared
-            }
-        )
-        localCommandCount = withContext(Dispatchers.IO) { actionDatabase.commandCount() }
+        val saved = api.saveCommand(prepared)
+        withContext(Dispatchers.IO) { actionDatabase.saveCommand(saved) }
         commands = withContext(Dispatchers.IO) { actionDatabase.commands("") }
-        refreshPendingCount()
-        message = if (isDirty) "命令已保存到本地，等待联网同步" else "命令已保存"
+        message = "命令已保存"
     }
 
     fun deleteCommand(id: String) = perform {
-        val isDirty = writeDeleteWithOfflineFallback(
-            server = {
-                api.deleteCommand(id)
-                withContext(Dispatchers.IO) { actionDatabase.deleteCommand(id) }
-            },
-            offline = { withContext(Dispatchers.IO) { actionDatabase.markCommandDeleted(id) } }
-        )
-        localCommandCount = withContext(Dispatchers.IO) { actionDatabase.commandCount() }
+        api.deleteCommand(id)
+        withContext(Dispatchers.IO) { actionDatabase.deleteCommand(id) }
         commands = withContext(Dispatchers.IO) { actionDatabase.commands("") }
-        refreshPendingCount()
-        message = if (isDirty) "命令已在本地删除，等待联网同步" else "命令已删除"
+        message = "命令已删除"
     }
 
     fun refreshRecords(

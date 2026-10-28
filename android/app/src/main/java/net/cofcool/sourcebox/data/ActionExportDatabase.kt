@@ -55,24 +55,18 @@ class ActionExportDatabase(context: Context) :
     fun replaceExportData(
         actions: List<ActionExport>,
         notes: List<NoteRecord>,
-        commands: List<CommandRecord>,
         actionTypes: ActionTypeResponse,
         syncedAt: String
     ) {
         validateIds(actions.map { it.record.id }, "行动记录")
         validateIds(notes.map { it.id }, "便笺")
-        validateIds(commands.mapNotNull { it.id }, "命令")
-        if (commands.any { it.id.isNullOrBlank() }) {
-            throw IOException("exportAll 返回了缺少 ID 的命令")
-        }
         val db = writableDatabase
         db.beginTransaction()
         try {
             replaceRows(db, TABLE_ACTIONS, actions.map { it.record.id to json.encodeToString(it) })
             replaceRows(db, TABLE_NOTES, notes.map { it.id to json.encodeToString(it) })
-            replaceRows(db, TABLE_COMMANDS, commands.map { it.id!! to json.encodeToString(it) })
             replaceTypes(db, actionTypes)
-            listOf("actions", "notes", "commands", "types").forEach { dataset ->
+            listOf("actions", "notes", "types").forEach { dataset ->
                 val syncValues = ContentValues().apply {
                     put("dataset", dataset)
                     put("synced_at", syncedAt)
@@ -83,28 +77,6 @@ class ActionExportDatabase(context: Context) :
                     syncValues,
                     SQLiteDatabase.CONFLICT_REPLACE
                 )
-            }
-            db.setTransactionSuccessful()
-        } finally {
-            db.endTransaction()
-        }
-    }
-
-    fun replaceCommands(commands: List<CommandRecord>, syncedAt: String) {
-        validateIds(commands.mapNotNull { it.id }, "命令")
-        if (commands.any { it.id.isNullOrBlank() }) {
-            throw IOException("exportAll 返回了缺少 ID 的命令")
-        }
-        val db = writableDatabase
-        db.beginTransaction()
-        try {
-            replaceRows(db, TABLE_COMMANDS, commands.map { it.id!! to json.encodeToString(it) })
-            val values = ContentValues().apply {
-                put("dataset", "commands")
-                put("synced_at", syncedAt)
-            }
-            check(db.insertWithOnConflict(TABLE_SYNC_ALL, null, values, SQLiteDatabase.CONFLICT_REPLACE) != -1L) {
-                "保存命令同步时间失败"
             }
             db.setTransactionSuccessful()
         } finally {
@@ -224,30 +196,8 @@ class ActionExportDatabase(context: Context) :
         upsert(TABLE_COMMANDS, id, json.encodeToString(command))
     }
 
-    fun markCommandDirty(command: CommandRecord) {
-        val id = command.id ?: throw IOException("命令缺少 ID")
-        enqueueUpsert(TABLE_COMMANDS, "command", id, "save", json.encodeToString(command))
-    }
-
     fun deleteCommand(id: String) {
         delete(TABLE_COMMANDS, id)
-    }
-
-    fun markCommandDeleted(id: String) {
-        enqueueDelete(TABLE_COMMANDS, "command", id)
-    }
-
-    fun markCommandHistoryCollectionDirty() {
-        val db = writableDatabase
-        val values = ContentValues().apply {
-            put("entity", "command")
-            put("entity_id", COMMAND_HISTORY_COLLECTION_ID)
-            put("operation", "store")
-            put("payload", "ALL")
-        }
-        check(db.insertOrThrow(TABLE_PENDING, null, values) != -1L) {
-            "保存命令历史收集任务失败"
-        }
     }
 
     fun saveAction(action: ActionRecord) {
@@ -632,7 +582,6 @@ class ActionExportDatabase(context: Context) :
         private const val TABLE_SYNC_ALL = "dataset_sync_metadata"
         private const val TABLE_PENDING = "pending_changes"
         private const val TABLE_TYPES = "exported_action_types"
-        const val COMMAND_HISTORY_COLLECTION_ID = "__command_history_collection__"
         private val json = Json {
             encodeDefaults = true
             explicitNulls = false

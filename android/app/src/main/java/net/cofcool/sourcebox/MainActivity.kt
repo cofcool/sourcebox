@@ -1,8 +1,15 @@
 package net.cofcool.sourcebox
 
+import android.annotation.SuppressLint
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
+import android.webkit.WebChromeClient
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -37,6 +44,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -60,9 +68,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -73,6 +81,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -88,10 +97,30 @@ import net.cofcool.sourcebox.data.ToolInfo
 import net.cofcool.sourcebox.ui.ToolboxViewModel
 
 class MainActivity : ComponentActivity() {
+    private val sharedText = mutableStateOf<String?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { SourceboxApp() }
+        sharedText.value = intent.sharedPlainText()
+        setContent {
+            SourceboxApp(
+                sharedText = sharedText.value,
+                onShareConsumed = { sharedText.value = null }
+            )
+        }
     }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        sharedText.value = intent.sharedPlainText()
+    }
+}
+
+private fun Intent.sharedPlainText(): String? {
+    val mimeType = type?.substringBefore(';')?.trim()
+    if (action != Intent.ACTION_SEND || !mimeType.equals("text/plain", ignoreCase = true)) return null
+    return getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()?.takeIf(String::isNotBlank)
 }
 
 private val pages = listOf(
@@ -103,8 +132,13 @@ private val pages = listOf(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
+private fun SourceboxApp(
+    sharedText: String?,
+    onShareConsumed: () -> Unit,
+    vm: ToolboxViewModel = viewModel()
+) {
     var page by remember { mutableStateOf("tools") }
+    var showShareTargetDialog by remember { mutableStateOf(false) }
     var selectedTool by remember { mutableStateOf<ToolInfo?>(null) }
     var selectedRecord by remember { mutableStateOf<ActionRecord?>(null) }
     var recordReturnPage by remember { mutableStateOf("task") }
@@ -123,6 +157,12 @@ private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
         val saved = vm.savedRecord
         if (saved != null && selectedRecord?.id == saved.id) selectedRecord = saved
     }
+    LaunchedEffect(sharedText) {
+        showShareTargetDialog = !sharedText.isNullOrBlank()
+    }
+    BackHandler(enabled = page == "tool") {
+        page = "tools"
+    }
 
     MaterialTheme(
         colorScheme = if (androidx.compose.foundation.isSystemInDarkTheme()) {
@@ -137,10 +177,7 @@ private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
                     title = {
                         Text(
                             when (page) {
-                                "tool" -> when (selectedTool?.id) {
-                                    "hisRecord" -> "任务"
-                                    else -> selectedTool?.id ?: "工具"
-                                }
+                                "tool" -> selectedTool?.id ?: "工具"
                                 "task" -> "任务"
                                 "record-detail" -> "编辑任务"
                                 "json" -> "JSON 格式化"
@@ -219,28 +256,12 @@ private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
                     onFiles = { page = "files" }
                 )
                 "tool" -> selectedTool?.let { tool ->
-                    if (tool.id == "hisRecord") {
-                        RecordBoardScreen(
-                            vm,
-                            Modifier.padding(padding),
-                            appliedCategory = appliedCategory,
-                            appliedLabel = appliedLabel,
-                            onFilterChanged = { category, label ->
-                                appliedCategory = category
-                                appliedLabel = label
-                            },
-                            onOpenRecord = {
-                                selectedRecord = it
-                                recordReturnPage = page
-                                vm.loadRecordDetails(it)
-                                page = "record-detail"
-                            }
-                        )
-                    } else if (tool.id == "cHelper") {
-                        CommandsScreen(vm, Modifier.padding(padding))
-                    } else {
-                        ToolScreen(tool, vm, Modifier.padding(padding))
-                    }
+                    WebToolScreen(
+                        url = "${vm.baseUrl.trimEnd('/')}/web/#/tools/${tool.id}",
+                        username = vm.username,
+                        password = vm.password,
+                        modifier = Modifier.padding(padding)
+                    )
                 }
                 "record-detail" -> selectedRecord?.let { record ->
                     RecordDetails(
@@ -276,6 +297,8 @@ private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
                     Modifier.padding(padding),
                     appliedCategory = appliedCategory,
                     appliedLabel = appliedLabel,
+                    sharedText = sharedText,
+                    onShareConsumed = onShareConsumed,
                     onFilterChanged = { category, label ->
                         appliedCategory = category
                         appliedLabel = label
@@ -287,9 +310,13 @@ private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
                         page = "record-detail"
                     }
                 )
-                "todos" -> TodosScreen(vm, Modifier.padding(padding))
+                "todos" -> TodosScreen(
+                    vm = vm,
+                    modifier = Modifier.padding(padding),
+                    sharedText = sharedText,
+                    onShareConsumed = onShareConsumed
+                )
                 "notes" -> NotesScreen(vm, Modifier.padding(padding))
-                "cHelper" -> CommandsScreen(vm, Modifier.padding(padding))
                 "json" -> JsonScreen(Modifier.padding(padding))
                 "files" -> FilesScreen(
                     modifier = Modifier.padding(padding),
@@ -299,7 +326,10 @@ private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
                     }
                 )
                 "file-result" -> SelectionContainer {
-                    Text(fileResult, Modifier.padding(padding).padding(16.dp).verticalScroll(rememberScrollState()))
+                    Text(fileResult, Modifier
+                        .padding(padding)
+                        .padding(16.dp)
+                        .verticalScroll(rememberScrollState()))
                 }
                 "settings" -> SettingsScreen(
                     modifier = Modifier.padding(padding),
@@ -315,6 +345,40 @@ private fun SourceboxApp(vm: ToolboxViewModel = viewModel()) {
                 "crash-logs" -> CrashLogsScreen(Modifier.padding(padding))
             }
         }
+        if (showShareTargetDialog && !sharedText.isNullOrBlank()) {
+            AlertDialog(
+                onDismissRequest = {
+                    showShareTargetDialog = false
+                    onShareConsumed()
+                },
+                title = { Text("分享文本") },
+                text = { Text("将分享的内容添加到哪里？") },
+                confirmButton = {
+                    Row {
+                        TextButton(onClick = {
+                            page = "todos"
+                            showShareTargetDialog = false
+                        }) {
+                            Text("待办")
+                        }
+                        TextButton(onClick = {
+                            page = "task"
+                            showShareTargetDialog = false
+                        }) {
+                            Text("任务")
+                        }
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = {
+                        showShareTargetDialog = false
+                        onShareConsumed()
+                    }) {
+                        Text("取消")
+                    }
+                }
+            )
+        }
     }
 }
 
@@ -326,8 +390,10 @@ private fun HomeScreen(
     onJson: () -> Unit,
     onFiles: () -> Unit
 ) {
-    Column(modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-        Text("开发工具箱", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+    Column(modifier
+        .fillMaxSize()
+        .padding(horizontal = 16.dp)) {
+        Text("TheSourceBox", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Text(
             if (vm.baseUrl.isBlank()) "尚未连接后端" else "后端：${vm.baseUrl}",
             style = MaterialTheme.typography.bodySmall
@@ -384,46 +450,128 @@ private fun HomeScreen(
     }
 }
 
+@SuppressLint("SetJavaScriptEnabled")
 @Composable
-private fun ToolScreen(tool: ToolInfo, vm: ToolboxViewModel, modifier: Modifier) {
-    val values = remember(tool.id) {
-        mutableStateMapOf<String, String>().apply {
-            tool.arguments.forEach { put(it.key, it.defaultValue) }
-        }
-    }
-    Column(
-        modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        if (tool.description.isNotBlank()) Text(tool.description)
-        if (tool.arguments.isEmpty()) {
-            Text("此工具没有可配置参数。")
-        } else {
-            tool.arguments.forEach { argument ->
-                OutlinedTextField(
-                    value = values[argument.key].orEmpty(),
-                    onValueChange = { values[argument.key] = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text(if (argument.required) "${argument.key} *" else argument.key) },
-                    supportingText = {
-                        val hint = argument.description.ifBlank { argument.demo }
-                        if (hint.isNotBlank()) Text(hint)
-                    },
-                    minLines = if (argument.key in setOf("in", "input", "url", "config")) 2 else 1
-                )
+private fun WebToolScreen(
+    url: String,
+    username: String,
+    password: String,
+    modifier: Modifier
+) {
+    val context = LocalContext.current
+    var webView by remember(url) { mutableStateOf<WebView?>(null) }
+    var loading by remember(url) { mutableStateOf(true) }
+    var loadError by remember(url) { mutableStateOf<String?>(null) }
+
+    DisposableEffect(url) {
+        onDispose {
+            webView?.apply {
+                stopLoading()
+                destroy()
             }
         }
-        Button(
-            onClick = { vm.runTool(tool, values.toMap()) },
-            enabled = !vm.busy,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            if (vm.busy) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-            else Text("执行工具")
+    }
+
+    Box(modifier.fillMaxSize()) {
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = {
+                WebView(context).apply {
+                    settings.javaScriptEnabled = true
+                    settings.domStorageEnabled = true
+                    settings.useWideViewPort = true
+                    settings.loadWithOverviewMode = true
+                    webChromeClient = object : WebChromeClient() {
+                        override fun onProgressChanged(view: WebView, newProgress: Int) {
+                            loading = newProgress < 100
+                        }
+
+                        override fun onConsoleMessage(message: android.webkit.ConsoleMessage): Boolean {
+                            if (message.messageLevel() == android.webkit.ConsoleMessage.MessageLevel.ERROR) {
+                                loadError = "网页脚本错误：${message.message()}（第 ${message.lineNumber()} 行）"
+                            }
+                            return true
+                        }
+                    }
+                    webViewClient = object : WebViewClient() {
+                        override fun onPageStarted(view: WebView, pageUrl: String?, favicon: android.graphics.Bitmap?) {
+                            loading = true
+                            loadError = null
+                        }
+
+                        override fun onPageFinished(view: WebView, pageUrl: String?) {
+                            loading = false
+                        }
+
+                        override fun onReceivedError(
+                            view: WebView,
+                            request: android.webkit.WebResourceRequest,
+                            error: android.webkit.WebResourceError
+                        ) {
+                            if (request.isForMainFrame) {
+                                loading = false
+                                loadError = "网页加载失败：${error.description}（错误码 ${error.errorCode}）"
+                            }
+                        }
+
+                        override fun onReceivedHttpError(
+                            view: WebView,
+                            request: android.webkit.WebResourceRequest,
+                            response: android.webkit.WebResourceResponse
+                        ) {
+                            if (request.isForMainFrame && response.statusCode >= 400) {
+                                loading = false
+                                loadError = "网页请求失败：HTTP ${response.statusCode}"
+                            }
+                        }
+
+                        override fun onReceivedHttpAuthRequest(
+                            view: WebView,
+                            handler: android.webkit.HttpAuthHandler,
+                            host: String,
+                            realm: String
+                        ) {
+                            if (username.isNotBlank()) handler.proceed(username, password)
+                            else handler.cancel()
+                        }
+                    }
+                    setBackgroundColor(android.graphics.Color.WHITE)
+                    webView = this
+                    loadUrl(url)
+                }
+            },
+            update = { view ->
+                Log.d("webview", "WebToolScreen: $url")
+                if (view.url != url) {
+                    loading = true
+                    loadError = null
+                    view.loadUrl(url)
+                }
+            }
+        )
+        if (loading && loadError == null) {
+            CircularProgressIndicator(Modifier.align(Alignment.Center))
         }
-        if (vm.lastToolOutput.isNotBlank()) {
-            Text("执行结果", style = MaterialTheme.typography.titleMedium)
-            SelectionContainer { Text(vm.lastToolOutput) }
+        loadError?.let { error ->
+            Column(
+                Modifier
+                    .align(Alignment.Center)
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(error, color = MaterialTheme.colorScheme.error)
+                Text("页面地址：$url", style = MaterialTheme.typography.bodySmall)
+                OutlinedButton(
+                    onClick = {
+                        loadError = null
+                        loading = true
+                        webView?.reload()
+                    }
+                ) {
+                    Text("重新加载")
+                }
+            }
         }
     }
 }
@@ -434,6 +582,8 @@ private fun RecordBoardScreen(
     modifier: Modifier,
     appliedCategory: String?,
     appliedLabel: String?,
+    sharedText: String?,
+    onShareConsumed: () -> Unit,
     onFilterChanged: (String?, String?) -> Unit,
     onOpenRecord: (ActionRecord) -> Unit
 ) {
@@ -442,6 +592,13 @@ private fun RecordBoardScreen(
     var page by remember { mutableStateOf(1) }
     var newRecordName by remember { mutableStateOf("") }
 
+    LaunchedEffect(sharedText) {
+        if (!sharedText.isNullOrBlank()) {
+            newRecordName = sharedText
+            onShareConsumed()
+        }
+    }
+
     LaunchedEffect(appliedQuery, appliedCategory, appliedLabel, page) {
         vm.refreshRecords(appliedQuery, page, appliedCategory, appliedLabel)
     }
@@ -449,7 +606,10 @@ private fun RecordBoardScreen(
         vm.refreshRecordCategories()
     }
     Column(
-        modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text("任务", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
@@ -466,12 +626,9 @@ private fun RecordBoardScreen(
                 Text("立即同步")
             }
         }
+        Text("行动 ${vm.localActionCount} · 便笺 ${vm.localNoteCount}", style = MaterialTheme.typography.labelSmall)
         Text(
-            "行动 ${vm.localActionCount} · 便笺 ${vm.localNoteCount} · 命令 ${vm.localCommandCount}",
-            style = MaterialTheme.typography.labelSmall
-        )
-        Text(
-            "便笺：${vm.lastNoteSync ?: "尚未同步"} · 命令：${vm.lastCommandSync ?: "尚未同步"} · 类型：${vm.lastTypeSync ?: "尚未同步"}",
+            "便笺：${vm.lastNoteSync ?: "尚未同步"} · 类型：${vm.lastTypeSync ?: "尚未同步"}",
             style = MaterialTheme.typography.labelSmall
         )
         Text(
@@ -486,7 +643,7 @@ private fun RecordBoardScreen(
             onValueChange = { newRecordName = it },
             modifier = Modifier.fillMaxWidth(),
             label = { Text("卡片名称") },
-            singleLine = true
+            maxLines = 4
         )
         Button(
             onClick = {
@@ -608,7 +765,10 @@ private fun RecordDetails(
     var checklistLast by remember(record.id) { mutableStateOf("") }
 
     Column(
-        modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text("编辑记录及其 Checklist、回复。", style = MaterialTheme.typography.bodySmall)
@@ -858,12 +1018,33 @@ private fun ChecklistItem(
 }
 
 @Composable
-private fun TodosScreen(vm: ToolboxViewModel, modifier: Modifier) {
+private fun TodosScreen(
+    vm: ToolboxViewModel,
+    modifier: Modifier,
+    sharedText: String?,
+    onShareConsumed: () -> Unit
+) {
     var name by remember { mutableStateOf("") }
     var remark by remember { mutableStateOf("") }
     var query by remember { mutableStateOf("") }
-    Column(modifier.fillMaxSize().padding(16.dp)) {
-        OutlinedTextField(name, { name = it }, Modifier.fillMaxWidth(), label = { Text("待办事项") }, singleLine = true)
+
+    LaunchedEffect(sharedText) {
+        if (!sharedText.isNullOrBlank()) {
+            name = sharedText
+            onShareConsumed()
+        }
+    }
+
+    Column(modifier
+        .fillMaxSize()
+        .padding(16.dp)) {
+        OutlinedTextField(
+            name,
+            { name = it },
+            Modifier.fillMaxWidth(),
+            label = { Text("待办事项") },
+            maxLines = 4
+        )
         OutlinedTextField(remark, { remark = it }, Modifier.fillMaxWidth(), label = { Text("备注（可选）") }, minLines = 2)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(
@@ -919,7 +1100,9 @@ private fun TodoCard(todo: TodoRecord, onComplete: () -> Unit) {
 private fun NotesScreen(vm: ToolboxViewModel, modifier: Modifier) {
     var selected by remember { mutableStateOf<NoteRecord?>(null) }
     var content by remember { mutableStateOf("") }
-    Column(modifier.fillMaxSize().padding(16.dp)) {
+    Column(modifier
+        .fillMaxSize()
+        .padding(16.dp)) {
         OutlinedTextField(
             content,
             { content = it },
@@ -974,65 +1157,21 @@ private fun NotesScreen(vm: ToolboxViewModel, modifier: Modifier) {
 }
 
 @Composable
-private fun CommandsScreen(vm: ToolboxViewModel, modifier: Modifier) {
-    var query by remember { mutableStateOf("") }
-    Column(modifier.fillMaxSize().padding(16.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
-                query,
-                { query = it },
-                modifier = Modifier.weight(1f),
-                label = { Text("搜索命令或标签") },
-                singleLine = true
-            )
-            IconButton(onClick = { vm.refreshCommands(query) }) {
-                Icon(Icons.Default.Search, contentDescription = "搜索命令")
-            }
-        }
-        if (vm.commands.isEmpty()) {
-            EmptyState("暂无命令记录")
-        } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(vm.commands, key = { it.id ?: it.cmd }) { item ->
-                    Card(Modifier.fillMaxWidth()) {
-                        Row(
-                            Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(Modifier.weight(1f)) {
-                                Text(item.cmd, fontWeight = FontWeight.Medium)
-                                val details = listOfNotNull(
-                                    item.alias,
-                                    item.tags?.takeIf { it.isNotEmpty() }?.joinToString(" ")
-                                )
-                                    .joinToString(" · ")
-                                if (details.isNotBlank()) Text(details, style = MaterialTheme.typography.bodySmall)
-                            }
-                            if (!item.id.isNullOrBlank()) {
-                                IconButton(onClick = { vm.deleteCommand(item.id) }) {
-                                    Icon(Icons.Default.Delete, contentDescription = "删除命令")
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
 private fun JsonScreen(modifier: Modifier) {
     var input by remember { mutableStateOf("") }
     var output by remember { mutableStateOf("") }
     var compact by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf("") }
     val formatter = remember(compact) { Json { prettyPrint = !compact } }
-    Column(modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(modifier
+        .fillMaxSize()
+        .padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         OutlinedTextField(
             input,
             { input = it; error = "" },
-            modifier = Modifier.weight(1f).fillMaxWidth(),
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
             label = { Text("输入 JSON") },
             placeholder = { Text("{\"hello\":\"world\"}") },
             minLines = 4
@@ -1057,7 +1196,9 @@ private fun JsonScreen(modifier: Modifier) {
         OutlinedTextField(
             output,
             {},
-            modifier = Modifier.weight(1f).fillMaxWidth(),
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
             label = { Text("输出") },
             readOnly = true,
             minLines = 4
@@ -1090,7 +1231,9 @@ private fun FilesScreen(modifier: Modifier, onRead: (String) -> Unit) {
         }
     }
     Column(
-        modifier.fillMaxSize().padding(16.dp),
+        modifier
+            .fillMaxSize()
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Icon(Icons.Default.FolderOpen, contentDescription = null, Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary)
@@ -1116,7 +1259,10 @@ private fun SettingsScreen(
     onViewCrashLogs: () -> Unit
 ) {
     Column(
-        modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text("后端连接", style = MaterialTheme.typography.headlineSmall)
@@ -1181,7 +1327,9 @@ private fun CrashLogsScreen(modifier: Modifier) {
     LaunchedEffect(store) { refreshLogs() }
 
     Column(
-        modifier.fillMaxSize().padding(16.dp),
+        modifier
+            .fillMaxSize()
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1236,10 +1384,14 @@ private fun CrashLogsScreen(modifier: Modifier) {
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
-                        Modifier.fillMaxWidth().padding(start = 12.dp, end = 4.dp),
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(start = 12.dp, end = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(Modifier.weight(1f).padding(vertical = 12.dp)) {
+                        Column(Modifier
+                            .weight(1f)
+                            .padding(vertical = 12.dp)) {
                             Text(log.name, fontWeight = FontWeight.SemiBold)
                             Text(
                                 java.text.SimpleDateFormat(
@@ -1277,7 +1429,10 @@ private fun CrashLogsScreen(modifier: Modifier) {
             SelectionContainer {
                 Text(
                     selectedContent,
-                    Modifier.fillMaxWidth().height(220.dp).verticalScroll(rememberScrollState()),
+                    Modifier
+                        .fillMaxWidth()
+                        .height(220.dp)
+                        .verticalScroll(rememberScrollState()),
                     style = MaterialTheme.typography.bodySmall
                 )
             }
@@ -1287,7 +1442,9 @@ private fun CrashLogsScreen(modifier: Modifier) {
 
 @Composable
 private fun EmptyState(text: String) {
-    Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+    Box(Modifier
+        .fillMaxWidth()
+        .padding(24.dp), contentAlignment = Alignment.Center) {
         Text(text, style = MaterialTheme.typography.bodyMedium)
     }
 }

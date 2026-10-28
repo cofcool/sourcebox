@@ -10,7 +10,7 @@
 
 ---
 
-使用 Java（JDK 25 起）、Python、Go 等语言实现，桌面版使用 KMP 框架，各个客户端通过调用本地启动的后台服务来实现功能，基于 Vert.x，默认端口为 38080
+使用 Java（JDK 25 起）、Python、Go 等语言实现，桌面版使用 KMP 框架，Android 使用 Kotlin，各个客户端通过调用后台服务来实现功能，基于 Vert.x，默认端口为 38080
 
 命令参数也可通过全局配置文件进行配置，路径为 `~/.mytool/mytool.cfg`
 
@@ -30,9 +30,7 @@
 * 安装 JDK 25、Maven、Node.js 和 npm 后运行 `mvn package` 构建项目
 * 启动后台服务后，可通过 `http://localhost:38080/web/` 访问 Web 前端
 
-**TODO**
-
-* [ ] Web
+---
 
 软件截图
 
@@ -43,6 +41,16 @@
 图形界面模式:
 
 ![i2.png](./imgs/i2.png)
+
+WEB:
+
+![web.png](./imgs/web.png)
+
+Android:
+
+![android.png](./imgs/android.png)
+
+---
 
 ## 命令助手
 

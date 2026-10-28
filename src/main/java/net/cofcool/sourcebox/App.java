@@ -17,6 +17,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
@@ -161,12 +162,27 @@ public class App {
 
     static {
         try {
-            ABOUT = "CofCool@TheSourceBox " + App.class.getPackage().getImplementationVersion();
+            ABOUT = "CofCool@TheSourceBox " + readBuildVersion();
             for (ToolName tool : ToolName.values()) {
                 ALIAS.copyAliasFrom(cacheClass(tool.getTool()).config());
             }
         } catch (Exception e) {
             throw new RuntimeException("Init tools error", e);
+        }
+    }
+
+    private static String readBuildVersion() {
+        try (var versionStream = App.class.getResourceAsStream("/build-version.txt")) {
+            if (versionStream == null) {
+                return Optional.ofNullable(App.class.getPackage().getImplementationVersion()).orElse("development");
+            }
+            var version = new String(versionStream.readAllBytes(), StandardCharsets.UTF_8).trim();
+            if (version.isEmpty()) {
+                throw new IllegalStateException("Build version file is empty");
+            }
+            return version;
+        } catch (IOException e) {
+            throw new ExceptionInInitializerError(e);
         }
     }
 

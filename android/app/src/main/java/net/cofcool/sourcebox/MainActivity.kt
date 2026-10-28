@@ -57,6 +57,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -148,7 +149,6 @@ private fun SourceboxApp(
     var settingsUrl by remember { mutableStateOf(vm.baseUrl) }
     var settingsUser by remember { mutableStateOf(vm.username) }
     var settingsPassword by remember { mutableStateOf(vm.password) }
-    var fileResult by remember { mutableStateOf("") }
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -200,7 +200,6 @@ private fun SourceboxApp(
                                 "record-detail" -> "编辑任务"
                                 "timer" -> "番茄钟"
                                 "files" -> "文件工具"
-                                "file-result" -> "文件内容"
                                 "settings" -> "连接设置"
                                 "crash-logs" -> "崩溃日志"
                                 else -> pages.firstOrNull { it.first == page }?.second ?: "The Source Box"
@@ -342,17 +341,8 @@ private fun SourceboxApp(
                 )
                 "files" -> FilesScreen(
                     modifier = Modifier.padding(padding),
-                    onRead = { content ->
-                        fileResult = content
-                        page = "file-result"
-                    }
+                    vm = vm
                 )
-                "file-result" -> SelectionContainer {
-                    Text(fileResult, Modifier
-                        .padding(padding)
-                        .padding(16.dp)
-                        .verticalScroll(rememberScrollState()))
-                }
                 "settings" -> SettingsScreen(
                     modifier = Modifier.padding(padding),
                     url = settingsUrl,
@@ -1090,7 +1080,7 @@ private fun TodosScreen(
         if (vm.todos.isEmpty()) {
             EmptyState("暂无待办事项")
         } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            LazyColumn(Modifier.padding(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 items(vm.todos, key = { it.id }) { todo ->
                     TodoCard(todo, onComplete = { vm.completeTodo(todo) })
                 }
@@ -1257,7 +1247,6 @@ private fun TimerScreen(
             }
         }
         Text("已完成 ${timer.completedCycles} 个周期 · 累计专注 ${formatTimerDuration(totalFocusSeconds.toLong())}")
-        Text("完成的专注/休息阶段会保存为 timer 类型行动并自动同步。", style = MaterialTheme.typography.bodySmall)
 
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("最近阶段记录", style = MaterialTheme.typography.titleMedium)
@@ -1292,35 +1281,139 @@ private fun formatTimerDuration(seconds: Long): String {
 }
 
 @Composable
-private fun FilesScreen(modifier: Modifier, onRead: (String) -> Unit) {
+private fun FilesScreen(modifier: Modifier, vm: ToolboxViewModel) {
     val context = LocalContext.current
-    var status by remember { mutableStateOf("通过系统文件选择器读取文本、JSON 或 XML 文件。") }
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
-        if (uri != null) {
-            try {
-                val text = context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
-                    ?: error("无法打开所选文件")
-                onRead(text)
-                status = "已读取 ${text.length} 个字符"
-            } catch (exception: Exception) {
-                status = "读取失败：${exception.message ?: "未知错误"}"
+    val preferences = remember { context.getSharedPreferences("lan_share", android.content.Context.MODE_PRIVATE) }
+    var receiverUrl by remember { mutableStateOf(preferences.getString("receiver_url", "").orEmpty()) }
+    var token by remember { mutableStateOf(preferences.getString("token", "").orEmpty()) }
+    var selectedFiles by remember { mutableStateOf<List<Uri>>(emptyList()) }
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { files ->
+        selectedFiles = files
+    }
+
+    fun uploadSelectedFiles() {
+        preferences.edit()
+            .putString("receiver_url", receiverUrl.trim())
+            .putString("token", token.trim())
+            .apply()
+        vm.uploadLanShareFiles(receiverUrl.trim(), token.trim(), selectedFiles)
+    }
+
+    Column(
+        modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Icon(
+            Icons.Default.FolderOpen,
+            contentDescription = null,
+            Modifier.size(48.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
+        Text("LAN 文件分享", style = MaterialTheme.typography.headlineSmall)
+        Text("填写 lanShare 接收端输出的 Share URL 和 Token。接收端地址需包含端口，例如 http://192.168.1.20:43127。")
+        OutlinedTextField(
+            value = receiverUrl,
+            onValueChange = { receiverUrl = it },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("接收端 Share URL") },
+            placeholder = { Text("http://192.168.1.20:43127") },
+            singleLine = true,
+            enabled = !vm.busy
+        )
+        OutlinedTextField(
+            value = token,
+            onValueChange = { token = it },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("Token") },
+            visualTransformation = PasswordVisualTransformation(),
+            singleLine = true,
+            enabled = !vm.busy
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(
+                onClick = { picker.launch(arrayOf("*/*")) },
+                enabled = !vm.busy
+            ) {
+                Text("选择多个文件")
+            }
+            Button(
+                onClick = ::uploadSelectedFiles,
+                enabled = selectedFiles.isNotEmpty() && receiverUrl.isNotBlank() && token.isNotBlank() && !vm.busy
+            ) {
+                Text("上传 ${selectedFiles.size} 个文件")
+            }
+        }
+        if (selectedFiles.isNotEmpty()) {
+            Text("已选择 ${selectedFiles.size} 个文件")
+            selectedFiles.forEach { uri ->
+                val fileName = remember(uri) {
+                    context.contentResolver.query(
+                        uri,
+                        arrayOf(android.provider.OpenableColumns.DISPLAY_NAME),
+                        null,
+                        null,
+                        null
+                    )?.use { cursor ->
+                        if (cursor.moveToFirst()) cursor.getString(0) else null
+                    } ?: uri.lastPathSegment.orEmpty()
+                }
+                Text(fileName, style = MaterialTheme.typography.bodySmall)
+            }
+        }
+        val uploadState = vm.lanShareUploadState
+        if (uploadState.totalFiles > 0) {
+            Text(
+                when {
+                    uploadState.error != null -> "上传失败：${uploadState.error}"
+                    uploadState.isComplete -> "上传完成：${uploadState.completedFiles.size}/${uploadState.totalFiles}"
+                    uploadState.currentFileIndex > 0 ->
+                        "正在上传 ${uploadState.currentFileIndex}/${uploadState.totalFiles}：${uploadState.currentFileName}"
+                    else -> "准备上传 ${uploadState.totalFiles} 个文件"
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (uploadState.error != null) MaterialTheme.colorScheme.error
+                else MaterialTheme.colorScheme.onSurface
+            )
+            if (vm.busy && uploadState.currentFileIndex > 0) {
+                val progress = if (uploadState.totalBytes > 0) {
+                    (uploadState.bytesSent.toFloat() / uploadState.totalBytes).coerceIn(0f, 1f)
+                } else {
+                    null
+                }
+                if (progress != null) {
+                    LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
+                    Text(
+                        "${formatFileSize(uploadState.bytesSent)} / ${formatFileSize(uploadState.totalBytes)} · ${(progress * 100).toInt()}%",
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                } else {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    Text("${formatFileSize(uploadState.bytesSent)} 已发送", style = MaterialTheme.typography.labelSmall)
+                }
+            }
+            if (uploadState.completedFiles.isNotEmpty()) {
+                Text(
+                    "已完成文件 (${uploadState.completedFiles.size}/${uploadState.totalFiles})",
+                    style = MaterialTheme.typography.titleSmall
+                )
+                uploadState.completedFiles.forEach { completed ->
+                    Text("✓ $completed", style = MaterialTheme.typography.bodySmall)
+                }
             }
         }
     }
-    Column(
-        modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Icon(Icons.Default.FolderOpen, contentDescription = null, Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary)
-        Text("本地文件", style = MaterialTheme.typography.headlineSmall)
-        Text("使用 Android 系统文件选择器，不需要申请共享存储权限。")
-        Button(onClick = { picker.launch(arrayOf("text/*", "application/json", "application/xml")) }) {
-            Text("选择文件")
-        }
-        Text(status, style = MaterialTheme.typography.bodySmall)
-    }
+}
+
+private fun formatFileSize(bytes: Long): String {
+    if (bytes < 1024) return "$bytes B"
+    val units = listOf("KB", "MB", "GB", "TB")
+    var value = bytes.toDouble()
+    var unitIndex = -1
+    do {
+        value /= 1024
+        unitIndex++
+    } while (value >= 1024 && unitIndex < units.lastIndex)
+    return "%.1f %s".format(value, units[unitIndex])
 }
 
 @Composable

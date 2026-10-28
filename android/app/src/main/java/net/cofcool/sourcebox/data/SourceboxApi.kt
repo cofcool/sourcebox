@@ -2,6 +2,8 @@ package net.cofcool.sourcebox.data
 
 import android.content.Context
 import android.net.Uri
+import android.os.SystemClock
+import android.provider.OpenableColumns
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -20,7 +22,12 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okio.BufferedSink
 import java.io.IOException
+import java.net.URI
+import java.security.DigestInputStream
+import java.security.MessageDigest
+import java.util.Base64
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
@@ -266,6 +273,103 @@ class SourceboxApi(context: Context) {
     suspend fun deleteCommand(id: String) {
         request("/cmd/${Uri.encode(id)}", "DELETE")
     }
+
+    suspend fun uploadLanShareFile(context: Context, receiverUrl: String, token: String, uri: Uri): String =
+        uploadLanShareFile(context, receiverUrl, token, uri) { _, _, _ -> }
+
+    suspend fun uploadLanShareFile(
+        context: Context,
+        receiverUrl: String,
+        token: String,
+        uri: Uri,
+        onProgress: (String, Long, Long) -> Unit
+    ): String =
+        withContext(Dispatchers.IO) {
+            require(token.isNotBlank()) { "请输入接收端令牌" }
+            val receiver = URI(receiverUrl.trim())
+            require(
+                receiver.scheme.equals("http", ignoreCase = true) &&
+                    !receiver.host.isNullOrBlank() && receiver.port in 1..65535
+            ) {
+                "接收地址必须是带端口的 HTTP 地址，例如 http://192.168.1.20:43127"
+            }
+            val uploadUrl = URI(
+                "http",
+                null,
+                receiver.host,
+                receiver.port,
+                "/upload",
+                null,
+                null
+            ).toASCIIString()
+            val displayName = context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+                ?.use { cursor ->
+                    if (cursor.moveToFirst()) cursor.getString(0) else null
+                }
+                ?.takeIf(String::isNotBlank)
+                ?: uri.lastPathSegment?.substringAfterLast('/')?.takeIf(String::isNotBlank)
+                ?: "upload-${UUID.randomUUID()}"
+            val size = context.contentResolver.openFileDescriptor(uri, "r")?.use { it.statSize }
+                ?.takeIf { it >= 0 } ?: -1L
+            onProgress(displayName, 0, size)
+            val digest = MessageDigest.getInstance("SHA-256")
+            val input = context.contentResolver.openInputStream(uri)
+                ?: throw IOException("无法读取文件：$displayName")
+            DigestInputStream(input, digest).use { stream ->
+                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                while (stream.read(buffer) != -1) {}
+            }
+            val sha256 = digest.digest().joinToString("") { "%02x".format(it) }
+            val body = object : okhttp3.RequestBody() {
+                override fun contentType() = "application/octet-stream".toMediaType()
+                override fun contentLength() = size
+                override fun writeTo(sink: BufferedSink) {
+                    val input = context.contentResolver.openInputStream(uri)
+                        ?: throw IOException("无法读取文件：$displayName")
+                    input.use { stream ->
+                        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                        var transferred = 0L
+                        var lastReportedAt = 0L
+                        while (true) {
+                            val count = stream.read(buffer)
+                            if (count == -1) break
+                            sink.write(buffer, 0, count)
+                            transferred += count
+                            val now = SystemClock.elapsedRealtime()
+                            if (now - lastReportedAt >= 100 || (size >= 0 && transferred >= size)) {
+                                onProgress(displayName, transferred, size)
+                                lastReportedAt = now
+                            }
+                        }
+                        onProgress(displayName, transferred, size)
+                    }
+                }
+            }
+            val relativePath = Base64.getUrlEncoder().withoutPadding()
+                .encodeToString(displayName.toByteArray(Charsets.UTF_8))
+            val request = Request.Builder()
+                .url(uploadUrl)
+                .header("Authorization", "Bearer $token")
+                .header("X-Sourcebox-Transfer", "file")
+                .header("X-Sourcebox-Path", relativePath)
+                .header("X-Sourcebox-SHA256", sha256)
+                .post(body)
+                .build()
+            client.newBuilder()
+                .writeTimeout(30, TimeUnit.MINUTES)
+                .readTimeout(30, TimeUnit.MINUTES)
+                .callTimeout(30, TimeUnit.MINUTES)
+                .build()
+                .newCall(request)
+                .execute()
+                .use { response ->
+                    val message = response.body?.string().orEmpty()
+                    if (!response.isSuccessful) {
+                        throw IOException("上传 $displayName 失败：HTTP ${response.code} ${message.take(300)}")
+                    }
+                    "$displayName：${message.ifBlank { "上传成功" }}"
+                }
+        }
 
     suspend fun exportAllActions(): List<ActionExport> =
         json.decodeFromString<List<ActionExport>>(request("/action/exportAll"))

@@ -9,6 +9,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.Network
+import android.net.Uri
 import android.os.Build
 import android.os.SystemClock
 import androidx.compose.runtime.getValue
@@ -58,6 +59,17 @@ data class PomodoroTimerState(
     val completedCycles: Int = 0
 )
 
+data class LanShareUploadState(
+    val totalFiles: Int = 0,
+    val currentFileIndex: Int = 0,
+    val currentFileName: String = "",
+    val bytesSent: Long = 0,
+    val totalBytes: Long = -1,
+    val completedFiles: List<String> = emptyList(),
+    val isComplete: Boolean = false,
+    val error: String? = null
+)
+
 private data class ExportData(
     val actions: List<ActionExport>,
     val notes: List<NoteRecord>,
@@ -86,6 +98,8 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
     )
         private set
     var timerRecords by mutableStateOf<List<ActionRecord>>(emptyList())
+        private set
+    var lanShareUploadState by mutableStateOf(LanShareUploadState())
         private set
     private val connectivityManager =
         application.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -156,6 +170,43 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
     fun refreshTools() = perform {
         tools = api.tools()
         message = "已连接，加载 ${tools.size} 个工具"
+    }
+
+    fun uploadLanShareFiles(receiverUrl: String, token: String, files: List<Uri>) = perform {
+        require(files.isNotEmpty()) { "请先选择要上传的文件" }
+        lanShareUploadState = LanShareUploadState(totalFiles = files.size)
+        files.forEachIndexed { index, uri ->
+            lanShareUploadState = lanShareUploadState.copy(
+                currentFileIndex = index + 1,
+                currentFileName = uri.lastPathSegment?.substringAfterLast('/') ?: "文件 ${index + 1}",
+                bytesSent = 0,
+                totalBytes = -1,
+                error = null
+            )
+            try {
+                val result = api.uploadLanShareFile(getApplication(), receiverUrl, token, uri) { name, sent, total ->
+                    viewModelScope.launch {
+                        lanShareUploadState = lanShareUploadState.copy(
+                            currentFileName = name,
+                            bytesSent = sent,
+                            totalBytes = total
+                        )
+                    }
+                }
+                lanShareUploadState = lanShareUploadState.copy(
+                    completedFiles = lanShareUploadState.completedFiles + result,
+                    bytesSent = lanShareUploadState.totalBytes.coerceAtLeast(lanShareUploadState.bytesSent)
+                )
+            } catch (error: Exception) {
+                lanShareUploadState = lanShareUploadState.copy(error = error.message ?: "未知错误")
+                throw IOException(
+                    "已上传 ${lanShareUploadState.completedFiles.size}/${files.size} 个文件；第 ${index + 1} 个文件失败：${error.message ?: "未知错误"}",
+                    error
+                )
+            }
+        }
+        lanShareUploadState = lanShareUploadState.copy(isComplete = true)
+        message = "已上传 ${lanShareUploadState.completedFiles.size} 个文件"
     }
 
     fun refreshTimerRecords() = perform {

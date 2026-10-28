@@ -175,7 +175,7 @@
                             <target>
                                 <mkdir dir="${project.build.outputDirectory}"/>
                                 <tstamp>
-                                    <format property="build.datetime" pattern="yyyyMMddHHmm"/>
+                                    <format property="build.datetime" pattern="yyyyMMddHH"/>
                                 </tstamp>
                                 <exec executable="git" outputproperty="build.commit.id" failonerror="true">
                                     <arg value="rev-parse"/>

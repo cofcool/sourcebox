@@ -34,21 +34,13 @@
 
 软件截图
 
-命令模式:
-
-![i1.png](./imgs/i1.png)
-
-图形界面模式:
-
-![i2.png](./imgs/i2.png)
-
-WEB:
-
-![web.png](./imgs/web.png)
-
-Android:
-
-![android.png](./imgs/android.png)
+<center>
+<figure>
+<img src="./imgs/i1.png" width=200>
+<img src="./imgs/web.png" width=200>
+<img src="./imgs/android.png" height=200>
+</figure>
+<center>
 
 ---
 
@@ -131,21 +123,11 @@ Android:
 ./sourcebox.sh --tool=lanShare --mode=send --to=http://192.168.1.20:43127 --token=接收端显示的令牌 --path=./photos
 ```
 
-`--path` 可以是文件或目录。未压缩时逐项传输，目录结构和顶层名称会保留；默认 `--compress=false`。需要先压缩为 ZIP 再传输时，发送端加 `--compress=true`：
+`--path` 可以是文件或目录。未压缩时逐项传输，目录结构和顶层名称会保留；默认 `--compress=false`。需要先压缩为 ZIP 再传输时，发送端加 `--compress=true`
 
-```bash
-./sourcebox.sh --tool=lanShare --mode=send --to=http://192.168.1.20:43127 --token=接收端显示的令牌 --path=./photos --compress=true
-```
+文件冲突策略由接收端设置，默认为跳过并在发送端打印冲突路径；可在接收端用 `--conflict=overwrite` 覆盖已存在文件
 
-发送端会为每个未压缩文件或压缩后的 ZIP 计算 SHA-256，接收端校验通过后才保存；校验失败时会报告期望值和实际值并拒绝该数据。
-
-文件冲突策略由接收端设置，默认为跳过并在发送端打印冲突路径；可在接收端用 `--conflict=overwrite` 覆盖已存在文件：
-
-```bash
-./sourcebox.sh --tool=lanShare --mode=receive --dir=./received --conflict=overwrite
-```
-
-接收完成后可按 `Ctrl+C` 关闭接收端。传输使用 HTTP，请只在可信任的局域网中使用。
+接收完成后可按 `Ctrl+C` 关闭接收端
 
 ## JSON 生成对象
 
@@ -201,13 +183,7 @@ Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到
 
 ## 简单笔记
 
-简单笔记软件，开发目的是为局域网内部的多台设备进行信息同步，基于 Vert.x Web 开发，内容以 JSON 格式存储到文件中
-
-配置:
-
-* filepath，文件保存路径，默认为当前目录
-* filename，文件名称，默认为 `note.json`
-* port，监听端口，默认为 `38080`
+简单笔记软件，开发目的是为局域网内部的多台设备进行信息同步
 
 ## JSON 格式化
 

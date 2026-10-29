@@ -84,7 +84,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -1099,12 +1105,56 @@ private fun TodoCard(todo: TodoRecord, onComplete: () -> Unit) {
             Switch(checked = todo.state == "done", onCheckedChange = { if (it) onComplete() })
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
-                Text(todo.name, fontWeight = FontWeight.SemiBold)
+                CopyableLinkText(todo.name, fontWeight = FontWeight.SemiBold)
                 if (!todo.remark.isNullOrBlank()) {
-                    Text(todo.remark, style = MaterialTheme.typography.bodySmall)
+                    CopyableLinkText(todo.remark, style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun CopyableLinkText(
+    text: String,
+    modifier: Modifier = Modifier,
+    style: androidx.compose.ui.text.TextStyle = MaterialTheme.typography.bodyMedium,
+    fontWeight: FontWeight? = null
+) {
+    val linkColor = MaterialTheme.colorScheme.primary
+    val annotatedText = remember(text, linkColor) {
+        val urlPattern = Regex("""(?i)(https?://[^\s<>"']+|www\.[^\s<>"']+)""")
+        buildAnnotatedString {
+            var position = 0
+            urlPattern.findAll(text).forEach { match ->
+                val rawUrl = match.value
+                val link = rawUrl.trimEnd('.', ',', ';', ':', '!', '?', ')', ']', '}')
+                val linkEnd = match.range.first + link.length
+                if (linkEnd <= position) return@forEach
+                append(text.substring(position, match.range.first))
+                withLink(
+                    LinkAnnotation.Url(
+                        if (link.startsWith("www.", ignoreCase = true)) "https://$link" else link,
+                        TextLinkStyles(
+                            SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline)
+                        )
+                    )
+                ) {
+                    append(link)
+                }
+                position = linkEnd
+            }
+            append(text.substring(position))
+        }
+    }
+
+    SelectionContainer {
+        Text(
+            text = annotatedText,
+            modifier = modifier,
+            style = style,
+            fontWeight = fontWeight
+        )
     }
 }
 

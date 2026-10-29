@@ -48,15 +48,18 @@ public abstract class BaseRecord implements WebTool {
 
         var find = args.readArg("find");
         if (!flag.get() || find.isPresent()) {
-            var method = "/action?type=" + currentType().name();
-            if (find.isPresent()) {
-                method = method + "&" + find.val();
-            }
-
-            var d = getRequestLocalData(method, Actions.class);
-            args.getContext().write(toPrintStr(d));
+            args.getContext().write(toPrintStr(findActions(find)));
         }
 
+    }
+
+    protected Actions findActions(Arg arg) {
+        var method = "/action?type=" + currentType().name();
+        if (arg.isPresent()) {
+            method = method + "&" + arg.val();
+        }
+
+        return getRequestLocalData(method, Actions.class);
     }
 
     protected boolean callOthers(Args args) throws Exception {

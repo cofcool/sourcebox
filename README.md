@@ -195,7 +195,7 @@ Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到
 
 ## 简单 ToDo
 
-简单的 ToDo 工具，支持创建、完成、搜索，使用: `./sourcebox.sh --tool=todo --add=`
+简单的 ToDo 工具，支持创建、完成、搜索，使用: `./sourcebox.sh --tool=todo`
 
 如果输入名称是网址，会自动识别网页标题
 
@@ -214,4 +214,3 @@ Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到
 ![sourcebox-flow](./imgs/mytoolbox-flow.svg)
 
 ## 致谢
-

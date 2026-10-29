@@ -55,6 +55,7 @@ export interface ActionRecord {
   state: string;
   category?: string | null;
   labels?: string | null;
+  refs?: string | null;
   remark?: string | null;
   start?: string | null;
   end?: string | null;
@@ -240,6 +241,15 @@ export const api = {
     params.set("type", "record");
     params.set("page", String(page));
     params.set("size", String(size));
+    return request<ActionRecord[]>(`/action?${params.toString()}`);
+  },
+  recordCandidates: async (name: string): Promise<ActionRecord[]> => {
+    const params = new URLSearchParams({
+      type: "record",
+      name: name.trim(),
+      page: "1",
+      size: "10",
+    });
     return request<ActionRecord[]>(`/action?${params.toString()}`);
   },
   recordSave: async (record: Partial<ActionRecord>): Promise<ActionRecord> => {

@@ -377,6 +377,13 @@ class SourceboxApi(context: Context) {
     suspend fun actionTypes(): ActionTypeResponse =
         json.decodeFromString(request("/action/types"))
 
+    suspend fun findRecordCandidates(name: String): List<ActionRecord> {
+        val query = Uri.encode(name.trim())
+        return json.decodeFromString(
+            request("/action?type=record&name=$query&page=1&size=10")
+        )
+    }
+
     suspend fun saveRecord(record: ActionRecord): ActionRecord {
         val payload = record.copy(type = "record", labels = record.labels.orEmpty())
         return saveAction(payload)

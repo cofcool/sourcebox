@@ -119,6 +119,9 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         private set
     var records by mutableStateOf<List<ActionRecord>>(emptyList())
         private set
+    var recordCandidates by mutableStateOf<List<ActionRecord>>(emptyList())
+        private set
+    private var recordCandidateQuery = ""
     var recordCategories by mutableStateOf<List<String>>(emptyList())
         private set
     var recordLabels by mutableStateOf<List<String>>(emptyList())
@@ -710,6 +713,23 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         recordLabels = withContext(Dispatchers.IO) { actionDatabase.actionLabels() }
     }
 
+    fun searchRecordCandidates(name: String) {
+        val query = name.trim()
+        recordCandidateQuery = query
+        if (query.isBlank()) {
+            recordCandidates = emptyList()
+            return
+        }
+        viewModelScope.launch {
+            val candidates = withContext(Dispatchers.IO) {
+                actionDatabase.actions("record", "", 1, 500)
+                        .filter { it.name.contains(query, ignoreCase = true) }
+                        .take(10)
+            }
+            if (recordCandidateQuery == query) recordCandidates = candidates
+        }
+    }
+
     fun loadRecordDetails(record: ActionRecord) = perform {
         val details = withContext(Dispatchers.IO) {
             actionDatabase.actionDetails(record.id)
@@ -724,7 +744,8 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         query: String,
         page: Int,
         category: String? = null,
-        label: String? = null
+        label: String? = null,
+        copySource: ActionRecord? = null
     ) = perform(
         onSuccess = {
             savedRecord = it.first
@@ -736,6 +757,11 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         val pendingRecord = ActionRecord(
             id = UUID.randomUUID().toString().replace("-", ""),
             name = name.trim(),
+            type = copySource?.type ?: "record",
+            category = copySource?.category,
+            labels = copySource?.labels.orEmpty(),
+            refs = copySource?.id?.let { "action:$it" },
+            remark = copySource?.remark,
             start = currentRecordDateTime()
         )
         val (saved, isDirty) = writeWithOfflineFallback(

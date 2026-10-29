@@ -187,9 +187,17 @@ function SettingsPage({ system }: { system?: SystemInfo }) {
 function RecordBoard() {
   const pageSize = 10;
   const [records, setRecords] = useState<ActionRecord[]>([]);
+  const [copySources, setCopySources] = useState<ActionRecord[]>([]);
+  const [copyQuery, setCopyQuery] = useState("");
   const [categories, setCategories] = useState<string[]>([]);
   const [labels, setLabels] = useState<string[]>([]);
   const [title, setTitle] = useState("");
+  const [copySourceId, setCopySourceId] = useState("");
+  const [newCategory, setNewCategory] = useState("");
+  const [newLabels, setNewLabels] = useState("");
+  const [newRemark, setNewRemark] = useState("");
+  const [newType, setNewType] = useState("record");
+  const [newRefs, setNewRefs] = useState("");
   const [query, setQuery] = useState("");
   const [appliedQuery, setAppliedQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -233,6 +241,40 @@ function RecordBoard() {
       .catch((e) => setError(e instanceof Error ? e.message : String(e)));
   }, []);
 
+  useEffect(() => {
+    const name = copyQuery.trim();
+    if (!name) {
+      setCopySources([]);
+      return;
+    }
+    const timeout = window.setTimeout(() => {
+      api.recordCandidates(name)
+        .then(setCopySources)
+        .catch((e) => setError(e instanceof Error ? e.message : String(e)));
+    }, 250);
+    return () => window.clearTimeout(timeout);
+  }, [copyQuery]);
+
+  function copyRecordFields(id: string) {
+    setCopySourceId(id);
+    const source = copySources.find((record) => record.id === id);
+    if (!source) {
+      setTitle("");
+      setNewCategory("");
+      setNewLabels("");
+      setNewRemark("");
+      setNewType("record");
+      setNewRefs("");
+      return;
+    }
+    setTitle(source.name);
+    setNewType(source.type);
+    setNewCategory(source.category ?? "");
+    setNewLabels(source.labels ?? "");
+    setNewRemark(source.remark ?? "");
+    setNewRefs(`action:${source.id}`);
+  }
+
   async function addRecord(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const name = title.trim();
@@ -240,8 +282,27 @@ function RecordBoard() {
     setSaving(true);
     try {
       const now = formatRecordDateTime(new Date());
-      await api.recordSave({ id: generateId().replace(/-/g, ""), name, state: "todo", start: now, end: null, duration: 0 });
+      await api.recordSave({
+        id: generateId().replace(/-/g, ""),
+        name,
+        type: newType,
+        category: newCategory || null,
+        labels: newLabels,
+        remark: newRemark || null,
+        refs: newRefs || null,
+        state: "todo",
+        start: now,
+        end: null,
+        duration: 0,
+      });
       setTitle("");
+      setCopySourceId("");
+      setNewCategory("");
+      setNewLabels("");
+      setNewRemark("");
+      setNewType("record");
+      setNewRefs("");
+      setCopyQuery("");
       await loadRecords();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -391,6 +452,27 @@ function RecordBoard() {
           placeholder="卡片名称"
           aria-label="卡片名称"
         />
+        <input
+          value={copyQuery}
+          onChange={(event) => {
+            if (copySourceId) {
+              setCopySourceId("");
+              setTitle("");
+              setNewCategory("");
+              setNewLabels("");
+              setNewRemark("");
+              setNewType("record");
+              setNewRefs("");
+            }
+            setCopyQuery(event.target.value);
+          }}
+          placeholder="按名称搜索要复制的卡片"
+          aria-label="按名称搜索复制来源"
+        />
+        <select value={copySourceId} onChange={(event) => copyRecordFields(event.target.value)} aria-label="从已有卡片复制">
+          <option value="">选择匹配卡片...</option>
+          {copySources.map((record) => <option value={record.id} key={record.id}>{record.name}</option>)}
+        </select>
         <button type="submit" disabled={!title.trim() || saving}>添加卡片</button>
       </form>
 

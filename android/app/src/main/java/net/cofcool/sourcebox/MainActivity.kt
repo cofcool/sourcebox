@@ -95,6 +95,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.cofcool.sourcebox.data.ActionCheckList
@@ -609,12 +610,19 @@ private fun RecordBoardScreen(
     var appliedQuery by remember { mutableStateOf("") }
     var page by remember { mutableStateOf(1) }
     var newRecordName by remember { mutableStateOf("") }
+    var copyQuery by remember { mutableStateOf("") }
+    var copySource by remember { mutableStateOf<ActionRecord?>(null) }
 
     LaunchedEffect(sharedText) {
         if (!sharedText.isNullOrBlank()) {
             newRecordName = sharedText
             onShareConsumed()
         }
+    }
+
+    LaunchedEffect(copyQuery) {
+        delay(250)
+        vm.searchRecordCandidates(copyQuery)
     }
 
     LaunchedEffect(appliedQuery, appliedCategory, appliedLabel, page) {
@@ -663,10 +671,49 @@ private fun RecordBoardScreen(
             label = { Text("卡片名称") },
             maxLines = 4
         )
+        OutlinedTextField(
+            value = copyQuery,
+            onValueChange = {
+                copyQuery = it
+                copySource = null
+            },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("搜索要复制的卡片") },
+            placeholder = { Text("输入卡片名称") },
+            singleLine = true
+        )
+        if (vm.recordCandidates.isNotEmpty()) {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 220.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                vm.recordCandidates.forEach { candidate ->
+                    Card(
+                        onClick = {
+                            copySource = candidate
+                            newRecordName = candidate.name
+                            copyQuery = candidate.name
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            candidate.name,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            }
+        }
         Button(
             onClick = {
-                vm.createRecord(newRecordName, appliedQuery, page, appliedCategory, appliedLabel)
+                vm.createRecord(newRecordName, appliedQuery, page, appliedCategory, appliedLabel, copySource)
                 newRecordName = ""
+                copyQuery = ""
+                copySource = null
             },
             enabled = newRecordName.isNotBlank() && !vm.busy,
             modifier = Modifier.fillMaxWidth()

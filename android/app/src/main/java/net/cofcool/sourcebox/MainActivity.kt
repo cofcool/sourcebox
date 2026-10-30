@@ -37,6 +37,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
@@ -83,11 +84,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
@@ -174,6 +176,14 @@ private fun SourceboxApp(
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
+    fun navigateBack() {
+        page = when (page) {
+            "record-detail" -> recordReturnPage
+            "record-create" -> "task"
+            "crash-logs" -> "settings"
+            else -> "tools"
+        }
+    }
 
     LaunchedEffect(vm.message) {
         if (vm.message.isNotBlank()) snackbar.showSnackbar(vm.message)
@@ -185,8 +195,8 @@ private fun SourceboxApp(
     LaunchedEffect(sharedText) {
         showShareTargetDialog = !sharedText.isNullOrBlank()
     }
-    BackHandler(enabled = page == "tool") {
-        page = "tools"
+    BackHandler(enabled = page !in pages.map { it.first }) {
+        navigateBack()
     }
 
     MaterialTheme(
@@ -204,6 +214,7 @@ private fun SourceboxApp(
                             when (page) {
                                 "tool" -> selectedTool?.id ?: "工具"
                                 "task" -> "任务"
+                                "record-create" -> "添加任务"
                                 "record-detail" -> "编辑任务"
                                 "timer" -> "番茄钟"
                                 "files" -> "文件工具"
@@ -216,34 +227,31 @@ private fun SourceboxApp(
                     navigationIcon = {
                         if (page !in pages.map { it.first }) {
                             IconButton(onClick = {
-                                page = if (page == "record-detail") {
-                                    recordReturnPage
-                                } else if (page == "crash-logs") {
-                                    "settings"
-                                } else {
-                                    "tools"
-                                }
+                                navigateBack()
                             }) {
                                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                             }
                         }
                     },
                     actions = {
-                        if (page == "tools") {
-                            IconButton(onClick = {
-                                settingsUrl = vm.baseUrl
-                                settingsUser = vm.username
-                                settingsPassword = vm.password
-                                page = "settings"
-                            }) {
-                                Icon(Icons.Default.Settings, contentDescription = "设置")
+                        when (page) {
+                            "tools" -> IconButton(onClick = {
+                                    settingsUrl = vm.baseUrl
+                                    settingsUser = vm.username
+                                    settingsPassword = vm.password
+                                    page = "settings"
+                                }) {
+                                    Icon(Icons.Default.Settings, contentDescription = "设置")
+                                }
+                            "task" -> IconButton(onClick = { page = "record-create" }) {
+                                Icon(Icons.Default.Add, contentDescription = "添加任务")
                             }
                         }
                     }
                 )
             },
             bottomBar = {
-                if (page != "record-detail") {
+                if (page !in setOf("record-detail", "record-create")) {
                     NavigationBar {
                         pages.forEach { (destination, label) ->
                             val icon = when (destination) {
@@ -316,13 +324,24 @@ private fun SourceboxApp(
                         onClose = { page = recordReturnPage }
                     )
                 }
+                "record-create" -> RecordCreateScreen(
+                    vm = vm,
+                    modifier = Modifier.padding(padding),
+                    sharedText = sharedText,
+                    onShareConsumed = onShareConsumed,
+                    onCancel = { page = "task" },
+                    onCreated = {
+                        appliedCategory = null
+                        appliedLabel = null
+                        page = "task"
+                    }
+                )
                 "task" -> RecordBoardScreen(
                     vm,
                     Modifier.padding(padding),
                     appliedCategory = appliedCategory,
                     appliedLabel = appliedLabel,
-                    sharedText = sharedText,
-                    onShareConsumed = onShareConsumed,
+                    onCreateRecord = { page = "record-create" },
                     onFilterChanged = { category, label ->
                         appliedCategory = category
                         appliedLabel = label
@@ -381,7 +400,7 @@ private fun SourceboxApp(
                             Text("待办")
                         }
                         TextButton(onClick = {
-                            page = "task"
+                            page = "record-create"
                             showShareTargetDialog = false
                         }) {
                             Text("任务")
@@ -596,34 +615,126 @@ private fun WebToolScreen(
 }
 
 @Composable
+private fun RecordCreateScreen(
+    vm: ToolboxViewModel,
+    modifier: Modifier,
+    sharedText: String?,
+    onShareConsumed: () -> Unit,
+    onCancel: () -> Unit,
+    onCreated: () -> Unit
+) {
+    var name by remember { mutableStateOf("") }
+    var copyQuery by remember { mutableStateOf("") }
+    var copySource by remember { mutableStateOf<ActionRecord?>(null) }
+
+    LaunchedEffect(sharedText) {
+        if (!sharedText.isNullOrBlank()) {
+            name = sharedText
+            onShareConsumed()
+        }
+    }
+    LaunchedEffect(copyQuery) {
+        delay(250)
+        vm.searchRecordCandidates(copyQuery)
+    }
+
+    Column(
+        modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("任务名称") },
+            maxLines = 4,
+            enabled = !vm.busy
+        )
+        OutlinedTextField(
+            value = copyQuery,
+            onValueChange = {
+                copyQuery = it
+                copySource = null
+            },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("复制已有任务（可选）") },
+            placeholder = { Text("搜索要复制的任务") },
+            singleLine = true,
+            enabled = !vm.busy
+        )
+        if (vm.recordCandidates.isNotEmpty()) {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 220.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                vm.recordCandidates.forEach { candidate ->
+                    Card(
+                        onClick = {
+                            copySource = candidate
+                            name = candidate.name
+                            copyQuery = candidate.name
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            candidate.name,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            }
+        }
+        copySource?.let { source ->
+            Text(
+                "将复制「${source.name}」的分类、标签和备注。",
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(
+                onClick = onCancel,
+                enabled = !vm.busy,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("取消")
+            }
+            Button(
+                onClick = {
+                    vm.createRecord(
+                        name = name,
+                        query = "",
+                        page = 1,
+                        copySource = copySource,
+                        onCreated = onCreated
+                    )
+                },
+                enabled = name.isNotBlank() && !vm.busy,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("添加任务")
+            }
+        }
+    }
+}
+
+@Composable
 private fun RecordBoardScreen(
     vm: ToolboxViewModel,
     modifier: Modifier,
     appliedCategory: String?,
     appliedLabel: String?,
-    sharedText: String?,
-    onShareConsumed: () -> Unit,
+    onCreateRecord: () -> Unit,
     onFilterChanged: (String?, String?) -> Unit,
     onOpenRecord: (ActionRecord) -> Unit
 ) {
     var query by remember { mutableStateOf("") }
     var appliedQuery by remember { mutableStateOf("") }
     var page by remember { mutableStateOf(1) }
-    var newRecordName by remember { mutableStateOf("") }
-    var copyQuery by remember { mutableStateOf("") }
-    var copySource by remember { mutableStateOf<ActionRecord?>(null) }
-
-    LaunchedEffect(sharedText) {
-        if (!sharedText.isNullOrBlank()) {
-            newRecordName = sharedText
-            onShareConsumed()
-        }
-    }
-
-    LaunchedEffect(copyQuery) {
-        delay(250)
-        vm.searchRecordCandidates(copyQuery)
-    }
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     LaunchedEffect(appliedQuery, appliedCategory, appliedLabel, page) {
         vm.refreshRecords(appliedQuery, page, appliedCategory, appliedLabel)
@@ -638,8 +749,6 @@ private fun RecordBoardScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text("任务", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        Text("记录事项、整理进度，并在卡片下持续补充回复。", style = MaterialTheme.typography.bodySmall)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("本地数据库：${vm.localActionCount} 条")
@@ -664,61 +773,6 @@ private fun RecordBoardScreen(
             else MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        OutlinedTextField(
-            value = newRecordName,
-            onValueChange = { newRecordName = it },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text("卡片名称") },
-            maxLines = 4
-        )
-        OutlinedTextField(
-            value = copyQuery,
-            onValueChange = {
-                copyQuery = it
-                copySource = null
-            },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text("搜索要复制的卡片") },
-            placeholder = { Text("输入卡片名称") },
-            singleLine = true
-        )
-        if (vm.recordCandidates.isNotEmpty()) {
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 220.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                vm.recordCandidates.forEach { candidate ->
-                    Card(
-                        onClick = {
-                            copySource = candidate
-                            newRecordName = candidate.name
-                            copyQuery = candidate.name
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            candidate.name,
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
-            }
-        }
-        Button(
-            onClick = {
-                vm.createRecord(newRecordName, appliedQuery, page, appliedCategory, appliedLabel, copySource)
-                newRecordName = ""
-                copyQuery = ""
-                copySource = null
-            },
-            enabled = newRecordName.isNotBlank() && !vm.busy,
-            modifier = Modifier.fillMaxWidth()
-        ) { Text("添加卡片") }
-
         Row(verticalAlignment = Alignment.CenterVertically) {
             OutlinedTextField(
                 value = query,
@@ -730,6 +784,7 @@ private fun RecordBoardScreen(
             )
             IconButton(
                 onClick = {
+                    keyboardController?.hide()
                     appliedQuery = query.trim()
                     onFilterChanged(null, null)
                     page = 1
@@ -836,18 +891,13 @@ private fun RecordDetails(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text("编辑记录及其 Checklist、回复。", style = MaterialTheme.typography.bodySmall)
         Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("编辑卡片", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
-                TextButton(onClick = onClose) { Text("关闭") }
-            }
             OutlinedTextField(
                 record.name,
                 { onRecordChange(record.copy(name = it)) },
                 Modifier.fillMaxWidth(),
-                label = { Text("卡片名称") },
+                label = { Text("任务名称") },
                 singleLine = true
             )
             OutlinedTextField(
@@ -1092,6 +1142,7 @@ private fun TodosScreen(
     var name by remember { mutableStateOf("") }
     var remark by remember { mutableStateOf("") }
     var query by remember { mutableStateOf("") }
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     LaunchedEffect(sharedText) {
         if (!sharedText.isNullOrBlank()) {
@@ -1118,7 +1169,7 @@ private fun TodosScreen(
             ) { Text("添加待办") }
             OutlinedButton(onClick = vm::refreshTodos) { Text("刷新") }
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.padding(bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             OutlinedTextField(
                 query,
                 { query = it },
@@ -1126,14 +1177,17 @@ private fun TodosScreen(
                 label = { Text("搜索待办") },
                 singleLine = true
             )
-            IconButton(onClick = { vm.refreshTodos(query) }) {
+            IconButton(onClick = {
+                keyboardController?.hide()
+                vm.refreshTodos(query)
+            }) {
                 Icon(Icons.Default.Search, contentDescription = "搜索")
             }
         }
         if (vm.todos.isEmpty()) {
             EmptyState("暂无待办事项")
         } else {
-            LazyColumn(Modifier.padding(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 items(vm.todos, key = { it.id }) { todo ->
                     TodoCard(todo, onComplete = { vm.completeTodo(todo) })
                 }
@@ -1209,6 +1263,7 @@ private fun CopyableLinkText(
 private fun NotesScreen(vm: ToolboxViewModel, modifier: Modifier) {
     var selected by remember { mutableStateOf<NoteRecord?>(null) }
     var content by remember { mutableStateOf("") }
+    val keyboardController = LocalSoftwareKeyboardController.current
     Column(modifier
         .fillMaxSize()
         .padding(16.dp)) {
@@ -1229,7 +1284,10 @@ private fun NotesScreen(vm: ToolboxViewModel, modifier: Modifier) {
                 enabled = content.isNotBlank() && !vm.busy
             ) { Text("保存") }
             OutlinedButton(onClick = { selected = null; content = "" }) { Text("新建") }
-            IconButton(onClick = vm::refreshNotes) {
+            IconButton(onClick = {
+                keyboardController?.hide()
+                vm.refreshNotes()
+            }) {
                 Icon(Icons.Default.Refresh, contentDescription = "刷新便笺")
             }
             if (selected != null) {

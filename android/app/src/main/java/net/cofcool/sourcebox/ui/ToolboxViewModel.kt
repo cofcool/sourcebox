@@ -745,12 +745,14 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         page: Int,
         category: String? = null,
         label: String? = null,
-        copySource: ActionRecord? = null
+        copySource: ActionRecord? = null,
+        onCreated: () -> Unit = {}
     ) = perform(
         onSuccess = {
             savedRecord = it.first
             refreshRecords(query, page, category, label)
             message = if (it.second) "记录已添加到本地，等待联网同步" else "记录已添加"
+            onCreated()
         }
     ) {
         require(name.isNotBlank()) { "记录名称不能为空" }

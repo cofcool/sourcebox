@@ -6,7 +6,6 @@ public enum ToolName {
     trelloLogseqImporter("read trello backup json file and convert to logseq md file", TrelloToLogseqImporter.class),
     shell("run shell command", ShellStarter.class),
     link2Tool("convert link file to md", LinkCovertTool.class),
-    clippings2Md("read kindle clipboard file(or others file) then convert to md file", ClippingsToMd.class),
     gitCommits2Log("generate changelog file from git commit log", GitCommitsToChangelog.class),
     converts("some simple utilities about string, like base64 encode", Converts.class),
     json2POJO("convert json structure to POJO class", JsonToPojo.class),
@@ -26,7 +25,8 @@ public enum ToolName {
     timer("simple timer tool", TimerRecord.class),
     jsonex("exactor values by json path", JsonExactor.class),
     task("repeat execute task(go)", GoAdapter.Task.class),
-    mobileBackup("backup android phone files by adb(go)", GoAdapter.MobileBackup.class);
+    mobileBackup("backup android phone files by adb(go)", GoAdapter.MobileBackup.class),
+    habits("simple habit tool", Habits.class);
 
     private final String desc;
     private final Class<? extends Tool> tool;

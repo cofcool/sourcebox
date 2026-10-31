@@ -177,5 +177,37 @@ class FileToolsTest extends BaseTest {
         Assertions.assertTrue(Files.exists(child.resolve(".visited")));
     }
 
+    @Test
+    void runWithClippingsToMd() throws Exception {
+        Path path1 = tmpDir.resolve("clippingsToMdWithKindle.md");
+        instance().run(args.arg("util", "clippings2Md")
+            .arg("path", Utils.getTestResourcePath("/clippingsKindle.txt")).arg("out", path1.toString()));
+        Assertions.assertTrue(path1.toFile().exists());
+    }
+
+    @Test
+    void runWithClippingsToMdMrexpt() throws Exception {
+        Path path1 = tmpDir.resolve("clippingsToMdWithMrexpt.md");
+        instance().run(
+            args.arg("util", "clippings2Md")
+                .arg("path", Utils.getTestResourcePath("/clippingsMrexpt.mrexpt"))
+                .arg("out", path1.toString())
+                .arg("clippingsToMdType", FileTools.ClippingsToMd.ClipType.mrexpt.name())
+        );
+        Assertions.assertTrue(path1.toFile().exists());
+    }
+
+    @Test
+    void runWithClippingsToMdNoOut() throws Exception {
+        Path path1 = tmpDir.resolve("runWithNoOut.md");
+        var origin =  Utils.getTestResourcePath("/clippingsMrexpt.mrexpt");
+        var newFile = tmpDir.resolve("runWithNoOut.mrexpt");
+        FileUtils.copyFile(new File(origin), newFile.toFile());
+        instance().run(
+            args.arg("util", "clippings2Md")
+                .arg("path", newFile.toString())
+                .arg("clippingsToMdType", FileTools.ClippingsToMd.ClipType.mrexpt.name())
+        );
+    }
 
 }

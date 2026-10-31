@@ -1,13 +1,14 @@
 package net.cofcool.sourcebox;
 
-import java.net.URL;
-import net.cofcool.sourcebox.internal.ClippingsToMd;
+import net.cofcool.sourcebox.internal.FileTools;
 import org.apache.commons.lang3.RandomUtils;
+
+import java.net.URL;
 
 public class Utils {
 
     public static String getTestResourcePath(String path) {
-        return ClippingsToMd.class.getResource(path).toString().substring(5);
+        return FileTools.class.getResource(path).toString().substring(5);
     }
 
     public static String randomPort() {
@@ -15,6 +16,6 @@ public class Utils {
     }
 
     public static URL getTestResourceUrlPath(String path) {
-        return ClippingsToMd.class.getResource(path);
+        return FileTools.class.getResource(path);
     }
 }

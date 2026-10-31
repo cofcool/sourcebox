@@ -67,11 +67,12 @@ class LanFileShareTest {
         CapturingContext context = new CapturingContext();
 
         LanFileShare tool = new LanFileShare();
-        Args args = new Args().copyConfigFrom(tool.config())
+        Args args = new Args()
             .arg("type", "send")
             .arg("path", source.toString())
             .arg("to", "http://127.0.0.1:" + server.getAddress().getPort())
             .arg("token", "secret")
+            .copyConfigFrom(tool.config())
             .context(context);
         tool.run(args);
 
@@ -89,12 +90,13 @@ class LanFileShareTest {
         server.start();
 
         LanFileShare tool = new LanFileShare();
-        Args args = new Args().copyConfigFrom(tool.config())
+        Args args = new Args()
             .arg("type", "send")
             .arg("path", source.toString())
             .arg("to", "http://127.0.0.1:" + server.getAddress().getPort())
             .arg("token", "secret")
             .arg("compress", "true")
+            .copyConfigFrom(tool.config())
             .context(new ConsoleToolContext());
         tool.run(args);
 
@@ -112,11 +114,12 @@ class LanFileShareTest {
         server.start();
 
         LanFileShare tool = new LanFileShare();
-        Args args = new Args().copyConfigFrom(tool.config())
+        Args args = new Args()
             .arg("type", "send")
             .arg("path", source.toString())
             .arg("to", "http://127.0.0.1:" + server.getAddress().getPort())
             .arg("token", "secret")
+            .copyConfigFrom(tool.config())
             .context(new ConsoleToolContext());
         tool.run(args);
 

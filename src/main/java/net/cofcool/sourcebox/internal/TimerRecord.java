@@ -4,8 +4,6 @@ import lombok.CustomLog;
 import net.cofcool.sourcebox.ToolName;
 import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
 
-import java.util.EnumSet;
-
 @CustomLog
 public class TimerRecord extends BaseRecord {
 
@@ -22,12 +20,6 @@ public class TimerRecord extends BaseRecord {
     @Override
     protected String callAdd(Arg a) {
         return saveRecord(null, a.val(), null, null).id();
-    }
-
-    @Override
-    public Args config() {
-        return super.config()
-            .runnerTypes(EnumSet.allOf(RunnerType.class));
     }
 
     @Override

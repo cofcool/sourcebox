@@ -43,17 +43,6 @@ public class HisRecord extends BaseRecord {
         return true;
     }
 
-    private boolean shouldLaunchTui(Args args) {
-        return args.getContext() != null
-            && args.isCurrentType(RunnerType.CLI)
-            && System.console() != null
-            && !args.readArg("find").isPresent()
-            && !args.readArg("add").isPresent()
-            && !args.readArg("done").isPresent()
-            && !args.readArg("cancel").isPresent()
-            && !args.readArg("delete").isPresent();
-    }
-
     private void runTui() throws Exception {
         try (Terminal terminal = TerminalBuilder.builder().system(true).build()) {
             LineReader reader = LineReaderBuilder.builder().terminal(terminal).build();
@@ -65,11 +54,6 @@ public class HisRecord extends BaseRecord {
     @Override
     protected Type currentType() {
         return Type.record;
-    }
-
-    @Override
-    public Args config() {
-        return super.config();
     }
 
     public static class SearchResults extends ListData<SearchResult> {

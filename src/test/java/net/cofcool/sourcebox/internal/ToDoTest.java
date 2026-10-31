@@ -63,7 +63,6 @@ class ToDoTest extends BaseTest {
     @Order(value = Integer.MAX_VALUE-10)
     void list(Vertx vertx, VertxTestContext testContext) throws Exception {
         testContext.verify(() -> {
-            instance().run(args);
             instance().run(args.arg("find", "state=todo"));
             instance().run(args.arg("find", "labels=link"));
             testContext.completeNow();

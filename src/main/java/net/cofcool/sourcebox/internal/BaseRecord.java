@@ -11,6 +11,7 @@ import net.cofcool.sourcebox.util.Utils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.EnumSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static net.cofcool.sourcebox.internal.api.entity.ActionRecord.toPrintStr;
@@ -21,6 +22,11 @@ public abstract class BaseRecord implements WebTool {
     @Override
     public void run(Args args) throws Exception {
         var flag = new AtomicBoolean();
+
+        args.readArg("find").ifPresent(a -> {
+            flag.set(true);
+            args.getContext().write(findActions(a));
+        });
 
         args.readArg("add").ifPresent(a -> {
             flag.set(true);
@@ -42,8 +48,8 @@ public abstract class BaseRecord implements WebTool {
             deleteRequestLocalData("/action/"+a.val());
         });
 
-        if (callOthers(args)) {
-            flag.set(true);
+        if (!flag.get()) {
+            flag.set(callOthers(args));
         }
 
         var find = args.readArg("find");
@@ -131,7 +137,8 @@ public abstract class BaseRecord implements WebTool {
             .arg(new Arg("cancel", null, "mark item cancel by item id", false,
                 "d5ebeacf9a0aa3319560c7aa78e8751c"))
             .arg(new Arg("delete", null, "delete item cancel by item id", false,
-                "d5ebeacf9a0aa3319560c7aa78e8751c"));
+                "d5ebeacf9a0aa3319560c7aa78e8751c"))
+            .runnerTypes(EnumSet.allOf(RunnerType.class));
     }
 
     @Override

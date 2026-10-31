@@ -18,7 +18,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -291,8 +290,7 @@ public class ToDo extends BaseRecord {
     public Args config() {
         return super.config()
             .arg(new Arg("importTodo", null, "csv file path, like: value,remark or value,remark,state ", false, null))
-            .arg(new Arg("importBookmark", null, "file path, supports: firefox bookmark file", false, null))
-            .runnerTypes(EnumSet.allOf(RunnerType.class));
+            .arg(new Arg("importBookmark", null, "file path, supports: firefox bookmark file", false, null));
     }
 
     private void extractBookmarks(JsonNode node, List<String[]> urls) {

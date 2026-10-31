@@ -83,7 +83,7 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
                 n -> switch (n) {
                     case 0 -> insert(invokeAction(entity, false));
                     case 1 -> update(id.get(), invokeAction(entity, true));
-                    default -> Future.failedFuture("");
+                    default -> Future.failedFuture("table " + tableInfo.name() + " find more than one result by id " + id.get());
                 },
                 e -> {
                     log.debug(e.getMessage());

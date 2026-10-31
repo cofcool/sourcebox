@@ -159,7 +159,7 @@ class SqlRepositoryTest extends BaseTest {
         @ID
         @Column(name = "id", type = JDBCType.CHAR, length = 5)
         String id,
-        @Column(name = "name", type = JDBCType.CHAR, length = 30)
+        @Column(name = "name", type = JDBCType.VARCHAR, length = 30)
         String name,
         @Column(name = "pwd", type = JDBCType.CHAR, length = 50)
         String pwd,

@@ -79,13 +79,15 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
         if (id.isEmpty()) {
             return insert(invokeAction(entity, false));
         } else {
-            return find(id.get()).compose(
-                n -> {
-                   return update(id.get(), n, invokeAction(entity, true));
+            return count(QueryBuilder.builder().from(tableInfo.name()).and(tableInfo.id().name()+"=?", id.get()).count()).compose(
+                n -> switch (n) {
+                    case 0 -> insert(invokeAction(entity, false));
+                    case 1 -> update(id.get(), invokeAction(entity, true));
+                    default -> Future.failedFuture("");
                 },
                 e -> {
                     log.debug(e.getMessage());
-                    return insert(invokeAction(entity, false));
+                   return Future.failedFuture(e);
                 }
             );
         }
@@ -109,7 +111,7 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
         return getPool().preparedQuery(sql);
     }
 
-    private Future<T> update(Object id, T old, T entity) {
+    private Future<T> update(Object id, T entity) {
         var columns = readProperties(entity);
         var args = new ArrayList<>(columns.values());
         args.add(id);
@@ -120,7 +122,13 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
                 + " WHERE " + tableInfo.id().name() + "=?"
             )
             .execute(Tuple.wrap(args.toArray()))
-            .compose(rows -> rows.rowCount() > 0 ? Future.succeededFuture(entity) : Future.failedFuture("No data update"));
+            .compose(rows -> {
+                if (rows.rowCount() > 0) {
+                    return find((String) id);
+                } else {
+                    return Future.failedFuture("No data update by id " + id);
+                }
+            });
     }
 
     private Future<T> insert(T entity) {

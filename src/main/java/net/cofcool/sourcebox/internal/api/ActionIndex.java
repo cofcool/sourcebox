@@ -6,11 +6,8 @@ import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import lombok.CustomLog;
-import net.cofcool.sourcebox.internal.api.entity.ActionRecord;
-import net.cofcool.sourcebox.internal.api.entity.ActionType;
+import net.cofcool.sourcebox.internal.api.entity.*;
 import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
-import net.cofcool.sourcebox.internal.api.entity.CheckList;
-import net.cofcool.sourcebox.internal.api.entity.Comment;
 import net.cofcool.sourcebox.util.JsonUtil;
 import net.cofcool.sourcebox.util.VertxUtils;
 import org.apache.commons.lang3.ObjectUtils;
@@ -34,9 +31,16 @@ public class ActionIndex {
         router.get("/example").respond(r -> actionService.example());
         router.get("/types").respond(this::findType);
 
+        router.get("/habit/:id").respond(r -> actionService.findHabitRecord(r.pathParam("id")));
+        router.post("/habit").respond(r -> actionService.saveHabit(r.body().asPojo(Habit.HabitRecord.class)));
+        router.delete("/habit/:actionId").respond(r -> actionService.deleteHabit(r.pathParam("actionId")));
+        router.post("/habit/:actionId").respond(r ->
+            actionService.saveHabitValue(r.pathParam("actionId"), r.body().asPojo(CheckList.class))
+        );
+
         router.get("/checklist/:actionId").respond(r -> actionService.findCheckList(r.pathParam("actionId")));
         router.post("/checklist/:actionId")
-            .respond(r -> actionService.saveCheckList(r.pathParam("actionId"), r.body().asPojo(CheckList.class)));
+            .respond(r -> actionService.saveCheckList(r.pathParam("actionId"), r.body().asPojo(CheckList.class), true));
         router.delete("/checklist/:id").respond(r -> actionService.deleteCheckList(r.pathParam("id")));
 
         router.get("/comment/:actionId").respond(r -> actionService.findComment(r.pathParam("actionId")));

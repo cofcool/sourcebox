@@ -33,6 +33,7 @@ public class ActionService {
     private final SqlRepository<Comment> commentSqlRepository;
     private final SqlRepository<ActionType> actionTypeSqlRepository;
     private final SqlRepository<CheckList>  checklistSqlRepository;
+    private final SqlRepository<Habit> habitSqlRepository;
     private final LuceneSearchService searchService;
 
     private final List<ActionInterceptor> saveInterceptors = List.of(new LinkInterceptor(), new RecordInterceptor(), new LinkLabelInterceptor());
@@ -44,6 +45,7 @@ public class ActionService {
         this.commentSqlRepository = RepositoryUtil.getRepository(Comment.class);
         this.actionTypeSqlRepository = RepositoryUtil.getRepository(ActionType.class);
         this.checklistSqlRepository = RepositoryUtil.getRepository(CheckList.class);
+        this.habitSqlRepository = RepositoryUtil.getRepository(Habit.class);
         this.noteService = noteService;
         this.searchService = LuceneSearchService.get(vertx);
     }
@@ -89,6 +91,106 @@ public class ActionService {
                 .compose(comments -> searchService.indexAction(a, comments))
                 .map(a);
         });
+    }
+
+    public Future<ActionRecord> saveHabit(Habit.HabitRecord habitRecord) {
+        var action = habitRecord.action();
+        var habit = habitRecord.habit();
+        if (action == null || habit == null) {
+            throw new IllegalArgumentException("action and habit are required");
+        }
+        if (!Objects.equals(action.type(), Type.habit.name())) {
+            throw new IllegalArgumentException("action type must be habit");
+        }
+        if (!Objects.equals(habit.category(), "check") && !Objects.equals(habit.category(), "value")) {
+            throw new IllegalArgumentException("habit category must be check or value");
+        }
+        if (habit.category().equals("value")) {
+            Habit.TargetType.valueOf(habit.targetType());
+        }
+
+        return saveAction(action).compose(savedAction ->
+            habitSqlRepository.find(Habit.builder().actionId(savedAction.id()).build())
+                .compose(existingHabits -> {
+                    Habit existing = existingHabits.stream().findFirst().orElse(null);
+                    Habit toSave = Habit.builder()
+                        .id(existing == null ? habit.id() : existing.id())
+                        .actionId(savedAction.id())
+                        .category(habit.category())
+                        .note(habit.note())
+                        .unit(habit.unit())
+                        .freqNum(habit.freqNum())
+                        .freqDen(habit.freqDen())
+                        .question(habit.question())
+                        .targetValue(habit.targetValue())
+                        .targetType(habit.targetType())
+                        .createTime(existing == null ? habit.createTime() : existing.createTime())
+                        .build();
+                    return habitSqlRepository.save(toSave).map(savedAction);
+                })
+        );
+    }
+
+    public Future<CheckList> saveHabitValue(String actionId, CheckList param) {
+        if (StringUtils.isBlank(actionId) || param == null || param.current() == null) {
+            return Future.failedFuture("actionId and habit value are required");
+        }
+        var value = param.current();
+        var operationTime = param.createTime() == null ? LocalDateTime.now() : param.createTime();
+        return findHabit(actionId)
+            .compose(habit -> {
+                if (Objects.equals(habit.category(), "check") && value != 0 && value != 1) {
+                    return Future.failedFuture("check habit value must be 0 or 1");
+                }
+                if (!Objects.equals(habit.category(), "check") && !Objects.equals(habit.category(), "value")) {
+                    return Future.failedFuture("unsupported habit category " + habit.category());
+                }
+                return findCheckList(actionId).compose(checklists -> {
+                    var sameDay = checklists.stream()
+                        .filter(checklist -> checklist.createTime() != null
+                            && checklist.createTime().toLocalDate().equals(operationTime.toLocalDate()))
+                        .toList();
+                    var sortedSameDay = sameDay.stream()
+                        .sorted(Comparator.comparing(CheckList::updateTime,
+                            Comparator.nullsFirst(Comparator.naturalOrder())).reversed())
+                        .toList();
+                    var existing = sortedSameDay.isEmpty() ? null : sortedSameDay.getFirst();
+                    var checklist = CheckList.builder()
+                        .id(existing == null ? null : existing.id())
+                        .content(habit.calcCheckListName(param.content()))
+                        .first(0)
+                        .last(0)
+                        .current(value)
+                        .createTime(existing == null ? operationTime : existing.createTime())
+                        .build();
+                    return saveCheckList(actionId, checklist, false).compose(saved -> {
+                        var duplicateDeletes = sameDay.stream()
+                            .filter(item -> !Objects.equals(item.id(), saved.id()))
+                            .map(item -> checklistSqlRepository.delete(item.id()))
+                            .toList();
+                        return Future.all(duplicateDeletes).map(saved);
+                    });
+                });
+            });
+    }
+
+    public Future<Habit> findHabit(String actionId) {
+        return habitSqlRepository.find(Habit.builder().actionId(actionId).build())
+            .flatMap(a -> {
+            if (a.isEmpty()) {
+                return Future.failedFuture("habit not found for action " + actionId);
+            } else {
+                return Future.succeededFuture(a.getFirst());
+            }
+        });
+    }
+
+    public Future<Habit.HabitRecord> findHabitRecord(String id) {
+        return actionRecordSqlRepository.find(id)
+            .compose(a ->
+                Future.all(findHabit(a.id()), findCheckList(a.id()))
+                    .compose(c -> Future.succeededFuture(new Habit.HabitRecord(a, c.resultAt(0), c.resultAt(1)))
+            ));
     }
 
     private void saveType(String a, Type label, String error) {
@@ -231,8 +333,26 @@ public class ActionService {
     public Future<Boolean> deleteActions(String id) {
         return delete(id, actionRecordSqlRepository::delete)
             .compose(a -> deleteCommentsByActionId(id))
-            .compose(a -> deleteCheckListByActionId(id))
-            .compose(a -> searchService.delete("action", id).map(true));
+            .andThen(a -> deleteCheckListByActionId(id))
+            .andThen(a -> deleteHabitsByActionId(id))
+            .andThen(a -> searchService.delete("action", id).map(true));
+    }
+
+    public Future<Boolean> deleteHabit(String actionId) {
+        return actionRecordSqlRepository.find(actionId)
+            .compose(action -> {
+                if (!Objects.equals(action.type(), Type.habit.name())) {
+                    return Future.failedFuture("action is not a habit: " + actionId);
+                }
+                return deleteActions(actionId);
+            });
+    }
+
+    private Future<Boolean> deleteHabitsByActionId(String actionId) {
+        return habitSqlRepository.find(Habit.builder().actionId(actionId).build())
+            .compose(habits -> Future.all(habits.stream()
+                .map(habit -> habitSqlRepository.delete(habit.id()))
+                .toList()).map(true));
     }
 
     public Future<Boolean> deleteComments(String id) {
@@ -310,7 +430,7 @@ public class ActionService {
                 .compose(comments -> searchService.indexAction(action, comments)));
     }
 
-    public Future<CheckList> saveCheckList(String actionId, CheckList pojo) {
+    public Future<CheckList> saveCheckList(String actionId, CheckList pojo, boolean saveComment) {
         return checklistSqlRepository.save(CheckList.builder()
             .id(StringUtils.isBlank(pojo.id()) ? System.currentTimeMillis() + "" : pojo.id())
             .actionId(actionId)
@@ -318,16 +438,20 @@ public class ActionService {
             .first(pojo.first())
             .last(pojo.last())
             .current(pojo.current())
-            .createTime(LocalDateTime.now()).updateTime(LocalDateTime.now())
+            .createTime(pojo.createTime())
             .build()
-        ).onSuccess( c ->
-            saveComment(
-                c.actionId(),
-                Comment.builder()
-                    .actionId(actionId)
-                    .content(String.format("当前进度为 %s - %d", c.content(), c.current()))
-                    .build()
-            )
+        ).onSuccess( c -> {
+                if (saveComment) {
+                    saveComment(
+                        c.actionId(),
+                        Comment.builder()
+                            .actionId(actionId)
+                            .content(String.format("当前进度为 %s - %d", c.content(), c.current()))
+                            .createTime(pojo.createTime())
+                            .build()
+                    );
+                }
+            }
         );
     }
 

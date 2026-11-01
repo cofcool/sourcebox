@@ -256,8 +256,131 @@ class ActionServiceTest extends BaseTest {
     @Test
     void saveCheckList(Vertx vertx, VertxTestContext testContext) {
         actionService
-            .saveCheckList(defaultRecord.id(), CheckList.builder().content("01").first(0).last(10).current(2).build())
+            .saveCheckList(defaultRecord.id(), CheckList.builder().content("01").first(0).last(10).current(2).build(), true)
             .onComplete(testContext.succeeding(r -> testContext.verify(testContext::completeNow)));
+    }
+
+    @Test
+    void saveHabitAndCheckValue(Vertx vertx, VertxTestContext testContext) {
+        ActionRecord action = ActionRecord.builder()
+            .name("check habit")
+            .type(Type.habit.name())
+            .state("doing")
+            .start(LocalDateTime.now())
+            .build();
+        Habit habit = Habit.builder()
+            .category("check")
+            .freqNum(1)
+            .freqDen(1)
+            .question("Did you exercise?")
+            .build();
+
+        actionService.saveHabit(new Habit.HabitRecord(action, habit))
+            .compose(saved -> actionService.findHabit(saved.id())
+            )
+            .compose(saved -> actionService.saveHabitValue(
+                saved.actionId(),
+                CheckList.builder().current(1).build()
+            ))
+            .onComplete(testContext.succeeding(savedValue -> testContext.verify(() -> {
+                Assertions.assertEquals(1, savedValue.current());
+                testContext.completeNow();
+            })));
+    }
+
+    @Test
+    void saveHabitValueRejectsNonBooleanCheckValue(Vertx vertx, VertxTestContext testContext) {
+        ActionRecord action = ActionRecord.builder()
+            .name("invalid check habit")
+            .type(Type.habit.name())
+            .state("doing")
+            .start(LocalDateTime.now())
+            .build();
+        Habit habit = Habit.builder().category("check").build();
+
+        actionService.saveHabit(new Habit.HabitRecord(action, habit))
+            .compose(saved -> actionService.saveHabitValue(
+                saved.id(),
+                CheckList.builder().content("desc").current(21).build()
+            ))
+            .onComplete(testContext.failing(error -> testContext.verify(() -> {
+                Assertions.assertTrue(error.getMessage().contains("must be 0 or 1"));
+                testContext.completeNow();
+            })));
+    }
+
+    @Test
+    void saveHabitValuePreservesValueCategoryNumber(Vertx vertx, VertxTestContext testContext) {
+        ActionRecord action = ActionRecord.builder()
+            .name("value habit")
+            .type(Type.habit.name())
+            .state("doing")
+            .start(LocalDateTime.now())
+            .build();
+        Habit habit = Habit.builder().category("value")
+            .targetType(Habit.TargetType.AtLeast.name()).unit("minutes").build();
+
+        actionService.saveHabit(new Habit.HabitRecord(action, habit))
+            .compose(saved -> actionService.saveHabitValue(
+                saved.id(),
+                CheckList.builder().current(42).build()
+            ))
+            .onComplete(testContext.succeeding(savedValue -> testContext.verify(() -> {
+                Assertions.assertEquals(42, savedValue.current());
+                testContext.completeNow();
+            })));
+    }
+
+    @Test
+    void saveHabitValueUpdatesTheSameDayRecord(Vertx vertx, VertxTestContext testContext) {
+        ActionRecord action = ActionRecord.builder()
+            .name("daily habit")
+            .type(Type.habit.name())
+            .state("doing")
+            .start(LocalDateTime.now())
+            .build();
+        Habit habit = Habit.builder()
+            .category("value")
+            .targetType(Habit.TargetType.AtLeast.name())
+            .build();
+        LocalDateTime operationTime = LocalDateTime.now().withHour(9).withMinute(0).withSecond(0).withNano(0);
+
+        actionService.saveHabit(new Habit.HabitRecord(action, habit))
+            .compose(saved -> actionService.saveHabitValue(saved.id(), CheckList.builder()
+                .current(10).createTime(operationTime).build()))
+            .compose(first -> actionService.saveHabitValue(first.actionId(), CheckList.builder()
+                .current(20).createTime(operationTime.plusHours(4)).build()))
+            .compose(updated -> actionService.findCheckList(updated.actionId())
+                .map(checklists -> new java.util.AbstractMap.SimpleEntry<>(updated, checklists)))
+            .onComplete(testContext.succeeding(result -> testContext.verify(() -> {
+                Assertions.assertEquals(20, result.getKey().current());
+                Assertions.assertEquals(1, result.getValue().size());
+                Assertions.assertEquals(20, result.getValue().getFirst().current());
+                Assertions.assertEquals(result.getValue().getFirst().id(), result.getKey().id());
+                testContext.completeNow();
+            })));
+    }
+
+    @Test
+    void deleteHabitRemovesActionAndHabit(Vertx vertx, VertxTestContext testContext) {
+        ActionRecord action = ActionRecord.builder()
+            .name("deletable habit")
+            .type(Type.habit.name())
+            .state("doing")
+            .start(LocalDateTime.now())
+            .build();
+
+        actionService.saveHabit(new Habit.HabitRecord(action, Habit.builder().category("check").build()))
+            .compose(saved -> actionService.saveHabitValue(saved.id(), CheckList.builder().current(1).build()))
+            .compose(savedValue -> actionService.deleteHabit(action.id()))
+            .compose(deleted -> actionService.findCheckList(action.id()).compose(checklists -> {
+                Assertions.assertTrue(checklists.isEmpty());
+                return actionService.findHabitRecord(action.id());
+            }))
+            .onComplete(testContext.failing(error -> testContext.verify(() -> {
+                Assertions.assertNotNull(error);
+                testContext.completeNow();
+            })));
     }
 
     @Test

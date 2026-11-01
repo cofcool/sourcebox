@@ -2,6 +2,8 @@ package net.cofcool.sourcebox.internal.api.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Builder;
+import lombok.With;
+import net.cofcool.sourcebox.util.EntityAction;
 import net.cofcool.sourcebox.util.TableInfoHelper.Column;
 import net.cofcool.sourcebox.util.TableInfoHelper.Entity;
 import net.cofcool.sourcebox.util.TableInfoHelper.ID;
@@ -12,6 +14,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@With
 @Builder
 @Entity(name = "check_list")
 public record CheckList(
@@ -34,11 +37,13 @@ public record CheckList(
     @Column(name = "update_time", type = JDBCType.TIMESTAMP)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     LocalDateTime updateTime
-) {
+) implements EntityAction<CheckList> {
 
     public CheckList(String actionId) {
         this(null, actionId, null, null, null, null, null, null);
     }
+
+
 
     public static String toPrintStr(List<CheckList> objects) {
         if (objects == null) {
@@ -53,5 +58,16 @@ public record CheckList(
             )
             .map(s -> s +"\n" + "-".repeat(s.length()))
             .collect(Collectors.joining("\n"));
+    }
+
+    @Override
+    public CheckList beforeUpdate() {
+        return this.withUpdateTime(LocalDateTime.now());
+    }
+
+    @Override
+    public CheckList beforeInsert() {
+        return this.withCreateTime(createTime == null ? LocalDateTime.now() : createTime)
+            .withUpdateTime(LocalDateTime.now());
     }
 }

@@ -273,14 +273,10 @@ class ActionExportDatabase(context: Context) :
         val habit = exported.habit ?: throw IOException("本地找不到习惯定义：$actionId")
         val createTime = currentDateTime()
         val today = createTime.take(10)
-        val existingToday = exported.checklists
-            .filter { it.createTime?.take(10) == today }
-            .maxByOrNull { it.updateTime.orEmpty() }
-        val localId = existingToday?.id
-            ?.takeIf(String::isNotBlank)
-            ?: java.util.UUID.randomUUID().toString().replace("-", "")
+        val existingToday = exported.checklists.firstOrNull { it.createTime?.take(10) == today }
+        val localId = "$actionId:$today".md5()
         val request = ActionCheckList(
-            id = existingToday?.id.orEmpty(),
+            id = localId,
             actionId = actionId,
             content = "",
             first = 0,

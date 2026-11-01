@@ -44,7 +44,6 @@ import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.ErrorOutline
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -98,8 +97,8 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
@@ -1370,9 +1369,6 @@ private fun HabitDetailsScreen(
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold
         )
-        if (todayEntry != null) {
-            Text("今天已有记录；再次保存会更新今天的值。", style = MaterialTheme.typography.bodySmall)
-        }
         if (definition?.category == "value") {
             OutlinedTextField(
                 value = value,
@@ -1979,7 +1975,8 @@ private fun CopyableLinkText(
             text = annotatedText,
             modifier = modifier,
             style = style,
-            fontWeight = fontWeight
+            fontWeight = fontWeight,
+            maxLines = 2
         )
     }
 }

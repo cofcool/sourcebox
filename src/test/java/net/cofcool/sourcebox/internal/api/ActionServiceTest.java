@@ -9,6 +9,7 @@ import net.cofcool.sourcebox.internal.api.entity.*;
 import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
 import net.cofcool.sourcebox.logging.LoggerFactory;
 import net.cofcool.sourcebox.util.SqlRepository;
+import net.cofcool.sourcebox.util.Utils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;
@@ -357,6 +358,10 @@ class ActionServiceTest extends BaseTest {
                 Assertions.assertEquals(1, result.getValue().size());
                 Assertions.assertEquals(20, result.getValue().getFirst().current());
                 Assertions.assertEquals(result.getValue().getFirst().id(), result.getKey().id());
+                Assertions.assertEquals(
+                    Utils.md5(result.getKey().actionId() + ":" + operationTime.toLocalDate()),
+                    result.getKey().id()
+                );
                 testContext.completeNow();
             })));
     }

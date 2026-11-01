@@ -145,32 +145,16 @@ public class ActionService {
                 if (!Objects.equals(habit.category(), "check") && !Objects.equals(habit.category(), "value")) {
                     return Future.failedFuture("unsupported habit category " + habit.category());
                 }
-                return findCheckList(actionId).compose(checklists -> {
-                    var sameDay = checklists.stream()
-                        .filter(checklist -> checklist.createTime() != null
-                            && checklist.createTime().toLocalDate().equals(operationTime.toLocalDate()))
-                        .toList();
-                    var sortedSameDay = sameDay.stream()
-                        .sorted(Comparator.comparing(CheckList::updateTime,
-                            Comparator.nullsFirst(Comparator.naturalOrder())).reversed())
-                        .toList();
-                    var existing = sortedSameDay.isEmpty() ? null : sortedSameDay.getFirst();
-                    var checklist = CheckList.builder()
-                        .id(existing == null ? null : existing.id())
-                        .content(habit.calcCheckListName(param.content()))
-                        .first(0)
-                        .last(0)
-                        .current(value)
-                        .createTime(existing == null ? operationTime : existing.createTime())
-                        .build();
-                    return saveCheckList(actionId, checklist, false).compose(saved -> {
-                        var duplicateDeletes = sameDay.stream()
-                            .filter(item -> !Objects.equals(item.id(), saved.id()))
-                            .map(item -> checklistSqlRepository.delete(item.id()))
-                            .toList();
-                        return Future.all(duplicateDeletes).map(saved);
-                    });
-                });
+
+                var checklistId = StringUtils.isNotEmpty(param.id()) ? param.id() : Utils.md5(actionId + ":" + operationTime.toLocalDate());
+                var checklist = CheckList.builder()
+                    .id(checklistId)
+                    .content(habit.calcCheckListName(param.content()))
+                    .first(0)
+                    .last(0)
+                    .current(value)
+                    .build();
+                return saveCheckList(actionId, checklist, false);
             });
     }
 

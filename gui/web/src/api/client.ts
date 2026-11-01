@@ -87,6 +87,25 @@ export interface ActionRecordDetail {
   other?: unknown;
 }
 
+export interface HabitDefinition {
+  id?: string;
+  actionId?: string;
+  category: "check" | "value";
+  note?: string | null;
+  unit?: string | null;
+  freqNum?: number | null;
+  freqDen?: number | null;
+  question?: string | null;
+  targetValue?: number | null;
+  targetType?: "AtLeast" | "AtMost" | null;
+}
+
+export interface HabitRecord {
+  action: ActionRecord;
+  habit: HabitDefinition;
+  checkLists: ActionCheckList[];
+}
+
 export interface ActionType {
   id: string;
   name: string;
@@ -206,6 +225,37 @@ export const api = {
   },
   todoDelete: async (id: string): Promise<void> => {
     await request<void>(`/action/${id}`, {
+      method: "DELETE",
+    });
+  },
+  habitList: async (query = ""): Promise<ActionRecord[]> => {
+    if (query.trim()) {
+      const results = await search<ActionRecord>(query, "action");
+      return results
+        .map((result) => result.data)
+        .filter((record) => record.type === "habit");
+    }
+
+    const params = new URLSearchParams({ type: "habit" });
+    return request<ActionRecord[]>(`/action?${params.toString()}`);
+  },
+  habitSave: async (habitRecord: HabitRecord): Promise<ActionRecord> => {
+    return request<ActionRecord>("/action/habit", {
+      method: "POST",
+      body: JSON.stringify(habitRecord),
+    });
+  },
+  habitRecord: async (id: string): Promise<HabitRecord> => {
+    return request<HabitRecord>(`/action/habit/${encodeURIComponent(id)}`);
+  },
+  habitValueSave: async (actionId: string, checklist: Partial<ActionCheckList>): Promise<ActionCheckList> => {
+    return request<ActionCheckList>(`/action/habit/${encodeURIComponent(actionId)}`, {
+      method: "POST",
+      body: JSON.stringify(checklist),
+    });
+  },
+  habitDelete: async (actionId: string): Promise<void> => {
+    await request<void>(`/action/habit/${encodeURIComponent(actionId)}`, {
       method: "DELETE",
     });
   },

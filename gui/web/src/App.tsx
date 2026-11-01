@@ -4,8 +4,10 @@ import {
   Activity,
   Check,
   Clipboard,
+  Flame,
   FileText,
   Home as HomeIcon,
+  Heart,
   ListTodo,
   Menu,
   MessageCircle,
@@ -19,7 +21,7 @@ import {
   Wrench,
   X,
 } from "lucide-react";
-import type {ActionCheckList, ActionComment, ActionRecord, SystemInfo, TimerStatistics, ToolInfo} from "./api/client";
+import type {ActionCheckList, ActionComment, ActionRecord, HabitRecord, SystemInfo, TimerStatistics, ToolInfo} from "./api/client";
 import {api, getBackendUrl} from "./api/client";
 import {invoke, isTauri} from "@tauri-apps/api/core";
 
@@ -143,6 +145,8 @@ function ToolPage({ tool }: { tool?: ToolInfo }) {
       return <NotePanel />;
     case "todo":
       return <TodoPage />;
+    case "habits":
+      return <HabitPage />;
     case "hisRecord":
       return <RecordBoard />;
     case "cHelper":
@@ -869,6 +873,333 @@ function formatDuration(totalSeconds: number) {
   return [hours && `${hours}小时`, minutes && `${minutes}分钟`, seconds && `${seconds}秒`].filter(Boolean).join(" ") || "0秒";
 }
 
+function HabitPage() {
+  const [habits, setHabits] = useState<ActionRecord[]>([]);
+  const [search, setSearch] = useState("");
+  const [name, setName] = useState("");
+  const [category, setCategory] = useState<"check" | "value">("check");
+  const [note, setNote] = useState("");
+  const [unit, setUnit] = useState("");
+  const [freqNum, setFreqNum] = useState("1");
+  const [freqDen, setFreqDen] = useState("1");
+  const [question, setQuestion] = useState("");
+  const [targetValue, setTargetValue] = useState("");
+  const [targetType, setTargetType] = useState<"AtLeast" | "AtMost">("AtLeast");
+  const [selected, setSelected] = useState<HabitRecord>();
+  const [valueInput, setValueInput] = useState("");
+  const [error, setError] = useState<string>();
+  const [loading, setLoading] = useState(false);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  async function loadHabits(query = search) {
+    setLoading(true);
+    try {
+      setHabits(await api.habitList(query));
+      setError(undefined);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadHabits(search);
+  }, [search]);
+
+  async function createHabit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const frequencyNumerator = Number(freqNum);
+    const frequencyDenominator = Number(freqDen);
+    const target = Number(targetValue);
+    if (!name.trim()) return;
+    if (!Number.isInteger(frequencyNumerator) || frequencyNumerator < 1
+      || !Number.isInteger(frequencyDenominator) || frequencyDenominator < 1) {
+      setError("频率必须是正整数");
+      return;
+    }
+    if (category === "value" && (!Number.isInteger(target) || !targetValue.trim())) {
+      setError("数值习惯的目标值必须是整数");
+      return;
+    }
+
+    setSaving(true);
+    setError(undefined);
+    try {
+      await api.habitSave({
+        action: {
+          id: "",
+          name: name.trim(),
+          type: "habit",
+          category,
+          state: "doing",
+          remark: note.trim() || null,
+          start: formatRecordDateTime(new Date()),
+        },
+        habit: {
+          category,
+          note: note.trim() || null,
+          unit: category === "value" ? unit.trim() || null : null,
+          freqNum: frequencyNumerator,
+          freqDen: frequencyDenominator,
+          question: category === "check" ? question.trim() || null : null,
+          targetValue: category === "value" ? target : null,
+          targetType: category === "value" ? targetType : null,
+        },
+        checkLists: [],
+      });
+      setName("");
+      setNote("");
+      setUnit("");
+      setQuestion("");
+      setTargetValue("");
+      await loadHabits();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function openHabit(habit: ActionRecord) {
+    setSelected(undefined);
+    setLoadingDetail(true);
+    setValueInput("");
+    setError(undefined);
+    try {
+      setSelected(await api.habitRecord(habit.id));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoadingDetail(false);
+    }
+  }
+
+  async function saveHabitValue(value: number) {
+    if (!selected) return;
+    setSaving(true);
+    setError(undefined);
+    try {
+      const operationDate = formatRecordDateTime(new Date());
+      const saved = await api.habitValueSave(selected.action.id, {
+        content: "",
+        first: 0,
+        last: 0,
+        current: value,
+        createTime: operationDate,
+      });
+      setSelected((current) => current
+        ? {
+          ...current,
+          checkLists: [
+            ...(current.checkLists ?? []).filter((entry) => entry.createTime?.slice(0, 10) !== operationDate.slice(0, 10)),
+            saved,
+          ],
+        }
+        : current);
+      setValueInput("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function deleteHabit() {
+    if (!selected || !window.confirm(`确定删除习惯“${selected.action.name}”及其所有记录吗？`)) return;
+    setSaving(true);
+    setError(undefined);
+    try {
+      await api.habitDelete(selected.action.id);
+      setSelected(undefined);
+      await loadHabits();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const today = formatRecordDateTime(new Date()).slice(0, 10);
+  const todayEntry = selected?.checkLists?.find((entry) => entry.createTime?.slice(0, 10) === today);
+  const latestEntry = selected?.checkLists?.reduce<ActionCheckList | undefined>((latest, entry) =>
+    !latest || (entry.createTime ?? "") > (latest.createTime ?? "") ? entry : latest,
+  undefined);
+  const latestValue = latestEntry?.current;
+
+  return (
+    <div className="habit-page">
+      <div className="page-heading">
+        <div>
+          <h1><Flame size={25} /> 习惯</h1>
+          <p className="muted">养成稳定的小习惯，持续记录每一次行动。</p>
+        </div>
+        <div className="todo-count">{habits.length} 个习惯</div>
+      </div>
+
+      {error && <div className="error">{error}</div>}
+
+      <form className="panel habit-composer" onSubmit={(event) => void createHabit(event)}>
+        <h2><Plus size={18} />新增习惯</h2>
+        <label>习惯名称
+          <input value={name} onChange={(event) => setName(event.target.value)} placeholder="例如：阅读、喝水" required />
+        </label>
+        <div className="habit-form-grid">
+          <label>习惯类别
+            <select value={category} onChange={(event) => setCategory(event.target.value as "check" | "value")}>
+              <option value="check">完成打卡</option>
+              <option value="value">记录数值</option>
+            </select>
+          </label>
+          <label>频率（次数）
+            <input type="number" min="1" step="1" value={freqNum} onChange={(event) => setFreqNum(event.target.value)} required />
+          </label>
+          <label>每多少天
+            <input type="number" min="1" step="1" value={freqDen} onChange={(event) => setFreqDen(event.target.value)} required />
+          </label>
+        </div>
+        {category === "check" ? (
+          <label>打卡问题（可选）
+            <input value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="今天完成了吗？" />
+          </label>
+        ) : (
+          <div className="habit-form-grid">
+            <label>单位
+              <input value={unit} onChange={(event) => setUnit(event.target.value)} placeholder="例如：分钟、杯" />
+            </label>
+            <label>目标值
+              <input type="number" step="1" value={targetValue} onChange={(event) => setTargetValue(event.target.value)} required />
+            </label>
+            <label>目标类型
+              <select value={targetType} onChange={(event) => setTargetType(event.target.value as "AtLeast" | "AtMost")}>
+                <option value="AtLeast">至少达到</option>
+                <option value="AtMost">最多不超过</option>
+              </select>
+            </label>
+          </div>
+        )}
+        <label>备注（可选）
+          <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={2} placeholder="记录习惯的说明" />
+        </label>
+        <div className="action-row compact">
+          <button type="submit" disabled={saving || !name.trim()}><Plus size={16} />创建习惯</button>
+        </div>
+      </form>
+
+      <div className="todo-toolbar">
+        <div className="search-field">
+          <Search size={17} />
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="搜索习惯" aria-label="搜索习惯" />
+        </div>
+      </div>
+
+      <section className="habit-grid" aria-live="polite">
+        {habits.length === 0 ? (
+          <div className="empty-todos">
+            <Heart size={30} />
+            <strong>{loading ? "加载中..." : search ? "没有找到匹配的习惯" : "还没有习惯"}</strong>
+            <span>{search ? "试试其他关键词" : "在上方创建第一个习惯"}</span>
+          </div>
+        ) : habits.map((habit) => (
+          <button className="habit-card" key={habit.id} onClick={() => void openHabit(habit)} disabled={loadingDetail}>
+            <span className="habit-card-icon"><Heart size={18} /></span>
+            <strong>{habit.name}</strong>
+            {habit.remark && <span className="habit-card-note">{habit.remark}</span>}
+            <span className="habit-card-meta">
+              <span>{habit.category === "value" ? "数值习惯" : "打卡习惯"}</span>
+              <span>{habit.start ? habit.start.slice(0, 10) : "持续进行"}</span>
+            </span>
+          </button>
+        ))}
+      </section>
+
+      {loadingDetail && <div className="record-detail-loading" role="status">正在加载习惯详情...</div>}
+
+      {selected && (
+        <div className="record-modal-backdrop" role="presentation" onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setSelected(undefined);
+        }}>
+          <section className="habit-detail-modal" role="dialog" aria-modal="true" aria-labelledby="habit-detail-title">
+            <header className="record-modal-header">
+              <div>
+                <h2 id="habit-detail-title">{selected.action.name}</h2>
+                <span className="muted">{selected.habit.category === "value" ? "数值习惯" : "打卡习惯"}</span>
+              </div>
+              <div className="habit-detail-header-actions">
+                <button className="danger small" type="button" onClick={() => void deleteHabit()} disabled={saving}>
+                  <Trash2 size={15} />删除习惯
+                </button>
+                <button className="icon-button" type="button" aria-label="关闭详情" onClick={() => setSelected(undefined)}><X size={20} /></button>
+              </div>
+            </header>
+            <div className="habit-detail-content">
+              <div className="habit-detail-summary">
+                <div><span>频率</span><strong>{selected.habit.freqNum ?? 1} / {selected.habit.freqDen ?? 1} 天</strong></div>
+                {selected.habit.note && <p>{selected.habit.note}</p>}
+                {selected.habit.category === "value" && (
+                  <div><span>目标</span><strong>{selected.habit.targetType === "AtMost" ? "最多" : "至少"} {selected.habit.targetValue} {selected.habit.unit ?? ""}</strong></div>
+                )}
+                {selected.habit.question && <div><span>打卡问题</span><strong>{selected.habit.question}</strong></div>}
+                {latestValue !== undefined && (
+                  <div><span>最近记录</span><strong>{selected.habit.category === "check" ? (latestValue === 1 ? "已完成" : "未完成") : `${latestValue} ${selected.habit.unit ?? ""}`}</strong></div>
+                )}
+              </div>
+
+              <section className="habit-value-entry">
+                <h3><Check size={17} />{todayEntry ? "更新今日记录" : "记录今日习惯"}</h3>
+                {todayEntry && <p className="muted">今天已有记录；再次保存会更新今天的值，不会新增一条。</p>}
+                {selected.habit.category === "check" ? (
+                  <div className="habit-check-actions">
+                    <button type="button" disabled={saving} onClick={() => void saveHabitValue(1)}>已完成</button>
+                    <button type="button" className="secondary" disabled={saving} onClick={() => void saveHabitValue(0)}>未完成</button>
+                  </div>
+                ) : (
+                  <form className="habit-value-form" onSubmit={(event) => {
+                    event.preventDefault();
+                    const value = Number(valueInput);
+                    if (!valueInput.trim() || !Number.isInteger(value)) {
+                      setError("请输入有效的整数");
+                      return;
+                    }
+                    void saveHabitValue(value);
+                  }}>
+                    <label>
+                      数值{selected.habit.unit ? `（${selected.habit.unit}）` : ""}
+                      <input type="number" step="1" value={valueInput} onChange={(event) => setValueInput(event.target.value)} required />
+                    </label>
+                    <button type="submit" disabled={saving || !valueInput.trim()}>保存记录</button>
+                  </form>
+                )}
+              </section>
+
+              <section className="habit-history">
+                <h3>记录历史</h3>
+                {!selected.checkLists?.length ? (
+                  <div className="record-reply-empty">还没有记录</div>
+                ) : (
+                  <div className="habit-history-list">
+                    {[...selected.checkLists].reverse().map((entry) => (
+                      <div className="habit-history-item" key={entry.id}>
+                        <span>{entry.createTime?.slice(0, 10) ?? "记录"}</span>
+                        <strong>
+                          {selected.habit.category === "check"
+                            ? (entry.current === 1 ? "已完成" : "未完成")
+                            : `${entry.current} ${selected.habit.unit ?? ""}`}
+                        </strong>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
+          </section>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TodoPage() {
   const [input, setInput] = useState("");
   const [remark, setRemark] = useState("");
@@ -1589,7 +1920,6 @@ export default function App() {
         {error && <div className="error">Java Backend 连接失败：{error}</div>}
         <Routes>
           <Route path="/" element={<Home system={system} tools={tools} />} />
-          <Route path="/todo" element={<TodoPage />} />
           <Route path="/tools/:id" element={<ToolRoute tools={tools} path={location.pathname} />} />
           <Route path="/settings" element={<SettingsPage system={system} />} />
         </Routes>

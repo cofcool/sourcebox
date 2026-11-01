@@ -12,6 +12,7 @@ import android.net.Network
 import android.net.Uri
 import android.os.Build
 import android.os.SystemClock
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -35,6 +36,9 @@ import net.cofcool.sourcebox.data.ActionExportDatabase
 import net.cofcool.sourcebox.data.ActionRecord
 import net.cofcool.sourcebox.data.ActionTypeResponse
 import net.cofcool.sourcebox.data.CommandRecord
+import net.cofcool.sourcebox.data.HabitDefinition
+import net.cofcool.sourcebox.data.HabitRecord
+import net.cofcool.sourcebox.data.HabitValueChange
 import net.cofcool.sourcebox.data.NoteRecord
 import net.cofcool.sourcebox.data.ServerResponseException
 import net.cofcool.sourcebox.data.SourceboxApi
@@ -119,6 +123,12 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         private set
     var records by mutableStateOf<List<ActionRecord>>(emptyList())
         private set
+    var habits by mutableStateOf<List<ActionRecord>>(emptyList())
+        private set
+    var habitHasNextPage by mutableStateOf(false)
+        private set
+    var habitRecordDetails by mutableStateOf<HabitRecord?>(null)
+        private set
     var recordCandidates by mutableStateOf<List<ActionRecord>>(emptyList())
         private set
     private var recordCandidateQuery = ""
@@ -173,6 +183,39 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
     fun refreshTools() = perform {
         tools = api.tools()
         message = "已连接，加载 ${tools.size} 个工具"
+    }
+
+    fun clearLocalDatabase() = perform {
+        syncMutex.withLock {
+            withContext(Dispatchers.IO) { actionDatabase.clearLocalData() }
+        }
+        notes = emptyList()
+        todos = emptyList()
+        commands = emptyList()
+        records = emptyList()
+        habits = emptyList()
+        habitHasNextPage = false
+        habitRecordDetails = null
+        recordCandidates = emptyList()
+        recordCandidateQuery = ""
+        recordCategories = emptyList()
+        recordLabels = emptyList()
+        recordComments = emptyList()
+        recordChecklists = emptyList()
+        recordHasNextPage = false
+        savedRecord = null
+        timerRecords = emptyList()
+        localActionCount = 0
+        localNoteCount = 0
+        lastActionSync = null
+        lastNoteSync = null
+        lastTypeSync = null
+        pendingChangeCount = 0
+        message = "本地数据库和离线待同步修改已清除"
+    }
+
+    fun showMessage(text: String) {
+        message = text
     }
 
     fun uploadLanShareFiles(receiverUrl: String, token: String, files: List<Uri>) = perform {
@@ -330,6 +373,7 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
                 val start = end.minusSeconds(durationSeconds)
                 val endText = end.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
                 val startText = start.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                val createdAt = currentRecordDateTime()
                 val phase = if (isWorkPhase) "workTime" else "breakTime"
                 val action = ActionRecord(
                     id = UUID.randomUUID().toString().replace("-", ""),
@@ -339,6 +383,7 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
                     start = startText,
                     end = endText,
                     duration = durationSeconds.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
+                    createTime = createdAt,
                     remark = when {
                         result == "reset" -> "reset"
                         isWorkPhase -> "finish"
@@ -407,7 +452,20 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
             syncMutex.withLock {
                 uploadPendingChanges()
                 val exported = coroutineScope {
-                    val actions = async { api.exportAllActions() }
+                    val actions = async {
+                        api.exportAllActions().map { exportedAction ->
+                            if (exportedAction.record.type != "habit") {
+                                exportedAction
+                            } else {
+                                val habit = api.findHabitRecord(exportedAction.record.id)
+                                exportedAction.copy(
+                                    record = habit.action,
+                                    checklists = habit.checkLists,
+                                    habit = habit.habit
+                                )
+                            }
+                        }
+                    }
                     val notes = async { api.exportAllNotes() }
                     val types = async { api.actionTypes() }
                     ExportData(actions.await(), notes.await(), types.await())
@@ -457,6 +515,7 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         try {
             server() to false
         } catch (error: Exception) {
+            Log.d("API", "call server error: $error")
             if (error !is IOException && (error !is ServerResponseException || !error.isRetryable)) {
                 throw error
             }
@@ -524,9 +583,29 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
                         ?: ActionExport(saved)
                     canonicalPayload = json.encodeToString(local.copy(record = saved))
                 }
+                "action" to "habit_save" -> {
+                    val habit = json.decodeFromString<HabitRecord>(change.payload)
+                    val saved = api.saveHabit(habit)
+                    val local = withContext(Dispatchers.IO) { actionDatabase.actionDetails(change.entityId) }
+                        ?: ActionExport(saved)
+                    canonicalPayload = json.encodeToString(
+                        local.copy(
+                            record = saved,
+                            habit = habit.habit.copy(actionId = saved.id)
+                        )
+                    )
+                }
+                "action" to "habit_value" -> {
+                    val value = json.decodeFromString<HabitValueChange>(change.payload)
+                    val saved = api.saveHabitValue(change.entityId, value.checklist)
+                    withContext(Dispatchers.IO) {
+                        actionDatabase.replaceHabitValue(change.entityId, value.checklistId, saved)
+                    }
+                }
+                "action" to "habit_delete" -> api.deleteHabit(change.entityId)
                 "action" to "comment" -> {
                     val comment = json.decodeFromString<ActionComment>(change.payload)
-                    api.addRecordComment(change.entityId, comment.content)
+                    api.addRecordComment(change.entityId, comment)
                 }
                 "action" to "checklist_save" -> {
                     val checklist = json.decodeFromString<ActionCheckList>(change.payload)
@@ -616,18 +695,20 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
 
     fun addTodo(name: String, remark: String) = perform {
         require(name.isNotBlank()) { "待办名称不能为空" }
+        val now = currentRecordDateTime()
         val pendingAction = ActionRecord(
             id = UUID.randomUUID().toString().replace("-", ""),
             name = name.trim(),
             remark = remark.trim(),
             state = "todo",
             type = "todo",
-            start = currentRecordDateTime(),
-            end = currentRecordDateTime()
+            start = now,
+            end = now,
+            createTime = now
         )
         val (saved, isDirty) = writeWithOfflineFallback(
             server = {
-                api.addTodo(pendingAction.name, pendingAction.remark.orEmpty(), pendingAction.id)
+                api.addTodo(pendingAction)
                 withContext(Dispatchers.IO) { actionDatabase.saveAction(pendingAction) }
                 pendingAction
             },
@@ -708,6 +789,171 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         recordHasNextPage = result.size > 10
     }
 
+    fun refreshHabits(query: String = "", page: Int = 1) = perform {
+        require(page > 0) { "页码必须大于 0" }
+        val localQuery = if (query.isBlank()) "" else "name=${query.trim()}"
+        val result = withContext(Dispatchers.IO) {
+            actionDatabase.actions("habit", localQuery, page, 11)
+        }
+        habits = result.take(10)
+        habitHasNextPage = result.size > 10
+    }
+
+    fun createHabit(
+        name: String,
+        category: String,
+        note: String,
+        freqNum: Int,
+        freqDen: Int,
+        unit: String,
+        question: String,
+        targetValue: Int?,
+        targetType: String?,
+        onCreated: () -> Unit = {}
+    ) = perform(
+        onSuccess = { (_, isDirty) ->
+            val result = withContext(Dispatchers.IO) {
+                actionDatabase.actions("habit", "", 1, 11)
+            }
+            habits = result.take(10)
+            habitHasNextPage = result.size > 10
+            localActionCount = withContext(Dispatchers.IO) { actionDatabase.actionCount() }
+            message = if (isDirty) "习惯已保存到本地，等待联网同步" else "习惯已创建"
+            onCreated()
+        }
+    ) {
+        require(name.isNotBlank()) { "习惯名称不能为空" }
+        require(category == "check" || category == "value") { "习惯类别无效" }
+        require(freqNum > 0 && freqDen > 0) { "习惯频率必须是正整数" }
+        if (category == "value") {
+            require(targetValue != null) { "数值习惯必须设置目标值" }
+            require(targetType == "AtLeast" || targetType == "AtMost") { "目标类型无效" }
+        }
+        val now = currentRecordDateTime()
+        val action = ActionRecord(
+            id = UUID.randomUUID().toString().replace("-", ""),
+            name = name.trim(),
+            type = "habit",
+            state = "doing",
+            category = category,
+            remark = note.trim().ifBlank { null },
+            start = now,
+            createTime = now
+        )
+        val definition = HabitDefinition(
+            category = category,
+            note = note.trim().ifBlank { null },
+            unit = if (category == "value") unit.trim().ifBlank { null } else null,
+            freqNum = freqNum,
+            freqDen = freqDen,
+            question = if (category == "check") question.trim().ifBlank { null } else null,
+            targetValue = if (category == "value") targetValue else null,
+            targetType = if (category == "value") targetType else null,
+            createTime = now
+        )
+        val habitRecord = HabitRecord(action, definition)
+        writeWithOfflineFallback(
+            server = {
+                val saved = api.saveHabit(habitRecord)
+                val savedHabit = habitRecord.copy(action = saved, habit = definition.copy(actionId = saved.id))
+                withContext(Dispatchers.IO) { actionDatabase.saveHabitRecord(savedHabit) }
+                saved
+            },
+            offline = {
+                withContext(Dispatchers.IO) { actionDatabase.markHabitDirty(habitRecord) }
+                action
+            }
+        )
+    }
+
+    fun loadHabitDetails(action: ActionRecord) = perform {
+        habitRecordDetails = null
+        val local = withContext(Dispatchers.IO) { actionDatabase.actionDetails(action.id) }
+        habitRecordDetails = if (local?.habit != null) {
+            HabitRecord(local.record, local.habit, local.checklists)
+        } else {
+            api.findHabitRecord(action.id).also { details ->
+                withContext(Dispatchers.IO) { actionDatabase.saveHabitRecord(details) }
+            }
+        }
+    }
+
+    fun saveHabitDetails(habit: HabitRecord) = perform(
+        onSuccess = { (saved, isDirty, prepared) ->
+            habitRecordDetails = prepared.copy(action = saved)
+            habits = habits.map { if (it.id == saved.id) saved else it }
+            message = if (isDirty) "习惯修改已保存到本地，等待联网同步" else "习惯修改已保存"
+        }
+    ) {
+        require(habit.action.name.isNotBlank()) { "习惯名称不能为空" }
+        require(habit.habit.category == "check" || habit.habit.category == "value") { "习惯类别无效" }
+        require((habit.habit.freqNum ?: 0) > 0 && (habit.habit.freqDen ?: 0) > 0) { "习惯频率必须是正整数" }
+        if (habit.habit.category == "value") {
+            require(habit.habit.targetValue != null) { "数值习惯必须设置目标值" }
+            require(habit.habit.targetType == "AtLeast" || habit.habit.targetType == "AtMost") { "目标类型无效" }
+        }
+        val now = currentRecordDateTime()
+        val prepared = habit.copy(
+            action = habit.action.copy(createTime = habit.action.createTime ?: now),
+            habit = habit.habit.copy(createTime = habit.habit.createTime ?: now)
+        )
+        val (saved, isDirty) = writeWithOfflineFallback(
+            server = {
+                val saved = api.saveHabit(prepared)
+                val savedHabit = prepared.copy(
+                    action = saved,
+                    habit = prepared.habit.copy(actionId = saved.id)
+                )
+                withContext(Dispatchers.IO) { actionDatabase.saveHabitRecord(savedHabit) }
+                saved
+            },
+            offline = {
+                withContext(Dispatchers.IO) { actionDatabase.markHabitDirty(prepared) }
+                prepared.action
+            }
+        )
+        Triple(saved, isDirty, prepared)
+    }
+
+    fun saveHabitValue(actionId: String, value: Int) = perform(
+        onSuccess = { (saved, isDirty) ->
+            habitRecordDetails = habitRecordDetails?.let { current ->
+                val savedDay = saved.createTime?.take(10)
+                current.copy(
+                    checkLists = current.checkLists.filterNot {
+                        it.id == saved.id || (savedDay != null && it.createTime?.take(10) == savedDay)
+                    } + saved
+                )
+            }
+            message = if (isDirty) "习惯记录已保存到本地，等待联网同步" else "习惯记录已保存"
+        }
+    ) {
+        val details = habitRecordDetails ?: throw IllegalStateException("尚未加载习惯详情")
+        if (details.habit.category == "check") {
+            require(value == 0 || value == 1) { "打卡值只能是 0 或 1" }
+        }
+        writeWithOfflineFallback(
+            server = {
+                api.saveHabitValue(
+                    actionId,
+                    ActionCheckList(
+                        actionId = actionId,
+                        content = "",
+                        first = 0,
+                        last = 0,
+                        current = value,
+                        createTime = currentRecordDateTime()
+                    )
+                ).also { saved ->
+                    withContext(Dispatchers.IO) { actionDatabase.saveActionChecklist(actionId, saved) }
+                }
+            },
+            offline = {
+                withContext(Dispatchers.IO) { actionDatabase.markHabitValueDirty(actionId, value) }
+            }
+        )
+    }
+
     fun refreshRecordCategories() = perform {
         recordCategories = withContext(Dispatchers.IO) { actionDatabase.actionCategories() }
         recordLabels = withContext(Dispatchers.IO) { actionDatabase.actionLabels() }
@@ -728,6 +974,25 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
             }
             if (recordCandidateQuery == query) recordCandidates = candidates
         }
+    }
+
+    fun deleteHabit(actionId: String, onDeleted: () -> Unit = {}) = perform(
+        onSuccess = { isDirty ->
+            habits = habits.filterNot { it.id == actionId }
+            habitRecordDetails = null
+            localActionCount = withContext(Dispatchers.IO) { actionDatabase.actionCount() }
+            refreshPendingCount()
+            message = if (isDirty) "习惯删除已保存到本地，等待联网同步" else "习惯已删除"
+            onDeleted()
+        }
+    ) {
+        writeDeleteWithOfflineFallback(
+            server = {
+                api.deleteHabit(actionId)
+                withContext(Dispatchers.IO) { actionDatabase.deleteAction(actionId) }
+            },
+            offline = { withContext(Dispatchers.IO) { actionDatabase.markHabitDeleted(actionId) } }
+        )
     }
 
     fun loadRecordDetails(record: ActionRecord) = perform {
@@ -756,6 +1021,7 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         }
     ) {
         require(name.isNotBlank()) { "记录名称不能为空" }
+        val now = currentRecordDateTime()
         val pendingRecord = ActionRecord(
             id = UUID.randomUUID().toString().replace("-", ""),
             name = name.trim(),
@@ -764,7 +1030,8 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
             labels = copySource?.labels.orEmpty(),
             refs = copySource?.id?.let { "action:$it" },
             remark = copySource?.remark,
-            start = currentRecordDateTime()
+            start = now,
+            createTime = now
         )
         val (saved, isDirty) = writeWithOfflineFallback(
             server = {
@@ -796,7 +1063,11 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         }
     ) {
         require(record.name.isNotBlank()) { "记录名称不能为空" }
-        val prepared = record.copy(type = "record", labels = record.labels.orEmpty())
+        val prepared = record.copy(
+            type = "record",
+            labels = record.labels.orEmpty(),
+            createTime = record.createTime ?: currentRecordDateTime()
+        )
         val (saved, isDirty) = writeWithOfflineFallback(
             server = {
                 api.saveRecord(prepared).also { saved ->
@@ -828,7 +1099,7 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         )
         val (saved, isDirty) = writeWithOfflineFallback(
             server = {
-                api.addRecordComment(actionId, comment.content).also { saved ->
+                api.addRecordComment(actionId, comment).also { saved ->
                     withContext(Dispatchers.IO) { actionDatabase.saveActionComment(actionId, saved) }
                 }
             },
@@ -855,7 +1126,8 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         }
         val prepared = checklist.copy(
             id = checklist.id.ifBlank { UUID.randomUUID().toString().replace("-", "") },
-            actionId = actionId
+            actionId = actionId,
+            createTime = checklist.createTime ?: currentRecordDateTime()
         )
         val progressComment = ActionComment(
             id = UUID.randomUUID().toString(),
@@ -907,7 +1179,7 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         syncAllData()
     }
 
-    private fun <T> perform(onSuccess: (T) -> Unit = {}, action: suspend () -> T) {
+    private fun <T> perform(onSuccess: suspend (T) -> Unit = {}, action: suspend () -> T) {
         viewModelScope.launch {
             busy = true
             try {

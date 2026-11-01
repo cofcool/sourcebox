@@ -125,8 +125,17 @@ class ActionExportDatabase(context: Context) :
         } else {
             parameters["name"].orEmpty()
         }
+        val deletedHabitIds = readableDatabase.rawQuery(
+            "SELECT DISTINCT entity_id FROM $TABLE_PENDING WHERE entity = 'action' AND operation = 'habit_delete'",
+            null
+        ).use { cursor ->
+            buildSet {
+                while (cursor.moveToNext()) add(cursor.getString(0))
+            }
+        }
         val actions = readPayloads(TABLE_ACTIONS, ActionExport.serializer())
             .map { it.record }
+            .filterNot { it.id in deletedHabitIds }
             .filter { action ->
                 if (prefix == "record") {
                     action.type == prefix &&
@@ -180,7 +189,8 @@ class ActionExportDatabase(context: Context) :
     }
 
     fun markNoteDirty(note: NoteRecord) {
-        enqueueUpsert(TABLE_NOTES, "note", note.id, "save", json.encodeToString(note))
+        val prepared = note.copy(date = note.date ?: currentDateTime())
+        enqueueUpsert(TABLE_NOTES, "note", prepared.id, "save", json.encodeToString(prepared))
     }
 
     fun deleteNote(id: String) {
@@ -209,10 +219,119 @@ class ActionExportDatabase(context: Context) :
         )
     }
 
+    fun saveHabitRecord(habit: HabitRecord) {
+        val existing = actionDetails(habit.action.id)
+        val exported = (existing ?: ActionExport(habit.action)).copy(
+            record = habit.action,
+            checklists = habit.checkLists,
+            habit = habit.habit
+        )
+        upsert(TABLE_ACTIONS, habit.action.id, json.encodeToString(exported))
+    }
+
+    fun deleteAction(actionId: String) {
+        delete(TABLE_ACTIONS, actionId)
+    }
+
+    fun markHabitDeleted(actionId: String) {
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            val localPayload = actionDetails(actionId)?.let { json.encodeToString(it) }
+                ?: throw IOException("本地找不到习惯：$actionId")
+            enqueueChange(db, "action", actionId, "habit_delete", actionId, TABLE_ACTIONS, localPayload)
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+    }
+
+    fun markHabitDirty(habit: HabitRecord) {
+        val now = currentDateTime()
+        val prepared = habit.copy(
+            action = habit.action.copy(createTime = habit.action.createTime ?: now),
+            habit = habit.habit.copy(createTime = habit.habit.createTime ?: now)
+        )
+        val existing = actionDetails(prepared.action.id)
+        val exported = (existing ?: ActionExport(prepared.action)).copy(
+            record = prepared.action,
+            checklists = prepared.checkLists,
+            habit = prepared.habit
+        )
+        enqueueUpsert(
+            TABLE_ACTIONS,
+            "action",
+            prepared.action.id,
+            "habit_save",
+            json.encodeToString(prepared),
+            json.encodeToString(exported)
+        )
+    }
+
+    fun markHabitValueDirty(actionId: String, value: Int): ActionCheckList {
+        val exported = actionDetails(actionId) ?: throw IOException("本地找不到习惯：$actionId")
+        val habit = exported.habit ?: throw IOException("本地找不到习惯定义：$actionId")
+        val createTime = currentDateTime()
+        val today = createTime.take(10)
+        val existingToday = exported.checklists
+            .filter { it.createTime?.take(10) == today }
+            .maxByOrNull { it.updateTime.orEmpty() }
+        val localId = existingToday?.id
+            ?.takeIf(String::isNotBlank)
+            ?: java.util.UUID.randomUUID().toString().replace("-", "")
+        val request = ActionCheckList(
+            id = existingToday?.id.orEmpty(),
+            actionId = actionId,
+            content = "",
+            first = 0,
+            last = 0,
+            current = value,
+            createTime = existingToday?.createTime ?: createTime
+        )
+        val checklist = ActionCheckList(
+            id = localId,
+            actionId = actionId,
+            content = "${habit.freqNum ?: 1}-${habit.freqDen ?: 1}",
+            first = 0,
+            last = 0,
+            current = value,
+            createTime = existingToday?.createTime ?: createTime,
+            updateTime = createTime
+        )
+        val changed = exported.copy(
+            checklists = exported.checklists.filterNot { it.createTime?.take(10) == today } + checklist
+        )
+        enqueueUpsert(
+            TABLE_ACTIONS,
+            "action",
+            actionId,
+            "habit_value",
+            json.encodeToString(HabitValueChange(checklist.id, request)),
+            json.encodeToString(changed)
+        )
+        return checklist
+    }
+
+    fun replaceHabitValue(actionId: String, localChecklistId: String, saved: ActionCheckList) {
+        val exported = actionDetails(actionId) ?: throw IOException("本地找不到习惯：$actionId")
+        val savedDay = saved.createTime?.take(10)
+        val changed = exported.copy(
+            checklists = exported.checklists.map {
+                if (it.id == localChecklistId || (savedDay != null && it.createTime?.take(10) == savedDay)) {
+                    saved
+                } else {
+                    it
+                }
+            }
+        )
+        upsert(writableDatabase, TABLE_ACTIONS, actionId, json.encodeToString(changed), dirty = 1)
+    }
+
     fun markActionDirty(action: ActionRecord) {
-        val existing = actionDetails(action.id)
-        val exported = existing?.copy(record = action) ?: ActionExport(action)
-        enqueueUpsert(TABLE_ACTIONS, "action", action.id, "save", json.encodeToString(exported))
+        val prepared = action.copy(createTime = action.createTime ?: currentDateTime())
+        val existing = actionDetails(prepared.id)
+        val exported = existing?.copy(record = prepared) ?: ActionExport(prepared)
+        enqueueUpsert(TABLE_ACTIONS, "action", prepared.id, "save", json.encodeToString(exported))
     }
 
     fun saveActionComment(actionId: String, comment: ActionComment) {
@@ -226,20 +345,24 @@ class ActionExportDatabase(context: Context) :
 
     fun markActionCommentDirty(actionId: String, comment: ActionComment) {
         val action = actionDetails(actionId) ?: throw IOException("本地找不到行动记录：$actionId")
-        val updated = action.copy(comments = action.comments + comment)
+        val prepared = comment.copy(createTime = comment.createTime ?: currentDateTime())
+        val updated = action.copy(comments = action.comments + prepared)
         enqueueUpsert(
             TABLE_ACTIONS,
             "action",
             actionId,
             "comment",
-            json.encodeToString(comment),
+            json.encodeToString(prepared),
             json.encodeToString(updated)
         )
     }
 
     fun saveActionChecklist(actionId: String, checklist: ActionCheckList) {
         val action = actionDetails(actionId) ?: throw IOException("本地找不到行动记录：$actionId")
-        val updated = action.checklists.filterNot { it.id == checklist.id } + checklist
+        val savedDay = checklist.createTime?.take(10)
+        val updated = action.checklists.filterNot {
+            it.id == checklist.id || (action.habit != null && savedDay != null && it.createTime?.take(10) == savedDay)
+        } + checklist
         upsert(TABLE_ACTIONS, actionId, json.encodeToString(action.copy(checklists = updated)))
     }
 
@@ -249,16 +372,18 @@ class ActionExportDatabase(context: Context) :
         progressComment: ActionComment
     ) {
         val action = actionDetails(actionId) ?: throw IOException("本地找不到行动记录：$actionId")
+        val preparedChecklist = checklist.copy(createTime = checklist.createTime ?: currentDateTime())
+        val preparedComment = progressComment.copy(createTime = progressComment.createTime ?: currentDateTime())
         val updated = action.copy(
-            checklists = action.checklists.filterNot { it.id == checklist.id } + checklist,
-            comments = action.comments + progressComment
+            checklists = action.checklists.filterNot { it.id == preparedChecklist.id } + preparedChecklist,
+            comments = action.comments + preparedComment
         )
         enqueueUpsert(
             TABLE_ACTIONS,
             "action",
             actionId,
             "checklist_save",
-            json.encodeToString(checklist),
+            json.encodeToString(preparedChecklist),
             json.encodeToString(updated)
         )
     }
@@ -319,6 +444,27 @@ class ActionExportDatabase(context: Context) :
             if (cursor.moveToFirst()) cursor.getInt(0) else 0
         }
 
+    fun clearLocalData() {
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            listOf(
+                TABLE_ACTIONS,
+                TABLE_NOTES,
+                TABLE_COMMANDS,
+                TABLE_PENDING,
+                TABLE_SYNC,
+                TABLE_SYNC_ALL,
+                TABLE_TYPES
+            ).filter { tableExists(db, it) }.forEach { table ->
+                check(db.delete(table, null, null) >= 0) { "清除本地数据失败：$table" }
+            }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+    }
+
     fun completePendingChange(change: PendingChange, canonicalPayload: String? = null) {
         val table = tableForEntity(change.entity)
         val db = writableDatabase
@@ -331,6 +477,8 @@ class ActionExportDatabase(context: Context) :
             ).use { it.moveToFirst() }
             if (stillDirty) {
                 db.execSQL("UPDATE $table SET dirty = 1 WHERE id = ?", arrayOf(change.entityId))
+            } else if (change.operation == "habit_delete") {
+                db.delete(table, "id = ?", arrayOf(change.entityId))
             } else if (canonicalPayload != null) {
                 upsert(db, table, change.entityId, canonicalPayload, dirty = 0)
             } else {
@@ -364,6 +512,12 @@ class ActionExportDatabase(context: Context) :
             return cursor.getInt(0)
         }
     }
+
+    private fun tableExists(db: SQLiteDatabase, table: String): Boolean =
+        db.rawQuery(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
+            arrayOf(table)
+        ).use { it.moveToFirst() }
 
     private fun validateIds(ids: List<String>, dataset: String) {
         val invalidId = ids.groupingBy { it }.eachCount()
@@ -513,6 +667,10 @@ class ActionExportDatabase(context: Context) :
         MessageDigest.getInstance("MD5")
             .digest(toByteArray(StandardCharsets.UTF_8))
             .joinToString("") { "%02x".format(it) }
+
+    private fun currentDateTime(): String =
+        java.time.LocalDateTime.now()
+            .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
 
     private fun createTable(db: SQLiteDatabase, table: String) {
         db.execSQL(

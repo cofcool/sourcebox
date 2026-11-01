@@ -4,6 +4,8 @@ import android.content.Context
 import android.net.Uri
 import android.os.SystemClock
 import android.provider.OpenableColumns
+import android.util.Log
+import net.cofcool.sourcebox.CrashLogStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -114,7 +116,32 @@ data class ActionCheckList(
     val content: String = "",
     val first: Int = 0,
     val last: Int = 0,
-    val current: Int = 0
+    val current: Int = 0,
+    val createTime: String? = null,
+    val updateTime: String? = null
+)
+
+@Serializable
+data class HabitDefinition(
+    val id: String? = null,
+    val actionId: String? = null,
+    val category: String = "check",
+    val note: String? = null,
+    val unit: String? = null,
+    val freqNum: Int? = null,
+    val freqDen: Int? = null,
+    val question: String? = null,
+    val targetValue: Int? = null,
+    val targetType: String? = null,
+    val createTime: String? = null,
+    val updateTime: String? = null
+)
+
+@Serializable
+data class HabitRecord(
+    val action: ActionRecord,
+    val habit: HabitDefinition,
+    val checkLists: List<ActionCheckList> = emptyList()
 )
 
 @Serializable
@@ -136,7 +163,14 @@ data class ActionExport(
     val record: ActionRecord,
     val comments: List<ActionComment> = emptyList(),
     val checklists: List<ActionCheckList> = emptyList(),
-    val other: JsonElement? = null
+    val other: JsonElement? = null,
+    val habit: HabitDefinition? = null
+)
+
+@Serializable
+data class HabitValueChange(
+    val checklistId: String,
+    val checklist: ActionCheckList
 )
 
 @Serializable
@@ -156,6 +190,7 @@ private val json = Json {
 
 class SourceboxApi(context: Context) {
     private val preferences = context.getSharedPreferences("sourcebox", Context.MODE_PRIVATE)
+    private val crashLogStore = CrashLogStore(context.applicationContext)
     private val client = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
@@ -235,11 +270,10 @@ class SourceboxApi(context: Context) {
         json.decodeFromString<List<NoteRecord>>(request("/note/exportAll"))
 
     suspend fun saveNote(note: NoteRecord): NoteRecord {
-        val date = java.time.LocalDateTime.now()
-            .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
         val updated = note.copy(
             id = note.id.ifBlank { UUID.randomUUID().toString() },
-            date = date,
+            date = note.date ?: java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
             state = "NORMAL"
         )
         return json.decodeFromString(request("/note/note", "POST", json.encodeToString(updated)))
@@ -249,19 +283,8 @@ class SourceboxApi(context: Context) {
         request("/note/note/${Uri.encode(id)}", "DELETE")
     }
 
-    suspend fun addTodo(name: String, remark: String, id: String) {
-        val now = java.time.LocalDateTime.now()
-            .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-        val body = buildJsonObject {
-            put("id", id)
-            put("name", name)
-            put("remark", remark)
-            put("state", "todo")
-            put("type", "todo")
-            put("start", now)
-            put("end", now)
-        }
-        request("/action", "POST", json.encodeToString(body))
+    suspend fun addTodo(action: ActionRecord) {
+        request("/action", "POST", json.encodeToString(action))
     }
 
     suspend fun completeTodo(action: ActionRecord): ActionRecord =
@@ -365,6 +388,7 @@ class SourceboxApi(context: Context) {
                 .use { response ->
                     val message = response.body?.string().orEmpty()
                     if (!response.isSuccessful) {
+                        recordApiFailure("POST", "/upload", response.code, message)
                         throw IOException("上传 $displayName 失败：HTTP ${response.code} ${message.take(300)}")
                     }
                     "$displayName：${message.ifBlank { "上传成功" }}"
@@ -384,6 +408,21 @@ class SourceboxApi(context: Context) {
         )
     }
 
+    suspend fun saveHabit(habit: HabitRecord): ActionRecord =
+        json.decodeFromString(request("/action/habit", "POST", json.encodeToString(habit)))
+
+    suspend fun findHabitRecord(actionId: String): HabitRecord =
+        json.decodeFromString(request("/action/habit/${Uri.encode(actionId)}"))
+
+    suspend fun saveHabitValue(actionId: String, checklist: ActionCheckList): ActionCheckList =
+        json.decodeFromString(
+            request("/action/habit/${Uri.encode(actionId)}", "POST", json.encodeToString(checklist))
+        )
+
+    suspend fun deleteHabit(actionId: String) {
+        request("/action/habit/${Uri.encode(actionId)}", "DELETE")
+    }
+
     suspend fun saveRecord(record: ActionRecord): ActionRecord {
         val payload = record.copy(type = "record", labels = record.labels.orEmpty())
         return saveAction(payload)
@@ -392,10 +431,9 @@ class SourceboxApi(context: Context) {
     suspend fun saveAction(action: ActionRecord): ActionRecord =
         json.decodeFromString(request("/action", "POST", json.encodeToString(action)))
 
-    suspend fun addRecordComment(actionId: String, content: String): ActionComment {
-        val body = buildJsonObject { put("content", content) }
+    suspend fun addRecordComment(actionId: String, comment: ActionComment): ActionComment {
         return json.decodeFromString(
-            request("/action/comment/${Uri.encode(actionId)}", "POST", json.encodeToString(body))
+            request("/action/comment/${Uri.encode(actionId)}", "POST", json.encodeToString(comment))
         )
     }
 
@@ -430,6 +468,7 @@ class SourceboxApi(context: Context) {
             client.newCall(builder.build()).execute().use { response ->
                 val content = response.body?.string().orEmpty()
                 if (!response.isSuccessful) {
+                    recordApiFailure(method, path, response.code, content)
                     throw ServerResponseException(
                         response.code,
                         "HTTP ${response.code}: ${content.take(300)}"
@@ -438,6 +477,19 @@ class SourceboxApi(context: Context) {
                 content
             }
         }
+
+    private fun recordApiFailure(method: String, path: String, statusCode: Int, responseBody: String) {
+        try {
+            crashLogStore.recordApiFailure(
+                method = method,
+                endpoint = path.substringBefore('?').replace('\n', ' ').replace('\r', ' '),
+                statusCode = statusCode,
+                responseBody = responseBody
+            )
+        } catch (exception: Exception) {
+            Log.e("SourceboxApi", "Failed to save API error log", exception)
+        }
+    }
 
     private fun parseArguments(help: String): List<ToolArgument> {
         val requiredKeys = Regex("(?m)^Synopsis\\s*\\n\\s*([^\\n]+)")

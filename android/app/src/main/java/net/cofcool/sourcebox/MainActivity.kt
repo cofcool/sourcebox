@@ -19,6 +19,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -38,10 +39,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -53,6 +56,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -70,9 +75,12 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -91,10 +99,12 @@ import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -138,6 +148,7 @@ private val pages = listOf(
     "tools" to "工具",
     "todos" to "待办",
     "notes" to "便笺",
+    "habits" to "习惯",
     "task" to "任务"
 )
 
@@ -152,6 +163,7 @@ private fun SourceboxApp(
     var showShareTargetDialog by remember { mutableStateOf(false) }
     var selectedTool by remember { mutableStateOf<ToolInfo?>(null) }
     var selectedRecord by remember { mutableStateOf<ActionRecord?>(null) }
+    var selectedHabit by remember { mutableStateOf<ActionRecord?>(null) }
     var recordReturnPage by remember { mutableStateOf("task") }
     var appliedCategory by remember { mutableStateOf<String?>(null) }
     var appliedLabel by remember { mutableStateOf<String?>(null) }
@@ -180,6 +192,7 @@ private fun SourceboxApp(
         page = when (page) {
             "record-detail" -> recordReturnPage
             "record-create" -> "task"
+            "habit-detail", "habit-create" -> "habits"
             "crash-logs" -> "settings"
             else -> "tools"
         }
@@ -216,10 +229,12 @@ private fun SourceboxApp(
                                 "task" -> "任务"
                                 "record-create" -> "添加任务"
                                 "record-detail" -> "编辑任务"
+                                "habit-detail" -> "习惯详情"
+                                "habit-create" -> "添加习惯"
                                 "timer" -> "番茄钟"
                                 "files" -> "文件工具"
                                 "settings" -> "连接设置"
-                                "crash-logs" -> "崩溃日志"
+                                "crash-logs" -> "异常日志"
                                 else -> pages.firstOrNull { it.first == page }?.second ?: "The Source Box"
                             }
                         )
@@ -246,18 +261,22 @@ private fun SourceboxApp(
                             "task" -> IconButton(onClick = { page = "record-create" }) {
                                 Icon(Icons.Default.Add, contentDescription = "添加任务")
                             }
+                            "habits" -> IconButton(onClick = { page = "habit-create" }) {
+                                Icon(Icons.Default.Add, contentDescription = "添加习惯")
+                            }
                         }
                     }
                 )
             },
             bottomBar = {
-                if (page !in setOf("record-detail", "record-create")) {
+                if (page !in setOf("record-detail", "record-create", "habit-detail", "habit-create")) {
                     NavigationBar {
                         pages.forEach { (destination, label) ->
                             val icon = when (destination) {
                                 "tools" -> Icons.Default.Home
                                 "todos" -> Icons.AutoMirrored.Filled.List
                                 "notes" -> Icons.Default.Description
+                                "habits" -> Icons.Default.Alarm
                                 else -> Icons.Default.Build
                             }
                             NavigationBarItem(
@@ -268,6 +287,7 @@ private fun SourceboxApp(
                                         "tools" -> vm.refreshTools()
                                         "todos" -> vm.refreshTodos()
                                         "notes" -> vm.refreshNotes()
+                                        "habits" -> vm.refreshHabits()
                                     }
                                 },
                                 icon = { Icon(icon, contentDescription = label) },
@@ -336,6 +356,25 @@ private fun SourceboxApp(
                         page = "task"
                     }
                 )
+                "habit-create" -> HabitCreateScreen(
+                    vm = vm,
+                    modifier = Modifier.padding(padding),
+                    onCancel = { page = "habits" },
+                    onCreated = { page = "habits" }
+                )
+                "habit-detail" -> selectedHabit?.let { habit ->
+                    HabitDetailsScreen(
+                        modifier = Modifier.padding(padding),
+                        habit = vm.habitRecordDetails,
+                        busy = vm.busy,
+                        onSaveHabit = vm::saveHabitDetails,
+                        onSaveValue = { value -> vm.saveHabitValue(habit.id, value) },
+                        onDeleteHabit = { vm.deleteHabit(habit.id) {
+                            selectedHabit = null
+                            page = "habits"
+                        } }
+                    )
+                }
                 "task" -> RecordBoardScreen(
                     vm,
                     Modifier.padding(padding),
@@ -351,6 +390,15 @@ private fun SourceboxApp(
                         recordReturnPage = "task"
                         vm.loadRecordDetails(it)
                         page = "record-detail"
+                    }
+                )
+                "habits" -> HabitBoardScreen(
+                    vm = vm,
+                    modifier = Modifier.padding(padding),
+                    onOpenHabit = { habit ->
+                        selectedHabit = habit
+                        vm.loadHabitDetails(habit)
+                        page = "habit-detail"
                     }
                 )
                 "todos" -> TodosScreen(
@@ -378,6 +426,7 @@ private fun SourceboxApp(
                     password = settingsPassword,
                     onPassword = { settingsPassword = it },
                     onSave = { vm.saveConnection(settingsUrl, settingsUser, settingsPassword); page = "tools" },
+                    onClearLocalDatabase = vm::clearLocalDatabase,
                     onViewCrashLogs = { page = "crash-logs" }
                 )
                 "crash-logs" -> CrashLogsScreen(Modifier.padding(padding))
@@ -464,7 +513,7 @@ private fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(
-                    vm.tools.filterNot { it.id in setOf("note", "todo", "hisRecord", "timer") },
+                    vm.tools.filterNot { it.id in setOf("note", "todo", "hisRecord", "timer", "habits") },
                     key = { it.id }
                 ) { tool ->
                     Card(onClick = { onSelectTool(tool) }, modifier = Modifier.fillMaxWidth()) {
@@ -855,6 +904,539 @@ private fun RecordBoardScreen(
 }
 
 @Composable
+private fun HabitBoardScreen(
+    vm: ToolboxViewModel,
+    modifier: Modifier,
+    onOpenHabit: (ActionRecord) -> Unit
+) {
+    var query by remember { mutableStateOf("") }
+    var appliedQuery by remember { mutableStateOf("") }
+    var page by remember { mutableStateOf(1) }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(appliedQuery, page) {
+        vm.refreshHabits(appliedQuery, page)
+    }
+
+    Column(
+        modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                modifier = Modifier.weight(1f),
+                label = { Text("按名称搜索") },
+                placeholder = { Text("输入习惯名称") },
+                singleLine = true
+            )
+            IconButton(
+                onClick = {
+                    keyboardController?.hide()
+                    appliedQuery = query.trim()
+                    page = 1
+                },
+                enabled = !vm.busy
+            ) {
+                Icon(Icons.Default.Search, contentDescription = "查询习惯")
+            }
+        }
+
+        if (vm.habits.isEmpty()) {
+            EmptyState(
+                if (appliedQuery.isNotBlank()) "没有匹配的习惯" else "还没有习惯，点击右上角添加"
+            )
+        } else {
+            vm.habits.forEach { habit ->
+                Card(
+                    onClick = { onOpenHabit(habit) },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !vm.busy
+                ) {
+                    Column(
+                        Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            habit.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        if (!habit.remark.isNullOrBlank()) {
+                            Text(habit.remark, style = MaterialTheme.typography.bodySmall)
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                if (habit.category == "value") "数值习惯" else "打卡习惯",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                habit.start?.take(10) ?: "持续进行",
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedButton(onClick = { if (page > 1) page-- }, enabled = page > 1 && !vm.busy) {
+                Text("上一页")
+            }
+            Text("第 $page 页 · ${vm.habits.size} 条")
+            OutlinedButton(onClick = { page++ }, enabled = vm.habitHasNextPage && !vm.busy) {
+                Text("下一页")
+            }
+        }
+    }
+}
+
+@Composable
+private fun HabitCreateScreen(
+    vm: ToolboxViewModel,
+    modifier: Modifier,
+    onCancel: () -> Unit,
+    onCreated: () -> Unit
+) {
+    var name by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf("check") }
+    var note by remember { mutableStateOf("") }
+    var unit by remember { mutableStateOf("") }
+    var freqNum by remember { mutableStateOf("1") }
+    var freqDen by remember { mutableStateOf("1") }
+    var question by remember { mutableStateOf("") }
+    var targetValue by remember { mutableStateOf("") }
+    var targetType by remember { mutableStateOf("AtLeast") }
+
+    Column(
+        modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("习惯名称") },
+                    singleLine = true,
+                    enabled = !vm.busy
+                )
+                Text("习惯类别", style = MaterialTheme.typography.labelLarge)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (category == "check") {
+                        Button(onClick = { category = "check" }, enabled = !vm.busy) { Text("完成打卡") }
+                    } else {
+                        OutlinedButton(onClick = { category = "check" }, enabled = !vm.busy) { Text("完成打卡") }
+                    }
+                    if (category == "value") {
+                        Button(onClick = { category = "value" }, enabled = !vm.busy) { Text("记录数值") }
+                    } else {
+                        OutlinedButton(onClick = { category = "value" }, enabled = !vm.busy) { Text("记录数值") }
+                    }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedTextField(
+                        value = freqNum,
+                        onValueChange = { freqNum = it },
+                        modifier = Modifier.weight(1f),
+                        label = { Text("频率次数") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        enabled = !vm.busy
+                    )
+                    OutlinedTextField(
+                        value = freqDen,
+                        onValueChange = { freqDen = it },
+                        modifier = Modifier.weight(1f),
+                        label = { Text("每多少天") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        enabled = !vm.busy
+                    )
+                }
+                if (category == "check") {
+                    OutlinedTextField(
+                        value = question,
+                        onValueChange = { question = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("打卡问题（可选）") },
+                        enabled = !vm.busy
+                    )
+                } else {
+                    OutlinedTextField(
+                        value = unit,
+                        onValueChange = { unit = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("单位（可选）") },
+                        enabled = !vm.busy
+                    )
+                    OutlinedTextField(
+                        value = targetValue,
+                        onValueChange = { targetValue = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("目标值") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        enabled = !vm.busy
+                    )
+                    Text("目标类型", style = MaterialTheme.typography.labelLarge)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (targetType == "AtLeast") {
+                            Button(onClick = { targetType = "AtLeast" }, enabled = !vm.busy) { Text("至少达到") }
+                        } else {
+                            OutlinedButton(onClick = { targetType = "AtLeast" }, enabled = !vm.busy) { Text("至少达到") }
+                        }
+                        if (targetType == "AtMost") {
+                            Button(onClick = { targetType = "AtMost" }, enabled = !vm.busy) { Text("最多不超过") }
+                        } else {
+                            OutlinedButton(onClick = { targetType = "AtMost" }, enabled = !vm.busy) { Text("最多不超过") }
+                        }
+                    }
+                }
+                OutlinedTextField(
+                    value = note,
+                    onValueChange = { note = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("备注（可选）") },
+                    minLines = 2,
+                    enabled = !vm.busy
+                )
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(
+                onClick = onCancel,
+                modifier = Modifier.weight(1f),
+                enabled = !vm.busy
+            ) {
+                Text("取消")
+            }
+            Button(
+                onClick = {
+                    val numerator = freqNum.toIntOrNull()
+                    val denominator = freqDen.toIntOrNull()
+                    val target = targetValue.toIntOrNull()
+                    if (name.isBlank()) {
+                        vm.showMessage("习惯名称不能为空")
+                    } else if (numerator == null || denominator == null || numerator < 1 || denominator < 1) {
+                        vm.showMessage("频率次数和天数必须是正整数")
+                    } else if (category == "value" && target == null) {
+                        vm.showMessage("数值习惯的目标值必须是整数")
+                    } else {
+                        vm.createHabit(
+                            name = name,
+                            category = category,
+                            note = note,
+                            freqNum = numerator,
+                            freqDen = denominator,
+                            unit = unit,
+                            question = question,
+                            targetValue = target,
+                            targetType = if (category == "value") targetType else null,
+                            onCreated = onCreated
+                        )
+                    }
+                },
+                modifier = Modifier.weight(1f),
+                enabled = name.isNotBlank() && !vm.busy
+            ) {
+                Text("创建习惯")
+            }
+        }
+    }
+}
+
+@Composable
+private fun HabitDetailsScreen(
+    modifier: Modifier,
+    habit: net.cofcool.sourcebox.data.HabitRecord?,
+    busy: Boolean,
+    onSaveHabit: (net.cofcool.sourcebox.data.HabitRecord) -> Unit,
+    onSaveValue: (Int) -> Unit,
+    onDeleteHabit: () -> Unit
+) {
+    var value by remember(habit?.action?.id) { mutableStateOf("") }
+    var editing by remember(habit?.action?.id) { mutableStateOf(false) }
+    var confirmDelete by remember(habit?.action?.id) { mutableStateOf(false) }
+    var name by remember(habit?.action?.id) { mutableStateOf(habit?.action?.name.orEmpty()) }
+    var category by remember(habit?.action?.id) { mutableStateOf(habit?.habit?.category ?: "check") }
+    var note by remember(habit?.action?.id) { mutableStateOf(habit?.habit?.note.orEmpty()) }
+    var unit by remember(habit?.action?.id) { mutableStateOf(habit?.habit?.unit.orEmpty()) }
+    var freqNum by remember(habit?.action?.id) { mutableStateOf(habit?.habit?.freqNum?.toString() ?: "1") }
+    var freqDen by remember(habit?.action?.id) { mutableStateOf(habit?.habit?.freqDen?.toString() ?: "1") }
+    var question by remember(habit?.action?.id) { mutableStateOf(habit?.habit?.question.orEmpty()) }
+    var targetValue by remember(habit?.action?.id) { mutableStateOf(habit?.habit?.targetValue?.toString().orEmpty()) }
+    var targetType by remember(habit?.action?.id) { mutableStateOf(habit?.habit?.targetType ?: "AtLeast") }
+    val definition = habit?.habit
+    val validFrequency = (freqNum.toIntOrNull() ?: 0) > 0 && (freqDen.toIntOrNull() ?: 0) > 0
+    val validTarget = category != "value" || targetValue.toIntOrNull() != null
+
+    Column(
+        modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        if (habit == null) {
+            if (busy) {
+                Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                EmptyState("无法加载习惯详情，请返回后重试")
+            }
+            return@Column
+        }
+
+        if (confirmDelete) {
+            AlertDialog(
+                onDismissRequest = { confirmDelete = false },
+                title = { Text("删除习惯") },
+                text = { Text("确定删除“${habit.action.name}”及其全部记录吗？") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            confirmDelete = false
+                            onDeleteHabit()
+                        },
+                        enabled = !busy
+                    ) { Text("删除") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { confirmDelete = false }, enabled = !busy) { Text("取消") }
+                }
+            )
+        }
+
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(habit.action.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                Text(if (definition?.category == "value") "数值习惯" else "打卡习惯")
+                Text("频率：${definition?.freqNum ?: 1} / ${definition?.freqDen ?: 1} 天")
+                definition?.note?.takeIf(String::isNotBlank)?.let { Text("备注：$it") }
+                if (definition?.category == "value") {
+                    Text(
+                        "目标：${if (definition.targetType == "AtMost") "最多" else "至少"} " +
+                            "${definition.targetValue ?: "未设置"} ${definition.unit.orEmpty()}"
+                    )
+                }
+                definition?.question?.takeIf(String::isNotBlank)?.let { Text("打卡问题：$it") }
+                OutlinedButton(onClick = { editing = !editing }, enabled = !busy) {
+                    Text(if (editing) "收起修改" else "修改习惯")
+                }
+                TextButton(onClick = { confirmDelete = true }, enabled = !busy) {
+                    Text("删除习惯", color = MaterialTheme.colorScheme.error)
+                }
+            }
+        }
+
+        if (editing) {
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedTextField(
+                        name,
+                        { name = it },
+                        Modifier.fillMaxWidth(),
+                        label = { Text("习惯名称") },
+                        singleLine = true,
+                        enabled = !busy
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (category == "check") {
+                            Button(onClick = { category = "check" }, enabled = !busy) { Text("完成打卡") }
+                        } else {
+                            OutlinedButton(onClick = { category = "check" }, enabled = !busy) { Text("完成打卡") }
+                        }
+                        if (category == "value") {
+                            Button(onClick = { category = "value" }, enabled = !busy) { Text("记录数值") }
+                        } else {
+                            OutlinedButton(onClick = { category = "value" }, enabled = !busy) { Text("记录数值") }
+                        }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        OutlinedTextField(
+                            freqNum,
+                            { freqNum = it },
+                            Modifier.weight(1f),
+                            label = { Text("频率次数") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
+                            enabled = !busy
+                        )
+                        OutlinedTextField(
+                            freqDen,
+                            { freqDen = it },
+                            Modifier.weight(1f),
+                            label = { Text("每多少天") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
+                            enabled = !busy
+                        )
+                    }
+                    if (category == "check") {
+                        OutlinedTextField(
+                            question,
+                            { question = it },
+                            Modifier.fillMaxWidth(),
+                            label = { Text("打卡问题（可选）") },
+                            enabled = !busy
+                        )
+                    } else {
+                        OutlinedTextField(
+                            unit,
+                            { unit = it },
+                            Modifier.fillMaxWidth(),
+                            label = { Text("单位（可选）") },
+                            enabled = !busy
+                        )
+                        OutlinedTextField(
+                            targetValue,
+                            { targetValue = it },
+                            Modifier.fillMaxWidth(),
+                            label = { Text("目标值") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
+                            enabled = !busy
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (targetType == "AtLeast") {
+                                Button(onClick = { targetType = "AtLeast" }, enabled = !busy) { Text("至少达到") }
+                            } else {
+                                OutlinedButton(onClick = { targetType = "AtLeast" }, enabled = !busy) { Text("至少达到") }
+                            }
+                            if (targetType == "AtMost") {
+                                Button(onClick = { targetType = "AtMost" }, enabled = !busy) { Text("最多不超过") }
+                            } else {
+                                OutlinedButton(onClick = { targetType = "AtMost" }, enabled = !busy) { Text("最多不超过") }
+                            }
+                        }
+                    }
+                    OutlinedTextField(
+                        note,
+                        { note = it },
+                        Modifier.fillMaxWidth(),
+                        label = { Text("备注（可选）") },
+                        minLines = 2,
+                        enabled = !busy
+                    )
+                    Button(
+                        onClick = {
+                            val numerator = freqNum.toIntOrNull()
+                            val denominator = freqDen.toIntOrNull()
+                            val target = targetValue.toIntOrNull()
+                            if (name.isBlank()) return@Button
+                            if (numerator == null || numerator < 1 || denominator == null || denominator < 1) return@Button
+                            if (category == "value" && target == null) return@Button
+                            val currentHabit = habit
+                            onSaveHabit(
+                                currentHabit.copy(
+                                    action = currentHabit.action.copy(name = name.trim(), category = category, remark = note.trim().ifBlank { null }),
+                                    habit = currentHabit.habit.copy(
+                                        category = category,
+                                        note = note.trim().ifBlank { null },
+                                        unit = if (category == "value") unit.trim().ifBlank { null } else null,
+                                        freqNum = numerator,
+                                        freqDen = denominator,
+                                        question = if (category == "check") question.trim().ifBlank { null } else null,
+                                        targetValue = if (category == "value") target else null,
+                                        targetType = if (category == "value") targetType else null
+                                    )
+                                )
+                            )
+                            editing = false
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !busy && name.isNotBlank() && validFrequency && validTarget
+                    ) {
+                        Text("保存修改")
+                    }
+                }
+            }
+        }
+
+        val today = java.time.LocalDate.now().toString()
+        val todayEntry = habit.checkLists.firstOrNull { it.createTime?.take(10) == today }
+        Text(
+            if (todayEntry == null) "记录今日习惯" else "更新今日记录",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+        if (todayEntry != null) {
+            Text("今天已有记录；再次保存会更新今天的值。", style = MaterialTheme.typography.bodySmall)
+        }
+        if (definition?.category == "value") {
+            OutlinedTextField(
+                value = value,
+                onValueChange = { value = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("记录数值${definition.unit?.let { "（$it）" }.orEmpty()}") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+                enabled = !busy
+            )
+            Button(
+                onClick = { value.toIntOrNull()?.let(onSaveValue) },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = value.toIntOrNull() != null && !busy
+            ) {
+                Text("保存记录")
+            }
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = { onSaveValue(1) },
+                    modifier = Modifier.weight(1f),
+                    enabled = !busy
+                ) {
+                    Text("已完成")
+                }
+                OutlinedButton(
+                    onClick = { onSaveValue(0) },
+                    modifier = Modifier.weight(1f),
+                    enabled = !busy
+                ) {
+                    Text("未完成")
+                }
+            }
+        }
+
+        Text("记录历史", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        if (habit.checkLists.isEmpty()) {
+            EmptyState("还没有记录")
+        } else {
+            habit.checkLists.asReversed().forEach { entry ->
+                Card(Modifier.fillMaxWidth()) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(entry.createTime?.take(10) ?: "记录")
+                        Text(
+                            if (definition?.category == "check") {
+                                if (entry.current == 1) "已完成" else "未完成"
+                            } else {
+                                "${entry.current} ${definition?.unit.orEmpty()}"
+                            },
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun AssistChipLabel(text: String, onClick: () -> Unit) {
     androidx.compose.material3.AssistChip(
         onClick = onClick,
@@ -883,6 +1465,16 @@ private fun RecordDetails(
     var checklistName by remember(record.id) { mutableStateOf("") }
     var checklistFirst by remember(record.id) { mutableStateOf("0") }
     var checklistLast by remember(record.id) { mutableStateOf("") }
+    var durationHours by remember(record.id) {
+        mutableStateOf(
+            record.duration?.let {
+                java.math.BigDecimal.valueOf(it.toLong())
+                    .divide(java.math.BigDecimal.valueOf(3600), 6, java.math.RoundingMode.HALF_UP)
+                    .stripTrailingZeros()
+                    .toPlainString()
+            }.orEmpty()
+        )
+    }
 
     Column(
         modifier
@@ -929,30 +1521,32 @@ private fun RecordDetails(
                 onValueChange = { onRecordChange(record.copy(category = it.ifBlank { null })) },
                 onOptionSelected = { onRecordChange(record.copy(category = it)) }
             )
-            OutlinedTextField(
-                record.start.orEmpty(),
-                { onRecordChange(record.copy(start = it.ifBlank { null })) },
-                Modifier.fillMaxWidth(),
-                label = { Text("开始时间（yyyy-MM-dd HH:mm:ss）") },
-                singleLine = true
+            RecordDateTimePicker(
+                value = record.start.orEmpty(),
+                label = "开始时间",
+                onValueChange = { onRecordChange(record.copy(start = it)) }
+            )
+            RecordDateTimePicker(
+                value = record.end.orEmpty(),
+                label = "结束时间（可选）",
+                onValueChange = { onRecordChange(record.copy(end = it)) }
             )
             OutlinedTextField(
-                record.end.orEmpty(),
-                { onRecordChange(record.copy(end = it.ifBlank { null })) },
-                Modifier.fillMaxWidth(),
-                label = { Text("结束时间（yyyy-MM-dd HH:mm:ss，可选）") },
-                singleLine = true
-            )
-            OutlinedTextField(
-                record.duration?.let { (it / 60).toString() }.orEmpty(),
+                durationHours,
                 { value ->
-                    val minutes = value.toIntOrNull()
+                    durationHours = value
+                    val seconds = value.toBigDecimalOrNull()
+                        ?.takeIf { it >= java.math.BigDecimal.ZERO }
+                        ?.multiply(java.math.BigDecimal.valueOf(3600))
+                        ?.setScale(0, java.math.RoundingMode.HALF_UP)
+                        ?.takeIf { it <= java.math.BigDecimal.valueOf(Int.MAX_VALUE.toLong()) }
                     onRecordChange(
-                        record.copy(duration = minutes?.takeIf { it in 0..(Int.MAX_VALUE / 60) }?.times(60))
+                        record.copy(duration = seconds?.toInt())
                     )
                 },
                 Modifier.fillMaxWidth(),
-                label = { Text("持续时长（分钟）") },
+                label = { Text("持续时长（小时）") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 singleLine = true
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1041,6 +1635,137 @@ private fun RecordDetails(
                     androidx.compose.material3.HorizontalDivider()
                 }
             }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RecordDateTimePicker(
+    value: String,
+    label: String,
+    onValueChange: (String) -> Unit
+) {
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+    var selectedDateMillis by remember { mutableStateOf(System.currentTimeMillis()) }
+    val dateTime = remember(value) {
+        runCatching {
+            java.time.LocalDateTime.parse(
+                value,
+                java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+            )
+        }.getOrElse {
+            runCatching { java.time.LocalDateTime.parse(value) }
+                .getOrElse { java.time.LocalDateTime.now() }
+        }
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        OutlinedButton(
+            onClick = {
+                selectedDateMillis = dateTime.toLocalDate()
+                    .atStartOfDay(java.time.ZoneOffset.UTC)
+                    .toInstant()
+                    .toEpochMilli()
+                showDatePicker = true
+            },
+            modifier = Modifier.weight(1f),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.Start
+            ) {
+                Text(label, style = MaterialTheme.typography.labelSmall)
+                Text(value.ifBlank { "点击选择日期和时间" })
+            }
+        }
+        if (value.isNotBlank()) {
+            TextButton(onClick = { onValueChange("") }) {
+                Text("清除")
+            }
+        }
+    }
+
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = selectedDateMillis
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        selectedDateMillis = datePickerState.selectedDateMillis
+                            ?: selectedDateMillis
+                        showDatePicker = false
+                        showTimePicker = true
+                    }
+                ) {
+                    Text("下一步")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("取消")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    if (showTimePicker) {
+        val timePickerState = rememberTimePickerState(
+            initialHour = dateTime.hour,
+            initialMinute = dateTime.minute,
+            is24Hour = true
+        )
+        Dialog(onDismissRequest = { showTimePicker = false }) {
+            androidx.compose.material3.Surface(
+                shape = MaterialTheme.shapes.extraLarge,
+                tonalElevation = 6.dp
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("选择时间", style = MaterialTheme.typography.titleLarge)
+                    TimePicker(state = timePickerState)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        TextButton(onClick = { showTimePicker = false }) {
+                            Text("取消")
+                        }
+                        TextButton(
+                            onClick = {
+                                val date = java.time.Instant.ofEpochMilli(selectedDateMillis)
+                                    .atZone(java.time.ZoneOffset.UTC)
+                                    .toLocalDate()
+                                onValueChange(
+                                    date.atTime(timePickerState.hour, timePickerState.minute)
+                                        .format(
+                                            java.time.format.DateTimeFormatter.ofPattern(
+                                                "yyyy-MM-dd HH:mm:ss"
+                                            )
+                                        )
+                                )
+                                showTimePicker = false
+                            }
+                        ) {
+                            Text("确定")
+                        }
+                    }
+                }
             }
         }
     }
@@ -1161,7 +1886,7 @@ private fun TodosScreen(
             label = { Text("待办事项") },
             maxLines = 4
         )
-        OutlinedTextField(remark, { remark = it }, Modifier.fillMaxWidth(), label = { Text("备注（可选）") }, minLines = 2)
+        OutlinedTextField(remark, { remark = it }, Modifier.fillMaxWidth(), label = { Text("备注（可选）") }, maxLines = 4)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(
                 onClick = { vm.addTodo(name, remark); name = ""; remark = "" },
@@ -1272,7 +1997,7 @@ private fun NotesScreen(vm: ToolboxViewModel, modifier: Modifier) {
             { content = it },
             modifier = Modifier.fillMaxWidth(),
             label = { Text("便笺内容") },
-            minLines = 4
+            maxLines = 4
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(
@@ -1581,8 +2306,11 @@ private fun SettingsScreen(
     password: String,
     onPassword: (String) -> Unit,
     onSave: () -> Unit,
+    onClearLocalDatabase: () -> Unit,
     onViewCrashLogs: () -> Unit
 ) {
+    var showClearDatabaseConfirmation by remember { mutableStateOf(false) }
+
     Column(
         modifier
             .fillMaxSize()
@@ -1610,13 +2338,43 @@ private fun SettingsScreen(
             singleLine = true
         )
         Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) { Text("保存并连接") }
+        OutlinedButton(
+            onClick = { showClearDatabaseConfirmation = true },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(Icons.Default.Delete, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text("清除本地数据库")
+        }
         OutlinedButton(onClick = onViewCrashLogs, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Default.ErrorOutline, contentDescription = null)
             Spacer(Modifier.width(8.dp))
-            Text("查看崩溃日志")
+            Text("查看异常日志")
         }
         Text("接口与桌面端一致，使用 TheSourceBox 服务端 API。")
         Text("使用局域网或生产服务时，建议启用 HTTPS 并保护服务端访问凭据。", style = MaterialTheme.typography.bodySmall)
+    }
+    if (showClearDatabaseConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showClearDatabaseConfirmation = false },
+            title = { Text("清除本地数据库？") },
+            text = {
+                Text("将清除本地缓存、同步信息和所有待上传的离线修改。此操作不可撤销，服务器上的数据不会被删除。")
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showClearDatabaseConfirmation = false
+                    onClearLocalDatabase()
+                }) {
+                    Text("清除")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearDatabaseConfirmation = false }) {
+                    Text("取消")
+                }
+            }
+        )
     }
 }
 
@@ -1642,7 +2400,7 @@ private fun CrashLogsScreen(modifier: Modifier) {
                     selectedContent = ""
                 }
             } catch (exception: Exception) {
-                error = "加载崩溃日志失败：${exception.message ?: "未知错误"}"
+                error = "加载异常日志失败：${exception.message ?: "未知错误"}"
             } finally {
                 loading = false
             }
@@ -1658,7 +2416,7 @@ private fun CrashLogsScreen(modifier: Modifier) {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("崩溃日志（${logs.size}）", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
+            Text("异常日志（${logs.size}）", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
             IconButton(onClick = ::refreshLogs, enabled = !loading) {
                 Icon(Icons.Default.Refresh, contentDescription = "刷新")
             }
@@ -1672,7 +2430,7 @@ private fun CrashLogsScreen(modifier: Modifier) {
                             selectedContent = ""
                             error = ""
                         } catch (exception: Exception) {
-                            error = "清理崩溃日志失败：${exception.message ?: "未知错误"}"
+                            error = "清理异常日志失败：${exception.message ?: "未知错误"}"
                         }
                     }
                 },
@@ -1680,13 +2438,13 @@ private fun CrashLogsScreen(modifier: Modifier) {
             ) { Text("清空") }
         }
         Text(
-            "崩溃日志仅保存在本机，最多保留最近 20 份。",
+            "包含应用崩溃和 HTTP API 请求失败记录，仅保存在本机，最多保留最近 20 份。",
             style = MaterialTheme.typography.bodySmall
         )
         if (error.isNotBlank()) {
             Text(error, color = MaterialTheme.colorScheme.error)
         } else if (logs.isEmpty() && !loading) {
-            EmptyState("暂无崩溃日志")
+            EmptyState("暂无异常日志")
         }
         if (loading) CircularProgressIndicator(Modifier.size(24.dp))
         LazyColumn(
@@ -1702,7 +2460,7 @@ private fun CrashLogsScreen(modifier: Modifier) {
                                 selectedLog = log
                                 error = ""
                             } catch (exception: Exception) {
-                                error = "读取崩溃日志失败：${exception.message ?: "未知错误"}"
+                                error = "读取异常日志失败：${exception.message ?: "未知错误"}"
                             }
                         }
                     },
@@ -1717,7 +2475,10 @@ private fun CrashLogsScreen(modifier: Modifier) {
                         Column(Modifier
                             .weight(1f)
                             .padding(vertical = 12.dp)) {
-                            Text(log.name, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                if (log.isApiFailure) "API 请求失败 · ${log.name}" else "应用崩溃 · ${log.name}",
+                                fontWeight = FontWeight.SemiBold
+                            )
                             Text(
                                 java.text.SimpleDateFormat(
                                     "yyyy-MM-dd HH:mm:ss",
@@ -1738,7 +2499,7 @@ private fun CrashLogsScreen(modifier: Modifier) {
                                         logs = withContext(Dispatchers.IO) { store.list() }
                                         error = ""
                                     } catch (exception: Exception) {
-                                        error = "删除崩溃日志失败：${exception.message ?: "未知错误"}"
+                                        error = "删除异常日志失败：${exception.message ?: "未知错误"}"
                                     }
                                 }
                             }

@@ -15,6 +15,7 @@ data class CrashLog(
     val timestamp: Long
 ) {
     val name: String get() = file.name
+    val isApiFailure: Boolean get() = name.startsWith("api-error-")
 }
 
 class CrashLogStore(context: Context) {
@@ -50,6 +51,7 @@ class CrashLogStore(context: Context) {
         }
     }
 
+    @Synchronized
     fun record(thread: Thread, throwable: Throwable) {
         if (!directory.exists() && !directory.mkdirs()) {
             throw IOException("无法创建崩溃日志目录")
@@ -59,11 +61,31 @@ class CrashLogStore(context: Context) {
         }.toString().take(MAX_LOG_CHARS)
         val timestamp = System.currentTimeMillis()
         val date = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US).format(Date(timestamp))
-        val log = File(directory, "crash-$timestamp.log")
-        log.writeText(
-            "Time: $date\nThread: ${thread.name}\n\n$stackTrace",
-            Charsets.UTF_8
+        writeLog("crash-$timestamp.log", "Time: $date\nThread: ${thread.name}\n\n$stackTrace")
+    }
+
+    @Synchronized
+    fun recordApiFailure(method: String, endpoint: String, statusCode: Int, responseBody: String) {
+        val timestamp = System.currentTimeMillis()
+        val date = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US).format(Date(timestamp))
+        val safeBody = responseBody
+            .replace(
+                Regex("""(?i)("?(?:authorization|password|token|secret|api[_-]?key)"?\s*[:=]\s*"?)[^",\s}]+"""),
+                "$1[REDACTED]"
+            )
+            .take(MAX_API_RESPONSE_CHARS)
+        writeLog(
+            "api-error-$timestamp.log",
+            "Time: $date\nType: API request failure\nMethod: $method\nEndpoint: $endpoint\n" +
+                "HTTP status: $statusCode\n\nResponse:\n${safeBody.ifBlank { "(empty response)" }}"
         )
+    }
+
+    private fun writeLog(name: String, content: String) {
+        if (!directory.exists() && !directory.mkdirs()) {
+            throw IOException("无法创建崩溃日志目录")
+        }
+        File(directory, name).writeText(content.take(MAX_LOG_CHARS), Charsets.UTF_8)
         list().drop(MAX_LOG_COUNT).forEach(::delete)
     }
 
@@ -71,6 +93,7 @@ class CrashLogStore(context: Context) {
         private const val DIRECTORY_NAME = "crash-logs"
         private const val MAX_LOG_COUNT = 20
         private const val MAX_LOG_CHARS = 1_000_000
+        private const val MAX_API_RESPONSE_CHARS = 8_000
 
         fun install(context: Context) {
             val store = CrashLogStore(context)

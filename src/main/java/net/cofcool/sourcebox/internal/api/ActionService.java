@@ -426,11 +426,19 @@ public class ActionService {
             .build()
         ).onSuccess( c -> {
                 if (saveComment) {
+                    var content = "当前进度: " + c.content();
+                    if (c.first().equals(0) && c.current().equals(0)) {
+                        content = content + " 创建成功";
+                    } else if (Objects.equals(c.current(), c.last())) {
+                        content = content + " 已完成";
+                    } else {
+                        content = content + " " + c.current();
+                    }
                     saveComment(
                         c.actionId(),
                         Comment.builder()
                             .actionId(actionId)
-                            .content(String.format("当前进度为 %s - %d", c.content(), c.current()))
+                            .content(content)
                             .createTime(pojo.createTime())
                             .build()
                     );

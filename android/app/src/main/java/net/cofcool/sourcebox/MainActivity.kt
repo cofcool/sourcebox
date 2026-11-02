@@ -47,6 +47,7 @@ import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -146,10 +147,12 @@ private fun Intent.sharedPlainText(): String? {
 private val pages = listOf(
     "tools" to "工具",
     "todos" to "待办",
-    "notes" to "便笺",
     "habits" to "习惯",
-    "task" to "任务"
+    "task" to "任务",
+    "more" to "更多"
 )
+
+private val moreToolPages = setOf("notes", "timer", "files")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -193,6 +196,7 @@ private fun SourceboxApp(
             "record-create" -> "task"
             "habit-detail", "habit-create" -> "habits"
             "crash-logs" -> "settings"
+            in moreToolPages -> "more"
             else -> "tools"
         }
     }
@@ -274,18 +278,18 @@ private fun SourceboxApp(
                             val icon = when (destination) {
                                 "tools" -> Icons.Default.Home
                                 "todos" -> Icons.AutoMirrored.Filled.List
-                                "notes" -> Icons.Default.Description
                                 "habits" -> Icons.Default.Alarm
-                                else -> Icons.Default.Build
+                                "task" -> Icons.Default.Build
+                                else -> Icons.Default.MoreHoriz
                             }
                             NavigationBarItem(
-                                selected = page == destination,
+                                selected = page == destination ||
+                                    (destination == "more" && page in moreToolPages),
                                 onClick = {
                                     page = destination
                                     when (destination) {
                                         "tools" -> vm.refreshTools()
                                         "todos" -> vm.refreshTodos()
-                                        "notes" -> vm.refreshNotes()
                                         "habits" -> vm.refreshHabits()
                                     }
                                 },
@@ -302,8 +306,12 @@ private fun SourceboxApp(
                 "tools" -> HomeScreen(
                     vm = vm,
                     modifier = Modifier.padding(padding),
-                    onSelectTool = { selectedTool = it; page = "tool" },
-                    onTimer = { page = "timer" },
+                    onSelectTool = { selectedTool = it; page = "tool" }
+                )
+                "more" -> MoreScreen(
+                    modifier = Modifier.padding(padding),
+                    onNotes = { page = "notes"; vm.refreshNotes() },
+                    onTimer = { page = "timer"; vm.refreshTimerRecords() },
                     onFiles = { page = "files" }
                 )
                 "tool" -> selectedTool?.let { tool ->
@@ -472,9 +480,7 @@ private fun SourceboxApp(
 private fun HomeScreen(
     vm: ToolboxViewModel,
     modifier: Modifier,
-    onSelectTool: (ToolInfo) -> Unit,
-    onTimer: () -> Unit,
-    onFiles: () -> Unit
+    onSelectTool: (ToolInfo) -> Unit
 ) {
     Column(modifier
         .fillMaxSize()
@@ -485,16 +491,6 @@ private fun HomeScreen(
             style = MaterialTheme.typography.bodySmall
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 12.dp)) {
-            OutlinedButton(onClick = onTimer, modifier = Modifier.weight(1f)) {
-                Icon(Icons.Default.Timer, contentDescription = null)
-                Spacer(Modifier.width(6.dp))
-                Text("番茄钟")
-            }
-            OutlinedButton(onClick = onFiles, modifier = Modifier.weight(1f)) {
-                Icon(Icons.Default.FolderOpen, contentDescription = null)
-                Spacer(Modifier.width(6.dp))
-                Text("文件")
-            }
             IconButton(onClick = vm::refreshTools) {
                 Icon(Icons.Default.Refresh, contentDescription = "刷新工具")
             }
@@ -531,6 +527,63 @@ private fun HomeScreen(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MoreScreen(
+    modifier: Modifier,
+    onNotes: () -> Unit,
+    onTimer: () -> Unit,
+    onFiles: () -> Unit
+) {
+    Column(
+        modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text("更多", style = MaterialTheme.typography.titleLarge)
+        MoreToolCard(
+            icon = Icons.Default.Description,
+            title = "便笺",
+            description = "查看和管理本地同步的便笺",
+            onClick = onNotes
+        )
+        MoreToolCard(
+            icon = Icons.Default.Timer,
+            title = "番茄钟",
+            description = "专注计时并记录每个阶段",
+            onClick = onTimer
+        )
+        MoreToolCard(
+            icon = Icons.Default.FolderOpen,
+            title = "文件",
+            description = "将手机文件上传到局域网文件接收端",
+            onClick = onFiles
+        )
+    }
+}
+
+@Composable
+private fun MoreToolCard(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    description: String,
+    onClick: () -> Unit
+) {
+    Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.width(12.dp))
+            Column {
+                Text(title, fontWeight = FontWeight.SemiBold)
+                Text(description, style = MaterialTheme.typography.bodySmall)
             }
         }
     }

@@ -1,27 +1,36 @@
 import {useEffect, useMemo, useState} from "react";
 import {NavLink, Route, Routes, useLocation} from "react-router-dom";
 import {
-  Activity,
-  Check,
-  Clipboard,
-  Flame,
-  FileText,
-  Home as HomeIcon,
-  Heart,
-  ListTodo,
-  Menu,
-  MessageCircle,
-  NotebookPen,
-  Pencil,
-  Plus,
-  Save,
-  Search,
-  Settings,
-  Trash2,
-  Wrench,
-  X,
+    Activity,
+    BookOpen,
+    Check,
+    Clipboard,
+    FileText,
+    Flame,
+    Heart,
+    Home as HomeIcon,
+    ListTodo,
+    Menu,
+    MessageCircle,
+    NotebookPen,
+    Pencil,
+    Plus,
+    Save,
+    Search,
+    Settings,
+    Trash2,
+    Wrench,
+    X,
 } from "lucide-react";
-import type {ActionCheckList, ActionComment, ActionRecord, HabitRecord, SystemInfo, TimerStatistics, ToolInfo} from "./api/client";
+import type {
+    ActionCheckList,
+    ActionComment,
+    ActionRecord,
+    HabitRecord,
+    SystemInfo,
+    TimerStatistics,
+    ToolInfo
+} from "./api/client";
 import {api, getBackendUrl} from "./api/client";
 import {invoke, isTauri} from "@tauri-apps/api/core";
 
@@ -149,6 +158,8 @@ function ToolPage({ tool }: { tool?: ToolInfo }) {
       return <HabitPage />;
     case "hisRecord":
       return <RecordBoard />;
+    case "bookRecord":
+      return <BookRecordPage />;
     case "cHelper":
       return <CommandHelperPanel />;
     case "clipboard":
@@ -184,6 +195,106 @@ function SettingsPage({ system }: { system?: SystemInfo }) {
         <p>Java Backend: <strong>{getBackendUrl()}</strong></p>
         {system && <p className="muted">Java {system.javaVersion}</p>}
       </section>
+    </div>
+  );
+}
+
+function BookRecordPage() {
+  const pageSize = 10;
+  const [books, setBooks] = useState<ActionRecord[]>([]);
+  const [query, setQuery] = useState("");
+  const [appliedQuery, setAppliedQuery] = useState("");
+  const [category, setCategory] = useState("");
+  const [page, setPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>();
+
+  async function loadBooks() {
+    setLoading(true);
+    try {
+      const results = await api.bookList(appliedQuery, category, page, pageSize + 1);
+      setBooks(results.slice(0, pageSize));
+      setHasNextPage(results.length > pageSize);
+      setError(undefined);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadBooks();
+  }, [appliedQuery, category, page]);
+
+  return (
+    <div className="book-page">
+      <div className="page-heading">
+        <div>
+          <h1><BookOpen size={25} /> 书籍记录</h1>
+          <p className="muted">查询已同步的电子书和漫画文件。</p>
+        </div>
+        <div className="todo-count">{books.length} 条</div>
+      </div>
+
+      {error && <div className="error">{error}</div>}
+
+      <form className="book-toolbar" onSubmit={(event) => {
+        event.preventDefault();
+        setPage(1);
+        setAppliedQuery(query.trim());
+      }}>
+        <label className="search-field">
+          <Search size={17} />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="按书名搜索"
+            aria-label="按书名搜索"
+          />
+        </label>
+        <select
+          value={category}
+          onChange={(event) => { setCategory(event.target.value); setPage(1); }}
+          aria-label="书籍类别"
+        >
+          <option value="">全部类别</option>
+          <option value="ebook">电子书</option>
+          <option value="comic">漫画</option>
+        </select>
+        <button type="submit" disabled={loading}><Search size={16} />查询</button>
+      </form>
+
+      <section className="book-list" aria-live="polite">
+        {loading ? (
+          <div className="empty-todos">正在加载书籍记录...</div>
+        ) : books.length === 0 ? (
+          <div className="empty-todos">{appliedQuery || category ? "没有匹配的书籍记录" : "还没有书籍记录"}</div>
+        ) : books.map((book) => (
+          <article className="book-item" key={book.id}>
+            <div className="book-item-title">
+              <strong>{book.name}</strong>
+              <span className="book-category">{book.category === "comic" ? "漫画" : "电子书"}</span>
+            </div>
+            {book.remark && <p>{book.remark}</p>}
+            <div className="book-item-meta">
+              <span>{book.labels ? `.${book.labels.replace(/^\./, "")}` : "无后缀"}</span>
+              <span>{book.state}</span>
+            </div>
+          </article>
+        ))}
+      </section>
+
+      <div className="book-pagination">
+        <button className="secondary" type="button" onClick={() => setPage((value) => value - 1)} disabled={page <= 1 || loading}>
+          上一页
+        </button>
+        <span>第 {page} 页 · {books.length} 条</span>
+        <button className="secondary" type="button" onClick={() => setPage((value) => value + 1)} disabled={!hasNextPage || loading}>
+          下一页
+        </button>
+      </div>
     </div>
   );
 }
@@ -1201,29 +1312,37 @@ function HabitPage() {
 }
 
 function TodoPage() {
+  const pageSize = 10;
   const [input, setInput] = useState("");
   const [remark, setRemark] = useState("");
   const [search, setSearch] = useState("");
   const [todos, setTodos] = useState<TodoItem[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
 
-  async function loadTodos(query = "") {
+  async function loadTodos(query = search, pageNumber = page) {
+    setLoading(true);
     try {
       setError(undefined);
-      const list = await api.todoList(query);
-      setTodos(list.map((item) => ({
+      const list = await api.todoList(query, pageNumber, pageSize + 1);
+      setTodos(list.slice(0, pageSize).map((item) => ({
         ...item,
         remark: item.remark ?? "",
         state: item.state ?? "todo",
       })));
+      setHasNextPage(list.length > pageSize);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
     }
   }
 
   useEffect(() => {
-    void loadTodos(search);
-  }, [search]);
+    void loadTodos(search, page);
+  }, [search, page]);
 
   async function saveTodo() {
     const text = input.trim();
@@ -1238,7 +1357,11 @@ function TodoPage() {
       });
       setInput("");
       setRemark("");
-      await loadTodos(search);
+      if (page !== 1) {
+        setPage(1);
+      } else {
+        await loadTodos(search, 1);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -1277,7 +1400,7 @@ function TodoPage() {
           <h1>待办事项</h1>
           <p className="muted">把要做的事情记下来，专注于下一步。</p>
         </div>
-        <div className="todo-count">{todos.filter((todo) => todo.state !== "done").length} 项待完成</div>
+        <div className="todo-count">本页 {todos.filter((todo) => todo.state !== "done").length} 项待完成</div>
       </div>
 
       {error && <div className="error">{error}</div>}
@@ -1309,7 +1432,7 @@ function TodoPage() {
           <Search size={17} />
           <input
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => { setSearch(event.target.value); setPage(1); }}
             placeholder="搜索待办事项"
             aria-label="搜索待办事项"
           />
@@ -1320,7 +1443,9 @@ function TodoPage() {
       </div>
 
       <section className="todo-list" aria-live="polite">
-        {filteredTodos.length === 0 ? (
+        {loading ? (
+          <div className="empty-todos"><strong>正在加载待办...</strong></div>
+        ) : filteredTodos.length === 0 ? (
           <div className="empty-todos">
             <ListTodo size={30} />
             <strong>{search ? "没有找到匹配的待办" : "还没有待办事项"}</strong>
@@ -1349,6 +1474,16 @@ function TodoPage() {
           </div>
         ))}
       </section>
+
+      <div className="todo-pagination">
+        <button className="secondary" type="button" onClick={() => setPage((current) => current - 1)} disabled={page <= 1 || loading}>
+          上一页
+        </button>
+        <span>第 {page} 页 · {todos.length} 条</span>
+        <button className="secondary" type="button" onClick={() => setPage((current) => current + 1)} disabled={!hasNextPage || loading}>
+          下一页
+        </button>
+      </div>
     </div>
   );
 }

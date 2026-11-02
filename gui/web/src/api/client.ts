@@ -178,10 +178,10 @@ export const api = {
     const raw = await request<string[]>("/");
     return normalizeTools(raw);
   },
-  todoList: async (query = ""): Promise<TodoRecord[]> => {
+  todoList: async (query = "", page = 1, size = 10): Promise<TodoRecord[]> => {
     if (query.trim()) {
       const results = await search<ActionRecord>(query, "action");
-      return results
+      const todos = results
         .map((result) => result.data)
         .filter((record) => record.type === "todo" && record.state === "todo")
         .map((record) => ({
@@ -189,11 +189,16 @@ export const api = {
           start: record.start ?? undefined,
           end: record.end ?? undefined,
         }));
+      const pageSize = Math.max(size - 1, 1);
+      const start = (page - 1) * pageSize;
+      return todos.slice(start, start + size);
     }
 
     const params = new URLSearchParams({
       state: "todo",
       type: "todo",
+      page: String(page),
+      size: String(size),
     });
     return request<TodoRecord[]>(`/action?${params.toString()}`);
   },
@@ -258,6 +263,21 @@ export const api = {
     await request<void>(`/action/habit/${encodeURIComponent(actionId)}`, {
       method: "DELETE",
     });
+  },
+  bookList: async (
+    query = "",
+    category = "",
+    page = 1,
+    size = 10,
+  ): Promise<ActionRecord[]> => {
+    const params = new URLSearchParams({
+      type: "book",
+      page: String(page),
+      size: String(size),
+    });
+    if (query.trim()) params.set("name", query.trim());
+    if (category) params.set("category", category);
+    return request<ActionRecord[]>(`/action?${params.toString()}`);
   },
   timerRecord: async (record: {
     name: string;

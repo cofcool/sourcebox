@@ -3,15 +3,23 @@ package net.cofcool.sourcebox.internal;
 import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.Tool;
 import net.cofcool.sourcebox.Utils;
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
+import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
+import org.apache.commons.compress.archivers.zip.ZipFile;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.zip.CRC32;
 
 class FileToolsTest extends BaseTest {
 
@@ -208,6 +216,99 @@ class FileToolsTest extends BaseTest {
                 .arg("path", newFile.toString())
                 .arg("clippingsToMdType", FileTools.ClippingsToMd.ClipType.mrexpt.name())
         );
+    }
+
+
+    @Test
+    void runWithZipMerger() throws Exception {
+        Path firstZip = tmpDir.resolve("first.zip");
+        Path secondZip = tmpDir.resolve("second.zip");
+        Path mergedZip = tmpDir.resolve("merged.zip");
+        writeZip(firstZip, List.of(
+            new ZipTestEntry("folder/first.txt", "first", false),
+            new ZipTestEntry("second.log", "second", true)
+        ));
+        writeZip(secondZip, List.of(new ZipTestEntry("third.txt", "third", false)));
+
+        instance().run(
+            args.arg("util", "zipMerger")
+                .arg("path", String.join(",", firstZip.toString(), secondZip.toString()))
+                .arg("out", mergedZip.toString())
+        );
+
+        try (ZipFile zip = ZipFile.builder().setPath(mergedZip).get()) {
+            Enumeration<ZipArchiveEntry> entries = zip.getEntries();
+            List<String> names = new ArrayList<>();
+            List<String> contents = new ArrayList<>();
+            List<Integer> methods = new ArrayList<>();
+            while (entries.hasMoreElements()) {
+                ZipArchiveEntry entry = entries.nextElement();
+                names.add(entry.getName());
+                methods.add(entry.getMethod());
+                try (InputStream input = zip.getInputStream(entry)) {
+                    contents.add(new String(input.readAllBytes(), StandardCharsets.UTF_8));
+                }
+            }
+
+            Assertions.assertEquals(List.of("1.txt", "2.log", "3.txt"), names);
+            Assertions.assertEquals(List.of("first", "second", "third"), contents);
+            Assertions.assertEquals(List.of(ZipArchiveEntry.DEFLATED, ZipArchiveEntry.STORED, ZipArchiveEntry.DEFLATED), methods);
+        }
+    }
+
+    @Test
+    void runWithZipMergerRejectsInputAsOutput() throws Exception {
+        Path inputZip = tmpDir.resolve("input.zip");
+        writeZip(inputZip, List.of(new ZipTestEntry("first.txt", "first", false)));
+
+        Assertions.assertThrows(IllegalArgumentException.class, () -> instance().run(
+            args.arg("util", "zipMerger")
+                .arg("path", inputZip.toString())
+                .arg("out", inputZip.toString())
+        ));
+
+        try (ZipFile zip = ZipFile.builder().setPath(inputZip).get()) {
+            Assertions.assertTrue(zip.getEntries().hasMoreElements());
+        }
+    }
+
+    @Test
+    void runWithZipMergerDoesNotReplaceExistingOutput() throws Exception {
+        Path inputZip = tmpDir.resolve("input-existing-output.zip");
+        Path outputZip = tmpDir.resolve("existing-output.zip");
+        writeZip(inputZip, List.of(new ZipTestEntry("first.txt", "first", false)));
+        Files.writeString(outputZip, "keep existing file");
+
+        Assertions.assertThrows(java.nio.file.FileAlreadyExistsException.class, () -> instance().run(
+            args.arg("util", "zipMerger")
+                .arg("path", inputZip.toString())
+                .arg("out", outputZip.toString())
+        ));
+
+        Assertions.assertEquals("keep existing file", Files.readString(outputZip));
+    }
+
+    private void writeZip(Path path, List<ZipTestEntry> entries) throws Exception {
+        try (ZipArchiveOutputStream zip = new ZipArchiveOutputStream(path.toFile())) {
+            for (ZipTestEntry testEntry : entries) {
+                byte[] content = testEntry.content().getBytes(StandardCharsets.UTF_8);
+                ZipArchiveEntry entry = new ZipArchiveEntry(testEntry.name());
+                if (testEntry.stored()) {
+                    CRC32 crc = new CRC32();
+                    crc.update(content);
+                    entry.setMethod(ZipArchiveEntry.STORED);
+                    entry.setSize(content.length);
+                    entry.setCompressedSize(content.length);
+                    entry.setCrc(crc.getValue());
+                }
+                zip.putArchiveEntry(entry);
+                zip.write(content);
+                zip.closeArchiveEntry();
+            }
+        }
+    }
+
+    private record ZipTestEntry(String name, String content, boolean stored) {
     }
 
 }

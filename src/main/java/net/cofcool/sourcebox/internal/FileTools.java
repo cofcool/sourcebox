@@ -6,14 +6,15 @@ import lombok.NoArgsConstructor;
 import net.cofcool.sourcebox.Tool;
 import net.cofcool.sourcebox.ToolName;
 import net.cofcool.sourcebox.util.JsonUtil;
+import org.apache.commons.compress.archivers.zip.UnicodePathExtraField;
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
+import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
+import org.apache.commons.compress.archivers.zip.ZipFile;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.StringReader;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
@@ -33,6 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.zip.ZipException;
 
 public class FileTools implements Tool {
 
@@ -42,7 +44,8 @@ public class FileTools implements Tool {
         "dup", new FileDuplicateParser(),
         "delete", new Delete(),
         "foreach", new Foreach(),
-        "clippings2Md", new ClippingsToMd()
+        "clippings2Md", new ClippingsToMd(),
+        "zipMerger", new ZipMerger()
     );
 
     @Override
@@ -55,8 +58,9 @@ public class FileTools implements Tool {
         var util = args.readArg("util").val();
         var outPath = args.readArg("out");
 
-        var outStr = utilMap.get(util).run(args);
-        if (outPath.isPresent()) {
+        var simpleTool = utilMap.get(util);
+        var outStr = simpleTool.run(args);
+        if (outPath.isPresent() && simpleTool.shouldWriteOut(args)) {
             FileUtils.writeStringToFile(new File(outPath.val()), outStr, StandardCharsets.UTF_8);
         } else {
             args.getContext().write("Output:");
@@ -330,9 +334,6 @@ public class FileTools implements Tool {
         @Override
         public String run(Tool.Args args) throws Exception {
             var path = args.readArg("path").val();
-            var out = args.readArg("out").optVal().orElse(
-                FilenameUtils.getFullPath(path) + FilenameUtils.getBaseName(path) + ".md"
-            );
             var type = ClipType.valueOf(args.readArg("clippingsToMdType").val());
 
             var fileContent = FileUtils.readFileToString(new File(path), StandardCharsets.UTF_8);
@@ -456,6 +457,104 @@ public class FileTools implements Tool {
 
         enum ClipType {
             kindle, mrexpt
+        }
+    }
+
+    record ZipMerger() implements SimpleTool {
+
+        private static String merge(List<Path> zipFiles, Path output) throws IOException {
+            int total = 0;
+            for (Path path : zipFiles) {
+                try (ZipFile zip = ZipFile.builder()
+                    .setPath(path)
+                    .get()) {
+
+                    Enumeration<ZipArchiveEntry> entries =
+                        zip.getEntries();
+
+                    while (entries.hasMoreElements()) {
+                        ZipArchiveEntry entry = entries.nextElement();
+
+                        if (!entry.isDirectory()) {
+                            total++;
+                        }
+                    }
+                }
+            }
+
+            int digits = Math.max(1, String.valueOf(total).length());
+
+            var str = new StringBuilder();
+            var index = 1;
+            try (ZipArchiveOutputStream out = new ZipArchiveOutputStream(
+                output, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
+                for (Path path : zipFiles) {
+                    try (ZipFile zip = ZipFile.builder()
+                        .setPath(path)
+                        .get()) {
+
+                        Enumeration<ZipArchiveEntry> entries = zip.getEntries();
+
+                        while (entries.hasMoreElements()) {
+                            ZipArchiveEntry entry = entries.nextElement();
+
+                            if (entry.isDirectory()) {
+                                continue;
+                            }
+
+                            String name = entry.getName();
+                            int dot = name.lastIndexOf('/');
+                            String fileName = name.substring(dot + 1);
+
+                            int extIndex = fileName.lastIndexOf('.');
+                            String extension = extIndex > 0
+                                ? fileName.substring(extIndex)
+                                : "";
+
+                            String newName = String.format(Locale.ROOT, "%0" + digits + "d%s", index++, extension);
+
+                            ZipArchiveEntry newEntry = new RenamedZipArchiveEntry(entry, newName);
+
+                            try (InputStream raw = zip.getRawInputStream(entry)) {
+                                if (raw == null) {
+                                    throw new IOException("read error: " + name);
+                                }
+                                out.addRawArchiveEntry(newEntry, raw);
+                            }
+                            str.append("regenerated file name: ").append(name).append(" -> ").append(newName).append("\n");
+                        }
+                    }
+                }
+            }
+
+            str.append("finished ").append(total).append(" zip file then wrote to ").append(output);
+            return str.toString();
+        }
+
+        private static class RenamedZipArchiveEntry extends ZipArchiveEntry {
+
+            private RenamedZipArchiveEntry(ZipArchiveEntry entry, String name) throws ZipException {
+                super(entry);
+                setName(name);
+                if (getExtraField(UnicodePathExtraField.UPATH_ID) != null) {
+                    removeExtraField(UnicodePathExtraField.UPATH_ID);
+                }
+            }
+        }
+
+        @Override
+        public String run(Args args) throws Exception {
+            var paths = Arrays.stream(args.readArg("path").val().split(","))
+                .map(Path::of)
+                .toList();
+            var out = args.readArg("out").optVal().orElse("./merged.zip");
+
+            return merge(paths, Path.of(out));
+        }
+
+        @Override
+        public boolean shouldWriteOut(Args args) {
+            return false;
         }
     }
 

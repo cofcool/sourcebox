@@ -308,6 +308,10 @@ public interface Tool {
     interface SimpleTool {
 
         String run(Args args) throws Exception;
+
+        default boolean shouldWriteOut(Args args) {
+            return true;
+        }
     }
 
     @Retention(RetentionPolicy.RUNTIME)

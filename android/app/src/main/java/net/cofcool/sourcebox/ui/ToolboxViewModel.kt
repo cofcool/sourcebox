@@ -119,6 +119,8 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         private set
     var todos by mutableStateOf<List<TodoRecord>>(emptyList())
         private set
+    var todoHasNextPage by mutableStateOf(false)
+        private set
     var commands by mutableStateOf<List<CommandRecord>>(emptyList())
         private set
     var records by mutableStateOf<List<ActionRecord>>(emptyList())
@@ -127,11 +129,17 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         private set
     var habitHasNextPage by mutableStateOf(false)
         private set
+    var books by mutableStateOf<List<ActionRecord>>(emptyList())
+        private set
+    var bookHasNextPage by mutableStateOf(false)
+        private set
     var habitRecordDetails by mutableStateOf<HabitRecord?>(null)
         private set
     var recordCandidates by mutableStateOf<List<ActionRecord>>(emptyList())
         private set
     private var recordCandidateQuery = ""
+    private var currentTodoQuery = ""
+    private var currentTodoPage = 1
     var recordCategories by mutableStateOf<List<String>>(emptyList())
         private set
     var recordLabels by mutableStateOf<List<String>>(emptyList())
@@ -195,6 +203,8 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         records = emptyList()
         habits = emptyList()
         habitHasNextPage = false
+        books = emptyList()
+        bookHasNextPage = false
         habitRecordDetails = null
         recordCandidates = emptyList()
         recordCandidateQuery = ""
@@ -683,14 +693,23 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         message = if (isDirty) "便笺已在本地删除，等待联网同步" else "便笺已删除"
     }
 
-    fun refreshTodos(query: String = "") = perform {
+    fun refreshTodos(query: String = "", page: Int = 1) = perform {
+        require(page > 0) { "页码必须大于 0" }
+        currentTodoQuery = query
+        currentTodoPage = page
+        loadTodos(query, page)
+    }
+
+    private suspend fun loadTodos(query: String, page: Int) {
         val actionQuery = buildString {
             append("state=todo")
             if (query.isNotBlank()) append("&name=${java.net.URLEncoder.encode(query, "UTF-8")}")
         }
-        todos = withContext(Dispatchers.IO) {
-            actionDatabase.actions("todo", actionQuery).map { it.toTodoRecord() }
+        val result = withContext(Dispatchers.IO) {
+            actionDatabase.actions("todo", actionQuery, page, 11)
         }
+        todos = result.take(10).map { it.toTodoRecord() }
+        todoHasNextPage = result.size > 10
     }
 
     fun addTodo(name: String, remark: String) = perform {
@@ -719,9 +738,7 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         )
         localActionCount = withContext(Dispatchers.IO) { actionDatabase.actionCount() }
         refreshPendingCount()
-        todos = withContext(Dispatchers.IO) {
-            actionDatabase.actions("todo", "state=todo").map { it.toTodoRecord() }
-        }
+        loadTodos(currentTodoQuery, currentTodoPage)
         message = if (isDirty) "待办已添加到本地，等待联网同步" else "待办已添加"
     }
 
@@ -742,9 +759,7 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         )
         localActionCount = withContext(Dispatchers.IO) { actionDatabase.actionCount() }
         refreshPendingCount()
-        todos = withContext(Dispatchers.IO) {
-            actionDatabase.actions("todo", "state=todo").map { it.toTodoRecord() }
-        }
+        loadTodos(currentTodoQuery, currentTodoPage)
         message = if (isDirty) "待办已在本地完成，等待联网同步" else "待办已完成"
     }
 
@@ -797,6 +812,19 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         }
         habits = result.take(10)
         habitHasNextPage = result.size > 10
+    }
+
+    fun refreshBooks(query: String = "", category: String = "", page: Int = 1) = perform {
+        require(page > 0) { "页码必须大于 0" }
+        val filters = buildList {
+            query.trim().takeIf(String::isNotBlank)?.let { add("name=$it") }
+            category.takeIf(String::isNotBlank)?.let { add("category=$it") }
+        }.joinToString("&")
+        val result = withContext(Dispatchers.IO) {
+            actionDatabase.actions("book", filters, page, 11)
+        }
+        books = result.take(10)
+        bookHasNextPage = result.size > 10
     }
 
     fun createHabit(

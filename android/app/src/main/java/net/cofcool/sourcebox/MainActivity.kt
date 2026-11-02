@@ -152,7 +152,7 @@ private val pages = listOf(
     "more" to "更多"
 )
 
-private val moreToolPages = setOf("notes", "timer", "files")
+private val moreToolPages = setOf("notes", "timer", "files", "books")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -234,6 +234,7 @@ private fun SourceboxApp(
                                 "record-detail" -> "编辑任务"
                                 "habit-detail" -> "习惯详情"
                                 "habit-create" -> "添加习惯"
+                                "books" -> "书籍记录"
                                 "timer" -> "番茄钟"
                                 "files" -> "文件工具"
                                 "settings" -> "连接设置"
@@ -309,10 +310,12 @@ private fun SourceboxApp(
                     onSelectTool = { selectedTool = it; page = "tool" }
                 )
                 "more" -> MoreScreen(
+                    vm = vm,
                     modifier = Modifier.padding(padding),
                     onNotes = { page = "notes"; vm.refreshNotes() },
                     onTimer = { page = "timer"; vm.refreshTimerRecords() },
-                    onFiles = { page = "files" }
+                    onFiles = { page = "files" },
+                    onBooks = { page = "books"; vm.refreshBooks() }
                 )
                 "tool" -> selectedTool?.let { tool ->
                     WebToolScreen(
@@ -408,6 +411,10 @@ private fun SourceboxApp(
                         page = "habit-detail"
                     }
                 )
+                "books" -> BookRecordScreen(
+                    vm = vm,
+                    modifier = Modifier.padding(padding)
+                )
                 "todos" -> TodosScreen(
                     vm = vm,
                     modifier = Modifier.padding(padding),
@@ -486,11 +493,15 @@ private fun HomeScreen(
         .fillMaxSize()
         .padding(horizontal = 16.dp)) {
         Text("TheSourceBox", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        Text(
-            if (vm.baseUrl.isBlank()) "尚未连接后端" else "后端：${vm.baseUrl}",
-            style = MaterialTheme.typography.bodySmall
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 12.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                if (vm.baseUrl.isBlank()) "尚未连接后端" else "后端：${vm.baseUrl}",
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodySmall
+            )
             IconButton(onClick = vm::refreshTools) {
                 Icon(Icons.Default.Refresh, contentDescription = "刷新工具")
             }
@@ -508,7 +519,7 @@ private fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(
-                    vm.tools.filterNot { it.id in setOf("note", "todo", "hisRecord", "timer", "habits") },
+                    vm.tools.filterNot { it.id in setOf("note", "todo", "hisRecord", "bookRecord", "timer", "habits") },
                     key = { it.id }
                 ) { tool ->
                     Card(onClick = { onSelectTool(tool) }, modifier = Modifier.fillMaxWidth()) {
@@ -534,18 +545,57 @@ private fun HomeScreen(
 
 @Composable
 private fun MoreScreen(
+    vm: ToolboxViewModel,
     modifier: Modifier,
     onNotes: () -> Unit,
     onTimer: () -> Unit,
-    onFiles: () -> Unit
+    onFiles: () -> Unit,
+    onBooks: () -> Unit
 ) {
     Column(
         modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text("更多", style = MaterialTheme.typography.titleLarge)
+        Card(Modifier.fillMaxWidth()) {
+            Column(
+                Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("数据同步", style = MaterialTheme.typography.titleMedium)
+                        Text("行动 ${vm.localActionCount} · 便笺 ${vm.localNoteCount}")
+                    }
+                    OutlinedButton(
+                        onClick = vm::syncAllData,
+                        enabled = !vm.busy
+                    ) {
+                        Text("立即同步")
+                    }
+                }
+                Text(
+                    vm.lastActionSync?.let { "行动最近同步：$it" } ?: "行动尚未同步",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Text(
+                    "便笺：${vm.lastNoteSync ?: "尚未同步"} · 类型：${vm.lastTypeSync ?: "尚未同步"}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Text(
+                    "待上传的离线修改：${vm.pendingChangeCount}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (vm.pendingChangeCount > 0) MaterialTheme.colorScheme.error
+                    else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
         MoreToolCard(
             icon = Icons.Default.Description,
             title = "便笺",
@@ -563,6 +613,12 @@ private fun MoreScreen(
             title = "文件",
             description = "将手机文件上传到局域网文件接收端",
             onClick = onFiles
+        )
+        MoreToolCard(
+            icon = Icons.Default.Description,
+            title = "书籍",
+            description = "查看和筛选书籍记录",
+            onClick = onBooks
         )
     }
 }
@@ -851,30 +907,6 @@ private fun RecordBoardScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text("本地数据库：${vm.localActionCount} 条")
-                Text(
-                    vm.lastActionSync?.let { "最近同步：$it" } ?: "尚未同步",
-                    style = MaterialTheme.typography.labelSmall
-                )
-            }
-            OutlinedButton(onClick = vm::syncAllData, enabled = !vm.busy) {
-                Text("立即同步")
-            }
-        }
-        Text("行动 ${vm.localActionCount} · 便笺 ${vm.localNoteCount}", style = MaterialTheme.typography.labelSmall)
-        Text(
-            "便笺：${vm.lastNoteSync ?: "尚未同步"} · 类型：${vm.lastTypeSync ?: "尚未同步"}",
-            style = MaterialTheme.typography.labelSmall
-        )
-        Text(
-            "待上传的离线修改：${vm.pendingChangeCount}",
-            style = MaterialTheme.typography.labelSmall,
-            color = if (vm.pendingChangeCount > 0) MaterialTheme.colorScheme.error
-            else MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
@@ -1047,6 +1079,135 @@ private fun HabitBoardScreen(
             }
             Text("第 $page 页 · ${vm.habits.size} 条")
             OutlinedButton(onClick = { page++ }, enabled = vm.habitHasNextPage && !vm.busy) {
+                Text("下一页")
+            }
+        }
+    }
+}
+
+@Composable
+private fun BookRecordScreen(
+    vm: ToolboxViewModel,
+    modifier: Modifier
+) {
+    var query by remember { mutableStateOf("") }
+    var appliedQuery by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf("") }
+    var categoryMenuOpen by remember { mutableStateOf(false) }
+    var page by remember { mutableStateOf(1) }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(appliedQuery, category, page) {
+        vm.refreshBooks(appliedQuery, category, page)
+    }
+
+    Column(
+        modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                modifier = Modifier.weight(1f),
+                label = { Text("按书名搜索") },
+                placeholder = { Text("输入书名") },
+                singleLine = true
+            )
+            IconButton(
+                onClick = {
+                    keyboardController?.hide()
+                    appliedQuery = query.trim()
+                    page = 1
+                },
+                enabled = !vm.busy
+            ) {
+                Icon(Icons.Default.Search, contentDescription = "查询书籍")
+            }
+        }
+
+        Box {
+            OutlinedButton(onClick = { categoryMenuOpen = true }, enabled = !vm.busy) {
+                Text(when (category) {
+                    "ebook" -> "类别：电子书"
+                    "comic" -> "类别：漫画"
+                    else -> "全部类别"
+                })
+            }
+            DropdownMenu(
+                expanded = categoryMenuOpen,
+                onDismissRequest = { categoryMenuOpen = false }
+            ) {
+                listOf("" to "全部类别", "ebook" to "电子书", "comic" to "漫画").forEach { (value, label) ->
+                    DropdownMenuItem(
+                        text = { Text(label) },
+                        onClick = {
+                            category = value
+                            categoryMenuOpen = false
+                            page = 1
+                        }
+                    )
+                }
+            }
+        }
+
+        if (vm.books.isEmpty()) {
+            EmptyState(
+                if (appliedQuery.isNotBlank() || category.isNotBlank()) "没有匹配的书籍记录"
+                else "还没有书籍记录"
+            )
+        } else {
+            vm.books.forEach { book ->
+                Card(Modifier.fillMaxWidth()) {
+                    Column(
+                        Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                book.name,
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                if (book.category == "comic") "漫画" else "电子书",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        if (!book.remark.isNullOrBlank()) {
+                            Text(book.remark, style = MaterialTheme.typography.bodySmall)
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                book.labels?.takeIf(String::isNotBlank)?.let { ".$it" } ?: "无后缀",
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                            Text(book.state, style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedButton(onClick = { if (page > 1) page-- }, enabled = page > 1 && !vm.busy) {
+                Text("上一页")
+            }
+            Text("第 $page 页 · ${vm.books.size} 条")
+            OutlinedButton(onClick = { page++ }, enabled = vm.bookHasNextPage && !vm.busy) {
                 Text("下一页")
             }
         }
@@ -1916,7 +2077,13 @@ private fun TodosScreen(
     var name by remember { mutableStateOf("") }
     var remark by remember { mutableStateOf("") }
     var query by remember { mutableStateOf("") }
+    var appliedQuery by remember { mutableStateOf("") }
+    var page by remember { mutableStateOf(1) }
     val keyboardController = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(appliedQuery, page) {
+        vm.refreshTodos(appliedQuery, page)
+    }
 
     LaunchedEffect(sharedText) {
         if (!sharedText.isNullOrBlank()) {
@@ -1941,7 +2108,7 @@ private fun TodosScreen(
                 onClick = { vm.addTodo(name, remark); name = ""; remark = "" },
                 enabled = !vm.busy
             ) { Text("添加待办") }
-            OutlinedButton(onClick = vm::refreshTodos) { Text("刷新") }
+            OutlinedButton(onClick = { vm.refreshTodos(appliedQuery, page) }) { Text("刷新") }
         }
         Row(Modifier.padding(bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             OutlinedTextField(
@@ -1953,18 +2120,43 @@ private fun TodosScreen(
             )
             IconButton(onClick = {
                 keyboardController?.hide()
-                vm.refreshTodos(query)
+                appliedQuery = query.trim()
+                page = 1
             }) {
                 Icon(Icons.Default.Search, contentDescription = "搜索")
             }
         }
         if (vm.todos.isEmpty()) {
-            EmptyState("暂无待办事项")
+            Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                EmptyState(if (appliedQuery.isBlank()) "暂无待办事项" else "没有匹配的待办事项")
+            }
         } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
                 items(vm.todos, key = { it.id }) { todo ->
                     TodoCard(todo, onComplete = { vm.completeTodo(todo) })
                 }
+            }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedButton(
+                onClick = { page-- },
+                enabled = page > 1 && !vm.busy
+            ) {
+                Text("上一页")
+            }
+            Text("第 $page 页 · ${vm.todos.size} 条")
+            OutlinedButton(
+                onClick = { page++ },
+                enabled = vm.todoHasNextPage && !vm.busy
+            ) {
+                Text("下一页")
             }
         }
     }

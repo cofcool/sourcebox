@@ -1,21 +1,15 @@
 package net.cofcool.sourcebox.util;
 
 import io.vertx.sqlclient.Row;
+
 import java.beans.Transient;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.*;
 import java.sql.JDBCType;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -78,10 +72,15 @@ public class TableInfoHelper {
         public <T> T newInstance(Row row, List<String> columnNames) {
             if (defaultMapper == null) {
                 if (Record.class.isAssignableFrom(type)) {
-                    return  (T) Utils.instance(type, columnNames.stream().map(row::getValue).toArray());
+                    return (T) newRecordInstance(row, columnNames);
                 } else {
                     var a = (T) Utils.instance(type);
-                    columns.forEach((k, v) -> v.setVal(a, row.getValue(v.name())));
+                    columns.values().forEach(property -> {
+                        var columnIndex = findColumnIndex(columnNames, property.name());
+                        if (columnIndex >= 0) {
+                            property.setVal(a, row.getValue(columnIndex));
+                        }
+                    });
                     return a;
                 }
             } else {
@@ -91,6 +90,71 @@ public class TableInfoHelper {
                     throw new RuntimeException(e);
                 }
             }
+        }
+
+        private Object newRecordInstance(Row row, List<String> columnNames) {
+            var components = type.getRecordComponents();
+            var values = new Object[components.length];
+            for (int i = 0; i < components.length; i++) {
+                var component = components[i];
+                var property = columns.get(component.getName());
+                var columnName = property == null ? component.getName() : property.name();
+                var columnIndex = findColumnIndex(columnNames, columnName);
+                values[i] = columnIndex >= 0
+                    ? row.getValue(columnIndex)
+                    : defaultValue(component.getType());
+            }
+
+            try {
+                var parameterTypes = Arrays.stream(components)
+                    .map(RecordComponent::getType)
+                    .toArray(Class<?>[]::new);
+                var constructor = type.getDeclaredConstructor(parameterTypes);
+                constructor.setAccessible(true);
+                return constructor.newInstance(values);
+            } catch (ReflectiveOperationException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        private static int findColumnIndex(List<String> columnNames, String columnName) {
+            for (int i = 0; i < columnNames.size(); i++) {
+                if (columnNames.get(i).equalsIgnoreCase(columnName)) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        private static Object defaultValue(Class<?> type) {
+            if (!type.isPrimitive()) {
+                return null;
+            }
+            if (type == boolean.class) {
+                return false;
+            }
+            if (type == char.class) {
+                return '\0';
+            }
+            if (type == byte.class) {
+                return (byte) 0;
+            }
+            if (type == short.class) {
+                return (short) 0;
+            }
+            if (type == int.class) {
+                return 0;
+            }
+            if (type == long.class) {
+                return 0L;
+            }
+            if (type == float.class) {
+                return 0F;
+            }
+            if (type == double.class) {
+                return 0D;
+            }
+            throw new IllegalArgumentException("Unsupported primitive type: " + type);
         }
 
         @SuppressWarnings("unchecked")

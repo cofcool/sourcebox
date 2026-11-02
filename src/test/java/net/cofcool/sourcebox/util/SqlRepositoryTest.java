@@ -103,6 +103,24 @@ class SqlRepositoryTest extends BaseTest {
     }
 
     @Test
+    void findPartialColumns(Vertx vertx, VertxTestContext testContext) {
+        repository
+            .save(new User("9", "partial", "pwd"))
+            .compose(u -> repository.find(QueryBuilder.builder()
+                    .select("name", "id")
+                    .from("user")
+                    .and("id = ?", "9")))
+            .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
+                assertEquals(1, r.size());
+                assertEquals("9", r.getFirst().id().trim());
+                assertEquals("partial", r.getFirst().name());
+                assertNull(r.getFirst().pwd());
+                assertNull(r.getFirst().time());
+                testContext.completeNow();
+            })));
+    }
+
+    @Test
     void testFind1(Vertx vertx, VertxTestContext testContext) {
         repository
             .find("1")

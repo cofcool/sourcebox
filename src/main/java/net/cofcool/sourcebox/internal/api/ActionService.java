@@ -64,16 +64,13 @@ public class ActionService {
         for (ActionInterceptor interceptor : saveInterceptors) {
             record = interceptor.apply(record);
         }
-        return actionRecordSqlRepository.save(record).compose(a -> {
-            Future<Void> saveComments = Future.succeededFuture();
+        var ret = actionRecordSqlRepository.save(record);
+        ret.onSuccess(a -> {
             if (a.comments() != null) {
                 var comments = a.comments().stream().map(c ->
                     new Comment(Utils.generateShortUUID(), a.id(), c, LocalDateTime.now(), LocalDateTime.now())
                 ).toList();
-                if (!comments.isEmpty()) {
-                    saveComments = commentSqlRepository.save(comments)
-                        .onFailure(new Log("Save comment error"));
-                }
+                commentSqlRepository.save(comments).onFailure(new Log("Save comment error"));
             }
             if (a.category() != null) {
                 saveType(a.category(), Type.category, "Save actionType error");
@@ -86,11 +83,9 @@ public class ActionService {
                     saveType(s, Type.label, "Save label error");
                 }
             }
-            return saveComments
-                .compose(ignored -> commentSqlRepository.find(new Comment(a.id())))
-                .compose(comments -> searchService.indexAction(a, comments))
-                .map(a);
+            searchService.indexAction(a);
         });
+        return ret;
     }
 
     public Future<ActionRecord> saveHabit(Habit.HabitRecord habitRecord) {
@@ -411,7 +406,7 @@ public class ActionService {
     private Future<Void> refreshActionIndex(String actionId) {
         return actionRecordSqlRepository.find(actionId)
             .compose(action -> commentSqlRepository.find(new Comment(actionId))
-                .compose(comments -> searchService.indexAction(action, comments)));
+                .compose(comments -> searchService.indexAction(action)));
     }
 
     public Future<CheckList> saveCheckList(String actionId, CheckList pojo, boolean saveComment) {

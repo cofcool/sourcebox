@@ -101,7 +101,7 @@ class ActionServiceTest extends BaseTest {
     @Test
     void fullTextSearchIndexesActionFieldsAndComments(Vertx vertx, VertxTestContext testContext) {
         LuceneSearchService.get(vertx)
-            .search("first", "action")
+            .search("test", "action")
             .onComplete(testContext.succeeding(results -> testContext.verify(() -> {
                 Assertions.assertTrue(results.stream().anyMatch(result ->
                     result.id().equals(defaultRecord.id()) && result.data() instanceof ActionRecord

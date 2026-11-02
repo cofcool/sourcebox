@@ -6,7 +6,6 @@ import lombok.CustomLog;
 import net.cofcool.sourcebox.App;
 import net.cofcool.sourcebox.internal.api.entity.ActionRecord;
 import net.cofcool.sourcebox.internal.api.entity.CommandRecord;
-import net.cofcool.sourcebox.internal.api.entity.Comment;
 import net.cofcool.sourcebox.internal.api.entity.Note;
 import net.cofcool.sourcebox.util.RepositoryUtil;
 import net.cofcool.sourcebox.util.SqlRepository;
@@ -48,7 +47,6 @@ public class LuceneSearchService {
 
     private final Vertx vertx;
     private final SqlRepository<ActionRecord> actionRepository = RepositoryUtil.getRepository(ActionRecord.class);
-    private final SqlRepository<Comment> commentRepository = RepositoryUtil.getRepository(Comment.class);
     private final SqlRepository<CommandRecord> commandRepository = RepositoryUtil.getRepository(CommandRecord.class);
     private final SqlRepository<Note> noteRepository = RepositoryUtil.getRepository(Note.class);
     private final Future<Void> ready;
@@ -76,19 +74,15 @@ public class LuceneSearchService {
             }
             return Future.all(
                 actionRepository.find(),
-                commentRepository.find(),
                 commandRepository.find(),
                 noteRepository.find()
             ).compose(results -> {
                 List<ActionRecord> actions = results.resultAt(0);
-                List<Comment> comments = results.resultAt(1);
-                List<CommandRecord> commands = results.resultAt(2);
-                List<Note> notes = results.resultAt(3);
-                Map<String, List<Comment>> commentsByAction = comments.stream()
-                    .collect(Collectors.groupingBy(Comment::actionId));
+                List<CommandRecord> commands = results.resultAt(1);
+                List<Note> notes = results.resultAt(2);
                 return this.<Void>runBlocking(() -> {
                     for (ActionRecord action : actions) {
-                        writer.addDocument(actionDocument(action, commentsByAction.getOrDefault(action.id(), List.of())));
+                        writer.addDocument(actionDocument(action));
                     }
                     for (CommandRecord command : commands) {
                         writer.addDocument(commandDocument(command));
@@ -160,8 +154,8 @@ public class LuceneSearchService {
         };
     }
 
-    public Future<Void> indexAction(ActionRecord action, List<Comment> comments) {
-        return update(actionDocument(action, comments));
+    public Future<Void> indexAction(ActionRecord action) {
+        return update(actionDocument(action));
     }
 
     public Future<Void> indexCommand(CommandRecord command) {
@@ -207,11 +201,8 @@ public class LuceneSearchService {
         return vertx.executeBlocking(action);
     }
 
-    private static Document actionDocument(ActionRecord action, List<Comment> comments) {
-        String commentText = comments.stream().map(Comment::content).filter(StringUtils::isNotBlank)
-            .collect(Collectors.joining(" "));
-        String searchable = join(action.name(), action.device(), action.type(), action.category(),
-            commentText, action.labels(), action.remark(), action.state());
+    private static Document actionDocument(ActionRecord action) {
+        String searchable = join(action.name(), action.device(), action.type(), action.category(), action.labels(), action.remark(), action.state());
         return document("action", action.id(), action.name(), searchable);
     }
 

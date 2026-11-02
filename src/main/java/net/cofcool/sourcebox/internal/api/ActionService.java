@@ -60,6 +60,56 @@ public class ActionService {
         });
     }
 
+    public Future<Void> saveBooks(List<ActionRecord> books) {
+        var category = books.getFirst().category();
+        if (StringUtils.isBlank(category)) {
+            return Future.failedFuture("book category is required");
+        }
+        var query = QueryBuilder.builder()
+            .from(ActionRecord.class)
+            .select("name")
+            .and("type=?", Type.book.name())
+            .and("category=?", category);
+        return actionRecordSqlRepository.find(query)
+            .compose(existing -> {
+                var existingNames = new HashSet<>();
+                existing.forEach(record -> existingNames.add(record.name()));
+                var now = LocalDateTime.now();
+                List<ActionRecord> inserts = new ArrayList<>();
+                for (ActionRecord book : books) {
+                    if (StringUtils.isBlank(book.name())) {
+                        continue;
+                    }
+                    if (existingNames.contains(book.name())) {
+                        continue;
+                    } else {
+                        existingNames.add(book.name());
+                        inserts.add(
+                            ActionRecord.builder()
+                            .name(book.name())
+                            .type(Type.book.name())
+                            .category(category)
+                            .state(ActionState.todo.name())
+                            .remark(book.remark())
+                            .labels(book.labels())
+                            .start(book.start() == null ? now : book.start())
+                            .build()
+                        );
+                    };
+                }
+                return Future.succeededFuture(inserts);
+            })
+            .compose(a ->
+                Future.all(a.stream().map(actionRecordSqlRepository::insert).toList()).compose(f -> {
+                    if (f.failed()) {
+                        return Future.failedFuture(f.cause());
+                    } else {
+                        return Future.succeededFuture();
+                    }
+                })
+            );
+    }
+
     public Future<ActionRecord> saveAction(ActionRecord record) {
         for (ActionInterceptor interceptor : saveInterceptors) {
             record = interceptor.apply(record);

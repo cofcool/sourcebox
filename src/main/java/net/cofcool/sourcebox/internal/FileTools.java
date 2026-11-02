@@ -3,8 +3,13 @@ package net.cofcool.sourcebox.internal;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import net.cofcool.sourcebox.App;
 import net.cofcool.sourcebox.Tool;
 import net.cofcool.sourcebox.ToolName;
+import net.cofcool.sourcebox.ToolRunner;
+import net.cofcool.sourcebox.internal.api.entity.ActionRecord;
+import net.cofcool.sourcebox.internal.api.entity.ActionState;
+import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
 import net.cofcool.sourcebox.util.JsonUtil;
 import org.apache.commons.compress.archivers.zip.UnicodePathExtraField;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
@@ -15,13 +20,15 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.*;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
+import java.nio.file.*;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -45,7 +52,8 @@ public class FileTools implements Tool {
         "delete", new Delete(),
         "foreach", new Foreach(),
         "clippings2Md", new ClippingsToMd(),
-        "zipMerger", new ZipMerger()
+        "zipMerger", new ZipMerger(),
+        "bookSync", new BookSync()
     );
 
     @Override
@@ -137,6 +145,99 @@ public class FileTools implements Tool {
             }
             return deleted.toString();
         }
+    }
+
+    private record BookSync() implements SimpleTool {
+
+        @Override
+        public String run(Args args) throws Exception {
+            var root = Path.of(args.readArg("path").requiredVal("path must be specified"))
+                .toAbsolutePath()
+                .normalize();
+            var folders = args.readArg("bookSyncFolder").test(Boolean::parseBoolean);
+
+            String category = args.readArg("bookSyncCategory").val();
+            if (!category.equals("comic") && !category.equals("ebook")) {
+                throw new IllegalArgumentException("bookSyncCategory must be comic or ebook");
+            }
+            if (!Files.isDirectory(root, LinkOption.NOFOLLOW_LINKS) || Files.isSymbolicLink(root)) {
+                throw new IllegalArgumentException("bookSync path must be a directory: " + root);
+            }
+
+            List<ActionRecord> records = scanBooks(root, folders, category);
+            if (records.isEmpty()) {
+                return "No book entries found under " + root;
+            }
+
+            String address = args.getArgVal(ToolRunner.ADDRESS_KEY)
+                .orElseGet(() -> globalConfig(ToolRunner.ADDRESS_KEY, ToolRunner.DEFAULT_ADDRESS));
+            String port = args.getArgVal(ToolRunner.PORT_KEY)
+                .orElseGet(() -> globalConfig(ToolRunner.PORT_KEY, String.valueOf(ToolRunner.DEFAULT_PORT)));
+            String endpoint = address.replaceAll("/+$", "") + ":" + port + "/action/syncBooks";
+            HttpRequest request = HttpRequest.newBuilder(URI.create(endpoint))
+                .timeout(Duration.ofMinutes(2))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(JsonUtil.toJson(records), StandardCharsets.UTF_8))
+                .build();
+
+            HttpResponse<String> response;
+            try (HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build()) {
+                response = client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            }
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw new IOException("book sync request failed with HTTP " + response.statusCode()
+                    + (response.body().isBlank() ? "" : ": " + response.body()));
+            }
+            return "Submitted " + records.size() + " book entries to " + endpoint;
+        }
+
+        @Override
+        public boolean shouldWriteOut(Args args) {
+            return false;
+        }
+    }
+
+    static List<ActionRecord> scanBooks(Path root, boolean folders, String category) throws IOException {
+        try (var paths = Files.walk(root)) {
+            return paths
+                .filter(path -> !path.equals(root))
+                .filter(path -> !Files.isSymbolicLink(path))
+                .filter(path -> !hasHiddenPathComponent(root.relativize(path)))
+                .filter(path -> folders
+                    ? Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS)
+                    : Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS))
+                .sorted()
+                .map(path -> {
+                    String name = path.getFileName().toString();
+                    String extension = FilenameUtils.getExtension(name);
+                    String relativePath = root.relativize(path).toString().replace(File.separatorChar, '/');
+                    LocalDateTime now = LocalDateTime.now();
+                    return ActionRecord.builder()
+                        .name(name)
+                        .type(Type.book.name())
+                        .category(category)
+                        .state(ActionState.todo.name())
+                        .remark(relativePath)
+                        .labels(folders || extension.isBlank() ? null : extension)
+                        .start(now)
+                        .end(now)
+                        .build();
+                })
+                .toList();
+        }
+    }
+
+    private static boolean hasHiddenPathComponent(Path relativePath) {
+        for (Path component : relativePath) {
+            if (component.toString().startsWith(".")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String globalConfig(String key, String fallback) {
+        return App.getOpGlobalConfig(key).map(Objects::toString).orElse(fallback);
     }
 
     private record Foreach() implements SimpleTool {
@@ -577,6 +678,8 @@ public class FileTools implements Tool {
             .arg(new Arg("filter", ".*", "regular expression matched against each target name", false, ".*\\.txt"))
             .arg(new Arg("folder", "false", "apply to folders instead of files", false, "true"))
             .arg(new Arg("clippingsToMdType", ClippingsToMd.ClipType.kindle.name(), "support: " + Arrays.toString(ClippingsToMd.ClipType.values()), false, null))
+            .arg(new Arg("bookSyncFolder", "false", "when bookSync, sync folders instead of files", false, "true"))
+            .arg(new Arg("bookSyncCategory", "ebook", "book category, comic or ebook", false, "comic"))
             .arg(new Arg("dry-run", "true", "print commands without executing them", false, "false"));
     }
 }

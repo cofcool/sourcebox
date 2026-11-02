@@ -11,6 +11,7 @@ import java.lang.reflect.*;
 import java.sql.JDBCType;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class TableInfoHelper {
@@ -155,6 +156,10 @@ public class TableInfoHelper {
                 return 0D;
             }
             throw new IllegalArgumentException("Unsupported primitive type: " + type);
+        }
+
+        public static <T> T getIfPresent(Row row, String column, Function<String, T> getter) {
+            return row.getColumnIndex(column) >= 0 ? getter.apply(column) : null;
         }
 
         @SuppressWarnings("unchecked")

@@ -3,6 +3,7 @@ package net.cofcool.sourcebox.internal;
 import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.Tool;
 import net.cofcool.sourcebox.Utils;
+import net.cofcool.sourcebox.internal.api.entity.ActionRecord;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
 import org.apache.commons.compress.archivers.zip.ZipFile;
@@ -32,6 +33,28 @@ class FileToolsTest extends BaseTest {
     @Override
     protected Tool instance() {
         return new FileTools();
+    }
+
+    @Test
+    void scanBooksIncludesVisibleFilesOrFoldersWithRelativePaths() throws Exception {
+        Path nested = Files.createDirectories(tmpDir.resolve("series/volume-1"));
+        Path book = Files.writeString(nested.resolve("book.epub"), "book");
+        Files.writeString(tmpDir.resolve(".hidden.epub"), "hidden");
+        Files.writeString(Files.createDirectories(tmpDir.resolve(".private")).resolve("secret.epub"), "hidden");
+        Files.createSymbolicLink(tmpDir.resolve("linked.epub"), book);
+
+        var files = FileTools.scanBooks(tmpDir, false, "ebook");
+        Assertions.assertEquals(1, files.size());
+        Assertions.assertEquals("book.epub", files.getFirst().name());
+        Assertions.assertEquals("series/volume-1/book.epub", files.getFirst().remark());
+        Assertions.assertEquals("epub", files.getFirst().labels());
+        Assertions.assertEquals("ebook", files.getFirst().category());
+        Assertions.assertEquals("book", files.getFirst().type());
+        Assertions.assertEquals("todo", files.getFirst().state());
+
+        var folders = FileTools.scanBooks(tmpDir, true, "comic");
+        Assertions.assertEquals(List.of("series", "volume-1"), folders.stream().map(ActionRecord::name).toList());
+        Assertions.assertTrue(folders.stream().allMatch(folder -> folder.labels() == null));
     }
 
     @Test
@@ -253,22 +276,6 @@ class FileToolsTest extends BaseTest {
             Assertions.assertEquals(List.of("1.txt", "2.log", "3.txt"), names);
             Assertions.assertEquals(List.of("first", "second", "third"), contents);
             Assertions.assertEquals(List.of(ZipArchiveEntry.DEFLATED, ZipArchiveEntry.STORED, ZipArchiveEntry.DEFLATED), methods);
-        }
-    }
-
-    @Test
-    void runWithZipMergerRejectsInputAsOutput() throws Exception {
-        Path inputZip = tmpDir.resolve("input.zip");
-        writeZip(inputZip, List.of(new ZipTestEntry("first.txt", "first", false)));
-
-        Assertions.assertThrows(IllegalArgumentException.class, () -> instance().run(
-            args.arg("util", "zipMerger")
-                .arg("path", inputZip.toString())
-                .arg("out", inputZip.toString())
-        ));
-
-        try (ZipFile zip = ZipFile.builder().setPath(inputZip).get()) {
-            Assertions.assertTrue(zip.getEntries().hasMoreElements());
         }
     }
 

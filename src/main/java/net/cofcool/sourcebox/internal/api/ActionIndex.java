@@ -60,6 +60,10 @@ public class ActionIndex {
             actionService.saveAll(JsonUtil.toPojoList(r.body().buffer().getBytes(), ActionRecord.class))
         );
 
+        router.post("/syncBooks").respond(r ->
+            actionService.saveBooks(JsonUtil.toPojoList(r.body().buffer().getBytes(), ActionRecord.class))
+        );
+
         router.get().respond(r -> finaAction(r, null));
         router.get("/todo").respond(r -> finaAction(r, Type.todo));
 

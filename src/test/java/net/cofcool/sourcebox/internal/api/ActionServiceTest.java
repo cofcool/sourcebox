@@ -176,6 +176,57 @@ class ActionServiceTest extends BaseTest {
     }
 
     @Test
+    void saveAllBookSyncDeduplicatesByNameAndCategory(Vertx vertx, VertxTestContext testContext) {
+        String category = "book-sync-" + java.util.UUID.randomUUID();
+        var existing = ActionRecord.builder()
+            .name("already here.epub")
+            .type(Type.book.name())
+            .category(category)
+            .state("doing")
+            .build();
+        var duplicate = ActionRecord.builder()
+            .name("already here.epub")
+            .type(Type.book.name())
+            .category(category)
+            .state("cancel")
+            .remark("new path")
+            .build();
+        var firstNew = ActionRecord.builder()
+            .name("new book.cbz")
+            .type(Type.book.name())
+            .category(category)
+            .state("cancel")
+            .remark("series/new book.cbz")
+            .labels("cbz")
+            .build();
+        var repeatedNew = ActionRecord.builder()
+            .name("new book.cbz")
+            .type(Type.book.name())
+            .category(category)
+            .remark("duplicate path")
+            .build();
+
+        actionService.saveBooks(List.of(existing))
+            .compose(ignored -> actionService.saveBooks(List.of(duplicate, firstNew, repeatedNew)))
+            .compose(ignored -> actionService.find(
+                ActionRecord.builder().type(Type.book.name()).category(category).build(),
+                1,
+                20
+            ))
+            .onComplete(testContext.succeeding(books -> testContext.verify(() -> {
+                Assertions.assertEquals(2, books.size());
+                ActionRecord saved = books.stream()
+                    .filter(book -> book.name().equals("new book.cbz"))
+                    .findFirst()
+                    .orElseThrow();
+                Assertions.assertEquals("series/new book.cbz", saved.remark());
+                Assertions.assertEquals("cbz", saved.labels());
+                Assertions.assertEquals("todo", saved.state());
+                testContext.completeNow();
+            })));
+    }
+
+    @Test
     void findAllRefs(Vertx vertx, VertxTestContext testContext) {
         actionService
             .findAllRefs(defaultRecord.id())

@@ -73,11 +73,16 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
         poolConfig.getGlobalPool().close();
     }
 
+
+    public Future<T> insert(T entity) {
+        return insertEntity(invokeAction(entity, false));
+    }
+
     @Override
     public Future<T> save(T entity) {
         Optional<String> id = tableInfo.getIdVal(entity);
         if (id.isEmpty()) {
-            return insert(invokeAction(entity, false));
+            return insertEntity(invokeAction(entity, false));
         } else {
             return count(QueryBuilder.builder().from(tableInfo.name()).and(tableInfo.id().name()+"=?", id.get()).count()).compose(
                 n -> switch (n) {
@@ -131,7 +136,7 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
             });
     }
 
-    private Future<T> insert(T entity) {
+    private Future<T> insertEntity(T entity) {
         var columns = readProperties(entity);
         return preparedQuery(
                 "INSERT INTO " + tableInfo.name()

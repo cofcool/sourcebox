@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static net.cofcool.sourcebox.util.TableInfoHelper.TableInfo.getIfPresent;
+
 @Builder
 @With
 @Entity(name = "action_record")
@@ -151,24 +153,24 @@ public record ActionRecord(
     @DefaultMapper
     public static ActionRecord from(Row row) {
         return new ActionRecord(
-            row.getString("ID"),
-            row.getString("NAME"),
-            row.getString("ICON"),
-            row.getString("INDEX"),
-            row.getString("DEVICE"),
-            row.getString("TYPE"),
-            row.getString("CATEGORY"),
-            row.getString("STATE"),
-            row.getLocalDateTime("START"),
-            row.getLocalDateTime("END"),
-            row.getInteger("DURATION"),
-            row.getInteger("RATING"),
+            getIfPresent(row, "ID", row::getString),
+            getIfPresent(row, "NAME", row::getString),
+            getIfPresent(row, "ICON", row::getString),
+            getIfPresent(row, "INDEX", row::getString),
+            getIfPresent(row, "DEVICE", row::getString),
+            getIfPresent(row, "TYPE", row::getString),
+            getIfPresent(row, "CATEGORY", row::getString),
+            getIfPresent(row, "STATE", row::getString),
+            getIfPresent(row, "START", row::getLocalDateTime),
+            getIfPresent(row, "END", row::getLocalDateTime),
+            getIfPresent(row, "DURATION", row::getInteger),
+            getIfPresent(row, "RATING", row::getInteger),
             List.of(),
-            row.getString("LABELS"),
-            row.getString("REFS"),
-            row.getString("REMARK"),
-            row.getLocalDateTime("CREATE_TIME"),
-            row.getLocalDateTime("UPDATE_TIME")
+            getIfPresent(row, "LABELS", row::getString),
+            getIfPresent(row, "REFS", row::getString),
+            getIfPresent(row, "REMARK", row::getString),
+            getIfPresent(row, "CREATE_TIME", row::getLocalDateTime),
+            getIfPresent(row, "UPDATE_TIME", row::getLocalDateTime)
         );
     }
 

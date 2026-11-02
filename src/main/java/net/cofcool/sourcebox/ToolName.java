@@ -22,6 +22,7 @@ public enum ToolName {
     netUtils("some utils about network", NetworkUtils.class),
     todo("simple To Do tool", ToDo.class),
     hisRecord("simple personal record tool", HisRecord.class),
+    bookRecord("search book records", BookRecord.class),
     timer("simple timer tool", TimerRecord.class),
     jsonex("exactor values by json path", JsonExactor.class),
     task("repeat execute task(go)", GoAdapter.Task.class),

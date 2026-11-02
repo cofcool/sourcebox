@@ -1113,10 +1113,9 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun saveRecordChecklist(actionId: String, checklist: ActionCheckList) = perform(
-        onSuccess = { (saved, progressComment, isDirty) ->
+        onSuccess = { (saved, isDirty) ->
             recordChecklists = recordChecklists.map { if (it.id == saved.id) saved else it }
             if (recordChecklists.none { it.id == saved.id }) recordChecklists = recordChecklists + saved
-            recordComments = recordComments + progressComment
             message = if (isDirty) "Checklist 已保存到本地，等待联网同步" else "Checklist 已保存"
         }
     ) {
@@ -1129,30 +1128,23 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
             actionId = actionId,
             createTime = checklist.createTime ?: currentRecordDateTime()
         )
-        val progressComment = ActionComment(
-            id = UUID.randomUUID().toString(),
-            actionId = actionId,
-            content = "当前进度为 ${prepared.content} - ${prepared.current}",
-            createTime = currentRecordDateTime()
-        )
         val (saved, isDirty) = writeWithOfflineFallback(
             server = {
                 api.saveRecordChecklist(actionId, prepared).also { saved ->
                     withContext(Dispatchers.IO) {
                         actionDatabase.saveActionChecklist(actionId, saved)
-                        actionDatabase.saveActionComment(actionId, progressComment)
                     }
                 }
             },
             offline = {
                 withContext(Dispatchers.IO) {
-                    actionDatabase.markActionChecklistDirty(actionId, prepared, progressComment)
+                    actionDatabase.markActionChecklistDirty(actionId, prepared)
                 }
                 prepared
             }
         )
         refreshPendingCount()
-        Triple(saved, progressComment, isDirty)
+        Pair(saved, isDirty)
     }
 
     fun deleteRecordChecklist(id: String) = perform {

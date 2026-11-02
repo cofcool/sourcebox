@@ -364,15 +364,12 @@ class ActionExportDatabase(context: Context) :
 
     fun markActionChecklistDirty(
         actionId: String,
-        checklist: ActionCheckList,
-        progressComment: ActionComment
+        checklist: ActionCheckList
     ) {
         val action = actionDetails(actionId) ?: throw IOException("本地找不到行动记录：$actionId")
         val preparedChecklist = checklist.copy(createTime = checklist.createTime ?: currentDateTime())
-        val preparedComment = progressComment.copy(createTime = progressComment.createTime ?: currentDateTime())
         val updated = action.copy(
             checklists = action.checklists.filterNot { it.id == preparedChecklist.id } + preparedChecklist,
-            comments = action.comments + preparedComment
         )
         enqueueUpsert(
             TABLE_ACTIONS,

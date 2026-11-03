@@ -160,6 +160,25 @@ class ActionExportDatabase(context: Context) :
         return actions.drop(offset.toInt()).take(size)
     }
 
+    fun actionCandidates(name: String): List<ActionRecord> {
+        val deletedHabitIds = readableDatabase.rawQuery(
+            "SELECT DISTINCT entity_id FROM $TABLE_PENDING WHERE entity = 'action' AND operation = 'habit_delete'",
+            null
+        ).use { cursor ->
+            buildSet {
+                while (cursor.moveToNext()) add(cursor.getString(0))
+            }
+        }
+        return readPayloads(TABLE_ACTIONS, ActionExport.serializer())
+            .asSequence()
+            .map { it.record }
+            .filterNot { it.id in deletedHabitIds }
+            .filter { it.name.contains(name, ignoreCase = true) }
+            .sortedByDescending { it.createTime.orEmpty() }
+            .take(10)
+            .toList()
+    }
+
     fun actionCategories(): List<String> =
         actionTypes().types.filter { it.type == "category" }
             .map { it.name }

@@ -1,8 +1,17 @@
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
 }
+
+val buildDate = LocalDateTime.now()
+    .format(DateTimeFormatter.ofPattern("yyyyMMddHH"))
+val commitId = providers.exec {
+    commandLine("git", "-C", rootProject.projectDir.parentFile, "rev-parse", "--short", "HEAD")
+}.standardOutput.asText.get().trim()
 
 android {
     namespace = "net.cofcool.sourcebox"
@@ -16,7 +25,14 @@ android {
         versionName = "0.1.0"
     }
 
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
+    defaultConfig {
+        buildConfigField("String", "BUILD_DATE", "\"$buildDate\"")
+        buildConfigField("String", "COMMIT_ID", "\"$commitId\"")
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

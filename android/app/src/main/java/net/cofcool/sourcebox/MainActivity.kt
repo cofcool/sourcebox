@@ -41,6 +41,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.ErrorOutline
@@ -85,6 +86,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -814,8 +816,8 @@ private fun RecordCreateScreen(
                 copySource = null
             },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("复制已有任务（可选）") },
-            placeholder = { Text("搜索要复制的任务") },
+            label = { Text("复制已有行动（可选）") },
+            placeholder = { Text("搜索要复制的行动") },
             singleLine = true,
             enabled = !vm.busy
         )
@@ -847,7 +849,11 @@ private fun RecordCreateScreen(
         }
         copySource?.let { source ->
             Text(
-                "将复制「${source.name}」的分类、标签和备注。",
+                if (source.type == "record") {
+                    "将复制「${source.name}」的分类、标签和备注。"
+                } else {
+                    "将从「${source.name}」复制名称和来源引用。"
+                },
                 style = MaterialTheme.typography.bodySmall
             )
         }
@@ -954,7 +960,9 @@ private fun RecordBoardScreen(
                                     page = 1
                                 }
                             }
-                            record.labels.orEmpty().split(",").map(String::trim).filter(String::isNotBlank)
+                            record.labels.orEmpty().split(",").map(String::trim)
+                                .filter(String::isNotBlank)
+                                .take(3)
                                 .forEach { label ->
                                     AssistChipLabel(label) {
                                         query = ""
@@ -1719,7 +1727,7 @@ private fun RecordDetails(
                     val current = record.labels.orEmpty().split(",")
                         .map(String::trim)
                         .filter(String::isNotBlank)
-                    val updated = (current + selected).distinct().joinToString(", ")
+                    val updated = (current + selected).distinct().joinToString(",")
                     onRecordChange(record.copy(labels = updated))
                 }
             )
@@ -2035,33 +2043,51 @@ private fun ChecklistItem(
     onDelete: (String) -> Unit
 ) {
     var current by remember(checklist.id, checklist.current) { mutableStateOf(checklist.current.toString()) }
+    val isTodo = checklist.first == 0 && checklist.last == 1
     Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(checklist.content, fontWeight = FontWeight.SemiBold)
-            Text("范围：${checklist.first} – ${checklist.last}")
-            OutlinedTextField(
-                current,
-                { current = it },
-                Modifier.fillMaxWidth(),
-                label = { Text("当前进度") },
-                singleLine = true
-            )
-            val value = current.toIntOrNull()
-            Text(
-                if (value == checklist.last) "已完成" else "进行中",
-                color = if (value == checklist.last) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (isTodo) {
+                androidx.compose.material3.Checkbox(
+                    checked = checklist.current == 1,
+                    onCheckedChange = { checked ->
+                        if (!busy) onSave(checklist.copy(current = if (checked) 1 else 0))
+                    },
+                    enabled = !busy
+                )
+                Text(
+                    checklist.content,
+                    modifier = Modifier.weight(1f),
+                    fontWeight = if (checklist.current == 1) FontWeight.Normal else FontWeight.SemiBold,
+                    color = if (checklist.current == 1) MaterialTheme.colorScheme.onSurfaceVariant
+                    else MaterialTheme.colorScheme.onSurface
+                )
+            } else {
+                Text(
+                    checklist.content,
+                    modifier = Modifier.weight(1f),
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1
+                )
+                OutlinedTextField(
+                    value = current,
+                    onValueChange = { current = it },
+                    modifier = Modifier.width(76.dp),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+                val value = current.toIntOrNull()
+                IconButton(
                     onClick = { value?.let { onSave(checklist.copy(current = it)) } },
-                    enabled = !busy && value != null && value in checklist.first..checklist.last,
-                    modifier = Modifier.weight(1f)
-                ) { Text("保存进度") }
-                OutlinedButton(
-                    onClick = { onDelete(checklist.id) },
-                    enabled = !busy,
-                    modifier = Modifier.weight(1f)
-                ) { Text("删除") }
+                    enabled = !busy && value != null && value in checklist.first..checklist.last
+                ) {
+                    Icon(Icons.Default.Check, contentDescription = "保存进度")
+                }
+            }
+            IconButton(onClick = { onDelete(checklist.id) }, enabled = !busy) {
+                Icon(Icons.Default.Delete, contentDescription = "删除")
             }
         }
     }
@@ -2094,6 +2120,7 @@ private fun TodosScreen(
 
     Column(modifier
         .fillMaxSize()
+        .verticalScroll(rememberScrollState())
         .padding(16.dp)) {
         OutlinedTextField(
             name,
@@ -2127,16 +2154,13 @@ private fun TodosScreen(
             }
         }
         if (vm.todos.isEmpty()) {
-            Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                EmptyState(if (appliedQuery.isBlank()) "暂无待办事项" else "没有匹配的待办事项")
-            }
+            EmptyState(if (appliedQuery.isBlank()) "暂无待办事项" else "没有匹配的待办事项")
         } else {
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                items(vm.todos, key = { it.id }) { todo ->
-                    TodoCard(todo, onComplete = { vm.completeTodo(todo) })
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                vm.todos.forEach { todo ->
+                    key(todo.id) {
+                        TodoCard(todo, onComplete = { vm.completeTodo(todo) })
+                    }
                 }
             }
         }
@@ -2595,6 +2619,12 @@ private fun SettingsScreen(
         }
         Text("接口与桌面端一致，使用 TheSourceBox 服务端 API。")
         Text("使用局域网或生产服务时，建议启用 HTTPS 并保护服务端访问凭据。", style = MaterialTheme.typography.bodySmall)
+        Text(
+            "CofCool@TheSourceBox ${BuildConfig.BUILD_DATE}(${BuildConfig.COMMIT_ID})",
+            modifier = Modifier.fillMaxWidth(),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
     if (showClearDatabaseConfirmation) {
         AlertDialog(

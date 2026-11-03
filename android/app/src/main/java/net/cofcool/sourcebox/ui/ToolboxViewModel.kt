@@ -996,9 +996,7 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         }
         viewModelScope.launch {
             val candidates = withContext(Dispatchers.IO) {
-                actionDatabase.actions("record", "", 1, 500)
-                        .filter { it.name.contains(query, ignoreCase = true) }
-                        .take(10)
+                actionDatabase.actionCandidates(query)
             }
             if (recordCandidateQuery == query) recordCandidates = candidates
         }
@@ -1050,14 +1048,15 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
     ) {
         require(name.isNotBlank()) { "记录名称不能为空" }
         val now = currentRecordDateTime()
+        val copyRecordFields = copySource?.type == "record"
         val pendingRecord = ActionRecord(
             id = UUID.randomUUID().toString().replace("-", ""),
             name = name.trim(),
-            type = copySource?.type ?: "record",
-            category = copySource?.category,
-            labels = copySource?.labels.orEmpty(),
+            type = "record",
+            category = copySource?.takeIf { copyRecordFields }?.category,
+            labels = copySource?.takeIf { copyRecordFields }?.labels.orEmpty(),
             refs = copySource?.id?.let { "action:$it" },
-            remark = copySource?.remark,
+            remark = copySource?.takeIf { copyRecordFields }?.remark,
             start = now,
             createTime = now
         )

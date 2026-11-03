@@ -1,19 +1,23 @@
 package net.cofcool.sourcebox.internal;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.Tool;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class JsonFormatterTest extends BaseTest {
 
     public static String JSON_STR = """
         {"key": "val", "key1": "val1"}
+        """;
+    public static String JSON_ARR_STR = """
+        [{"key": "val", "key1": "val1"}]
         """;
     public static String JSON_LINE = """
         key1
@@ -51,6 +55,14 @@ public class JsonFormatterTest extends BaseTest {
         var file = dir.resolve("jsonRunWithPath.json").toFile();
         FileUtils.write(file, JSON_LINE);
         instance().run(args.arg("path", file.getPath()).arg("jsonl", "idline"));
+        assertTrue(FileUtils.readLines(file, StandardCharsets.UTF_8).size() > 1);
+    }
+
+    @Test
+    void runWithJsonArray() throws Exception {
+        var file = dir.resolve("runWithJsonArray.json").toFile();
+        FileUtils.write(file, JSON_ARR_STR);
+        instance().run(args.arg("path", file.getPath()).arg("jsonl", "array"));
         assertTrue(FileUtils.readLines(file, StandardCharsets.UTF_8).size() > 1);
     }
 

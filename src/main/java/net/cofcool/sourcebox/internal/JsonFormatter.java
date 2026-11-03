@@ -3,13 +3,15 @@ package net.cofcool.sourcebox.internal;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import net.cofcool.sourcebox.Tool;
+import net.cofcool.sourcebox.ToolName;
+import org.apache.commons.io.FileUtils;
+
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
-import net.cofcool.sourcebox.Tool;
-import net.cofcool.sourcebox.ToolName;
-import org.apache.commons.io.FileUtils;
+import java.util.List;
 
 public class JsonFormatter implements Tool {
 
@@ -32,7 +34,7 @@ public class JsonFormatter implements Tool {
         var path = args.readArg("path");
         var jsonLine = args.readArg("jsonl").val();
 
-        LinkedHashMap<?, ?> obj;
+        Object obj;
         if (json.isPresent()) {
             obj = objectMapper.readValue(json.val(), OBJ_TYPE);
         } else if (path.isPresent()) {
@@ -63,6 +65,7 @@ public class JsonFormatter implements Tool {
                     }
                     yield tmp;
                 }
+                case "array" -> objectMapper.readValue(new File(path.val()), List.class);
                 default ->
                     throw new IllegalArgumentException("JSON Line " + jsonLine + " error");
             };
@@ -89,7 +92,7 @@ public class JsonFormatter implements Tool {
             .arg(new Arg("json", null, "json string", false, "'{}'"))
             .arg(new Arg("path", null, "json file path", false, "./demo.json"))
             .arg(new Arg("pretty", "true", "", false, null))
-            .arg(new Arg("jsonl", "none", "json line format: none, line, idline. Only supports json file", false, null))
+            .arg(new Arg("jsonl", "none", "json line format: none, line, idline, array. Only supports json file", false, null))
             .alias("json", name(), "path", null)
             .runnerTypes(EnumSet.allOf(RunnerType.class));
     }

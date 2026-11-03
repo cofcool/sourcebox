@@ -160,6 +160,29 @@ class ActionExportDatabase(context: Context) :
         return actions.drop(offset.toInt()).take(size)
     }
 
+    fun allActions(prefix: String, query: String = ""): List<ActionRecord> =
+        actions(prefix, query, page = 1, size = Int.MAX_VALUE)
+            .let { actions ->
+                if (prefix == "habit") actions.sortedWith(::compareHabitIndex) else actions
+            }
+
+    private fun compareHabitIndex(left: ActionRecord, right: ActionRecord): Int {
+        val leftIndex = left.index?.trim().orEmpty()
+        val rightIndex = right.index?.trim().orEmpty()
+        if (leftIndex.isBlank()) {
+            return if (rightIndex.isBlank()) left.name.compareTo(right.name, ignoreCase = true) else 1
+        }
+        if (rightIndex.isBlank()) return -1
+
+        val numericComparison = leftIndex.toBigIntegerOrNull()?.let { leftNumber ->
+            rightIndex.toBigIntegerOrNull()?.let(leftNumber::compareTo)
+        }
+        if (numericComparison != null && numericComparison != 0) return numericComparison
+        return leftIndex.compareTo(rightIndex, ignoreCase = true)
+            .takeIf { it != 0 }
+            ?: left.name.compareTo(right.name, ignoreCase = true)
+    }
+
     fun actionCandidates(name: String): List<ActionRecord> {
         val deletedHabitIds = readableDatabase.rawQuery(
             "SELECT DISTINCT entity_id FROM $TABLE_PENDING WHERE entity = 'action' AND operation = 'habit_delete'",

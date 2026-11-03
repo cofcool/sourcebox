@@ -16,6 +16,9 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +35,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
@@ -93,6 +97,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.LinkAnnotation
@@ -1002,11 +1007,10 @@ private fun HabitBoardScreen(
 ) {
     var query by remember { mutableStateOf("") }
     var appliedQuery by remember { mutableStateOf("") }
-    var page by remember { mutableStateOf(1) }
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    LaunchedEffect(appliedQuery, page) {
-        vm.refreshHabits(appliedQuery, page)
+    LaunchedEffect(appliedQuery) {
+        vm.refreshHabits(appliedQuery)
     }
 
     Column(
@@ -1026,7 +1030,6 @@ private fun HabitBoardScreen(
                 onClick = {
                     keyboardController?.hide()
                     appliedQuery = query.trim()
-                    page = 1
                 },
                 enabled = !vm.busy
             ) {
@@ -1076,19 +1079,7 @@ private fun HabitBoardScreen(
             }
         }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            OutlinedButton(onClick = { if (page > 1) page-- }, enabled = page > 1 && !vm.busy) {
-                Text("上一页")
-            }
-            Text("第 $page 页 · ${vm.habits.size} 条")
-            OutlinedButton(onClick = { page++ }, enabled = vm.habitHasNextPage && !vm.busy) {
-                Text("下一页")
-            }
-        }
+        Text("共 ${vm.habits.size} 个习惯", style = MaterialTheme.typography.labelMedium)
     }
 }
 
@@ -1596,14 +1587,15 @@ private fun HabitDetailsScreen(
                 onValueChange = { value = it },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text("记录数值${definition.unit?.let { "（$it）" }.orEmpty()}") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 singleLine = true,
                 enabled = !busy
             )
+            val storedValue = parseHabitDisplayValue(value)
             Button(
-                onClick = { value.toIntOrNull()?.let(onSaveValue) },
+                onClick = { storedValue?.let(onSaveValue) },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = value.toIntOrNull() != null && !busy
+                enabled = storedValue != null && !busy
             ) {
                 Text("保存记录")
             }
@@ -1626,32 +1618,231 @@ private fun HabitDetailsScreen(
             }
         }
 
-        Text("记录历史", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        if (habit.checkLists.isEmpty()) {
-            EmptyState("还没有记录")
-        } else {
-            habit.checkLists.asReversed().forEach { entry ->
-                Card(Modifier.fillMaxWidth()) {
-                    Row(
-                        Modifier.fillMaxWidth().padding(14.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(entry.createTime?.take(10) ?: "记录")
-                        Text(
-                            if (definition?.category == "check") {
-                                if (entry.current == 1) "已完成" else "未完成"
+        HabitCalendar(
+            checkLists = habit.checkLists,
+            category = definition?.category ?: "check",
+            targetValue = definition?.targetValue,
+            targetType = definition?.targetType,
+            unit = definition?.unit
+        )
+    }
+}
+
+@Composable
+private fun HabitCalendar(
+    checkLists: List<ActionCheckList>,
+    category: String,
+    targetValue: Int?,
+    targetType: String?,
+    unit: String?
+) {
+    val today = remember { java.time.LocalDate.now() }
+    var selectedDate by remember { mutableStateOf(today) }
+    var displayedMonth by remember { mutableStateOf(java.time.YearMonth.from(today)) }
+    var statsPeriod by remember { mutableStateOf("month") }
+
+    val entriesByDate = remember(checkLists) {
+        checkLists.mapNotNull { entry ->
+            entry.createTime?.take(10)?.let { date ->
+                runCatching { java.time.LocalDate.parse(date) }.getOrNull()?.let { it to entry }
+            }
+        }.groupBy({ it.first }, { it.second })
+            .mapValues { (_, entries) -> entries.maxBy { it.createTime.orEmpty() } }
+    }
+
+    val firstDayOffset = displayedMonth.atDay(1).dayOfWeek.value - 1
+    val calendarDays = buildList<java.time.LocalDate?> {
+        repeat(firstDayOffset) { add(null) }
+        for (day in 1..displayedMonth.lengthOfMonth()) {
+            add(displayedMonth.atDay(day))
+        }
+        while (size % 7 != 0) add(null)
+    }
+    val selectedEntry = entriesByDate[selectedDate]
+    val periodStart: java.time.LocalDate
+    val periodEnd: java.time.LocalDate
+    when (statsPeriod) {
+        "week" -> {
+            periodStart = selectedDate.minusDays((selectedDate.dayOfWeek.value - 1).toLong())
+            periodEnd = periodStart.plusDays(6)
+        }
+        "year" -> {
+            periodStart = selectedDate.withDayOfYear(1)
+            periodEnd = selectedDate.withDayOfYear(selectedDate.lengthOfYear())
+        }
+        else -> {
+            periodStart = selectedDate.withDayOfMonth(1)
+            periodEnd = selectedDate.withDayOfMonth(selectedDate.lengthOfMonth())
+        }
+    }
+    val periodEntries = entriesByDate.filterKeys { !it.isBefore(periodStart) && !it.isAfter(periodEnd) }.values
+    val isValueHabit = category == "value"
+    val statistic = if (isValueHabit) {
+        periodEntries.sumOf { it.current.toLong() }
+    } else {
+        periodEntries.count { it.current == 1 }.toLong()
+    }
+
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("记录日历", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = {
+                        displayedMonth = displayedMonth.minusMonths(1)
+                        selectedDate = displayedMonth.atDay(1)
+                    }) { Text("‹") }
+                    Text(
+                        "${displayedMonth.year}年${displayedMonth.monthValue}月",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    TextButton(onClick = {
+                        displayedMonth = displayedMonth.plusMonths(1)
+                        selectedDate = displayedMonth.atDay(1)
+                    }) { Text("›") }
+                }
+            }
+
+            Row(Modifier.fillMaxWidth()) {
+                listOf("一", "二", "三", "四", "五", "六", "日").forEach { weekday ->
+                    Text(
+                        weekday,
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            }
+            calendarDays.chunked(7).forEach { week ->
+                Row(Modifier.fillMaxWidth()) {
+                    week.forEach { date ->
+                        if (date == null) {
+                            Spacer(Modifier.weight(1f).height(48.dp).padding(2.dp))
+                        } else {
+                            val entry = entriesByDate[date]
+                            val achieved = entry != null && if (isValueHabit) {
+                                val target = targetValue
+                                target != null && if (targetType == "AtMost") {
+                                    entry.current.toLong() <= target.toLong() * 1000
+                                } else {
+                                    entry.current.toLong() >= target.toLong() * 1000
+                                }
                             } else {
-                                "${entry.current} ${definition?.unit.orEmpty()}"
-                            },
-                            fontWeight = FontWeight.SemiBold
-                        )
+                                entry.current == 1
+                            }
+                            val shape = RoundedCornerShape(8.dp)
+                            val background = if (achieved) Color(0xFF1976D2) else Color(0xFFE7E9ED)
+                            val foreground = if (achieved) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                            Column(
+                                Modifier.weight(1f)
+                                    .padding(2.dp)
+                                    .heightIn(min = 48.dp)
+                                    .background(background, shape)
+                                    .then(
+                                        if (date == selectedDate) Modifier.border(
+                                            2.dp,
+                                            MaterialTheme.colorScheme.primary,
+                                            shape
+                                        ) else Modifier
+                                    )
+                                    .clickable {
+                                        selectedDate = date
+                                        displayedMonth = java.time.YearMonth.from(date)
+                                    }
+                                    .padding(vertical = 5.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    date.dayOfMonth.toString(),
+                                    color = foreground,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = if (date == today) FontWeight.Bold else FontWeight.Normal
+                                )
+                                if (entry != null && isValueHabit) {
+                                    Text(
+                                        formatHabitStoredValue(entry.current.toLong()),
+                                        color = foreground,
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                }
+                            }
+                        }
                     }
+                }
+            }
+
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "统计",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                listOf("week" to "周", "month" to "月", "year" to "年").forEach { (period, label) ->
+                    if (statsPeriod == period) {
+                        Button(
+                            onClick = { statsPeriod = period },
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                        ) { Text(label) }
+                    } else {
+                        OutlinedButton(
+                            onClick = { statsPeriod = period },
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                        ) { Text(label) }
+                    }
+                }
+            }
+            Text(
+                if (isValueHabit) {
+                    "${periodStart} 至 ${periodEnd}：数值之和 ${formatHabitStoredValue(statistic)}${unit?.let { " $it" }.orEmpty()}"
+                } else {
+                    "${periodStart} 至 ${periodEnd}：达成 $statistic 次"
+                },
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
+                "${selectedDate}：${selectedEntry?.let { entry ->
+                    if (isValueHabit) "${formatHabitStoredValue(entry.current.toLong())}${unit?.let { " $it" }.orEmpty()}"
+                    else if (entry.current == 1) "已完成" else "未完成"
+                } ?: "无记录"}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Box(Modifier.size(12.dp).background(Color(0xFF1976D2), RoundedCornerShape(3.dp)))
+                    Text(if (isValueHabit) "达标" else "已完成", style = MaterialTheme.typography.labelSmall)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Box(Modifier.size(12.dp).background(Color(0xFFE7E9ED), RoundedCornerShape(3.dp)))
+                    Text("未达标", style = MaterialTheme.typography.labelSmall)
                 }
             }
         }
     }
 }
+
+private fun parseHabitDisplayValue(value: String): Int? =
+    runCatching {
+        java.math.BigDecimal(value.trim())
+            .multiply(java.math.BigDecimal("1000"))
+            .intValueExact()
+    }.getOrNull()
+
+private fun formatHabitStoredValue(value: Long): String =
+    java.math.BigDecimal.valueOf(value, 3)
+        .stripTrailingZeros()
+        .toPlainString()
 
 @Composable
 private fun AssistChipLabel(text: String, onClick: () -> Unit) {

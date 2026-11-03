@@ -127,8 +127,6 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         private set
     var habits by mutableStateOf<List<ActionRecord>>(emptyList())
         private set
-    var habitHasNextPage by mutableStateOf(false)
-        private set
     var books by mutableStateOf<List<ActionRecord>>(emptyList())
         private set
     var bookHasNextPage by mutableStateOf(false)
@@ -202,7 +200,6 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         commands = emptyList()
         records = emptyList()
         habits = emptyList()
-        habitHasNextPage = false
         books = emptyList()
         bookHasNextPage = false
         habitRecordDetails = null
@@ -804,14 +801,11 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         recordHasNextPage = result.size > 10
     }
 
-    fun refreshHabits(query: String = "", page: Int = 1) = perform {
-        require(page > 0) { "页码必须大于 0" }
+    fun refreshHabits(query: String = "") = perform {
         val localQuery = if (query.isBlank()) "" else "name=${query.trim()}"
-        val result = withContext(Dispatchers.IO) {
-            actionDatabase.actions("habit", localQuery, page, 11)
+        habits = withContext(Dispatchers.IO) {
+            actionDatabase.allActions("habit", localQuery)
         }
-        habits = result.take(10)
-        habitHasNextPage = result.size > 10
     }
 
     fun refreshBooks(query: String = "", category: String = "", page: Int = 1) = perform {
@@ -840,11 +834,9 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         onCreated: () -> Unit = {}
     ) = perform(
         onSuccess = { (_, isDirty) ->
-            val result = withContext(Dispatchers.IO) {
-                actionDatabase.actions("habit", "", 1, 11)
+            habits = withContext(Dispatchers.IO) {
+                actionDatabase.allActions("habit")
             }
-            habits = result.take(10)
-            habitHasNextPage = result.size > 10
             localActionCount = withContext(Dispatchers.IO) { actionDatabase.actionCount() }
             message = if (isDirty) "习惯已保存到本地，等待联网同步" else "习惯已创建"
             onCreated()

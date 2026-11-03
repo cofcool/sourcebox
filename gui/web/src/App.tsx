@@ -1138,6 +1138,19 @@ function HabitPage() {
     !latest || (entry.createTime ?? "") > (latest.createTime ?? "") ? entry : latest,
   undefined);
   const latestValue = latestEntry?.current;
+  const parseHabitDisplayValue = (value: string) => {
+    const match = /^(-?)(\d+)(?:\.(\d{1,3}))?$/.exec(value.trim());
+    if (!match) return undefined;
+    const [, sign, whole, fraction = ""] = match;
+    const scaled = (Number(whole) * 1000 + Number(fraction.padEnd(3, "0"))) * (sign === "-" ? -1 : 1);
+    return Number.isSafeInteger(scaled) ? scaled : undefined;
+  };
+  const formatHabitStoredValue = (value: number) => {
+    const absolute = Math.abs(value);
+    const integer = Math.floor(absolute / 1000);
+    const fraction = String(absolute % 1000).padStart(3, "0").replace(/0+$/, "");
+    return `${value < 0 ? "-" : ""}${integer}${fraction ? `.${fraction}` : ""}`;
+  };
 
   return (
     <div className="habit-page">
@@ -1253,7 +1266,7 @@ function HabitPage() {
                 )}
                 {selected.habit.question && <div><span>打卡问题</span><strong>{selected.habit.question}</strong></div>}
                 {latestValue !== undefined && (
-                  <div><span>最近记录</span><strong>{selected.habit.category === "check" ? (latestValue === 1 ? "已完成" : "未完成") : `${latestValue} ${selected.habit.unit ?? ""}`}</strong></div>
+                  <div><span>最近记录</span><strong>{selected.habit.category === "check" ? (latestValue === 1 ? "已完成" : "未完成") : `${formatHabitStoredValue(latestValue)} ${selected.habit.unit ?? ""}`}</strong></div>
                 )}
               </div>
 
@@ -1268,16 +1281,16 @@ function HabitPage() {
                 ) : (
                   <form className="habit-value-form" onSubmit={(event) => {
                     event.preventDefault();
-                    const value = Number(valueInput);
-                    if (!valueInput.trim() || !Number.isInteger(value)) {
-                      setError("请输入有效的整数");
+                    const value = parseHabitDisplayValue(valueInput);
+                    if (value === undefined) {
+                      setError("请输入最多三位小数的有效数值");
                       return;
                     }
                     void saveHabitValue(value);
                   }}>
                     <label>
                       数值{selected.habit.unit ? `（${selected.habit.unit}）` : ""}
-                      <input type="number" step="1" value={valueInput} onChange={(event) => setValueInput(event.target.value)} required />
+                      <input type="number" step="0.001" value={valueInput} onChange={(event) => setValueInput(event.target.value)} required />
                     </label>
                     <button type="submit" disabled={saving || !valueInput.trim()}>保存记录</button>
                   </form>
@@ -1290,13 +1303,13 @@ function HabitPage() {
                   <div className="record-reply-empty">还没有记录</div>
                 ) : (
                   <div className="habit-history-list">
-                    {[...selected.checkLists].reverse().map((entry) => (
+                    {selected.checkLists.map((entry) => (
                       <div className="habit-history-item" key={entry.id}>
                         <span>{entry.createTime?.slice(0, 10) ?? "记录"}</span>
                         <strong>
                           {selected.habit.category === "check"
                             ? (entry.current === 1 ? "已完成" : "未完成")
-                            : `${entry.current} ${selected.habit.unit ?? ""}`}
+                            : `${formatHabitStoredValue(entry.current)} ${selected.habit.unit ?? ""}`}
                         </strong>
                       </div>
                     ))}

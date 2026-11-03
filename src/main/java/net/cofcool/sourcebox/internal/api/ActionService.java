@@ -198,6 +198,7 @@ public class ActionService {
                     .first(0)
                     .last(0)
                     .current(value)
+                    .createTime(operationTime)
                     .build();
                 return saveCheckList(actionId, checklist, false);
             });
@@ -234,11 +235,21 @@ public class ActionService {
     }
 
     public Future<List<Comment>> findComment(String actionId) {
-        return commentSqlRepository.find(new Comment(actionId));
+        return commentSqlRepository.find(
+            QueryBuilder.builder()
+                .select().from(Comment.class)
+                .and("action_id=?", actionId)
+                .orderBy("create_time desc")
+        );
     }
 
     public Future<List<CheckList>> findCheckList(String actionId) {
-        return checklistSqlRepository.find(new CheckList(actionId));
+        return checklistSqlRepository.find(
+            QueryBuilder.builder()
+                .select().from(CheckList.class)
+                .and("action_id=?", actionId)
+                .orderBy("create_time desc")
+        );
     }
 
     public Future<List<RecordStatistics>> findRecordStatistics(Type t) {

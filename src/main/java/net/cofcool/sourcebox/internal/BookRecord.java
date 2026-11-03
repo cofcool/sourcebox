@@ -1,22 +1,30 @@
 package net.cofcool.sourcebox.internal;
 
 import lombok.CustomLog;
+import lombok.SneakyThrows;
 import net.cofcool.sourcebox.ToolName;
 import net.cofcool.sourcebox.internal.api.entity.ActionRecord;
+import net.cofcool.sourcebox.internal.api.entity.ActionState;
 import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @CustomLog
 public class BookRecord extends BaseRecord {
@@ -39,20 +47,33 @@ public class BookRecord extends BaseRecord {
     }
 
     @Override
-    public void run(Args args) throws Exception {
-        var find = args.readArg("find");
-        if (find.isPresent()) {
-            args.getContext().write(findActions(find));
-            return;
+    protected String callAdd(Arg a) {
+        var ps = a.val().split(";");
+        return saveRecord(ActionState.todo, ps[0], ps[2], ps[1]).id();
+    }
+
+    @Override
+    protected boolean callOthers(Args args) throws Exception {
+        var flag = new AtomicBoolean();
+        args.readArg("syncPath").ifPresent(path -> {
+            args.getContext().write(importBook(path.val(), args));
+            flag.set(true);
+        });
+
+        if (!flag.get()) {
+            runTui();
+            flag.set(true);
         }
-        runTui();
+
+        return flag.get();
     }
 
     @Override
     public Args config() {
-        return new Args()
-            .arg(new Arg("find", null, "search condition, use URL query string", false, "category=ebook"))
-            .runnerTypes(EnumSet.allOf(RunnerType.class));
+        return super.config()
+            .arg(new Arg("syncPath", null, "book folder path", false, "./books"))
+            .arg(new Arg("syncFolder", "false", "when bookSync, sync folders instead of files", false, "true"))
+            .arg(new Arg("syncCategory", "ebook", "book category, comic or ebook", false, "comic"));
     }
 
     private void runTui() throws Exception {
@@ -60,6 +81,70 @@ public class BookRecord extends BaseRecord {
             LineReader reader = LineReaderBuilder.builder().terminal(terminal).build();
             new BookBoard(terminal, reader).run();
         }
+    }
+
+    @SneakyThrows
+    public String importBook(String path, Args args) {
+        var root = Path.of(path)
+            .toAbsolutePath()
+            .normalize();
+        var folders = args.readArg("syncFolder").test(Boolean::parseBoolean);
+
+        String category = args.readArg("syncCategory").val();
+        if (!category.equals("comic") && !category.equals("ebook")) {
+            throw new IllegalArgumentException("syncCategory must be comic or ebook");
+        }
+        if (!Files.isDirectory(root, LinkOption.NOFOLLOW_LINKS) || Files.isSymbolicLink(root)) {
+            throw new IllegalArgumentException("sync path must be a directory: " + root);
+        }
+
+        List<ActionRecord> records = scanBooks(root, folders, category);
+        if (records.isEmpty()) {
+            return "No book entries found under " + root;
+        }
+
+        var size = postRequestLocalData("/action/syncBooks", records, Integer.class);
+
+        return "Synced " + records.size() + " book entries and saved "+ size;
+    }
+
+    static List<ActionRecord> scanBooks(Path root, boolean folders, String category) throws IOException {
+        try (var paths = Files.walk(root)) {
+            return paths
+                .filter(path -> !path.equals(root))
+                .filter(path -> !Files.isSymbolicLink(path))
+                .filter(path -> !hasHiddenPathComponent(root.relativize(path)))
+                .filter(path -> folders
+                    ? Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS)
+                    : Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS))
+                .sorted()
+                .map(path -> {
+                    String name = path.getFileName().toString();
+                    String extension = FilenameUtils.getExtension(name);
+                    String relativePath = root.relativize(path).toString().replace(File.separatorChar, '/');
+                    LocalDateTime now = LocalDateTime.now();
+                    return ActionRecord.builder()
+                        .name(name)
+                        .type(Type.book.name())
+                        .category(category)
+                        .state(ActionState.todo.name())
+                        .remark(relativePath)
+                        .labels(folders || extension.isBlank() ? null : extension)
+                        .start(now)
+                        .end(now)
+                        .build();
+                })
+                .toList();
+        }
+    }
+
+    static boolean hasHiddenPathComponent(Path relativePath) {
+        for (Path component : relativePath) {
+            if (component.toString().startsWith(".")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private final class BookBoard {

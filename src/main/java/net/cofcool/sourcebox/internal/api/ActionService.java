@@ -60,7 +60,7 @@ public class ActionService {
         });
     }
 
-    public Future<Void> saveBooks(List<ActionRecord> books) {
+    public Future<Integer> saveBooks(List<ActionRecord> books) {
         var category = books.getFirst().category();
         if (StringUtils.isBlank(category)) {
             return Future.failedFuture("book category is required");
@@ -104,7 +104,7 @@ public class ActionService {
                     if (f.failed()) {
                         return Future.failedFuture(f.cause());
                     } else {
-                        return Future.succeededFuture();
+                        return Future.succeededFuture(f.size());
                     }
                 })
             );

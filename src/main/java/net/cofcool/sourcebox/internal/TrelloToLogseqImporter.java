@@ -117,7 +117,7 @@ public class TrelloToLogseqImporter implements Tool {
             .id(actionId)
             .name(card.name())
             .type(Type.record.name())
-            .state(LogseqOutStr.cardTask(cardBoard.name()))
+            .state(LogseqOutStr.cardTask(cardBoard.name()).toLowerCase())
             .category(category)
             .start(createdAt)
             .end(createdAt)

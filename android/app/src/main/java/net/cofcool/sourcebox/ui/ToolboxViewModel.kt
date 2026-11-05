@@ -7,6 +7,8 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.PackageManager
+import android.media.AudioAttributes
+import android.media.RingtoneManager
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.Uri
@@ -50,7 +52,7 @@ import java.security.MessageDigest
 import java.util.UUID
 
 private const val DIRTY_SYNC_RETRY_INTERVAL = 30_000L
-private const val TIMER_NOTIFICATION_CHANNEL = "pomodoro_timer"
+private const val TIMER_NOTIFICATION_CHANNEL = "pomodoro_timer_alarm"
 private const val TIMER_NOTIFICATION_ID = 1001
 
 data class PomodoroTimerState(
@@ -121,11 +123,15 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         private set
     var todoHasNextPage by mutableStateOf(false)
         private set
+    var todayActions by mutableStateOf<List<ActionRecord>>(emptyList())
+        private set
     var commands by mutableStateOf<List<CommandRecord>>(emptyList())
         private set
     var records by mutableStateOf<List<ActionRecord>>(emptyList())
         private set
     var habits by mutableStateOf<List<ActionRecord>>(emptyList())
+        private set
+    var habitExports by mutableStateOf<Map<String, ActionExport>>(emptyMap())
         private set
     var books by mutableStateOf<List<ActionRecord>>(emptyList())
         private set
@@ -138,6 +144,7 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
     private var recordCandidateQuery = ""
     private var currentTodoQuery = ""
     private var currentTodoPage = 1
+    private var currentTodoState = "todo"
     var recordCategories by mutableStateOf<List<String>>(emptyList())
         private set
     var recordLabels by mutableStateOf<List<String>>(emptyList())
@@ -191,15 +198,28 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         message = "已连接，加载 ${tools.size} 个工具"
     }
 
+    fun refreshTodayActions() = perform {
+        loadTodayActions()
+    }
+
+    private suspend fun loadTodayActions() {
+        val today = java.time.LocalDate.now().toString()
+        todayActions = withContext(Dispatchers.IO) {
+            actionDatabase.actionsStartingOn(today)
+        }
+    }
+
     fun clearLocalDatabase() = perform {
         syncMutex.withLock {
             withContext(Dispatchers.IO) { actionDatabase.clearLocalData() }
         }
         notes = emptyList()
         todos = emptyList()
+        todayActions = emptyList()
         commands = emptyList()
         records = emptyList()
         habits = emptyList()
+        habitExports = emptyMap()
         books = emptyList()
         bookHasNextPage = false
         habitRecordDetails = null
@@ -424,12 +444,22 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
 
     private fun createTimerNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                ?: throw IllegalStateException("系统未提供默认闹钟铃声")
+            val alarmAudioAttributes = AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_ALARM)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build()
             notificationManager.createNotificationChannel(
                 NotificationChannel(
                     TIMER_NOTIFICATION_CHANNEL,
                     "番茄钟提醒",
-                    NotificationManager.IMPORTANCE_DEFAULT
-                )
+                    NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    description = "番茄钟专注和休息阶段结束提醒"
+                    setSound(alarmSound, alarmAudioAttributes)
+                    enableVibration(true)
+                }
             )
         }
     }
@@ -443,11 +473,19 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
             message = "阶段已结束；请开启通知权限以接收番茄钟提醒"
             return
         }
-        val notification = Notification.Builder(getApplication(), TIMER_NOTIFICATION_CHANNEL)
+        val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Notification.Builder(getApplication(), TIMER_NOTIFICATION_CHANNEL)
+        } else {
+            Notification.Builder(getApplication()).apply {
+                setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM))
+                setPriority(Notification.PRIORITY_MAX)
+            }
+        }
+        val notification = builder
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle(title)
             .setContentText(text)
-            .setCategory(Notification.CATEGORY_REMINDER)
+            .setCategory(Notification.CATEGORY_ALARM)
             .setAutoCancel(true)
             .build()
         notificationManager.notify(TIMER_NOTIFICATION_ID, notification)
@@ -493,6 +531,7 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
                 lastTypeSync = syncedAt
                 refreshPendingCount()
                 recordCategories = withContext(Dispatchers.IO) { actionDatabase.actionCategories() }
+                loadTodayActions()
                 timerRecords = withContext(Dispatchers.IO) {
                     actionDatabase.actions("timer", "", size = 500)
                         .sortedByDescending { it.end.orEmpty() }
@@ -690,16 +729,18 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         message = if (isDirty) "便笺已在本地删除，等待联网同步" else "便笺已删除"
     }
 
-    fun refreshTodos(query: String = "", page: Int = 1) = perform {
+    fun refreshTodos(query: String = "", page: Int = 1, state: String = "todo") = perform {
         require(page > 0) { "页码必须大于 0" }
+        require(state == "todo" || state == "done") { "待办状态无效" }
         currentTodoQuery = query
         currentTodoPage = page
-        loadTodos(query, page)
+        currentTodoState = state
+        loadTodos(query, page, state)
     }
 
-    private suspend fun loadTodos(query: String, page: Int) {
+    private suspend fun loadTodos(query: String, page: Int, state: String) {
         val actionQuery = buildString {
-            append("state=todo")
+            append("state=$state")
             if (query.isNotBlank()) append("&name=${java.net.URLEncoder.encode(query, "UTF-8")}")
         }
         val result = withContext(Dispatchers.IO) {
@@ -735,7 +776,8 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         )
         localActionCount = withContext(Dispatchers.IO) { actionDatabase.actionCount() }
         refreshPendingCount()
-        loadTodos(currentTodoQuery, currentTodoPage)
+        loadTodos(currentTodoQuery, currentTodoPage, currentTodoState)
+        loadTodayActions()
         message = if (isDirty) "待办已添加到本地，等待联网同步" else "待办已添加"
     }
 
@@ -756,8 +798,40 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         )
         localActionCount = withContext(Dispatchers.IO) { actionDatabase.actionCount() }
         refreshPendingCount()
-        loadTodos(currentTodoQuery, currentTodoPage)
+        loadTodos(currentTodoQuery, currentTodoPage, currentTodoState)
+        loadTodayActions()
         message = if (isDirty) "待办已在本地完成，等待联网同步" else "待办已完成"
+    }
+
+    fun saveTodo(todo: TodoRecord, onSaved: () -> Unit = {}) = perform(
+        onSuccess = { (saved, isDirty) ->
+            todos = todos.map { if (it.id == saved.id) saved else it }
+            loadTodayActions()
+            message = if (isDirty) "待办已保存到本地，等待联网同步" else "待办已保存"
+            onSaved()
+        }
+    ) {
+        require(todo.name.isNotBlank()) { "待办名称不能为空" }
+        val current = withContext(Dispatchers.IO) { actionDatabase.actionDetails(todo.id) }
+            ?.record ?: todo.toActionRecord()
+        val updatedLocal = current.copy(
+            name = todo.name.trim(),
+            remark = todo.remark?.trim()?.ifBlank { null },
+            start = todo.start
+        )
+        val (saved, isDirty) = writeWithOfflineFallback(
+            server = {
+                api.saveAction(updatedLocal).also { action ->
+                    withContext(Dispatchers.IO) { actionDatabase.saveAction(action) }
+                }
+            },
+            offline = {
+                withContext(Dispatchers.IO) { actionDatabase.markActionDirty(updatedLocal) }
+                updatedLocal
+            }
+        )
+        refreshPendingCount()
+        saved.toTodoRecord() to isDirty
     }
 
     fun refreshCommands(query: String = "") = perform {
@@ -801,11 +875,10 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         recordHasNextPage = result.size > 10
     }
 
-    fun refreshHabits(query: String = "") = perform {
-        val localQuery = if (query.isBlank()) "" else "name=${query.trim()}"
-        habits = withContext(Dispatchers.IO) {
-            actionDatabase.allActions("habit", localQuery)
-        }
+    fun refreshHabits() = perform {
+        val exports = withContext(Dispatchers.IO) { actionDatabase.allHabitExports() }
+        habits = exports.map { it.record }
+        habitExports = exports.associateBy { it.record.id }
     }
 
     fun refreshBooks(query: String = "", category: String = "", page: Int = 1) = perform {
@@ -834,9 +907,11 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         onCreated: () -> Unit = {}
     ) = perform(
         onSuccess = { (_, isDirty) ->
-            habits = withContext(Dispatchers.IO) {
-                actionDatabase.allActions("habit")
+            val exports = withContext(Dispatchers.IO) {
+                actionDatabase.allHabitExports()
             }
+            habits = exports.map { it.record }
+            habitExports = exports.associateBy { it.record.id }
             localActionCount = withContext(Dispatchers.IO) { actionDatabase.actionCount() }
             message = if (isDirty) "习惯已保存到本地，等待联网同步" else "习惯已创建"
             onCreated()
@@ -902,6 +977,12 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         onSuccess = { (saved, isDirty, prepared) ->
             habitRecordDetails = prepared.copy(action = saved)
             habits = habits.map { if (it.id == saved.id) saved else it }
+            val existing = habitExports[saved.id] ?: ActionExport(saved)
+            habitExports = habitExports + (saved.id to existing.copy(
+                record = saved,
+                checklists = prepared.checkLists,
+                habit = prepared.habit
+            ))
             message = if (isDirty) "习惯修改已保存到本地，等待联网同步" else "习惯修改已保存"
         }
     ) {
@@ -945,6 +1026,13 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
                     } + saved
                 )
             }
+            habitExports = habitRecordDetails?.let { current ->
+                habitExports + (actionId to ActionExport(
+                    record = current.action,
+                    checklists = current.checkLists,
+                    habit = current.habit
+                ))
+            } ?: habitExports
             message = if (isDirty) "习惯记录已保存到本地，等待联网同步" else "习惯记录已保存"
         }
     ) {
@@ -997,6 +1085,7 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
     fun deleteHabit(actionId: String, onDeleted: () -> Unit = {}) = perform(
         onSuccess = { isDirty ->
             habits = habits.filterNot { it.id == actionId }
+            habitExports = habitExports - actionId
             habitRecordDetails = null
             localActionCount = withContext(Dispatchers.IO) { actionDatabase.actionCount() }
             refreshPendingCount()

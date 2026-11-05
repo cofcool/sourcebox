@@ -16,6 +16,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -98,6 +99,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.LinkAnnotation
@@ -152,14 +154,14 @@ private fun Intent.sharedPlainText(): String? {
 }
 
 private val pages = listOf(
-    "tools" to "工具",
+    "tools" to "首页",
     "todos" to "待办",
     "habits" to "习惯",
     "task" to "任务",
     "more" to "更多"
 )
 
-private val moreToolPages = setOf("notes", "timer", "files", "books")
+private val moreToolPages = setOf("notes", "timer", "files", "books", "settings", "server-tools")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -172,6 +174,7 @@ private fun SourceboxApp(
     var showShareTargetDialog by remember { mutableStateOf(false) }
     var selectedTool by remember { mutableStateOf<ToolInfo?>(null) }
     var selectedRecord by remember { mutableStateOf<ActionRecord?>(null) }
+    var selectedTodo by remember { mutableStateOf<TodoRecord?>(null) }
     var selectedHabit by remember { mutableStateOf<ActionRecord?>(null) }
     var recordReturnPage by remember { mutableStateOf("task") }
     var appliedCategory by remember { mutableStateOf<String?>(null) }
@@ -202,6 +205,7 @@ private fun SourceboxApp(
             "record-detail" -> recordReturnPage
             "record-create" -> "task"
             "habit-detail", "habit-create" -> "habits"
+            "todo-detail" -> "todos"
             "crash-logs" -> "settings"
             in moreToolPages -> "more"
             else -> "tools"
@@ -236,6 +240,8 @@ private fun SourceboxApp(
                         Text(
                             when (page) {
                                 "tool" -> selectedTool?.id ?: "工具"
+                                "server-tools" -> "服务端工具"
+                                "todo-detail" -> "待办详情"
                                 "task" -> "任务"
                                 "record-create" -> "添加任务"
                                 "record-detail" -> "编辑任务"
@@ -261,14 +267,6 @@ private fun SourceboxApp(
                     },
                     actions = {
                         when (page) {
-                            "tools" -> IconButton(onClick = {
-                                    settingsUrl = vm.baseUrl
-                                    settingsUser = vm.username
-                                    settingsPassword = vm.password
-                                    page = "settings"
-                                }) {
-                                    Icon(Icons.Default.Settings, contentDescription = "设置")
-                                }
                             "task" -> IconButton(onClick = { page = "record-create" }) {
                                 Icon(Icons.Default.Add, contentDescription = "添加任务")
                             }
@@ -280,7 +278,7 @@ private fun SourceboxApp(
                 )
             },
             bottomBar = {
-                if (page !in setOf("record-detail", "record-create", "habit-detail", "habit-create")) {
+                if (page !in setOf("record-detail", "record-create", "habit-detail", "habit-create", "todo-detail")) {
                     NavigationBar {
                         pages.forEach { (destination, label) ->
                             val icon = when (destination) {
@@ -296,7 +294,7 @@ private fun SourceboxApp(
                                 onClick = {
                                     page = destination
                                     when (destination) {
-                                        "tools" -> vm.refreshTools()
+                                        "tools" -> vm.refreshTodayActions()
                                         "todos" -> vm.refreshTodos()
                                         "habits" -> vm.refreshHabits()
                                     }
@@ -314,7 +312,8 @@ private fun SourceboxApp(
                 "tools" -> HomeScreen(
                     vm = vm,
                     modifier = Modifier.padding(padding),
-                    onSelectTool = { selectedTool = it; page = "tool" }
+                    onOpenTodo = { selectedTodo = it; page = "todo-detail" },
+                    onTodos = { page = "todos" }
                 )
                 "more" -> MoreScreen(
                     vm = vm,
@@ -322,7 +321,19 @@ private fun SourceboxApp(
                     onNotes = { page = "notes"; vm.refreshNotes() },
                     onTimer = { page = "timer"; vm.refreshTimerRecords() },
                     onFiles = { page = "files" },
-                    onBooks = { page = "books"; vm.refreshBooks() }
+                    onBooks = { page = "books"; vm.refreshBooks() },
+                    onServerTools = { vm.refreshTools(); page = "server-tools" },
+                    onSettings = {
+                        settingsUrl = vm.baseUrl
+                        settingsUser = vm.username
+                        settingsPassword = vm.password
+                        page = "settings"
+                    }
+                )
+                "server-tools" -> ServerToolsScreen(
+                    vm = vm,
+                    modifier = Modifier.padding(padding),
+                    onSelectTool = { selectedTool = it; page = "tool" }
                 )
                 "tool" -> selectedTool?.let { tool ->
                     WebToolScreen(
@@ -385,11 +396,7 @@ private fun SourceboxApp(
                         habit = vm.habitRecordDetails,
                         busy = vm.busy,
                         onSaveHabit = vm::saveHabitDetails,
-                        onSaveValue = { value -> vm.saveHabitValue(habit.id, value) },
-                        onDeleteHabit = { vm.deleteHabit(habit.id) {
-                            selectedHabit = null
-                            page = "habits"
-                        } }
+                        onSaveValue = { value -> vm.saveHabitValue(habit.id, value) }
                     )
                 }
                 "task" -> RecordBoardScreen(
@@ -426,8 +433,22 @@ private fun SourceboxApp(
                     vm = vm,
                     modifier = Modifier.padding(padding),
                     sharedText = sharedText,
-                    onShareConsumed = onShareConsumed
+                    onShareConsumed = onShareConsumed,
+                    onOpenTodo = { selectedTodo = it; page = "todo-detail" }
                 )
+                "todo-detail" -> selectedTodo?.let { todo ->
+                    TodoDetailsScreen(
+                        todo = todo,
+                        modifier = Modifier.padding(padding),
+                        busy = vm.busy,
+                        onSave = { updated ->
+                            vm.saveTodo(updated) {
+                                selectedTodo = updated
+                                page = "todos"
+                            }
+                        }
+                    )
+                }
                 "notes" -> NotesScreen(vm, Modifier.padding(padding))
                 "timer" -> TimerScreen(
                     vm = vm,
@@ -446,7 +467,7 @@ private fun SourceboxApp(
                     onUsername = { settingsUser = it },
                     password = settingsPassword,
                     onPassword = { settingsPassword = it },
-                    onSave = { vm.saveConnection(settingsUrl, settingsUser, settingsPassword); page = "tools" },
+                    onSave = { vm.saveConnection(settingsUrl, settingsUser, settingsPassword); page = "more" },
                     onClearLocalDatabase = vm::clearLocalDatabase,
                     onViewCrashLogs = { page = "crash-logs" }
                 )
@@ -494,12 +515,16 @@ private fun SourceboxApp(
 private fun HomeScreen(
     vm: ToolboxViewModel,
     modifier: Modifier,
-    onSelectTool: (ToolInfo) -> Unit
+    onOpenTodo: (TodoRecord) -> Unit,
+    onTodos: () -> Unit
 ) {
-    Column(modifier
-        .fillMaxSize()
-        .padding(horizontal = 16.dp)) {
-        Text("TheSourceBox", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+    LaunchedEffect(Unit) { vm.refreshTodayActions() }
+    Column(
+        modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp)
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -509,11 +534,97 @@ private fun HomeScreen(
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.bodySmall
             )
-            IconButton(onClick = vm::refreshTools) {
-                Icon(Icons.Default.Refresh, contentDescription = "刷新工具")
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("今日行动", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+            IconButton(onClick = vm::refreshTodayActions, enabled = !vm.busy) {
+                Icon(Icons.Default.Refresh, contentDescription = "刷新今日行动")
             }
         }
-        Text("服务端工具", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 8.dp))
+        if (vm.todayActions.isEmpty()) {
+            EmptyState("今天暂无行动")
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                vm.todayActions.forEach { action ->
+                    val todo = action.takeIf { it.type == "todo" }?.let {
+                        TodoRecord(
+                            id = it.id,
+                            name = it.name,
+                            state = it.state,
+                            remark = it.remark,
+                            type = it.type,
+                            start = it.start,
+                            end = it.end
+                        )
+                    }
+                    TodayActionCard(
+                        action = action,
+                        onClick = { todo?.let(onOpenTodo) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TodayActionCard(action: ActionRecord, onClick: () -> Unit) {
+    val typeLabel = when (action.type) {
+        "todo" -> "待办"
+        "record" -> "任务"
+        "habit" -> "习惯"
+        "timer" -> "番茄钟"
+        "book" -> "书籍"
+        else -> action.type
+    }
+    val stateLabel = when (action.state) {
+        "todo" -> "待办"
+        "doing" -> "进行中"
+        "done" -> "已完成"
+        "cancel" -> "已取消"
+        else -> action.state
+    }
+    val content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit = {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(action.name, Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.width(8.dp))
+                Text("$typeLabel · $stateLabel", style = MaterialTheme.typography.labelSmall)
+            }
+            action.remark?.takeIf(String::isNotBlank)?.let {
+                CopyableLinkText(it, style = MaterialTheme.typography.bodySmall)
+            }
+            Text(action.start.orEmpty(), style = MaterialTheme.typography.labelSmall)
+        }
+    }
+    if (action.type == "todo") {
+        Card(onClick = onClick, modifier = Modifier.fillMaxWidth(), content = content)
+    } else {
+        Card(modifier = Modifier.fillMaxWidth(), content = content)
+    }
+}
+
+@Composable
+private fun ServerToolsScreen(
+    vm: ToolboxViewModel,
+    modifier: Modifier,
+    onSelectTool: (ToolInfo) -> Unit
+) {
+    Column(
+        modifier.fillMaxSize().padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            if (vm.baseUrl.isBlank()) "尚未连接后端" else "后端：${vm.baseUrl}",
+            style = MaterialTheme.typography.bodySmall
+        )
         if (vm.busy && vm.tools.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
@@ -521,19 +632,15 @@ private fun HomeScreen(
         } else if (vm.tools.isEmpty()) {
             EmptyState("连接后端后会在这里显示可用工具。请检查连接设置和服务状态。")
         } else {
-            LazyColumn(
-                modifier = Modifier.weight(1f),
+            Column(
+                Modifier.weight(1f).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(
-                    vm.tools.filterNot { it.id in setOf("note", "todo", "hisRecord", "bookRecord", "timer", "habits") },
-                    key = { it.id }
-                ) { tool ->
+                vm.tools.filterNot {
+                    it.id in setOf("note", "todo", "hisRecord", "bookRecord", "timer", "habits")
+                }.forEach { tool ->
                     Card(onClick = { onSelectTool(tool) }, modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            Modifier.padding(14.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Build, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(12.dp))
                             Column(Modifier.weight(1f)) {
@@ -557,7 +664,9 @@ private fun MoreScreen(
     onNotes: () -> Unit,
     onTimer: () -> Unit,
     onFiles: () -> Unit,
-    onBooks: () -> Unit
+    onBooks: () -> Unit,
+    onServerTools: () -> Unit,
+    onSettings: () -> Unit
 ) {
     Column(
         modifier
@@ -626,6 +735,75 @@ private fun MoreScreen(
             description = "查看和筛选书籍记录",
             onClick = onBooks
         )
+        MoreToolCard(
+            icon = Icons.Default.Build,
+            title = "服务端工具",
+            description = "后端提供的其他工具",
+            onClick = onServerTools
+        )
+        MoreToolCard(
+            icon = Icons.Default.Settings,
+            title = "设置",
+            description = "管理后端连接等",
+            onClick = onSettings
+        )
+    }
+}
+
+@Composable
+private fun TodoDetailsScreen(
+    todo: TodoRecord,
+    modifier: Modifier,
+    busy: Boolean,
+    onSave: (TodoRecord) -> Unit
+) {
+    var name by remember(todo.id) { mutableStateOf(todo.name) }
+    var remark by remember(todo.id) { mutableStateOf(todo.remark.orEmpty()) }
+    var start by remember(todo.id) { mutableStateOf(todo.start.orEmpty()) }
+
+    Column(
+        modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("标题") },
+            singleLine = true,
+            enabled = !busy
+        )
+        OutlinedTextField(
+            value = remark,
+            onValueChange = { remark = it },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("备注") },
+            minLines = 3,
+            enabled = !busy
+        )
+        RecordDateTimePicker(
+            value = start,
+            label = "开始日期",
+            onValueChange = { start = it }
+        )
+        Button(
+            onClick = {
+                onSave(
+                    todo.copy(
+                        name = name.trim(),
+                        remark = remark.trim().ifBlank { null },
+                        start = start.ifBlank { null }
+                    )
+                )
+            },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !busy && name.isNotBlank()
+        ) {
+            Text("保存")
+        }
     }
 }
 
@@ -951,7 +1129,30 @@ private fun RecordBoardScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(record.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                record.name,
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                when (record.state) {
+                                    "todo" -> "待办"
+                                    "doing" -> "进行中"
+                                    "done" -> "已完成"
+                                    "cancel" -> "已取消"
+                                    else -> record.state
+                                },
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
                         if (!record.remark.isNullOrBlank()) {
                             Text(record.remark, style = MaterialTheme.typography.bodySmall)
                         }
@@ -1008,78 +1209,119 @@ private fun HabitBoardScreen(
     var query by remember { mutableStateOf("") }
     var appliedQuery by remember { mutableStateOf("") }
     val keyboardController = LocalSoftwareKeyboardController.current
+    val today = java.time.LocalDate.now()
+    val recentDays = (0..4).map { today.minusDays(it.toLong()) }
+    val visibleHabits = vm.habits.filter {
+        appliedQuery.isBlank() || it.name.contains(appliedQuery, ignoreCase = true)
+    }
 
-    LaunchedEffect(appliedQuery) {
-        vm.refreshHabits(appliedQuery)
+    LaunchedEffect(Unit) {
+        vm.refreshHabits()
     }
 
     Column(
         modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                modifier = Modifier.weight(1f),
-                label = { Text("按名称搜索") },
-                placeholder = { Text("输入习惯名称") },
-                singleLine = true
-            )
-            IconButton(
-                onClick = {
-                    keyboardController?.hide()
-                    appliedQuery = query.trim()
-                },
-                enabled = !vm.busy
-            ) {
-                Icon(Icons.Default.Search, contentDescription = "查询习惯")
-            }
-        }
-
-        if (vm.habits.isEmpty()) {
+        if (visibleHabits.isEmpty()) {
             EmptyState(
                 if (appliedQuery.isNotBlank()) "没有匹配的习惯" else "还没有习惯，点击右上角添加"
             )
         } else {
-            vm.habits.forEach { habit ->
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Spacer(Modifier.weight(1f))
+                recentDays.forEach { date ->
+                    Column(
+                        Modifier.width(40.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            date.dayOfWeek.getDisplayName(
+                                java.time.format.TextStyle.SHORT,
+                                java.util.Locale.ENGLISH
+                            ),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            date.dayOfMonth.toString(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+            visibleHabits.forEach { habit ->
+                val export = vm.habitExports[habit.id]
+                val history = remember(export?.checklists) {
+                    export?.checklists.orEmpty()
+                        .mapNotNull { item ->
+                            item.createTime?.take(10)?.let { date ->
+                                runCatching { java.time.LocalDate.parse(date) }.getOrNull()
+                                    ?.let { it to item }
+                            }
+                        }
+                        .groupBy({ it.first }, { it.second })
+                        .mapValues { (_, entries) -> entries.maxBy { it.createTime.orEmpty() } }
+                }
                 Card(
                     onClick = { onOpenHabit(habit) },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !vm.busy
                 ) {
-                    Column(
-                        Modifier.padding(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    Row(
+                        Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            habit.name,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        if (!habit.remark.isNullOrBlank()) {
-                            Text(habit.remark, style = MaterialTheme.typography.bodySmall)
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                        Column(
+                            Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Text(
-                                if (habit.category == "value") "数值习惯" else "打卡习惯",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary
+                                habit.name,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
                             )
-                            Text(
-                                habit.start?.take(10) ?: "持续进行",
-                                style = MaterialTheme.typography.labelSmall
-                            )
+                            if (!habit.remark.isNullOrBlank()) {
+                                Text(habit.remark, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                            }
+                        }
+                        recentDays.forEach { date ->
+                            val entry = history[date]
+                            val isValue = export?.habit?.category == "value" || habit.category == "value"
+                            val achieved = if (isValue) {
+                                entry != null && isHabitValueAchieved(
+                                    entry.current,
+                                    export?.habit?.targetValue,
+                                    export?.habit?.targetType
+                                )
+                            } else {
+                                entry?.current == 1
+                            }
+                            Column(
+                                Modifier.width(40.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    if (isValue) entry?.let { formatHabitListValue(it.current.toLong()) } ?: "–"
+                                    else if (entry?.current == 1) "√" else "×",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    color = if (achieved) Color(0xFF1976D2) else Color(0xFF8A8D93)
+                                )
+                            }
                         }
                     }
                 }
             }
         }
 
-        Text("共 ${vm.habits.size} 个习惯", style = MaterialTheme.typography.labelMedium)
+        Text("共 ${visibleHabits.size} 个习惯", style = MaterialTheme.typography.labelMedium)
     }
 }
 
@@ -1374,12 +1616,10 @@ private fun HabitDetailsScreen(
     habit: net.cofcool.sourcebox.data.HabitRecord?,
     busy: Boolean,
     onSaveHabit: (net.cofcool.sourcebox.data.HabitRecord) -> Unit,
-    onSaveValue: (Int) -> Unit,
-    onDeleteHabit: () -> Unit
+    onSaveValue: (Int) -> Unit
 ) {
     var value by remember(habit?.action?.id) { mutableStateOf("") }
     var editing by remember(habit?.action?.id) { mutableStateOf(false) }
-    var confirmDelete by remember(habit?.action?.id) { mutableStateOf(false) }
     var name by remember(habit?.action?.id) { mutableStateOf(habit?.action?.name.orEmpty()) }
     var category by remember(habit?.action?.id) { mutableStateOf(habit?.habit?.category ?: "check") }
     var note by remember(habit?.action?.id) { mutableStateOf(habit?.habit?.note.orEmpty()) }
@@ -1408,26 +1648,6 @@ private fun HabitDetailsScreen(
             return@Column
         }
 
-        if (confirmDelete) {
-            AlertDialog(
-                onDismissRequest = { confirmDelete = false },
-                title = { Text("删除习惯") },
-                text = { Text("确定删除“${habit.action.name}”及其全部记录吗？") },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            confirmDelete = false
-                            onDeleteHabit()
-                        },
-                        enabled = !busy
-                    ) { Text("删除") }
-                },
-                dismissButton = {
-                    TextButton(onClick = { confirmDelete = false }, enabled = !busy) { Text("取消") }
-                }
-            )
-        }
-
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(habit.action.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
@@ -1443,9 +1663,6 @@ private fun HabitDetailsScreen(
                 definition?.question?.takeIf(String::isNotBlank)?.let { Text("打卡问题：$it") }
                 OutlinedButton(onClick = { editing = !editing }, enabled = !busy) {
                     Text(if (editing) "收起修改" else "修改习惯")
-                }
-                TextButton(onClick = { confirmDelete = true }, enabled = !busy) {
-                    Text("删除习惯", color = MaterialTheme.colorScheme.error)
                 }
             }
         }
@@ -1682,6 +1899,32 @@ private fun HabitCalendar(
     } else {
         periodEntries.count { it.current == 1 }.toLong()
     }
+    val chartValues = if (statsPeriod == "year") {
+        (0L..11L).map { monthOffset ->
+            val month = java.time.YearMonth.from(periodStart).plusMonths(monthOffset)
+            val monthEntries = entriesByDate.filterKeys { java.time.YearMonth.from(it) == month }.values
+            if (isValueHabit) monthEntries.sumOf { it.current }.toFloat()
+            else monthEntries.count { it.current == 1 }.toFloat()
+        }
+    } else {
+        val days = java.time.temporal.ChronoUnit.DAYS.between(periodStart, periodEnd).toInt() + 1
+        (0 until days).map { offset ->
+            val entry = entriesByDate[periodStart.plusDays(offset.toLong())]
+            if (isValueHabit) entry?.current?.toFloat() ?: 0f
+            else if (entry?.current == 1) 1f else 0f
+        }
+    }
+    val chartLabelIndices = if (chartValues.size <= 3) {
+        chartValues.indices.toList()
+    } else {
+        listOf(0, chartValues.size / 2, chartValues.lastIndex)
+    }.distinct()
+    val chartLabels = chartLabelIndices.map { index ->
+        if (statsPeriod == "year") "${index + 1}月"
+        else periodStart.plusDays(index.toLong()).dayOfMonth.toString()
+    }
+    val chartLineColor = MaterialTheme.colorScheme.primary
+    val chartGridColor = MaterialTheme.colorScheme.outlineVariant
 
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -1727,15 +1970,8 @@ private fun HabitCalendar(
                         } else {
                             val entry = entriesByDate[date]
                             val achieved = entry != null && if (isValueHabit) {
-                                val target = targetValue
-                                target != null && if (targetType == "AtMost") {
-                                    entry.current.toLong() <= target.toLong() * 1000
-                                } else {
-                                    entry.current.toLong() >= target.toLong() * 1000
-                                }
-                            } else {
-                                entry.current == 1
-                            }
+                                isHabitValueAchieved(entry.current, targetValue, targetType)
+                            } else entry.current == 1
                             val shape = RoundedCornerShape(8.dp)
                             val background = if (achieved) Color(0xFF1976D2) else Color(0xFFE7E9ED)
                             val foreground = if (achieved) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
@@ -1810,6 +2046,51 @@ private fun HabitCalendar(
                 },
                 style = MaterialTheme.typography.bodyMedium
             )
+            Canvas(
+                modifier = Modifier.fillMaxWidth().height(150.dp)
+            ) {
+                if (chartValues.isEmpty()) return@Canvas
+                val left = 8.dp.toPx()
+                val right = size.width - 8.dp.toPx()
+                val top = 8.dp.toPx()
+                val bottom = size.height - 8.dp.toPx()
+                val maxValue = chartValues.maxOrNull()?.coerceAtLeast(1f) ?: 1f
+                val minValue = chartValues.minOrNull()?.coerceAtMost(0f) ?: 0f
+                val valueRange = (maxValue - minValue).coerceAtLeast(1f)
+                repeat(3) { line ->
+                    val y = top + (bottom - top) * line / 2f
+                    drawLine(
+                        color = chartGridColor,
+                        start = androidx.compose.ui.geometry.Offset(left, y),
+                        end = androidx.compose.ui.geometry.Offset(right, y),
+                        strokeWidth = 1.dp.toPx()
+                    )
+                }
+                val points = chartValues.mapIndexed { index, value ->
+                    val x = if (chartValues.size == 1) (left + right) / 2f
+                    else left + (right - left) * index / chartValues.lastIndex
+                    val y = bottom - (value - minValue) / valueRange * (bottom - top)
+                    androidx.compose.ui.geometry.Offset(x, y)
+                }
+                val path = Path().apply {
+                    points.forEachIndexed { index, point ->
+                        if (index == 0) moveTo(point.x, point.y) else lineTo(point.x, point.y)
+                    }
+                }
+                drawPath(path, chartLineColor, style = androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx()))
+                points.forEach { point ->
+                    drawCircle(chartLineColor, radius = 3.dp.toPx(), center = point)
+                }
+            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                chartLabels.forEach { label ->
+                    Text(
+                        label,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
             Text(
                 "${selectedDate}：${selectedEntry?.let { entry ->
                     if (isValueHabit) "${formatHabitStoredValue(entry.current.toLong())}${unit?.let { " $it" }.orEmpty()}"
@@ -1832,6 +2113,15 @@ private fun HabitCalendar(
     }
 }
 
+private fun isHabitValueAchieved(current: Int, targetValue: Int?, targetType: String?): Boolean {
+    val target = targetValue ?: return false
+    return if (targetType == "AtMost") {
+        current.toLong() <= target.toLong() * 1000
+    } else {
+        current.toLong() >= target.toLong() * 1000
+    }
+}
+
 private fun parseHabitDisplayValue(value: String): Int? =
     runCatching {
         java.math.BigDecimal(value.trim())
@@ -1843,6 +2133,17 @@ private fun formatHabitStoredValue(value: Long): String =
     java.math.BigDecimal.valueOf(value, 3)
         .stripTrailingZeros()
         .toPlainString()
+
+private fun formatHabitListValue(value: Long): String {
+    val displayValue = java.math.BigDecimal.valueOf(value, 3)
+    if (displayValue <= java.math.BigDecimal("1000")) {
+        return displayValue.stripTrailingZeros().toPlainString()
+    }
+    return displayValue.divide(java.math.BigDecimal("1000"))
+        .setScale(1, java.math.RoundingMode.HALF_UP)
+        .stripTrailingZeros()
+        .toPlainString() + "k"
+}
 
 @Composable
 private fun AssistChipLabel(text: String, onClick: () -> Unit) {
@@ -2288,17 +2589,19 @@ private fun TodosScreen(
     vm: ToolboxViewModel,
     modifier: Modifier,
     sharedText: String?,
-    onShareConsumed: () -> Unit
+    onShareConsumed: () -> Unit,
+    onOpenTodo: (TodoRecord) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
     var remark by remember { mutableStateOf("") }
     var query by remember { mutableStateOf("") }
     var appliedQuery by remember { mutableStateOf("") }
     var page by remember { mutableStateOf(1) }
+    var showCompleted by remember { mutableStateOf(false) }
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    LaunchedEffect(appliedQuery, page) {
-        vm.refreshTodos(appliedQuery, page)
+    LaunchedEffect(appliedQuery, page, showCompleted) {
+        vm.refreshTodos(appliedQuery, page, if (showCompleted) "done" else "todo")
     }
 
     LaunchedEffect(sharedText) {
@@ -2325,14 +2628,25 @@ private fun TodosScreen(
                 onClick = { vm.addTodo(name, remark); name = ""; remark = "" },
                 enabled = !vm.busy
             ) { Text("添加待办") }
-            OutlinedButton(onClick = { vm.refreshTodos(appliedQuery, page) }) { Text("刷新") }
+            OutlinedButton(
+                onClick = { showCompleted = !showCompleted; page = 1 },
+                enabled = !vm.busy
+            ) {
+                Text(if (showCompleted) "返回待办" else "已完成")
+            }
+            OutlinedButton(
+                onClick = {
+                    vm.refreshTodos(appliedQuery, page, if (showCompleted) "done" else "todo")
+                },
+                enabled = !vm.busy
+            ) { Text("刷新") }
         }
         Row(Modifier.padding(bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             OutlinedTextField(
                 query,
                 { query = it },
                 modifier = Modifier.weight(1f),
-                label = { Text("搜索待办") },
+                label = { Text(if (showCompleted) "搜索已完成" else "搜索待办") },
                 singleLine = true
             )
             IconButton(onClick = {
@@ -2344,12 +2658,24 @@ private fun TodosScreen(
             }
         }
         if (vm.todos.isEmpty()) {
-            EmptyState(if (appliedQuery.isBlank()) "暂无待办事项" else "没有匹配的待办事项")
+            EmptyState(
+                when {
+                    appliedQuery.isNotBlank() && showCompleted -> "没有匹配的已完成事项"
+                    appliedQuery.isNotBlank() -> "没有匹配的待办事项"
+                    showCompleted -> "暂无已完成事项"
+                    else -> "暂无待办事项"
+                }
+            )
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 vm.todos.forEach { todo ->
                     key(todo.id) {
-                        TodoCard(todo, onComplete = { vm.completeTodo(todo) })
+                        TodoCard(
+                            todo,
+                            onComplete = { vm.completeTodo(todo) },
+                            completed = showCompleted,
+                            onClick = { onOpenTodo(todo) }
+                        )
                     }
                 }
             }
@@ -2377,13 +2703,22 @@ private fun TodosScreen(
 }
 
 @Composable
-private fun TodoCard(todo: TodoRecord, onComplete: () -> Unit) {
-    Card(Modifier.fillMaxWidth()) {
+private fun TodoCard(
+    todo: TodoRecord,
+    onComplete: () -> Unit,
+    completed: Boolean = false,
+    onClick: () -> Unit = {}
+) {
+    Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Row(
             Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Switch(checked = todo.state == "done", onCheckedChange = { if (it) onComplete() })
+            Switch(
+                checked = todo.state == "done",
+                onCheckedChange = { if (it) onComplete() },
+                enabled = !completed
+            )
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
                 CopyableLinkText(todo.name, fontWeight = FontWeight.SemiBold)

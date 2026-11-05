@@ -166,6 +166,24 @@ class ActionExportDatabase(context: Context) :
                 if (prefix == "habit") actions.sortedWith(::compareHabitIndex) else actions
             }
 
+    fun allHabitExports(query: String = ""): List<ActionExport> {
+        val nameSearch = query.trim()
+        val deletedHabitIds = readableDatabase.rawQuery(
+            "SELECT DISTINCT entity_id FROM $TABLE_PENDING WHERE entity = 'action' AND operation = 'habit_delete'",
+            null
+        ).use { cursor ->
+            buildSet {
+                while (cursor.moveToNext()) add(cursor.getString(0))
+            }
+        }
+        return readPayloads(TABLE_ACTIONS, ActionExport.serializer())
+            .asSequence()
+            .filter { it.record.type == "habit" && it.record.id !in deletedHabitIds }
+            .filter { nameSearch.isBlank() || it.record.name.contains(nameSearch, ignoreCase = true) }
+            .sortedWith { left, right -> compareHabitIndex(left.record, right.record) }
+            .toList()
+    }
+
     private fun compareHabitIndex(left: ActionRecord, right: ActionRecord): Int {
         val leftIndex = left.index?.trim().orEmpty()
         val rightIndex = right.index?.trim().orEmpty()
@@ -225,6 +243,24 @@ class ActionExportDatabase(context: Context) :
 
     fun actionDetails(actionId: String): ActionExport? =
         readPayload(TABLE_ACTIONS, actionId, ActionExport.serializer())
+
+    fun actionsStartingOn(date: String): List<ActionRecord> {
+        val deletedHabitIds = readableDatabase.rawQuery(
+            "SELECT DISTINCT entity_id FROM $TABLE_PENDING WHERE entity = 'action' AND operation = 'habit_delete'",
+            null
+        ).use { cursor ->
+            buildSet {
+                while (cursor.moveToNext()) add(cursor.getString(0))
+            }
+        }
+        return readPayloads(TABLE_ACTIONS, ActionExport.serializer())
+            .asSequence()
+            .map { it.record }
+            .filterNot { it.id in deletedHabitIds }
+            .filter { it.start?.startsWith(date) == true }
+            .sortedBy { it.start.orEmpty() }
+            .toList()
+    }
 
     fun saveNote(note: NoteRecord) {
         upsert(TABLE_NOTES, note.id, json.encodeToString(note))

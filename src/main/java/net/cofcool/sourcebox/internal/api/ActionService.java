@@ -482,9 +482,11 @@ public class ActionService {
             .build()
         ).onSuccess( c -> {
                 if (saveComment) {
+                    var ct = LocalDateTime.now();
                     var content = "当前进度: " + c.content();
                     if (c.first().equals(0) && c.current().equals(0)) {
                         content = content + " 创建成功";
+                        ct = pojo.createTime();
                     } else if (Objects.equals(c.current(), c.last())) {
                         content = content + " 已完成";
                     } else {
@@ -495,7 +497,7 @@ public class ActionService {
                         Comment.builder()
                             .actionId(actionId)
                             .content(content)
-                            .createTime(pojo.createTime())
+                            .createTime(ct)
                             .build()
                     );
                 }

@@ -190,6 +190,21 @@ public record ActionRecord(
             createTime != null ? createTime : LocalDateTime.now() , LocalDateTime.now());
     }
 
+    public static final String SYS_TEMPLATE = """
+                    sys: actionRecord 变更记录
+                    label: %s;
+                    remakr: %s;
+                    state: %s;
+                    category: %s;
+                    start-end: %s - %s
+                    """;
+    public String generateSysMsg() {
+        return String.format(SYS_TEMPLATE,
+            labels, remark, state, category,
+            Utils.formatDatetime(createTime), Utils.formatDatetime(updateTime)
+        );
+    }
+
     public record Records(
         ActionRecord record,
         List<ActionRecord> refs

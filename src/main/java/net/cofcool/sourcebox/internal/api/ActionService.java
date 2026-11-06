@@ -116,12 +116,23 @@ public class ActionService {
         }
         var ret = actionRecordSqlRepository.save(record);
         ret.onSuccess(a -> {
+            var ncms =  new ArrayList<Comment>();
+            ncms.add(Comment
+                .builder()
+                .id(Utils.generateShortUUID())
+                .actionId(a.id())
+                .createTime(LocalDateTime.now()).updateTime(LocalDateTime.now())
+                .content(a.generateSysMsg())
+                .build()
+            );
             if (a.comments() != null) {
                 var comments = a.comments().stream().map(c ->
                     new Comment(Utils.generateShortUUID(), a.id(), c, LocalDateTime.now(), LocalDateTime.now())
                 ).toList();
-                commentSqlRepository.save(comments).onFailure(new Log("Save comment error"));
+                ncms.addAll(comments);
             }
+            commentSqlRepository.save(ncms).onFailure(new Log("Save comment error"));
+
             if (a.category() != null) {
                 saveType(a.category(), Type.category, "Save actionType error");
             }

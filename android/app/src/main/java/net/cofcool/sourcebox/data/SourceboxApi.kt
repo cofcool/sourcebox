@@ -1,8 +1,11 @@
 package net.cofcool.sourcebox.data
 
 import android.content.Context
+import android.content.ContentValues
 import android.net.Uri
 import android.os.SystemClock
+import android.os.Environment
+import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.util.Log
 import net.cofcool.sourcebox.CrashLogStore
@@ -41,7 +44,6 @@ data class ToolArgument(
     val required: Boolean = false,
     val demo: String = ""
 )
-
 data class ToolInfo(
     val id: String,
     val description: String,
@@ -295,6 +297,134 @@ class SourceboxApi(context: Context) {
 
     suspend fun deleteCommand(id: String) {
         request("/cmd/${Uri.encode(id)}", "DELETE")
+    }
+
+    suspend fun listLanShareFiles(receiverUrl: String, token: String, path: String): List<String> =
+        withContext(Dispatchers.IO) {
+            require(token.isNotBlank()) { "请输入接收端令牌" }
+            val baseUrl = validateLanShareReceiver(receiverUrl)
+            val listingUrl = "$baseUrl/download?path=${Uri.encode(path.trim().trim('/'))}"
+            val request = Request.Builder()
+                .url(listingUrl)
+                .header("Authorization", "Bearer $token")
+                .get()
+                .build()
+            client.newCall(request).execute().use { response ->
+                val body = response.body.string()
+                if (!response.isSuccessful) {
+                    recordApiFailure("GET", "/download", response.code, body)
+                    throw IOException("获取文件列表失败：HTTP ${response.code} ${body.take(300)}")
+                }
+                json.decodeFromString<List<String>>(body)
+            }
+        }
+
+    suspend fun downloadLanShareFile(
+        context: Context,
+        receiverUrl: String,
+        token: String,
+        relativePath: String,
+        onProgress: (String, Long, Long) -> Unit
+    ): String = withContext(Dispatchers.IO) {
+        require(token.isNotBlank()) { "请输入接收端令牌" }
+        val baseUrl = validateLanShareReceiver(receiverUrl)
+        val safePath = relativePath.replace('\\', '/').trimStart('/')
+        require(safePath.isNotBlank() && safePath.split('/').none { it == ".." || it == "." || it.isBlank() }) {
+            "无效的下载路径：$relativePath"
+        }
+        val encodedPath = safePath.split('/').joinToString("/") { Uri.encode(it) }
+        val request = Request.Builder()
+            .url("$baseUrl/download/$encodedPath")
+            .header("Authorization", "Bearer $token")
+            .get()
+            .build()
+        client.newBuilder()
+            .readTimeout(30, TimeUnit.MINUTES)
+            .callTimeout(30, TimeUnit.MINUTES)
+            .build()
+            .newCall(request)
+            .execute()
+            .use { response ->
+                if (!response.isSuccessful) {
+                    val message = response.body.string()
+                    recordApiFailure("GET", "/download/$safePath", response.code, message)
+                    throw IOException("下载 $safePath 失败：HTTP ${response.code} ${message.take(300)}")
+                }
+                val body = response.body
+                val expectedSha256 = response.header("X-Sourcebox-SHA256")
+                    ?.takeIf { it.matches(Regex("(?i)[0-9a-f]{64}")) }
+                    ?: throw IOException("服务端未返回有效的 SHA-256：$safePath")
+                val totalBytes = body.contentLength()
+                val parentPath = safePath.substringBeforeLast('/', "")
+                val relativeDirectory = buildString {
+                    append(Environment.DIRECTORY_DOWNLOADS)
+                    append("/Sourcebox")
+                    if (parentPath.isNotBlank()) append("/$parentPath")
+                }
+                val values = ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, safePath.substringAfterLast('/'))
+                    put(MediaStore.MediaColumns.MIME_TYPE, "application/octet-stream")
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, relativeDirectory)
+                    put(MediaStore.MediaColumns.IS_PENDING, 1)
+                }
+                val resolver = context.contentResolver
+                val destination = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                    ?: throw IOException("无法在下载目录创建文件：$safePath")
+                try {
+                    val output = resolver.openOutputStream(destination, "w")
+                        ?: throw IOException("无法写入下载文件：$safePath")
+                    val digest = MessageDigest.getInstance("SHA-256")
+                    body.byteStream().use { input ->
+                        output.use { stream ->
+                            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                            var transferred = 0L
+                            var lastReportedAt = 0L
+                            onProgress(safePath, 0, totalBytes)
+                            while (true) {
+                                val count = input.read(buffer)
+                                if (count == -1) break
+                                stream.write(buffer, 0, count)
+                                digest.update(buffer, 0, count)
+                                transferred += count
+                                val now = SystemClock.elapsedRealtime()
+                                if (now - lastReportedAt >= 100 || (totalBytes >= 0 && transferred >= totalBytes)) {
+                                    onProgress(safePath, transferred, totalBytes)
+                                    lastReportedAt = now
+                                }
+                            }
+                            onProgress(safePath, transferred, totalBytes)
+                        }
+                    }
+                    val actualSha256 = digest.digest().joinToString("") { "%02x".format(it) }
+                    if (!MessageDigest.isEqual(
+                            expectedSha256.lowercase().toByteArray(Charsets.US_ASCII),
+                            actualSha256.toByteArray(Charsets.US_ASCII)
+                        )
+                    ) {
+                        throw IOException("SHA-256 校验失败：$safePath，期望 $expectedSha256，实际 $actualSha256")
+                    }
+                    resolver.update(destination, ContentValues().apply {
+                        put(MediaStore.MediaColumns.IS_PENDING, 0)
+                    }, null, null)
+                    "${Environment.DIRECTORY_DOWNLOADS}/Sourcebox/$safePath"
+                } catch (error: Exception) {
+                    resolver.delete(destination, null, null)
+                    throw error
+                }
+            }
+    }
+
+    private fun validateLanShareReceiver(receiverUrl: String): String {
+        val receiver = URI(receiverUrl.trim())
+        require(
+            receiver.scheme.equals("http", ignoreCase = true) &&
+                !receiver.host.isNullOrBlank() && receiver.port in 1..65535 &&
+                receiver.rawUserInfo == null && receiver.rawPath.orEmpty() in setOf("", "/") &&
+                receiver.rawQuery == null && receiver.rawFragment == null
+        ) {
+            "接收地址必须是带端口的 HTTP 地址，例如 http://192.168.1.20:43127"
+        }
+        return URI("http", null, receiver.host, receiver.port, null, null, null).toASCIIString()
     }
 
     suspend fun uploadLanShareFile(context: Context, receiverUrl: String, token: String, uri: Uri): String =

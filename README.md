@@ -123,11 +123,14 @@
 ./sourcebox.sh --tool=lanShare --type=send --to=http://192.168.1.20:43127 --token=接收端显示的令牌 --path=./photos
 ```
 
-`--path` 可以是文件或目录。未压缩时逐项传输，目录结构和顶层名称会保留；默认 `--compress=false`。需要先压缩为 ZIP 再传输时，发送端加 `--compress=true`
+`--path` 可以是文件或目录。未压缩时逐项传输，目录结构和顶层名称会保留；默认 `--compress=false`。需要先压缩为 ZIP 再传输时，发送端加 `--compress=true`。
 
-文件冲突策略由接收端设置，默认为跳过并在发送端打印冲突路径；可在接收端用 `--conflict=overwrite` 覆盖已存在文件
+文件冲突策略由接收端设置，默认为跳过并在发送端打印冲突路径；可在接收端用 `--conflict=overwrite` 覆盖已存在文件。
 
-接收完成后可按 `Ctrl+C` 关闭接收端
+接收端默认不开放下载。添加 `--allowDownload=true` 后，客户端可列举服务端 `--path` 目录中的文件，并按相对路径选择要拉取的文件：
+
+
+接收完成后可按 `Ctrl+C` 关闭
 
 ## JSON 生成对象
 

@@ -196,6 +196,73 @@ class LanFileShareTest {
         }
     }
 
+    @Test
+    void listsAndDownloadsRequestedFilesWhenEnabled() throws Exception {
+        Path sharedRoot = Files.createDirectory(tempDir.resolve("shared"));
+        Path requestedFile = sharedRoot.resolve("docs/nested/read me.txt");
+        Files.createDirectories(requestedFile.getParent());
+        Files.writeString(requestedFile, "download payload");
+        Files.createDirectories(sharedRoot.resolve("empty-folder"));
+        Files.writeString(sharedRoot.resolve("other.txt"), "not selected");
+        server = LanFileShare.startReceiver(sharedRoot, "secret", 0, "skip", true);
+        server.start();
+        CapturingContext context = new CapturingContext();
+        Path output = tempDir.resolve("downloads");
+
+        LanFileShare tool = new LanFileShare();
+        Args args = new Args()
+            .arg("type", "download")
+            .arg("path", "docs")
+            .arg("to", "http://127.0.0.1:" + server.getAddress().getPort())
+            .arg("token", "secret")
+            .arg("reqFiles", "docs/nested/read me.txt")
+            .arg("out", output.toString())
+            .copyConfigFrom(tool.config())
+            .context(context);
+        tool.run(args);
+
+        assertEquals("download payload", Files.readString(output.resolve("docs/nested/read me.txt")));
+        assertTrue(context.messages.contains("docs/nested/read me.txt"));
+        assertTrue(context.messages.stream().anyMatch(message -> message.startsWith("Transfer progress:")));
+        assertFalse(context.messages.contains("empty-folder"));
+        assertFalse(Files.exists(output.resolve("other.txt")));
+    }
+
+    @Test
+    void downloadEndpointIsDisabledByDefaultAndRequiresTokenWhenEnabled() throws Exception {
+        Path sharedRoot = Files.createDirectory(tempDir.resolve("shared"));
+        Files.writeString(sharedRoot.resolve("file.txt"), "content");
+        server = LanFileShare.startReceiver(sharedRoot, "secret", 0);
+        server.start();
+        URI listingUri = URI.create("http://127.0.0.1:" + server.getAddress().getPort() + "/download?path=");
+
+        HttpResponse<String> disabled = HttpClient.newHttpClient().send(
+            HttpRequest.newBuilder(listingUri).GET().build(), HttpResponse.BodyHandlers.ofString());
+        assertEquals(404, disabled.statusCode());
+
+        server.stop(0);
+        server = LanFileShare.startReceiver(sharedRoot, "secret", 0, "skip", true);
+        server.start();
+        HttpResponse<String> unauthorized = HttpClient.newHttpClient().send(
+            HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + server.getAddress().getPort() + "/download?path="))
+                .GET().build(), HttpResponse.BodyHandlers.ofString());
+        assertEquals(401, unauthorized.statusCode());
+    }
+
+    @Test
+    void downloadEndpointRejectsTraversal() throws Exception {
+        Path sharedRoot = Files.createDirectory(tempDir.resolve("shared"));
+        server = LanFileShare.startReceiver(sharedRoot, "secret", 0, "skip", true);
+        server.start();
+
+        HttpResponse<String> response = HttpClient.newHttpClient().send(
+            HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + server.getAddress().getPort() + "/download/%2e%2e/secret.txt"))
+                .header("Authorization", "Bearer secret")
+                .GET().build(), HttpResponse.BodyHandlers.ofString());
+
+        assertEquals(400, response.statusCode());
+    }
+
     private HttpResponse<String> upload(Path archive, String token) throws Exception {
         return HttpClient.newHttpClient().send(
             HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + server.getAddress().getPort() + "/upload"))

@@ -5,6 +5,7 @@ import com.sun.net.httpserver.HttpServer;
 import net.cofcool.sourcebox.Tool;
 import net.cofcool.sourcebox.ToolName;
 import net.cofcool.sourcebox.util.DataSize;
+import net.cofcool.sourcebox.util.JsonUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,6 +34,7 @@ import java.util.zip.ZipOutputStream;
 public class LanFileShare implements Tool {
 
     private static final String UPLOAD_PATH = "/upload";
+    private static final String DOWN_PATH = "/download";
     private static final String TOKEN_HEADER = "Authorization";
     private static final String TOKEN_PREFIX = "Bearer ";
     private static final String TRANSFER_HEADER = "X-Sourcebox-Transfer";
@@ -46,23 +48,27 @@ public class LanFileShare implements Tool {
 
     @Override
     public void run(Args args) throws Exception {
-        switch (args.readArg("type").val()) {
-            case "send" -> send(args);
-            case "receive" -> receive(args);
-            default -> throw new IllegalArgumentException("type must be send or receive");
+        switch (ShareType.valueOf(args.readArg("type").val())) {
+            case ShareType.send -> send(args);
+            case ShareType.receive -> receive(args);
+            case ShareType.download -> download(args);
+            default -> throw new IllegalArgumentException("type must be " + Arrays.toString(ShareType.values()));
         }
     }
 
     @Override
     public Args config() {
         return new Args()
-            .arg(new Arg("type", "receive", "send or receive", false, "receive"))
+            .arg(new Arg("type", ShareType.receive.name(), "type: " + Arrays.toString(ShareType.values()), false, "receive"))
             .arg(new Arg("path", null, "file or directory to send or receive", true, "./photos"))
             .arg(new Arg("to", null, "receiver base URL, for example http://192.168.1.20:43127", false, null))
             .arg(new Arg("token", null, "receiver's one-time token", false, null))
             .arg(new Arg("port", "0", "receiver port; 0 selects an available port", false, "0"))
             .arg(new Arg("compress", "false", "compress the upload as a ZIP archive", false, "true"))
-            .arg(new Arg("conflict", "skip", "receiver conflict policy: skip or overwrite", false, "overwrite"));
+            .arg(new Arg("conflict", "skip", "receiver conflict policy: skip or overwrite", false, "overwrite"))
+            .arg(new Arg("allowDownload", "false", "enable clients to list and download files", false, "true"))
+            .arg(new Arg("reqFiles", null, "comma-separated relative paths to download", false, "docs/readme.txt,images/logo.png"))
+            .arg(new Arg("out", "./downloads", "local directory for downloaded files", false, "./downloads"));
     }
 
     private void receive(Args args) throws Exception {
@@ -78,7 +84,8 @@ public class LanFileShare implements Tool {
         }
 
         String token = args.readArg("token").optVal().filter(s -> !s.isBlank()).orElseGet(LanFileShare::newToken);
-        HttpServer server = startReceiver(destination, token, requestedPort, conflictPolicy);
+        boolean allowDownload = args.readArg("allowDownload").test(Boolean::parseBoolean);
+        HttpServer server = startReceiver(destination, token, requestedPort, conflictPolicy, allowDownload);
         ExecutorService executor = Executors.newCachedThreadPool(task -> {
             Thread thread = new Thread(task, "lan-share-http");
             thread.setDaemon(true);
@@ -110,11 +117,112 @@ public class LanFileShare implements Tool {
         }
     }
 
+    private void download(Args args) throws Exception {
+        URI base = baseUri(args.readArg("to").requiredVal("to is required in download type"));
+        String token = args.readArg("token").requiredVal("token is required in download type");
+        String remoteDirectory = args.readArg("path").requiredVal("path is required in download type");
+        Path remoteRelative = remoteDirectory.isBlank() || ".".equals(remoteDirectory)
+            ? Path.of("")
+            : safeRelativePath(remoteDirectory);
+        String remotePath = remoteRelative.toString().replace(remoteRelative.getFileSystem().getSeparator(), "/");
+        String encodedQueryPath = URLEncoder.encode(remotePath, java.nio.charset.StandardCharsets.UTF_8);
+        URI listingUri = URI.create(base.getScheme() + "://" + base.getRawAuthority() + "/download?path=" + encodedQueryPath);
+        HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
+        HttpResponse<String> listingResponse = client.send(
+            HttpRequest.newBuilder(listingUri).header(TOKEN_HEADER, TOKEN_PREFIX + token).GET().build(),
+            HttpResponse.BodyHandlers.ofString());
+        if (listingResponse.statusCode() >= 400) {
+            throw new IllegalStateException("Download listing failed with HTTP " + listingResponse.statusCode()
+                + ": " + listingResponse.body());
+        }
+        List<String> files = JsonUtil.toPojoList(listingResponse.body().getBytes(java.nio.charset.StandardCharsets.UTF_8), String.class);
+        args.getContext().write("Available files:");
+        files.forEach(args.getContext()::write);
+        if (files.isEmpty()) {
+            args.getContext().write("No files found");
+        }
+
+        String requestedFiles = args.readArg("reqFiles").val();
+        if (requestedFiles == null || requestedFiles.isBlank()) {
+            return;
+        }
+        String conflictPolicy = args.readArg("conflict").val();
+        validateConflictPolicy(conflictPolicy);
+        Path outputRoot = Path.of(args.readArg("out").val()).toAbsolutePath().normalize();
+        Files.createDirectories(outputRoot);
+        outputRoot = outputRoot.toRealPath();
+        int downloaded = 0;
+        for (String request : requestedFiles.split("[,\\r\\n]+")) {
+            String selected = request.trim();
+            if (selected.isEmpty()) {
+                continue;
+            }
+            Path relative = safeRelativePath(selected);
+            String normalizedSelection = relative.toString().replace(relative.getFileSystem().getSeparator(), "/");
+            if (!files.contains(normalizedSelection)) {
+                throw new IllegalArgumentException("Requested file is not in the server listing: " + selected);
+            }
+            Path target = safeResolve(outputRoot, relative);
+            if (Files.isSymbolicLink(target)) {
+                throw new IllegalArgumentException("Download target is a symbolic link: " + target);
+            }
+            if (Files.exists(target, LinkOption.NOFOLLOW_LINKS) && "skip".equals(conflictPolicy)) {
+                args.getContext().write("Skipped local conflict: " + relative);
+                continue;
+            }
+            Files.createDirectories(target.getParent());
+            Path temporary = Files.createTempFile(target.getParent(), ".lan-share-download-", ".tmp");
+            try {
+                URI fileUri = URI.create(base.getScheme() + "://" + base.getRawAuthority()
+                    + "/download/" + encodeUriPath(normalizedSelection));
+                HttpResponse<InputStream> response = client.send(
+                    HttpRequest.newBuilder(fileUri).header(TOKEN_HEADER, TOKEN_PREFIX + token).GET().build(),
+                    HttpResponse.BodyHandlers.ofInputStream());
+                if (response.statusCode() >= 400) {
+                    try (InputStream body = response.body()) {
+                        throw new IllegalStateException("Download failed for " + selected + " with HTTP "
+                            + response.statusCode() + ": " + new String(body.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
+                    }
+                }
+                String expectedSha256 = response.headers().firstValue(SHA256_HEADER).orElse(null);
+                long totalBytes = response.headers().firstValueAsLong("Content-Length").orElse(-1);
+                TransferProgress progress = new TransferProgress(args, totalBytes);
+                progress.report(true);
+                MessageDigest digest = newSha256();
+                try (InputStream input = new DigestInputStream(response.body(), digest);
+                     OutputStream output = Files.newOutputStream(temporary)) {
+                    byte[] buffer = new byte[16 * 1024];
+                    int count;
+                    while ((count = input.read(buffer)) != -1) {
+                        output.write(buffer, 0, count);
+                        progress.advance(count);
+                    }
+                }
+                progress.report(true);
+                String actualSha256 = HexFormat.of().formatHex(digest.digest());
+                if (!matchesSha256(expectedSha256, actualSha256)) {
+                    throw new IllegalStateException(sha256Mismatch(selected, expectedSha256, actualSha256));
+                }
+                moveItem(temporary, target, "overwrite".equals(conflictPolicy));
+                args.getContext().write("Downloaded: " + relative);
+                downloaded++;
+            } finally {
+                Files.deleteIfExists(temporary);
+            }
+        }
+        args.getContext().write("Download complete; files downloaded: " + downloaded);
+    }
+
     static HttpServer startReceiver(Path destination, String token, int port) throws IOException {
         return startReceiver(destination, token, port, "skip");
     }
 
     static HttpServer startReceiver(Path destination, String token, int port, String conflictPolicy) throws IOException {
+        return startReceiver(destination, token, port, conflictPolicy, false);
+    }
+
+    static HttpServer startReceiver(Path destination, String token, int port, String conflictPolicy,
+        boolean allowDownload) throws IOException {
         validateConflictPolicy(conflictPolicy);
         Path root = destination.toAbsolutePath().normalize();
         Files.createDirectories(root);
@@ -122,7 +230,124 @@ public class LanFileShare implements Tool {
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
         Path receiveRoot = root;
         server.createContext(UPLOAD_PATH, exchange -> handleUpload(exchange, receiveRoot, token, conflictPolicy));
+        server.createContext(DOWN_PATH, exchange -> handleDownload(exchange, receiveRoot, token, allowDownload));
         return server;
+    }
+
+    private static void handleDownload(HttpExchange exchange, Path root, String token, boolean allowDownload) throws IOException {
+        try (exchange) {
+            if (!allowDownload) {
+                respond(exchange, 404, "Download is disabled");
+                return;
+            }
+            if (!"GET".equals(exchange.getRequestMethod())) {
+                respond(exchange, 405, "Only GET is supported");
+                return;
+            }
+            if (!authorized(exchange, token)) {
+                respond(exchange, 401, "Invalid share token");
+                return;
+            }
+
+            try {
+                String rawPath = exchange.getRequestURI().getRawPath();
+                if ("/download".equals(rawPath) || "/download/".equals(rawPath)) {
+                    Path listRoot = resolveListRoot(root, queryParameter(exchange.getRequestURI().getRawQuery(), "path"));
+                    List<String> files;
+                    try (var paths = Files.walk(listRoot)) {
+                        files = paths
+                            .filter(path -> !path.equals(listRoot))
+                            .filter(path -> Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS))
+                            .filter(path -> !isTransferTemporary(path))
+                            .map(path -> root.relativize(path).toString().replace(path.getFileSystem().getSeparator(), "/"))
+                            .sorted()
+                            .toList();
+                    }
+                    byte[] body = JsonUtil.toJson(files).getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                    exchange.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8");
+                    exchange.sendResponseHeaders(200, body.length);
+                    exchange.getResponseBody().write(body);
+                    return;
+                }
+
+                if (!rawPath.startsWith("/download/")) {
+                    respond(exchange, 404, "Not found");
+                    return;
+                }
+                String relativeName = decodeUriPath(rawPath.substring("/download/".length()));
+                Path relative = safeRelativePath(relativeName);
+                Path file = safeResolve(root, relative);
+                if (Files.isSymbolicLink(file) || !Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)) {
+                    respond(exchange, 404, "File not found: " + relativeName);
+                    return;
+                }
+                exchange.getResponseHeaders().set(SHA256_HEADER, sha256(file));
+                exchange.getResponseHeaders().set("Content-Type", "application/octet-stream");
+                exchange.sendResponseHeaders(200, Files.size(file));
+                try (InputStream input = Files.newInputStream(file); OutputStream output = exchange.getResponseBody()) {
+                    input.transferTo(output);
+                }
+            } catch (IllegalArgumentException exception) {
+                respond(exchange, 400, exception.getMessage());
+            } catch (NoSuchFileException exception) {
+                respond(exchange, 404, "File not found");
+            }
+        }
+    }
+
+    private static boolean isTransferTemporary(Path path) {
+        return path.getFileName().toString().startsWith(".lan-share-");
+    }
+
+    private static boolean authorized(HttpExchange exchange, String token) {
+        String authorization = exchange.getRequestHeaders().getFirst(TOKEN_HEADER);
+        byte[] expected = (TOKEN_PREFIX + token).getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        byte[] actual = authorization == null ? new byte[0] : authorization.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        return MessageDigest.isEqual(expected, actual);
+    }
+
+    private static Path resolveListRoot(Path root, String requestedPath) throws IOException {
+        Path relative = requestedPath == null || requestedPath.isBlank() ? Path.of("") : safeRelativePath(requestedPath);
+        Path listRoot = safeResolve(root, relative);
+        if (Files.isSymbolicLink(listRoot) || !Files.isDirectory(listRoot, LinkOption.NOFOLLOW_LINKS)) {
+            throw new NoSuchFileException(requestedPath);
+        }
+        return listRoot;
+    }
+
+    private static String queryParameter(String rawQuery, String name) {
+        if (rawQuery == null) {
+            return null;
+        }
+        for (String item : rawQuery.split("&")) {
+            int split = item.indexOf('=');
+            String key = split < 0 ? item : item.substring(0, split);
+            if (name.equals(URLDecoder.decode(key, java.nio.charset.StandardCharsets.UTF_8))) {
+                return split < 0 ? "" : URLDecoder.decode(item.substring(split + 1), java.nio.charset.StandardCharsets.UTF_8);
+            }
+        }
+        return null;
+    }
+
+    private static String decodeUriPath(String rawPath) {
+        return URLDecoder.decode(rawPath.replace("+", "%2B"), java.nio.charset.StandardCharsets.UTF_8);
+    }
+
+    private static String encodeUriPath(String path) {
+        return Arrays.stream(path.split("/", -1))
+            .map(segment -> URLEncoder.encode(segment, java.nio.charset.StandardCharsets.UTF_8)
+                .replace("+", "%20").replace("%7E", "~"))
+            .collect(java.util.stream.Collectors.joining("/"));
+    }
+
+    private static Path safeRelativePath(String path) {
+        String normalizedSeparators = path.replace('\\', '/');
+        Path relative = Path.of(normalizedSeparators).normalize();
+        if (normalizedSeparators.startsWith("/") || normalizedSeparators.matches("^[A-Za-z]:.*")
+            || relative.isAbsolute() || relative.startsWith("..") || relative.toString().isBlank()) {
+            throw new IllegalArgumentException("Invalid relative path: " + path);
+        }
+        return relative;
     }
 
     private static void handleUpload(HttpExchange exchange, Path destination, String token, String conflictPolicy) throws IOException {
@@ -531,12 +756,13 @@ public class LanFileShare implements Tool {
             }
             lastReportedAt = now;
             long sent = sentBytes.get();
-            double percent = totalBytes == 0 ? 100 : Math.min(100.0, sent * 100.0 / totalBytes);
+            double percent = totalBytes <= 0 ? -1 : Math.min(100.0, sent * 100.0 / totalBytes);
             double seconds = Math.max((now - startedAt) / 1_000_000_000.0, 0.001);
             double bytesPerSecond = sent / seconds;
             args.getContext().write(String.format(java.util.Locale.ROOT,
-                "Transfer progress: %.1f%% (%s/%s), speed %s/s",
-                percent, formatBytes(sent), formatBytes(totalBytes), formatBytes((long) bytesPerSecond)));
+                "Transfer progress: %s (%s/%s), speed %s/s",
+                percent < 0 ? "unknown" : String.format(java.util.Locale.ROOT, "%.1f%%", percent),
+                formatBytes(sent), totalBytes < 0 ? "unknown" : formatBytes(totalBytes), formatBytes((long) bytesPerSecond)));
         }
     }
 
@@ -580,11 +806,16 @@ public class LanFileShare implements Tool {
     }
 
     private static URI uploadUri(String baseUrl) throws URISyntaxException {
+        URI base = baseUri(baseUrl);
+        return new URI("http", null, base.getHost(), base.getPort(), UPLOAD_PATH, null, null);
+    }
+
+    private static URI baseUri(String baseUrl) throws URISyntaxException {
         URI base = URI.create(baseUrl);
         if (!"http".equalsIgnoreCase(base.getScheme()) || base.getHost() == null || base.getPort() < 1) {
             throw new IllegalArgumentException("to must be an HTTP URL with a port, for example http://192.168.1.20:43127");
         }
-        return new URI("http", null, base.getHost(), base.getPort(), UPLOAD_PATH, null, null);
+        return base;
     }
 
     private static void createArchive(Path source, Path archive) throws IOException {
@@ -664,5 +895,9 @@ public class LanFileShare implements Tool {
                 Files.deleteIfExists(item);
             }
         }
+    }
+
+    enum ShareType {
+        receive, download, send
     }
 }

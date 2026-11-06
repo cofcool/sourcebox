@@ -49,6 +49,7 @@ import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Home
@@ -62,6 +63,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
@@ -161,7 +163,7 @@ private val pages = listOf(
     "more" to "更多"
 )
 
-private val moreToolPages = setOf("notes", "timer", "files", "books", "settings", "server-tools")
+private val moreToolPages = setOf("notes", "timer", "files", "files-download", "books", "settings", "server-tools")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -202,6 +204,7 @@ private fun SourceboxApp(
     }
     fun navigateBack() {
         page = when (page) {
+            "files-download" -> "files"
             "record-detail" -> recordReturnPage
             "record-create" -> "task"
             "habit-detail", "habit-create" -> "habits"
@@ -250,6 +253,7 @@ private fun SourceboxApp(
                                 "books" -> "书籍记录"
                                 "timer" -> "番茄钟"
                                 "files" -> "文件工具"
+                                "files-download" -> "下载共享文件"
                                 "settings" -> "连接设置"
                                 "crash-logs" -> "异常日志"
                                 else -> pages.firstOrNull { it.first == page }?.second ?: "The Source Box"
@@ -457,7 +461,17 @@ private fun SourceboxApp(
                 )
                 "files" -> FilesScreen(
                     modifier = Modifier.padding(padding),
-                    vm = vm
+                    vm = vm,
+                    downloadMode = false,
+                    onDownload = { page = "files-download" },
+                    onBackToUpload = { page = "files" }
+                )
+                "files-download" -> FilesScreen(
+                    modifier = Modifier.padding(padding),
+                    vm = vm,
+                    downloadMode = true,
+                    onDownload = { page = "files-download" },
+                    onBackToUpload = { page = "files" }
                 )
                 "settings" -> SettingsScreen(
                     modifier = Modifier.padding(padding),
@@ -526,20 +540,10 @@ private fun HomeScreen(
             .padding(horizontal = 16.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                if (vm.baseUrl.isBlank()) "尚未连接后端" else "后端：${vm.baseUrl}",
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.bodySmall
-            )
-        }
-        Row(
             modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("今日行动", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+            Text("今日推荐", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
             IconButton(onClick = vm::refreshTodayActions, enabled = !vm.busy) {
                 Icon(Icons.Default.Refresh, contentDescription = "刷新今日行动")
             }
@@ -726,7 +730,7 @@ private fun MoreScreen(
         MoreToolCard(
             icon = Icons.Default.FolderOpen,
             title = "文件",
-            description = "将手机文件上传到局域网文件接收端",
+            description = "上传文件到局域网设备，或下载共享文件",
             onClick = onFiles
         )
         MoreToolCard(
@@ -2952,12 +2956,19 @@ private fun formatTimerDuration(seconds: Long): String {
 }
 
 @Composable
-private fun FilesScreen(modifier: Modifier, vm: ToolboxViewModel) {
+private fun FilesScreen(
+    modifier: Modifier,
+    vm: ToolboxViewModel,
+    downloadMode: Boolean,
+    onDownload: () -> Unit,
+    onBackToUpload: () -> Unit
+) {
     val context = LocalContext.current
     val preferences = remember { context.getSharedPreferences("lan_share", android.content.Context.MODE_PRIVATE) }
     var receiverUrl by remember { mutableStateOf(preferences.getString("receiver_url", "").orEmpty()) }
     var token by remember { mutableStateOf(preferences.getString("token", "").orEmpty()) }
     var selectedFiles by remember { mutableStateOf<List<Uri>>(emptyList()) }
+    var remoteDirectory by remember { mutableStateOf("") }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { files ->
         selectedFiles = files
     }
@@ -2968,6 +2979,22 @@ private fun FilesScreen(modifier: Modifier, vm: ToolboxViewModel) {
             .putString("token", token.trim())
             .apply()
         vm.uploadLanShareFiles(receiverUrl.trim(), token.trim(), selectedFiles)
+    }
+
+    fun listRemoteFiles() {
+        preferences.edit()
+            .putString("receiver_url", receiverUrl.trim())
+            .putString("token", token.trim())
+            .apply()
+        vm.listLanShareFiles(receiverUrl.trim(), token.trim(), remoteDirectory.trim())
+    }
+
+    fun downloadSelectedFiles() {
+        vm.downloadLanShareFiles(
+            receiverUrl.trim(),
+            token.trim(),
+            vm.lanShareDownloadState.selectedFiles.sorted()
+        )
     }
 
     Column(
@@ -3000,75 +3027,175 @@ private fun FilesScreen(modifier: Modifier, vm: ToolboxViewModel) {
             singleLine = true,
             enabled = !vm.busy
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(
-                onClick = { picker.launch(arrayOf("*/*")) },
-                enabled = !vm.busy
-            ) {
-                Text("选择多个文件")
-            }
-            Button(
-                onClick = ::uploadSelectedFiles,
-                enabled = selectedFiles.isNotEmpty() && receiverUrl.isNotBlank() && token.isNotBlank() && !vm.busy
-            ) {
-                Text("上传 ${selectedFiles.size} 个文件")
-            }
-        }
-        if (selectedFiles.isNotEmpty()) {
-            Text("已选择 ${selectedFiles.size} 个文件")
-            selectedFiles.forEach { uri ->
-                val fileName = remember(uri) {
-                    context.contentResolver.query(
-                        uri,
-                        arrayOf(android.provider.OpenableColumns.DISPLAY_NAME),
-                        null,
-                        null,
-                        null
-                    )?.use { cursor ->
-                        if (cursor.moveToFirst()) cursor.getString(0) else null
-                    } ?: uri.lastPathSegment.orEmpty()
+        if (!downloadMode) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(
+                    onClick = { picker.launch(arrayOf("*/*")) },
+                    enabled = !vm.busy
+                ) {
+                    Text("选择文件")
                 }
-                Text(fileName, style = MaterialTheme.typography.bodySmall)
-            }
-        }
-        val uploadState = vm.lanShareUploadState
-        if (uploadState.totalFiles > 0) {
-            Text(
-                when {
-                    uploadState.error != null -> "上传失败：${uploadState.error}"
-                    uploadState.isComplete -> "上传完成：${uploadState.completedFiles.size}/${uploadState.totalFiles}"
-                    uploadState.currentFileIndex > 0 ->
-                        "正在上传 ${uploadState.currentFileIndex}/${uploadState.totalFiles}：${uploadState.currentFileName}"
-                    else -> "准备上传 ${uploadState.totalFiles} 个文件"
-                },
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (uploadState.error != null) MaterialTheme.colorScheme.error
-                else MaterialTheme.colorScheme.onSurface
-            )
-            if (vm.busy && uploadState.currentFileIndex > 0) {
-                val progress = if (uploadState.totalBytes > 0) {
-                    (uploadState.bytesSent.toFloat() / uploadState.totalBytes).coerceIn(0f, 1f)
-                } else {
-                    null
+                Button(
+                    onClick = ::uploadSelectedFiles,
+                    enabled = selectedFiles.isNotEmpty() && receiverUrl.isNotBlank() && token.isNotBlank() && !vm.busy
+                ) {
+                    Text("上传 ${selectedFiles.size}")
                 }
-                if (progress != null) {
-                    LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
-                    Text(
-                        "${formatFileSize(uploadState.bytesSent)} / ${formatFileSize(uploadState.totalBytes)} · ${(progress * 100).toInt()}%",
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                } else {
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                    Text("${formatFileSize(uploadState.bytesSent)} 已发送", style = MaterialTheme.typography.labelSmall)
+                OutlinedButton(
+                    onClick = onDownload,
+                    enabled = !vm.busy
+                ) {
+                    Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("下载")
                 }
             }
-            if (uploadState.completedFiles.isNotEmpty()) {
+            if (selectedFiles.isNotEmpty()) {
+                Text("已选择 ${selectedFiles.size} 个文件")
+                selectedFiles.forEach { uri ->
+                    val fileName = remember(uri) {
+                        context.contentResolver.query(
+                            uri,
+                            arrayOf(android.provider.OpenableColumns.DISPLAY_NAME),
+                            null,
+                            null,
+                            null
+                        )?.use { cursor ->
+                            if (cursor.moveToFirst()) cursor.getString(0) else null
+                        } ?: uri.lastPathSegment.orEmpty()
+                    }
+                    Text(fileName, style = MaterialTheme.typography.bodySmall)
+                }
+            }
+            val uploadState = vm.lanShareUploadState
+            if (uploadState.totalFiles > 0) {
                 Text(
-                    "已完成文件 (${uploadState.completedFiles.size}/${uploadState.totalFiles})",
-                    style = MaterialTheme.typography.titleSmall
+                    when {
+                        uploadState.error != null -> "上传失败：${uploadState.error}"
+                        uploadState.isComplete -> "上传完成：${uploadState.completedFiles.size}/${uploadState.totalFiles}"
+                        uploadState.currentFileIndex > 0 ->
+                            "正在上传 ${uploadState.currentFileIndex}/${uploadState.totalFiles}：${uploadState.currentFileName}"
+                        else -> "准备上传 ${uploadState.totalFiles} 个文件"
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (uploadState.error != null) MaterialTheme.colorScheme.error
+                    else MaterialTheme.colorScheme.onSurface
                 )
-                uploadState.completedFiles.forEach { completed ->
-                    Text("✓ $completed", style = MaterialTheme.typography.bodySmall)
+                if (vm.busy && uploadState.currentFileIndex > 0) {
+                    val progress = if (uploadState.totalBytes > 0) {
+                        (uploadState.bytesSent.toFloat() / uploadState.totalBytes).coerceIn(0f, 1f)
+                    } else {
+                        null
+                    }
+                    if (progress != null) {
+                        LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
+                        Text(
+                            "${formatFileSize(uploadState.bytesSent)} / ${formatFileSize(uploadState.totalBytes)} · ${(progress * 100).toInt()}%",
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    } else {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                        Text("${formatFileSize(uploadState.bytesSent)} 已发送", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+                if (uploadState.completedFiles.isNotEmpty()) {
+                    Text(
+                        "已完成文件 (${uploadState.completedFiles.size}/${uploadState.totalFiles})",
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                    uploadState.completedFiles.forEach { completed ->
+                        Text("✓ $completed", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                OutlinedButton(onClick = onBackToUpload, enabled = !vm.busy) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("返回上传")
+                }
+                Text("下载共享文件", style = MaterialTheme.typography.titleMedium)
+            }
+            OutlinedTextField(
+                value = remoteDirectory,
+                onValueChange = { remoteDirectory = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("服务端目录") },
+                placeholder = { Text("留空表示共享根目录") },
+                singleLine = true,
+                enabled = !vm.busy
+            )
+            Button(
+                onClick = ::listRemoteFiles,
+                enabled = receiverUrl.isNotBlank() && token.isNotBlank() && !vm.busy
+            ) {
+                Text("列出文件")
+            }
+            val downloadState = vm.lanShareDownloadState
+            if (downloadState.isListing || (vm.busy && downloadState.currentFileIndex > 0)) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
+            if (downloadState.error != null) {
+                Text(downloadState.error, color = MaterialTheme.colorScheme.error)
+            }
+            if (downloadState.files.isNotEmpty()) {
+                Text("文件列表 (${downloadState.files.size})", style = MaterialTheme.typography.titleSmall)
+                downloadState.files.forEach { remoteFile ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().clickable(enabled = !vm.busy) {
+                            vm.toggleLanShareDownloadFile(remoteFile, remoteFile !in downloadState.selectedFiles)
+                        },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = remoteFile in downloadState.selectedFiles,
+                            onCheckedChange = { selected -> vm.toggleLanShareDownloadFile(remoteFile, selected) },
+                            enabled = !vm.busy
+                        )
+                        Text(remoteFile, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+                Button(
+                    onClick = ::downloadSelectedFiles,
+                    enabled = downloadState.selectedFiles.isNotEmpty() && !vm.busy
+                ) {
+                    Text("下载所选 (${downloadState.selectedFiles.size})")
+                }
+            } else if (!downloadState.isListing && downloadState.error == null) {
+                Text("输入服务端目录并列出文件")
+            }
+            if (downloadState.totalFiles > 0) {
+                Text(
+                    when {
+                        downloadState.error != null -> "下载失败：${downloadState.error}"
+                        downloadState.isComplete -> "下载完成：${downloadState.completedFiles.size}/${downloadState.totalFiles}"
+                        else -> "正在下载 ${downloadState.currentFileIndex}/${downloadState.totalFiles}：${downloadState.currentFileName}"
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (downloadState.error != null) MaterialTheme.colorScheme.error
+                    else MaterialTheme.colorScheme.onSurface
+                )
+                if (vm.busy && downloadState.currentFileIndex > 0) {
+                    val progress = if (downloadState.totalBytes > 0) {
+                        (downloadState.bytesReceived.toFloat() / downloadState.totalBytes).coerceIn(0f, 1f)
+                    } else null
+                    if (progress != null) {
+                        LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
+                        Text(
+                            "${formatFileSize(downloadState.bytesReceived)} / ${formatFileSize(downloadState.totalBytes)} · ${(progress * 100).toInt()}%",
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    } else {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                        Text("${formatFileSize(downloadState.bytesReceived)} 已接收", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+                if (downloadState.completedFiles.isNotEmpty()) {
+                    Text("已保存到 Downloads/Sourcebox", style = MaterialTheme.typography.titleSmall)
+                    downloadState.completedFiles.forEach { completed ->
+                        Text(completed, style = MaterialTheme.typography.bodySmall)
+                    }
                 }
             }
         }

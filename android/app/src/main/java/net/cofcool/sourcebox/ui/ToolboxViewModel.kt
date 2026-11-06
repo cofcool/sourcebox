@@ -76,6 +76,20 @@ data class LanShareUploadState(
     val error: String? = null
 )
 
+data class LanShareDownloadState(
+    val files: List<String> = emptyList(),
+    val selectedFiles: Set<String> = emptySet(),
+    val isListing: Boolean = false,
+    val totalFiles: Int = 0,
+    val currentFileIndex: Int = 0,
+    val currentFileName: String = "",
+    val bytesReceived: Long = 0,
+    val totalBytes: Long = -1,
+    val completedFiles: List<String> = emptyList(),
+    val isComplete: Boolean = false,
+    val error: String? = null
+)
+
 private data class ExportData(
     val actions: List<ActionExport>,
     val notes: List<NoteRecord>,
@@ -106,6 +120,8 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
     var timerRecords by mutableStateOf<List<ActionRecord>>(emptyList())
         private set
     var lanShareUploadState by mutableStateOf(LanShareUploadState())
+        private set
+    var lanShareDownloadState by mutableStateOf(LanShareDownloadState())
         private set
     private val connectivityManager =
         application.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -280,6 +296,65 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         }
         lanShareUploadState = lanShareUploadState.copy(isComplete = true)
         message = "已上传 ${lanShareUploadState.completedFiles.size} 个文件"
+    }
+
+    fun listLanShareFiles(receiverUrl: String, token: String, path: String) = perform {
+        lanShareDownloadState = lanShareDownloadState.copy(isListing = true, error = null)
+        try {
+            val files = api.listLanShareFiles(receiverUrl, token, path)
+            lanShareDownloadState = LanShareDownloadState(files = files)
+            message = "找到 ${files.size} 个文件"
+        } catch (error: Exception) {
+            lanShareDownloadState = lanShareDownloadState.copy(isListing = false, error = error.message ?: "获取文件列表失败")
+            throw error
+        }
+    }
+
+    fun toggleLanShareDownloadFile(path: String, selected: Boolean) {
+        val selection = lanShareDownloadState.selectedFiles.toMutableSet()
+        if (selected) selection.add(path) else selection.remove(path)
+        lanShareDownloadState = lanShareDownloadState.copy(selectedFiles = selection)
+    }
+
+    fun downloadLanShareFiles(receiverUrl: String, token: String, files: List<String>) = perform {
+        require(files.isNotEmpty()) { "请先选择要下载的文件" }
+        lanShareDownloadState = LanShareDownloadState(
+            files = lanShareDownloadState.files,
+            selectedFiles = files.toSet(),
+            totalFiles = files.size
+        )
+        files.forEachIndexed { index, path ->
+            lanShareDownloadState = lanShareDownloadState.copy(
+                currentFileIndex = index + 1,
+                currentFileName = path,
+                bytesReceived = 0,
+                totalBytes = -1,
+                error = null
+            )
+            try {
+                val destination = api.downloadLanShareFile(getApplication(), receiverUrl, token, path) { name, received, total ->
+                    viewModelScope.launch {
+                        lanShareDownloadState = lanShareDownloadState.copy(
+                            currentFileName = name,
+                            bytesReceived = received,
+                            totalBytes = total
+                        )
+                    }
+                }
+                lanShareDownloadState = lanShareDownloadState.copy(
+                    completedFiles = lanShareDownloadState.completedFiles + destination,
+                    bytesReceived = lanShareDownloadState.totalBytes.coerceAtLeast(lanShareDownloadState.bytesReceived)
+                )
+            } catch (error: Exception) {
+                lanShareDownloadState = lanShareDownloadState.copy(error = error.message ?: "下载失败")
+                throw IOException(
+                    "已下载 ${lanShareDownloadState.completedFiles.size}/${files.size} 个文件；第 ${index + 1} 个文件失败：${error.message ?: "未知错误"}",
+                    error
+                )
+            }
+        }
+        lanShareDownloadState = lanShareDownloadState.copy(isComplete = true)
+        message = "已下载 ${lanShareDownloadState.completedFiles.size} 个文件到 Downloads/Sourcebox"
     }
 
     fun refreshTimerRecords() = perform {

@@ -62,8 +62,8 @@ import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
@@ -126,6 +126,7 @@ import net.cofcool.sourcebox.data.ActionRecord
 import net.cofcool.sourcebox.data.NoteRecord
 import net.cofcool.sourcebox.data.TodoRecord
 import net.cofcool.sourcebox.data.ToolInfo
+import net.cofcool.sourcebox.data.isHabitRequiredOnDate
 import net.cofcool.sourcebox.ui.ToolboxViewModel
 
 class MainActivity : ComponentActivity() {
@@ -463,15 +464,27 @@ private fun SourceboxApp(
                     modifier = Modifier.padding(padding),
                     vm = vm,
                     downloadMode = false,
-                    onDownload = { page = "files-download" },
-                    onBackToUpload = { page = "files" }
+                    onDownload = {
+                        vm.resetLanShareDownloadState()
+                        page = "files-download"
+                    },
+                    onBackToUpload = {
+                        vm.resetLanShareDownloadState()
+                        page = "files"
+                    }
                 )
                 "files-download" -> FilesScreen(
                     modifier = Modifier.padding(padding),
                     vm = vm,
                     downloadMode = true,
-                    onDownload = { page = "files-download" },
-                    onBackToUpload = { page = "files" }
+                    onDownload = {
+                        vm.resetLanShareDownloadState()
+                        page = "files-download"
+                    },
+                    onBackToUpload = {
+                        vm.resetLanShareDownloadState()
+                        page = "files"
+                    }
                 )
                 "settings" -> SettingsScreen(
                     modifier = Modifier.padding(padding),
@@ -1305,6 +1318,19 @@ private fun HabitBoardScreen(
                             } else {
                                 entry?.current == 1
                             }
+                            val required = isHabitRequiredOnDate(
+                                habit.start,
+                                habit.createTime,
+                                export?.habit?.createTime,
+                                export?.habit?.freqNum,
+                                export?.habit?.freqDen,
+                                date
+                            )
+                            val statusColor = when {
+                                achieved -> Color(0xFF1976D2)
+                                entry == null && !required -> Color(0xFF64B5F6)
+                                else -> Color(0xFF8A8D93)
+                            }
                             Column(
                                 Modifier.width(40.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -1312,11 +1338,15 @@ private fun HabitBoardScreen(
                             ) {
                                 Text(
                                     if (isValue) entry?.let { formatHabitListValue(it.current.toLong()) } ?: "–"
-                                    else if (entry?.current == 1) "√" else "×",
+                                    else when {
+                                        entry?.current == 1 -> "√"
+                                        entry == null && !required -> "–"
+                                        else -> "×"
+                                    },
                                     style = MaterialTheme.typography.labelLarge,
                                     fontWeight = FontWeight.SemiBold,
                                     maxLines = 1,
-                                    color = if (achieved) Color(0xFF1976D2) else Color(0xFF8A8D93)
+                                    color = statusColor
                                 )
                             }
                         }
@@ -1844,7 +1874,12 @@ private fun HabitDetailsScreen(
             category = definition?.category ?: "check",
             targetValue = definition?.targetValue,
             targetType = definition?.targetType,
-            unit = definition?.unit
+            unit = definition?.unit,
+            start = habit.action.start,
+            actionCreateTime = habit.action.createTime,
+            habitCreateTime = definition?.createTime,
+            freqNum = definition?.freqNum,
+            freqDen = definition?.freqDen
         )
     }
 }
@@ -1855,7 +1890,12 @@ private fun HabitCalendar(
     category: String,
     targetValue: Int?,
     targetType: String?,
-    unit: String?
+    unit: String?,
+    start: String?,
+    actionCreateTime: String?,
+    habitCreateTime: String?,
+    freqNum: Int?,
+    freqDen: Int?
 ) {
     val today = remember { java.time.LocalDate.now() }
     var selectedDate by remember { mutableStateOf(today) }
@@ -1976,8 +2016,20 @@ private fun HabitCalendar(
                             val achieved = entry != null && if (isValueHabit) {
                                 isHabitValueAchieved(entry.current, targetValue, targetType)
                             } else entry.current == 1
+                            val required = isHabitRequiredOnDate(
+                                start,
+                                actionCreateTime,
+                                habitCreateTime,
+                                freqNum,
+                                freqDen,
+                                date
+                            )
                             val shape = RoundedCornerShape(8.dp)
-                            val background = if (achieved) Color(0xFF1976D2) else Color(0xFFE7E9ED)
+                            val background = when {
+                                achieved -> Color(0xFF1976D2)
+                                entry == null && !required -> Color(0xFFBBDEFB)
+                                else -> Color(0xFFE7E9ED)
+                            }
                             val foreground = if (achieved) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
                             Column(
                                 Modifier.weight(1f)
@@ -2111,6 +2163,10 @@ private fun HabitCalendar(
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     Box(Modifier.size(12.dp).background(Color(0xFFE7E9ED), RoundedCornerShape(3.dp)))
                     Text("未达标", style = MaterialTheme.typography.labelSmall)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Box(Modifier.size(12.dp).background(Color(0xFFBBDEFB), RoundedCornerShape(3.dp)))
+                    Text("无需打卡", style = MaterialTheme.typography.labelSmall)
                 }
             }
         }

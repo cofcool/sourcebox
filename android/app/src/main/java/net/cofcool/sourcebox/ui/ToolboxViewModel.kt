@@ -46,6 +46,7 @@ import net.cofcool.sourcebox.data.ServerResponseException
 import net.cofcool.sourcebox.data.SourceboxApi
 import net.cofcool.sourcebox.data.TodoRecord
 import net.cofcool.sourcebox.data.ToolInfo
+import net.cofcool.sourcebox.data.isHabitRequiredOnDate
 import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
@@ -219,9 +220,29 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
     }
 
     private suspend fun loadTodayActions() {
-        val today = java.time.LocalDate.now().toString()
+        val today = java.time.LocalDate.now()
         todayActions = withContext(Dispatchers.IO) {
-            actionDatabase.actionsStartingOn(today)
+            val date = today.toString()
+            val todayTodos = actionDatabase.allActions("todo")
+                .filter { it.start?.startsWith(date) == true }
+            val activeRecords = actionDatabase.allActions("record")
+                .filter { it.state == "doing" }
+                .shuffled()
+                .take(5)
+            val dueHabits = actionDatabase.allHabitExports()
+                .filter { export ->
+                    val habit = export.habit
+                    isHabitRequiredOnDate(
+                        export.record.start,
+                        export.record.createTime,
+                        habit?.createTime,
+                        habit?.freqNum,
+                        habit?.freqDen,
+                        today
+                    )
+                }
+                .map { it.record }
+            todayTodos + activeRecords + dueHabits
         }
     }
 
@@ -299,7 +320,7 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun listLanShareFiles(receiverUrl: String, token: String, path: String) = perform {
-        lanShareDownloadState = lanShareDownloadState.copy(isListing = true, error = null)
+        lanShareDownloadState = LanShareDownloadState(isListing = true)
         try {
             val files = api.listLanShareFiles(receiverUrl, token, path)
             lanShareDownloadState = LanShareDownloadState(files = files)
@@ -308,6 +329,10 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
             lanShareDownloadState = lanShareDownloadState.copy(isListing = false, error = error.message ?: "获取文件列表失败")
             throw error
         }
+    }
+
+    fun resetLanShareDownloadState() {
+        lanShareDownloadState = LanShareDownloadState()
     }
 
     fun toggleLanShareDownloadFile(path: String, selected: Boolean) {

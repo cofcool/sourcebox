@@ -223,12 +223,8 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         val today = java.time.LocalDate.now()
         todayActions = withContext(Dispatchers.IO) {
             val date = today.toString()
-            val todayTodos = actionDatabase.allActions("todo")
-                .filter { it.start?.startsWith(date) == true }
-            val activeRecords = actionDatabase.allActions("record")
-                .filter { it.state == "doing" }
-                .shuffled()
-                .take(5)
+            val todayTodos = actionDatabase.actionsStartingOn(date, "todo")
+            val activeRecords = actionDatabase.randomActions("record", "doing", 5)
             val dueHabits = actionDatabase.allHabitExports()
                 .filter { export ->
                     val habit = export.habit
@@ -977,10 +973,10 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
     ) = perform {
         val filters = buildList {
             query.takeIf(String::isNotBlank)?.let {
-                add("name=${it}")
+                add("name=${java.net.URLEncoder.encode(it, "UTF-8")}")
             }
-            category?.let { add("category=${it}") }
-            label?.let { add("label=${it}") }
+            category?.let { add("category=${java.net.URLEncoder.encode(it, "UTF-8")}") }
+            label?.let { add("label=${java.net.URLEncoder.encode(it, "UTF-8")}") }
         }
         val localQuery = filters.joinToString("&")
         val result = withContext(Dispatchers.IO) {
@@ -999,8 +995,12 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
     fun refreshBooks(query: String = "", category: String = "", page: Int = 1) = perform {
         require(page > 0) { "页码必须大于 0" }
         val filters = buildList {
-            query.trim().takeIf(String::isNotBlank)?.let { add("name=$it") }
-            category.takeIf(String::isNotBlank)?.let { add("category=$it") }
+            query.trim().takeIf(String::isNotBlank)?.let {
+                add("name=${java.net.URLEncoder.encode(it, "UTF-8")}")
+            }
+            category.takeIf(String::isNotBlank)?.let {
+                add("category=${java.net.URLEncoder.encode(it, "UTF-8")}")
+            }
         }.joinToString("&")
         val result = withContext(Dispatchers.IO) {
             actionDatabase.actions("book", filters, page, 11)

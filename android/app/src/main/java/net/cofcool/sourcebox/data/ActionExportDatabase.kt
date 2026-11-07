@@ -4,10 +4,13 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import androidx.core.database.sqlite.transaction
 import kotlinx.serialization.json.Json
 import java.io.IOException
+import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
+import java.util.Locale
 
 data class PendingChange(
     val id: Long,
@@ -24,6 +27,7 @@ class ActionExportDatabase(context: Context) :
         createTable(db, TABLE_ACTIONS)
         createTable(db, TABLE_NOTES)
         createTable(db, TABLE_COMMANDS)
+        ensureQuerySchema(db)
         createTypesTable(db)
         createSyncTable(db)
         createPendingChangesTable(db)
@@ -40,6 +44,10 @@ class ActionExportDatabase(context: Context) :
                 SELECT 'actions', synced_at FROM $TABLE_SYNC WHERE id = 1
                 """.trimIndent()
             )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS idx_pending_entity_operation_id " +
+                    "ON $TABLE_PENDING(entity, operation, entity_id)"
+            )
         }
         if (oldVersion < 3) {
             listOf(TABLE_ACTIONS, TABLE_NOTES, TABLE_COMMANDS).forEach { table ->
@@ -49,6 +57,10 @@ class ActionExportDatabase(context: Context) :
         }
         if (oldVersion < 4) {
             createTypesTable(db)
+        }
+        if (oldVersion < 5) {
+            ensureQuerySchema(db)
+            rebuildQueryColumns(db)
         }
     }
 
@@ -61,60 +73,91 @@ class ActionExportDatabase(context: Context) :
         validateIds(actions.map { it.record.id }, "行动记录")
         validateIds(notes.map { it.id }, "便笺")
         val db = writableDatabase
-        db.beginTransaction()
-        try {
-            replaceRows(db, TABLE_ACTIONS, actions.map { it.record.id to json.encodeToString(it) })
-            replaceRows(db, TABLE_NOTES, notes.map { it.id to json.encodeToString(it) })
-            replaceTypes(db, actionTypes)
-            listOf("actions", "notes", "types").forEach { dataset ->
-                val syncValues = ContentValues().apply {
-                    put("dataset", dataset)
-                    put("synced_at", syncedAt)
+        db.transaction {
+            try {
+                replaceRows(
+                    this,
+                    TABLE_ACTIONS,
+                    actions.map { it.record.id to json.encodeToString(it) })
+                replaceRows(this, TABLE_NOTES, notes.map { it.id to json.encodeToString(it) })
+                replaceTypes(this, actionTypes)
+                listOf("actions", "notes", "types").forEach { dataset ->
+                    val syncValues = ContentValues().apply {
+                        put("dataset", dataset)
+                        put("synced_at", syncedAt)
+                    }
+                    insertWithOnConflict(
+                        TABLE_SYNC_ALL,
+                        null,
+                        syncValues,
+                        SQLiteDatabase.CONFLICT_REPLACE
+                    )
                 }
-                db.insertWithOnConflict(
-                    TABLE_SYNC_ALL,
-                    null,
-                    syncValues,
-                    SQLiteDatabase.CONFLICT_REPLACE
-                )
+            } finally {
             }
-            db.setTransactionSuccessful()
-        } finally {
-            db.endTransaction()
         }
     }
 
     fun notes(): List<NoteRecord> =
-        readPayloads(TABLE_NOTES, NoteRecord.serializer())
-            .filter { it.state == "NORMAL" }
-            .sortedByDescending { it.date.orEmpty() }
+        queryPayloads(
+            TABLE_NOTES,
+            NoteRecord.serializer(),
+            "note_state = ?",
+            arrayOf("NORMAL"),
+            "note_date DESC"
+        )
 
     fun commands(query: String): List<CommandRecord> {
         val trimmed = query.trim()
         val parameters = if (trimmed.contains('=')) parseQuery(trimmed) else emptyMap()
-        val source = readPayloads(TABLE_COMMANDS, CommandRecord.serializer())
         val cmdSearch = parameters["cmd"]
         if (!cmdSearch.isNullOrEmpty()) {
-            return source.filter { it.cmd.contains(cmdSearch, ignoreCase = true) }
-                .sortedByDescending { it.frequency ?: 0 }
-                .take(6)
+            return queryPayloads(
+                TABLE_COMMANDS,
+                CommandRecord.serializer(),
+                "command_text LIKE ? ESCAPE '\\'",
+                arrayOf(likeContains(cmdSearch)),
+                "COALESCE(command_frequency, 0) DESC",
+                6
+            )
         }
 
         val search = parameters["q"] ?: trimmed.removePrefix("?")
         val tokens = if (search == "ALL") emptyList() else search.split(" ").filter(String::isNotBlank)
-        return source.filter { command ->
-            (parameters["id"].isNullOrBlank() || command.id == parameters["id"]) &&
-                (parameters["alias"].isNullOrBlank() || command.alias == parameters["alias"]) &&
-                tokens.all { token ->
-                    when {
-                        token.startsWith("@") -> command.alias == token
-                        token.startsWith("#") -> token in command.tags.orEmpty()
-                        else -> command.id == token.md5()
-                    }
+        val conditions = mutableListOf<String>()
+        val arguments = mutableListOf<String>()
+        parameters["id"]?.takeIf(String::isNotBlank)?.let {
+            conditions += "id = ?"
+            arguments += it
+        }
+        parameters["alias"]?.takeIf(String::isNotBlank)?.let {
+            conditions += "command_alias = ?"
+            arguments += it
+        }
+        tokens.forEach { token ->
+            when {
+                token.startsWith("@") -> {
+                    conditions += "command_alias = ?"
+                    arguments += token
+                }
+                token.startsWith("#") -> {
+                    conditions += "instr(',' || command_tags || ',', ',' || ? || ',') > 0"
+                    arguments += token
+                }
+                else -> {
+                    conditions += "id = ?"
+                    arguments += token.md5()
                 }
             }
-            .sortedByDescending { it.createTime.orEmpty() }
-            .take(50)
+        }
+        return queryPayloads(
+            TABLE_COMMANDS,
+            CommandRecord.serializer(),
+            conditions.joinToString(" AND ").ifBlank { null },
+            arguments.toTypedArray(),
+            "command_created DESC",
+            50
+        )
     }
 
     fun actions(prefix: String, query: String, page: Int = 1, size: Int = 50): List<ActionRecord> {
@@ -125,39 +168,49 @@ class ActionExportDatabase(context: Context) :
         } else {
             parameters["name"].orEmpty()
         }
-        val deletedHabitIds = readableDatabase.rawQuery(
-            "SELECT DISTINCT entity_id FROM $TABLE_PENDING WHERE entity = 'action' AND operation = 'habit_delete'",
-            null
-        ).use { cursor ->
-            buildSet {
-                while (cursor.moveToNext()) add(cursor.getString(0))
+        val conditions = mutableListOf(
+            "action_type = ?",
+            "NOT EXISTS (SELECT 1 FROM $TABLE_PENDING p WHERE p.entity = 'action' " +
+                "AND p.operation = 'habit_delete' AND p.entity_id = $TABLE_ACTIONS.id)"
+        )
+        val arguments = mutableListOf(prefix)
+        if (nameSearch.isNotBlank()) {
+            conditions += "action_name COLLATE NOCASE LIKE ? ESCAPE '\\'"
+            arguments += likeContains(nameSearch)
+        }
+        if (prefix == "record") {
+            parameters["category"]?.takeIf(String::isNotBlank)?.let {
+                conditions += "action_category = ?"
+                arguments += it
+            }
+            parameters["label"]?.takeIf(String::isNotBlank)?.let {
+                conditions += "instr(action_labels, ',' || ? || ',') > 0"
+                arguments += it.lowercase(Locale.ROOT).trim()
+            }
+        } else {
+            parameters["id"]?.takeIf(String::isNotBlank)?.let {
+                conditions += "id = ?"
+                arguments += it
+            }
+            parameters["state"]?.takeIf(String::isNotBlank)?.let {
+                conditions += "action_state = ?"
+                arguments += it
+            }
+            parameters["category"]?.takeIf(String::isNotBlank)?.let {
+                conditions += "action_category = ?"
+                arguments += it
             }
         }
-        val actions = readPayloads(TABLE_ACTIONS, ActionExport.serializer())
-            .map { it.record }
-            .filterNot { it.id in deletedHabitIds }
-            .filter { action ->
-                if (prefix == "record") {
-                    action.type == prefix &&
-                        (nameSearch.isBlank() || action.name.contains(nameSearch, ignoreCase = true)) &&
-                        (parameters["category"].isNullOrBlank() || action.category == parameters["category"]) &&
-                        (parameters["label"].isNullOrBlank() ||
-                            action.labels.orEmpty().split(",").any {
-                                it.trim().equals(parameters["label"], ignoreCase = true)
-                            })
-                } else {
-                    action.type == prefix &&
-                        (parameters["id"].isNullOrBlank() || action.id == parameters["id"]) &&
-                        (parameters["name"].isNullOrBlank() ||
-                            action.name.contains(parameters.getValue("name"), ignoreCase = true)) &&
-                        (parameters["state"].isNullOrBlank() || action.state == parameters["state"]) &&
-                        (parameters["category"].isNullOrBlank() || action.category == parameters["category"])
-                }
-            }
-            .sortedByDescending { it.createTime.orEmpty() }
-        val offset = (page - 1L) * size
-        if (offset >= actions.size) return emptyList()
-        return actions.drop(offset.toInt()).take(size)
+        val offset = (page.toLong() - 1L) * size
+        return queryPayloads(
+            TABLE_ACTIONS,
+            ActionExport.serializer(),
+            conditions.joinToString(" AND "),
+            arguments.toTypedArray(),
+            "action_created DESC",
+            size,
+            offset
+        ).map { it.record }
     }
 
     fun allActions(prefix: String, query: String = ""): List<ActionRecord> =
@@ -168,20 +221,25 @@ class ActionExportDatabase(context: Context) :
 
     fun allHabitExports(query: String = ""): List<ActionExport> {
         val nameSearch = query.trim()
-        val deletedHabitIds = readableDatabase.rawQuery(
-            "SELECT DISTINCT entity_id FROM $TABLE_PENDING WHERE entity = 'action' AND operation = 'habit_delete'",
-            null
-        ).use { cursor ->
-            buildSet {
-                while (cursor.moveToNext()) add(cursor.getString(0))
-            }
+        val conditions = mutableListOf(
+            "action_type = ?",
+            "NOT EXISTS (SELECT 1 FROM $TABLE_PENDING p WHERE p.entity = 'action' " +
+                "AND p.operation = 'habit_delete' AND p.entity_id = $TABLE_ACTIONS.id)"
+        )
+        val arguments = mutableListOf("habit")
+        if (nameSearch.isNotBlank()) {
+            conditions += "action_name COLLATE NOCASE LIKE ? ESCAPE '\\'"
+            arguments += likeContains(nameSearch)
         }
-        return readPayloads(TABLE_ACTIONS, ActionExport.serializer())
-            .asSequence()
-            .filter { it.record.type == "habit" && it.record.id !in deletedHabitIds }
-            .filter { nameSearch.isBlank() || it.record.name.contains(nameSearch, ignoreCase = true) }
+        return queryPayloads(
+            TABLE_ACTIONS,
+            ActionExport.serializer(),
+            conditions.joinToString(" AND "),
+            arguments.toTypedArray(),
+            "CASE WHEN action_index IS NULL OR trim(action_index) = '' THEN 1 ELSE 0 END, " +
+                "CAST(action_index AS INTEGER), action_index COLLATE NOCASE, action_name COLLATE NOCASE"
+        )
             .sortedWith { left, right -> compareHabitIndex(left.record, right.record) }
-            .toList()
     }
 
     private fun compareHabitIndex(left: ActionRecord, right: ActionRecord): Int {
@@ -202,22 +260,16 @@ class ActionExportDatabase(context: Context) :
     }
 
     fun actionCandidates(name: String): List<ActionRecord> {
-        val deletedHabitIds = readableDatabase.rawQuery(
-            "SELECT DISTINCT entity_id FROM $TABLE_PENDING WHERE entity = 'action' AND operation = 'habit_delete'",
-            null
-        ).use { cursor ->
-            buildSet {
-                while (cursor.moveToNext()) add(cursor.getString(0))
-            }
-        }
-        return readPayloads(TABLE_ACTIONS, ActionExport.serializer())
-            .asSequence()
-            .map { it.record }
-            .filterNot { it.id in deletedHabitIds }
-            .filter { it.name.contains(name, ignoreCase = true) }
-            .sortedByDescending { it.createTime.orEmpty() }
-            .take(10)
-            .toList()
+        return queryPayloads(
+            TABLE_ACTIONS,
+            ActionExport.serializer(),
+            "action_type = ? AND action_name COLLATE NOCASE LIKE ? ESCAPE '\\' " +
+                "AND NOT EXISTS (SELECT 1 FROM $TABLE_PENDING p WHERE p.entity = 'action' " +
+                "AND p.operation = 'habit_delete' AND p.entity_id = $TABLE_ACTIONS.id)",
+            arrayOf("record", likeContains(name)),
+            "action_created DESC",
+            10
+        ).map { it.record }
     }
 
     fun actionCategories(): List<String> =
@@ -245,21 +297,40 @@ class ActionExportDatabase(context: Context) :
         readPayload(TABLE_ACTIONS, actionId, ActionExport.serializer())
 
     fun actionsStartingOn(date: String): List<ActionRecord> {
-        val deletedHabitIds = readableDatabase.rawQuery(
-            "SELECT DISTINCT entity_id FROM $TABLE_PENDING WHERE entity = 'action' AND operation = 'habit_delete'",
-            null
-        ).use { cursor ->
-            buildSet {
-                while (cursor.moveToNext()) add(cursor.getString(0))
-            }
-        }
-        return readPayloads(TABLE_ACTIONS, ActionExport.serializer())
-            .asSequence()
-            .map { it.record }
-            .filterNot { it.id in deletedHabitIds }
-            .filter { it.start?.startsWith(date) == true }
-            .sortedBy { it.start.orEmpty() }
-            .toList()
+        return queryPayloads(
+            TABLE_ACTIONS,
+            ActionExport.serializer(),
+            "action_start LIKE ? AND NOT EXISTS (SELECT 1 FROM $TABLE_PENDING p " +
+                "WHERE p.entity = 'action' AND p.operation = 'habit_delete' " +
+                "AND p.entity_id = $TABLE_ACTIONS.id)",
+            arrayOf("$date%"),
+            "action_start ASC"
+        ).map { it.record }
+    }
+
+    fun actionsStartingOn(date: String, type: String): List<ActionRecord> =
+        queryPayloads(
+            TABLE_ACTIONS,
+            ActionExport.serializer(),
+            "action_start LIKE ? AND action_type = ? AND NOT EXISTS (" +
+                "SELECT 1 FROM $TABLE_PENDING p WHERE p.entity = 'action' " +
+                "AND p.operation = 'habit_delete' AND p.entity_id = $TABLE_ACTIONS.id)",
+            arrayOf("$date%", type),
+            "action_start ASC"
+        ).map { it.record }
+
+    fun randomActions(type: String, state: String, limit: Int): List<ActionRecord> {
+        require(limit > 0) { "limit must be positive" }
+        return queryPayloads(
+            TABLE_ACTIONS,
+            ActionExport.serializer(),
+            "action_type = ? AND action_state = ? AND NOT EXISTS (" +
+                "SELECT 1 FROM $TABLE_PENDING p WHERE p.entity = 'action' " +
+                "AND p.operation = 'habit_delete' AND p.entity_id = $TABLE_ACTIONS.id)",
+            arrayOf(type, state),
+            "RANDOM()",
+            limit
+        ).map { it.record }
     }
 
     fun saveNote(note: NoteRecord) {
@@ -606,14 +677,38 @@ class ActionExportDatabase(context: Context) :
         }
         db.delete(table, null, null)
         rows.filterNot { it.first in dirtyRows }.forEach { (id, payload) ->
-            val values = ContentValues().apply {
-                put("id", id)
-                put("payload", payload)
-                put("dirty", 0)
-            }
-            check(db.insertOrThrow(table, null, values) != -1L) { "写入本地数据失败：$id" }
+            upsert(db, table, id, payload, dirty = 0)
         }
         dirtyRows.forEach { (id, payload) -> upsert(db, table, id, payload, dirty = 1) }
+    }
+
+    private fun <T> queryPayloads(
+        table: String,
+        serializer: kotlinx.serialization.KSerializer<T>,
+        selection: String? = null,
+        selectionArgs: Array<String> = emptyArray(),
+        orderBy: String? = null,
+        limit: Int? = null,
+        offset: Long = 0
+    ): List<T> {
+        val sql = buildString {
+            append("SELECT payload FROM $table")
+            selection?.let { append(" WHERE $it") }
+            orderBy?.let { append(" ORDER BY $it") }
+            limit?.let { append(" LIMIT ? OFFSET ?") }
+        }
+        val arguments = if (limit == null) {
+            selectionArgs
+        } else {
+            selectionArgs + arrayOf(limit.toString(), offset.toString())
+        }
+        return readableDatabase.rawQuery(sql, arguments).use { cursor ->
+            buildList {
+                while (cursor.moveToNext()) {
+                    add(json.decodeFromString(serializer, cursor.getString(0)))
+                }
+            }
+        }
     }
 
     private fun <T> readPayloads(table: String, serializer: kotlinx.serialization.KSerializer<T>): List<T> =
@@ -646,15 +741,53 @@ class ActionExportDatabase(context: Context) :
         upsert(writableDatabase, table, id, payload)
 
     private fun upsert(db: SQLiteDatabase, table: String, id: String, payload: String, dirty: Int = 0) {
-        val values = ContentValues().apply {
-            put("id", id)
-            put("payload", payload)
-            put("dirty", dirty)
-        }
+        val values = queryValues(table, id, payload, dirty)
         check(db.insertWithOnConflict(table, null, values, SQLiteDatabase.CONFLICT_REPLACE) != -1L) {
             "更新本地数据失败：$id"
         }
     }
+
+    private fun queryValues(table: String, id: String, payload: String, dirty: Int): ContentValues =
+        ContentValues().apply {
+            put("id", id)
+            put("payload", payload)
+            put("dirty", dirty)
+            when (table) {
+                TABLE_ACTIONS -> {
+                    val action = json.decodeFromString(ActionExport.serializer(), payload).record
+                    put("action_type", action.type)
+                    put("action_name", action.name)
+                    put("action_state", action.state)
+                    put("action_category", action.category)
+                    put(
+                        "action_labels",
+                        action.labels.orEmpty().split(",")
+                            .map(String::trim)
+                            .filter(String::isNotBlank)
+                            .joinToString(",", prefix = ",", postfix = ",") { it.lowercase(Locale.ROOT) }
+                    )
+                    put("action_start", action.start)
+                    put("action_created", action.createTime)
+                    put("action_index", action.index?.trim())
+                }
+                TABLE_NOTES -> {
+                    val note = json.decodeFromString(NoteRecord.serializer(), payload)
+                    put("note_state", note.state)
+                    put("note_date", note.date)
+                }
+                TABLE_COMMANDS -> {
+                    val command = json.decodeFromString(CommandRecord.serializer(), payload)
+                    put("command_text", command.cmd)
+                    put("command_alias", command.alias)
+                    put(
+                        "command_tags",
+                        command.tags.orEmpty().joinToString(",", prefix = ",", postfix = ",")
+                    )
+                    put("command_frequency", command.frequency)
+                    put("command_created", command.createTime)
+                }
+            }
+        }
 
     private fun enqueueUpsert(
         table: String,
@@ -730,9 +863,12 @@ class ActionExportDatabase(context: Context) :
                 if (separator < 0) return@mapNotNull null
                 val key = pair.substring(0, separator)
                 val value = pair.substring(separator + 1)
-                key.lowercase() to value
+                key.lowercase() to URLDecoder.decode(value, "UTF-8")
             }
             .toMap()
+
+    private fun likeContains(value: String): String =
+        "%${value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")}%"
 
     private fun String.md5(): String =
         MessageDigest.getInstance("MD5")
@@ -753,6 +889,99 @@ class ActionExportDatabase(context: Context) :
             )
             """.trimIndent()
         )
+    }
+
+    private fun ensureQuerySchema(db: SQLiteDatabase) {
+        val columns = mapOf(
+            TABLE_ACTIONS to listOf(
+                "action_type TEXT",
+                "action_name TEXT",
+                "action_state TEXT",
+                "action_category TEXT",
+                "action_labels TEXT",
+                "action_start TEXT",
+                "action_created TEXT",
+                "action_index TEXT"
+            ),
+            TABLE_NOTES to listOf("note_state TEXT", "note_date TEXT"),
+            TABLE_COMMANDS to listOf(
+                "command_text TEXT",
+                "command_alias TEXT",
+                "command_tags TEXT",
+                "command_frequency INTEGER",
+                "command_created TEXT"
+            )
+        )
+        columns.forEach { (table, definitions) ->
+            definitions.forEach { definition ->
+                val column = definition.substringBefore(' ')
+                if (!hasColumn(db, table, column)) {
+                    db.execSQL("ALTER TABLE $table ADD COLUMN $definition")
+                }
+            }
+        }
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS idx_actions_type_created " +
+                "ON $TABLE_ACTIONS(action_type, action_created DESC)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS idx_actions_type_state_created " +
+                "ON $TABLE_ACTIONS(action_type, action_state, action_created DESC)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS idx_actions_type_category_created " +
+                "ON $TABLE_ACTIONS(action_type, action_category, action_created DESC)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS idx_actions_type_start " +
+                "ON $TABLE_ACTIONS(action_type, action_start)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS idx_actions_start " +
+                "ON $TABLE_ACTIONS(action_start)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS idx_actions_type_index " +
+                "ON $TABLE_ACTIONS(action_type, action_index)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS idx_notes_state_date " +
+                "ON $TABLE_NOTES(note_state, note_date DESC)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS idx_commands_created " +
+                "ON $TABLE_COMMANDS(command_created DESC)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS idx_commands_frequency " +
+                "ON $TABLE_COMMANDS(command_frequency DESC)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS idx_commands_alias " +
+                "ON $TABLE_COMMANDS(command_alias)"
+        )
+    }
+
+    private fun hasColumn(db: SQLiteDatabase, table: String, column: String): Boolean =
+        db.rawQuery("PRAGMA table_info($table)", null).use { cursor ->
+            val nameColumn = cursor.getColumnIndexOrThrow("name")
+            while (cursor.moveToNext()) {
+                if (cursor.getString(nameColumn) == column) return@use true
+            }
+            false
+        }
+
+    private fun rebuildQueryColumns(db: SQLiteDatabase) {
+        listOf(TABLE_ACTIONS, TABLE_NOTES, TABLE_COMMANDS).forEach { table ->
+            val rows = db.rawQuery("SELECT id, payload, dirty FROM $table", null).use { cursor ->
+                buildList {
+                    while (cursor.moveToNext()) {
+                        add(Triple(cursor.getString(0), cursor.getString(1), cursor.getInt(2)))
+                    }
+                }
+            }
+            rows.forEach { (id, payload, dirty) -> upsert(db, table, id, payload, dirty) }
+        }
     }
 
     private fun createPendingChangesTable(db: SQLiteDatabase) {
@@ -803,7 +1032,7 @@ class ActionExportDatabase(context: Context) :
 
     companion object {
         private const val DATABASE_NAME = "sourcebox-local.db"
-        private const val DATABASE_VERSION = 4
+        private const val DATABASE_VERSION = 5
         private const val TABLE_ACTIONS = "exported_actions"
         private const val TABLE_NOTES = "exported_notes"
         private const val TABLE_COMMANDS = "exported_commands"

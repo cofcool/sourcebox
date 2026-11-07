@@ -18,6 +18,7 @@ export interface TodoRecord {
   name: string;
   state: string;
   type?: string;
+  labels?: string | null;
   remark?: string | null;
   createTime?: string;
   start?: string;
@@ -240,15 +241,18 @@ export const api = {
       method: "DELETE",
     });
   },
-  habitList: async (query = ""): Promise<ActionRecord[]> => {
+  habitList: async (query = "", page = 1, size = 10): Promise<ActionRecord[]> => {
     if (query.trim()) {
       const results = await search<ActionRecord>(query, "action");
-      return results
+      const habits = results
         .map((result) => result.data)
         .filter((record) => record.type === "habit");
+      const pageSize = Math.max(size - 1, 1);
+      const start = (page - 1) * pageSize;
+      return habits.slice(start, start + size);
     }
 
-    const params = new URLSearchParams({ type: "habit" });
+    const params = new URLSearchParams({ type: "habit", page: String(page), size: String(size) });
     return request<ActionRecord[]>(`/action?${params.toString()}`);
   },
   habitSave: async (habitRecord: HabitRecord): Promise<ActionRecord> => {

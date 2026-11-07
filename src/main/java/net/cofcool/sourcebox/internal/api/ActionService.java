@@ -524,7 +524,7 @@ public class ActionService {
             if (actionRecord.remark() != null && actionRecord.remark().toLowerCase().startsWith("http")) {
                 if (StringUtils.isBlank(label)) {
                     label = "link";
-                } else {
+                } else if (!label.contains("link")) {
                     label = String.join(",",label, "link");
                 }
             }

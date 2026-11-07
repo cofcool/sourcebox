@@ -41,6 +41,7 @@ interface TodoItem {
   remark?: string | null;
   state: string;
   type?: string;
+  labels?: string | null;
   createTime?: string;
   start?: string;
   end?: string;
@@ -1069,8 +1070,11 @@ function formatDuration(totalSeconds: number) {
 }
 
 function HabitPage() {
+  const pageSize = 10;
   const [habits, setHabits] = useState<ActionRecord[]>([]);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(false);
   const [name, setName] = useState("");
   const [category, setCategory] = useState<"check" | "value">("check");
   const [note, setNote] = useState("");
@@ -1087,10 +1091,12 @@ function HabitPage() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  async function loadHabits(query = search) {
+  async function loadHabits(query = search, pageNumber = page) {
     setLoading(true);
     try {
-      setHabits(await api.habitList(query));
+      const results = await api.habitList(query, pageNumber, pageSize + 1);
+      setHabits(results.slice(0, pageSize));
+      setHasNextPage(results.length > pageSize);
       setError(undefined);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -1100,8 +1106,8 @@ function HabitPage() {
   }
 
   useEffect(() => {
-    void loadHabits(search);
-  }, [search]);
+    void loadHabits(search, page);
+  }, [search, page]);
 
   async function createHabit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1149,7 +1155,11 @@ function HabitPage() {
       setUnit("");
       setQuestion("");
       setTargetValue("");
-      await loadHabits();
+      if (page !== 1) {
+        setPage(1);
+      } else {
+        await loadHabits(search, 1);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -1298,7 +1308,7 @@ function HabitPage() {
       <div className="todo-toolbar">
         <div className="search-field">
           <Search size={17} />
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="搜索习惯" aria-label="搜索习惯" />
+          <input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="搜索习惯" aria-label="搜索习惯" />
         </div>
       </div>
 
@@ -1321,6 +1331,16 @@ function HabitPage() {
           </button>
         ))}
       </section>
+
+      <div className="todo-pagination">
+        <button className="secondary" type="button" onClick={() => setPage((current) => current - 1)} disabled={page <= 1 || loading}>
+          上一页
+        </button>
+        <span>第 {page} 页 · {habits.length} 条</span>
+        <button className="secondary" type="button" onClick={() => setPage((current) => current + 1)} disabled={!hasNextPage || loading}>
+          下一页
+        </button>
+      </div>
 
       {loadingDetail && <div className="record-detail-loading" role="status">正在加载习惯详情...</div>}
 
@@ -1417,6 +1437,7 @@ function TodoPage() {
   const [page, setPage] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [selectedTodo, setSelectedTodo] = useState<TodoItem>();
   const [error, setError] = useState<string>();
 
   async function loadTodos(query = search, pageNumber = page) {
@@ -1558,8 +1579,10 @@ function TodoPage() {
               {todo.state === "done" && <Check size={15} />}
             </button>
             <div className="todo-content">
-              <span>{todo.name}</span>
-              {todo.remark && <p className="todo-remark">{todo.remark}</p>}
+              <button className="todo-open-details" type="button" onClick={() => setSelectedTodo(todo)}>
+                <span>{todo.name}</span>
+                {todo.remark && <p className="todo-remark">{todo.remark}</p>}
+              </button>
             </div>
             <button
               className="delete-button"
@@ -1581,6 +1604,151 @@ function TodoPage() {
           下一页
         </button>
       </div>
+
+      {selectedTodo && (
+        <TodoDetailDialog
+          key={selectedTodo.id}
+          todo={selectedTodo}
+          onClose={() => setSelectedTodo(undefined)}
+          onSaved={() => void loadTodos(search, page)}
+        />
+      )}
+    </div>
+  );
+}
+
+function TodoDetailDialog({ todo: listTodo, onClose, onSaved }: {
+  todo: TodoItem;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [todo, setTodo] = useState<TodoItem>();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string>();
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    api.recordDetail(listTodo.id)
+      .then(({ record }) => {
+        if (record.type !== "todo") throw new Error("该记录不是待办事项");
+        if (active) {
+          setTodo({
+            id: record.id,
+            name: record.name,
+            remark: record.remark,
+            state: record.state,
+            type: record.type,
+            labels: record.labels,
+            start: record.start ?? undefined,
+            end: record.end ?? undefined,
+          });
+        }
+      })
+      .catch((e) => { if (active) setError(e instanceof Error ? e.message : String(e)); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [listTodo.id]);
+
+  async function saveTodo(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!todo) return;
+    setSaving(true);
+    setError(undefined);
+    setMessage("");
+    try {
+      const saved = await api.todoUpdate({
+        ...todo,
+        id: todo.id,
+        type: "todo",
+        start: todo.start ?? formatRecordDateTime(new Date()),
+        end: todo.end ?? formatRecordDateTime(new Date()),
+      });
+      setTodo((current) => current ? { ...current, ...saved } : current);
+      setMessage("变更已保存");
+      onSaved();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function markAsNavigation() {
+    if (!todo) return;
+    setSaving(true);
+    setError(undefined);
+    setMessage("");
+    try {
+      const saved = await api.todoUpdate({
+        ...todo,
+        id: todo.id,
+        type: "todo",
+        labels: "link,nav",
+        start: todo.start ?? formatRecordDateTime(new Date()),
+        end: todo.end ?? formatRecordDateTime(new Date()),
+      });
+      setTodo((current) => current ? { ...current, ...saved } : current);
+      setMessage("已标记为网址导航");
+      onSaved();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="record-modal-backdrop" role="presentation" onMouseDown={(event) => {
+      if (event.target === event.currentTarget && !saving) onClose();
+    }}>
+      <section className="todo-detail-modal" role="dialog" aria-modal="true" aria-labelledby="todo-detail-title">
+        <header className="record-modal-header">
+          <div>
+            <h2 id="todo-detail-title">待办详情</h2>
+            <span className="muted">编辑名称、备注、开始时间和状态</span>
+          </div>
+          <button className="icon-button" type="button" onClick={onClose} aria-label="关闭详情" disabled={saving}><X size={20} /></button>
+        </header>
+
+        {error && <div className="error todo-detail-error">{error}</div>}
+        {message && <div className="helper-message todo-detail-message">{message}</div>}
+
+        {loading ? (
+          <div className="empty-todos">正在加载待办详情...</div>
+        ) : todo ? (
+          <form className="todo-detail-form" onSubmit={(event) => void saveTodo(event)}>
+            <label>名称
+              <input value={todo.name} onChange={(event) => setTodo({ ...todo, name: event.target.value })} required />
+            </label>
+            <label>备注
+              <textarea value={todo.remark ?? ""} onChange={(event) => setTodo({ ...todo, remark: event.target.value })} rows={4} />
+            </label>
+            <label>开始时间
+              <input type="datetime-local" value={dateTimeInput(todo.start)} onChange={(event) => setTodo({ ...todo, start: fromDateTimeInput(event.target.value) ?? undefined })} required />
+            </label>
+            <label>状态
+              <select value={todo.state} onChange={(event) => setTodo({ ...todo, state: event.target.value })}>
+                <option value="todo">待办</option>
+                <option value="doing">进行中</option>
+                <option value="done">已完成</option>
+                <option value="cancel">已取消</option>
+              </select>
+            </label>
+            <div className="todo-detail-actions">
+              <button type="submit" disabled={saving || !todo.name.trim()}>确定</button>
+              <button type="button" className="secondary" onClick={onClose} disabled={saving}>取消</button>
+              <button type="button" className="secondary" onClick={() => void markAsNavigation()} disabled={saving}>
+                {(todo.labels ?? "").split(",").map((label) => label.trim()).includes("nav") ? "已标记为导航" : "标记为导航"}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div className="empty-todos">未找到该待办事项</div>
+        )}
+      </section>
     </div>
   );
 }

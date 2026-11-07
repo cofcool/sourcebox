@@ -51,11 +51,22 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .todo-list { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
 .todo-pagination, .record-pagination { display: flex; flex: 0 0 auto; flex-direction: row; align-items: center; justify-content: center; gap: 14px; overflow: visible; margin-top: 18px; padding: 0; }
 .todo-pagination span, .record-pagination span { min-width: 110px; color: #737983; font-size: 13px; text-align: center; }
+.todo-detail-modal { display: flex; width: min(560px, 100%); max-height: min(760px, calc(100vh - 44px)); flex-direction: column; overflow: auto; border: 1px solid #dfe3e0; border-radius: 8px; background: #f8f9f8; box-shadow: 0 24px 80px rgb(16 24 18 / 24%); }
+.todo-detail-form { display: grid; gap: 14px; padding: 22px; }
+.todo-detail-form label { display: grid; gap: 6px; color: #585f69; font-size: 12px; font-weight: 600; }
+.todo-detail-form input, .todo-detail-form select, .todo-detail-form textarea { width: 100%; min-width: 0; border: 1px solid #d9dde3; border-radius: 6px; padding: 11px 12px; background: white; color: #20242a; font: inherit; }
+.todo-detail-form textarea { resize: vertical; }
+.todo-detail-form input:focus, .todo-detail-form select:focus, .todo-detail-form textarea:focus { outline: 2px solid #e0e9e2; border-color: #54705c; }
+.todo-detail-error, .todo-detail-message { margin: 14px 22px 0; }
+.todo-detail-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; padding-top: 6px; }
 .todo-item { display: flex; align-items: center; gap: 12px; min-height: 58px; padding: 11px 14px; background: white; border: 1px solid #e5e7eb; border-radius: 9px; }
 .todo-content { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.todo-content > span { display: block; }
+.todo-open-details { display: flex; flex: 1; min-width: 0; flex-direction: column; align-items: flex-start; padding: 0; border-radius: 0; background: transparent; color: inherit; text-align: left; }
+.todo-open-details:hover { background: transparent; color: #47634d; }
+.todo-open-details:focus-visible { outline: 2px solid #8c9b8e; outline-offset: 3px; }
+.todo-open-details > span { display: block; overflow-wrap: anywhere; font-weight: 600; }
 .todo-remark { margin: 4px 0 0; color: #737983; font-size: 13px; white-space: pre-wrap; }
-.todo-item.completed .todo-content > span { color: #9298a1; text-decoration: line-through; }
+.todo-item.completed .todo-open-details > span { color: #9298a1; text-decoration: line-through; }
 .complete-button, .delete-button { display: grid; place-items: center; flex: 0 0 auto; padding: 0; border-radius: 50%; }
 .complete-button { width: 24px; height: 24px; border: 1px solid #c9ced6; background: white; color: white; }
 .todo-item.completed .complete-button { border-color: #31a24c; background: #31a24c; }
@@ -226,6 +237,7 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 @media (max-width: 640px) { .book-toolbar { align-items: stretch; flex-direction: column; } .book-toolbar select, .book-toolbar > button { justify-content: center; min-height: 40px; } }
 @media (max-width: 640px) { .timer-clock, .timer-break-content strong { font-size: 56px; } .timer-durations { width: 100%; align-items: stretch; flex-direction: column; } .timer-durations label, .timer-durations input { width: 100%; } .timer-statistics-heading { align-items: flex-start; flex-direction: column; } }
 @media (max-width: 760px) { .record-create { align-items: stretch; flex-direction: column; } .record-modal-backdrop { padding: 10px; } .record-modal { max-height: calc(100vh - 20px); } .record-modal-columns { grid-template-columns: 1fr; } .record-details { border-right: 0; border-bottom: 1px solid #e3e6e3; } }
+@media (max-width: 640px) { .todo-detail-modal { max-height: calc(100vh - 20px); } .todo-detail-actions button { flex: 1 1 auto; } }
 @media (max-width: 640px) { .habit-value-form { align-items: stretch; flex-direction: column; } .habit-value-form button { width: 100%; } .habit-detail-modal { max-height: calc(100vh - 20px); } }
 @media (max-width: 640px) { .note-list-heading { align-items: stretch; flex-direction: column; } .note-list-heading .helper-search { width: 100%; } }
 @media (max-width: 760px) {

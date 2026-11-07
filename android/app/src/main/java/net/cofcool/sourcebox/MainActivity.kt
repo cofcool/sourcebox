@@ -1252,7 +1252,7 @@ private fun HabitBoardScreen(
                 Spacer(Modifier.weight(1f))
                 recentDays.forEach { date ->
                     Column(
-                        Modifier.width(40.dp),
+                        Modifier.width(50.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
@@ -1332,7 +1332,7 @@ private fun HabitBoardScreen(
                                 else -> Color(0xFF8A8D93)
                             }
                             Column(
-                                Modifier.width(40.dp),
+                                Modifier.width(5p),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center
                             ) {
@@ -2694,12 +2694,6 @@ private fun TodosScreen(
             ) {
                 Text(if (showCompleted) "返回待办" else "已完成")
             }
-            OutlinedButton(
-                onClick = {
-                    vm.refreshTodos(appliedQuery, page, if (showCompleted) "done" else "todo")
-                },
-                enabled = !vm.busy
-            ) { Text("刷新") }
         }
         Row(Modifier.padding(bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             OutlinedTextField(

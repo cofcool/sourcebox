@@ -4,21 +4,27 @@ import lombok.CustomLog;
 import net.cofcool.sourcebox.ToolName;
 import net.cofcool.sourcebox.internal.api.entity.*;
 import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
+import net.cofcool.sourcebox.internal.trello.*;
+import net.cofcool.sourcebox.util.JsonUtil;
+import net.cofcool.sourcebox.util.LogseqOutStr;
+import net.cofcool.sourcebox.util.Utils;
 import org.apache.commons.lang3.StringUtils;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static net.cofcool.sourcebox.util.LogseqOutStr.FORMATTER;
 
 @CustomLog
 public class HisRecord extends BaseRecord {
@@ -38,7 +44,176 @@ public class HisRecord extends BaseRecord {
     }
 
     @Override
+    public Args config() {
+        return super.config()
+            .arg(new Arg("out", null, "output directory", false, "./trello"))
+            .arg(new Arg("titleToPage", "false", "make card title to page", false, null))
+            .arg(new Arg("importRecords", null, "trello json file path", false, "./demo.json"));
+    }
+
+    private void importTrello(Args args) throws Exception {
+        var path = args.readArg("importRecords").val();
+        var outPath = args.readArg("out");
+        var titleToPage = args.readArg("titleToPage").optVal().orElse("false").equalsIgnoreCase("true");
+        try (var reader = new FileReader(path)) {
+            Trello trello = JsonUtil.getObjectMapper().readValue(reader, Trello.class);
+            var name = trello.name();
+            for (Map.Entry<CreateTime, List<CardsItem>> entry : trello.cards()
+                .stream()
+                .collect(Collectors.groupingBy(card -> {
+                    Optional<ActionsItem> cardDate = cardDate(trello, card.id());
+                    String date = cardDate.map(ActionsItem::date)
+                        .orElseGet(() -> actionList(trello, card.id())
+                            .stream()
+                            .findFirst()
+                            .map(ActionsItem::date)
+                            .orElse(card.dateLastActivity()));
+                    LocalDateTime time = LocalDateTime.parse(date, FORMATTER);
+                    return new CreateTime(time.getYear(), time);
+                }))
+                .entrySet()) {
+                var out = new LogseqOutStr();
+                for (CardsItem card : entry.getValue()) {
+                    var cardBoard = cardList(trello, card.idList());
+                    out.block(LogseqOutStr.cardTask(cardBoard.name()), 0)
+                        .blockRef(titleToPage ? card.name() : null)
+                        .append(titleToPage ? null : card.name())
+                        .blockRef(LogseqOutStr.DATE_FORMATTER.format(entry.getKey().time()))
+                        .tag(card.badges().votes() > 0 ? "recommend" : "")
+                        .tag(cardBoard.name().replace(" ", "-"))
+                        .tag(name);
+                    for (LabelsItem label : card.labels()) {
+                        out.tag(label.name().replace(" ", "-"));
+                    }
+                    out.breakLine();
+                    if (!card.desc().isBlank()) {
+                        out.block(card.desc(), 1).breakLine();
+                    }
+
+                    for (String id : card.idChecklists()) {
+                        var checklist = checkItemsList(trello, id);
+                        out.block(checklist.name(), 1).breakLine();
+                        for (CheckItemsItem item : checklist.checkItems()) {
+                            out.block(LogseqOutStr.sateTask(item.state()) + item.name(), 2).breakLine();
+                        }
+                    }
+
+                    for (ActionsItem action : actionList(trello, card.id())) {
+                        String text = action.data().text();
+                        if (text != null && !text.isBlank()) {
+                            out.block(text, 1).blockRef(LogseqOutStr.date(action.date())).breakLine();
+                        }
+                    }
+                    if (!outPath.isPresent()) {
+                        importRecord(trello, cardBoard, card, name, entry.getKey().time());
+                    }
+                }
+                if (outPath.isPresent()) {
+                    String output = outPath.val() + "/" + "trello" + name + "-" + entry.getKey().year() + ".md";
+                    args.getContext().write(output, out.toString());
+                    args.getContext().write("Generate trello markdown ok");
+                }
+            }
+        }
+    }
+
+    private void importRecord(Trello trello, ListsItem cardBoard, CardsItem card, String category,
+        LocalDateTime createdAt) {
+        var actionId = Utils.generateShortUUID();
+        var labels = card.labels().stream().map(LabelsItem::name).collect(Collectors.joining(","));
+        var record = ActionRecord.builder()
+            .id(actionId)
+            .name(card.name())
+            .type(Type.record.name())
+            .state(LogseqOutStr.cardTask(cardBoard.name()).toLowerCase())
+            .category(category)
+            .start(createdAt)
+            .end(createdAt)
+            .labels(labels.isEmpty() ? cardBoard.name() : String.join(",", labels, cardBoard.name()))
+            .remark(card.desc())
+            .build();
+        postRequestLocalData( "/action?type=record", record, ActionRecord.class);
+
+        for (String checklistId : card.idChecklists()) {
+            var checklist = checkItemsList(trello, checklistId);
+            for (CheckItemsItem item : checklist.checkItems()) {
+                postRequestLocalData( "/action/checklist/" + actionId,
+                    toCheckList(item, actionId),
+                    CheckList.class);
+            }
+        }
+
+        for (ActionsItem action : actionList(trello, card.id())) {
+            String text = action.data().text();
+            if (text != null && !text.isBlank()) {
+                postRequestLocalData( "/action/comment/" + actionId,
+                    Comment.builder().content(text).createTime(LocalDateTime.parse(action.date(), FORMATTER)).build(),
+                    Comment.class);
+            }
+        }
+    }
+
+    static CheckList toCheckList(CheckItemsItem item, String actionId) {
+        boolean complete = "complete".equalsIgnoreCase(item.state());
+        return CheckList.builder()
+            .actionId(actionId)
+            .content(item.name())
+            .first(0)
+            .last(1)
+            .current(complete ? 1 : 0)
+            .build();
+    }
+
+    private List<ActionsItem> actionList(Trello trello, String id) {
+        return trello.actions().stream()
+            .filter(Objects::nonNull)
+            .filter(action -> action.data().card() != null)
+            .filter(action -> action.data().card().id().equals(id))
+            .sorted(Comparator.comparing(ActionsItem::date))
+            .toList();
+    }
+
+    private ListsItem cardList(Trello trello, String id) {
+        return trello.lists().stream().filter(list -> list.id().equals(id)).findAny().get();
+    }
+
+    private Optional<ActionsItem> cardDate(Trello trello, String id) {
+        return trello.actions().stream()
+            .filter(action -> action.type().equals("createCard"))
+            .filter(action -> action.data().card().id().equals(id))
+            .findAny();
+    }
+
+    private ChecklistsItem checkItemsList(Trello trello, String id) {
+        return trello.checklists().stream().filter(checklist -> checklist.id().equals(id)).findAny().get();
+    }
+
+    record CreateTime(long year, LocalDateTime time) {
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            CreateTime that = (CreateTime) o;
+            return year == that.year;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(year);
+        }
+    }
+
+    @Override
     protected boolean callOthers(Args args) throws Exception {
+        if (args.readArg("importRecords").isPresent()) {
+            importTrello(args);
+            return true;
+        }
         runTui();
         return true;
     }

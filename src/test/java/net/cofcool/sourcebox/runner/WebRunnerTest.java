@@ -16,9 +16,9 @@ import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.Tool.Args;
 import net.cofcool.sourcebox.Tool.RunnerType;
 import net.cofcool.sourcebox.ToolName;
+import net.cofcool.sourcebox.internal.HisRecordTrelloImportTest;
 import net.cofcool.sourcebox.internal.JsonFormatterTest;
 import net.cofcool.sourcebox.internal.JsonToPojoTest;
-import net.cofcool.sourcebox.internal.TrelloToLogseqImporterTest;
 import net.cofcool.sourcebox.internal.api.NoteConfig;
 import net.cofcool.sourcebox.runner.WebRunner.WebToolContext;
 import net.cofcool.sourcebox.util.VertxUtils;
@@ -116,18 +116,18 @@ class WebRunnerTest extends BaseTest {
             .post(Integer.parseInt(getPort()), "127.0.0.1", "/upload")
             .sendMultipartForm(
                 MultipartForm.create()
-                    .textFileUpload("file", "test.txt", TrelloToLogseqImporterTest.RESOURCE_PATH,
+                    .textFileUpload("file", "test.txt", HisRecordTrelloImportTest.RESOURCE_PATH,
                         "multipart/form-data"))
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 var name = r.bodyAsJsonObject().getJsonArray("result").getString(0);
                 WebClient.create(vertx)
                     .post(Integer.parseInt(getPort()), "127.0.0.1",
-                        "/" + ToolName.trelloLogseqImporter.name())
+                        "/" + ToolName.hisRecord.name())
                     .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
-                    .sendJson(JsonObject.of("path", name).toBuffer())
+                    .sendJson(JsonObject.of("importRecords", name).toBuffer())
                     .onComplete(testContext.succeeding(response -> testContext.verify(() -> {
+                        Assertions.assertEquals(200, response.statusCode());
                         queryEvents("writeFile").onSuccess(event -> {
-                                Assertions.assertEquals(200, response.statusCode());
                                 Assertions.assertEquals("application/json",
                                     response.getHeader("Content-Type"));
                                 Assertions.assertTrue(

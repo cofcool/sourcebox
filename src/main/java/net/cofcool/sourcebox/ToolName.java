@@ -3,7 +3,6 @@ package net.cofcool.sourcebox;
 import net.cofcool.sourcebox.internal.*;
 
 public enum ToolName {
-    trelloLogseqImporter("read trello backup json file and convert to logseq md file", TrelloToLogseqImporter.class),
     shell("run shell command", ShellStarter.class),
     link2Tool("convert link file to md", LinkCovertTool.class),
     gitCommits2Log("generate changelog file from git commit log", GitCommitsToChangelog.class),

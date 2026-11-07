@@ -192,15 +192,16 @@ public record ActionRecord(
 
     public static final String SYS_TEMPLATE = """
                     sys: actionRecord 变更记录
+                    name: %s;
                     label: %s;
-                    remakr: %s;
+                    remark: %s;
                     state: %s;
                     category: %s;
                     start-end: %s - %s
                     """;
     public String generateSysMsg() {
         return String.format(SYS_TEMPLATE,
-            labels, remark, state, category,
+            name, labels, Objects.toString(remark, ""), state, category,
             Utils.formatDatetime(createTime), Utils.formatDatetime(updateTime)
         );
     }

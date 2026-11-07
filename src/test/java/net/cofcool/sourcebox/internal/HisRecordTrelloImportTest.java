@@ -8,20 +8,20 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-public class TrelloToLogseqImporterTest extends BaseTest {
+public class HisRecordTrelloImportTest extends BaseTest {
 
 
     public static final String RESOURCE_PATH = Utils.getTestResourcePath("/trello-demo.json");
 
     @Test
     void run() throws Exception {
-        instance().run(args.arg("path", RESOURCE_PATH).arg("out", "./target/trello"));
+        instance().run(args.arg("importRecords", RESOURCE_PATH).arg("out", "./target/trello"));
     }
 
     @Test
     @Disabled
     void runImportRecords() throws Exception {
-        instance().run(args.arg("path", RESOURCE_PATH).arg("out", "./target/trello").arg("importRecords", "http://localhost:38080"));
+        instance().run(args.arg("importRecords", RESOURCE_PATH));
     }
 
     @Test
@@ -29,7 +29,7 @@ public class TrelloToLogseqImporterTest extends BaseTest {
         instance()
             .run(
                 args
-                    .arg("path", RESOURCE_PATH)
+                    .arg("importRecords", RESOURCE_PATH)
                     .arg("out", "./target/trello")
                     .arg("titleToPage", "true")
             );
@@ -37,10 +37,10 @@ public class TrelloToLogseqImporterTest extends BaseTest {
 
     @Test
     void mapsChecklistStateToCurrentProgress() {
-        var completed = TrelloToLogseqImporter.toCheckList(
+        var completed = HisRecord.toCheckList(
             new CheckItemsItem(null, 0, null, null, null, "completed", null, "item-1", "complete"),
             "action-1");
-        var incomplete = TrelloToLogseqImporter.toCheckList(
+        var incomplete = HisRecord.toCheckList(
             new CheckItemsItem(null, 0, null, null, null, "incomplete", null, "item-2", "incomplete"),
             "action-1");
 
@@ -54,6 +54,6 @@ public class TrelloToLogseqImporterTest extends BaseTest {
 
     @Override
     protected Tool instance() {
-        return new TrelloToLogseqImporter();
+        return new HisRecord();
     }
 }

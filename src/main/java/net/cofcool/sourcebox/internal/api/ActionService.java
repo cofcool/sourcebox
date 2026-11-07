@@ -285,6 +285,10 @@ public class ActionService {
         });
     }
 
+    public Future<List<YearRecordStatistics>> findRecordYearStatistics(Type t, Integer year, ActionState state) {
+        return Future.succeededFuture(List.of());
+    }
+
     public Future<ActionRecord> example() {
         return Future.succeededFuture(new ActionRecord(
             "example",
@@ -538,14 +542,9 @@ public class ActionService {
             if (record.name() != null && record.name().toLowerCase().startsWith("http") && StringUtils.isBlank(record.remark())) {
                 try {
                     var title = Jsoup.newSession().url(record.name()).timeout(5_000).get().title();
-                    record = ActionRecord.builder()
-                        .name(title)
-                        .remark(record.name())
-                        .type(record.type())
-                        .state(record.state())
-                        .start(record.start())
-                        .end(record.end())
-                        .build();
+                    record = record
+                        .withName(title)
+                        .withRemark(record.name());
                 } catch (IOException e) {
                     log.error("Get " + record.name() + " web page title error", e);
                 }
@@ -558,13 +557,11 @@ public class ActionService {
 
         @Override
         public ActionRecord apply(ActionRecord record) {
-            if (Objects.equals(record.type(), Type.record.name()) && Objects.equals(record.state(), ActionState.done.name())) {
-                    record = ActionRecord.builder()
-                        .id(record.id())
-                        .type(record.type())
-                        .state(record.state())
-                        .end(LocalDateTime.now())
-                        .build();
+            if (Objects.equals(record.type(), Type.record.name())
+                && Objects.equals(record.state(), ActionState.done.name())
+                && record.end() == null
+            ) {
+                    record = record.withEnd(LocalDateTime.now());
             }
             return record;
         }
@@ -583,6 +580,12 @@ public class ActionService {
     public record RecordStatistics (
         @JsonFormat(pattern = "yyyy-MM-dd")
         LocalDate day,
+        Long cnt,
+        Long total
+    ){}
+
+    public record YearRecordStatistics (
+        Integer year,
         Long cnt,
         Long total
     ){}

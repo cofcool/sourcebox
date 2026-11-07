@@ -214,11 +214,10 @@ public class HisRecord extends BaseRecord {
             importTrello(args);
             return true;
         }
-        runTui();
-        return true;
+        return false;
     }
 
-    private void runTui() throws Exception {
+    protected void runTui() throws Exception {
         try (Terminal terminal = TerminalBuilder.builder().system(true).build()) {
             LineReader reader = LineReaderBuilder.builder().terminal(terminal).build();
             RecordBoard board = new RecordBoard(terminal, reader);

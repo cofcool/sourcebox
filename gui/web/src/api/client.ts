@@ -207,6 +207,7 @@ export const api = {
     const params = new URLSearchParams({
       state: "todo",
       labels: "link,nav",
+      size: "50"
     });
     return request<ActionRecord[]>(`/action?${params.toString()}`);
   },

@@ -33,7 +33,7 @@ public class ToDo extends BaseRecord {
         return ToolName.todo;
     }
 
-    private void runTui() throws Exception {
+    protected void runTui() throws Exception {
         try (Terminal terminal = TerminalBuilder.builder().system(true).build()) {
             Attributes originalAttributes = terminal.enterRawMode();
             try {
@@ -293,11 +293,6 @@ public class ToDo extends BaseRecord {
                 throw new RuntimeException(e);
             }
         });
-
-        if (!flag.get()) {
-            runTui();
-            flag.set(true);
-        }
 
         return flag.get();
     }

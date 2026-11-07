@@ -25,7 +25,7 @@ public abstract class BaseRecord implements WebTool {
 
         args.readArg("find").ifPresent(a -> {
             flag.set(true);
-            args.getContext().write(findActions(a));
+            args.getContext().write(toPrintStr(findActions(a)));
         });
 
         args.readArg("add").ifPresent(a -> {
@@ -57,10 +57,12 @@ public abstract class BaseRecord implements WebTool {
             flag.set(callOthers(args));
         }
 
-        var find = args.readArg("find");
-        if (!flag.get() || find.isPresent()) {
-            args.getContext().write(toPrintStr(findActions(find)));
+        if (!flag.get()) {
+            runTui();
         }
+    }
+
+    protected void runTui() throws Exception {
 
     }
 

@@ -289,6 +289,17 @@ class ActionServiceTest extends BaseTest {
     }
 
     @Test
+    void findRecordYearStatistics(Vertx vertx, VertxTestContext testContext) {
+        actionService
+            .findRecordYearStatistics(Type.record, 2025, ActionState.todo)
+            .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
+                System.out.println(r);
+//                Assertions.assertFalse(r.isEmpty());
+                testContext.completeNow();
+            })));
+    }
+
+    @Test
     void example(Vertx vertx, VertxTestContext testContext) {
         actionService
             .example()

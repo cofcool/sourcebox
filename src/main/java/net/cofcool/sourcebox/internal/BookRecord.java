@@ -60,11 +60,6 @@ public class BookRecord extends BaseRecord {
             flag.set(true);
         });
 
-        if (!flag.get()) {
-            runTui();
-            flag.set(true);
-        }
-
         return flag.get();
     }
 
@@ -76,7 +71,7 @@ public class BookRecord extends BaseRecord {
             .arg(new Arg("syncCategory", "ebook", "book category, comic or ebook", false, "comic"));
     }
 
-    private void runTui() throws Exception {
+    protected void runTui() throws Exception {
         try (Terminal terminal = TerminalBuilder.builder().system(true).build()) {
             LineReader reader = LineReaderBuilder.builder().terminal(terminal).build();
             new BookBoard(terminal, reader).run();

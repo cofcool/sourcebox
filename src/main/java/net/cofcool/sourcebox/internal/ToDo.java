@@ -241,6 +241,22 @@ public class ToDo extends BaseRecord {
     protected boolean callOthers(Args args) throws Exception {
         var flag = new AtomicBoolean();
 
+        args.readArg("markNavLink").ifPresent(a -> {
+            flag.set(true);
+            var id = a.val();
+            var detail = getRequestLocalData("/action/" + id, ActionRecord.RecordRet.class);
+            var record = detail.record();
+            if (!Type.todo.name().equals(record.type())) {
+                throw new IllegalArgumentException("Action " + id + " is not a todo");
+            }
+            updateState(ActionRecord
+                .builder()
+                .id(id)
+                .labels("link,nav")
+                .build()
+            );
+        });
+
         args.readArg("importBookmark").ifPresent(a -> {
             flag.set(true);
             try {
@@ -290,6 +306,7 @@ public class ToDo extends BaseRecord {
     public Args config() {
         return super.config()
             .arg(new Arg("importTodo", null, "csv file path, like: value,remark or value,remark,state ", false, null))
+            .arg(new Arg("markNavLink", null, "mark todo id as a navigation link", false, "d5ebeacf9a0aa3319560c7aa78e8751c"))
             .arg(new Arg("importBookmark", null, "file path, supports: firefox bookmark file", false, null));
     }
 

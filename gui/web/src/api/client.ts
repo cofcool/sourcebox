@@ -202,6 +202,13 @@ export const api = {
     });
     return request<TodoRecord[]>(`/action?${params.toString()}`);
   },
+  navigationLinks: async (): Promise<ActionRecord[]> => {
+    const params = new URLSearchParams({
+      state: "todo",
+      labels: "link,nav",
+    });
+    return request<ActionRecord[]>(`/action?${params.toString()}`);
+  },
   todoCreate: async (todo: Partial<TodoRecord>): Promise<TodoRecord> => {
     const payload = {
       ...todo,

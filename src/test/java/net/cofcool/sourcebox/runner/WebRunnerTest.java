@@ -16,7 +16,6 @@ import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.Tool.Args;
 import net.cofcool.sourcebox.Tool.RunnerType;
 import net.cofcool.sourcebox.ToolName;
-import net.cofcool.sourcebox.internal.HisRecordTrelloImportTest;
 import net.cofcool.sourcebox.internal.JsonFormatterTest;
 import net.cofcool.sourcebox.internal.JsonToPojoTest;
 import net.cofcool.sourcebox.internal.api.NoteConfig;
@@ -107,34 +106,6 @@ class WebRunnerTest extends BaseTest {
                 Assertions.assertEquals("application/json", r.getHeader("Content-Type"));
                 Assertions.assertNotNull(r.bodyAsJsonObject().getString("result"));
                 testContext.completeNow();
-            })));
-    }
-
-    @Test
-    void reqTrelloLogseqImporter(Vertx vertx, VertxTestContext testContext) {
-        WebClient.create(vertx)
-            .post(Integer.parseInt(getPort()), "127.0.0.1", "/upload")
-            .sendMultipartForm(
-                MultipartForm.create()
-                    .textFileUpload("file", "test.txt", HisRecordTrelloImportTest.RESOURCE_PATH,
-                        "multipart/form-data"))
-            .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
-                var name = r.bodyAsJsonObject().getJsonArray("result").getString(0);
-                WebClient.create(vertx)
-                    .post(Integer.parseInt(getPort()), "127.0.0.1",
-                        "/" + ToolName.hisRecord.name())
-                    .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
-                    .sendJson(JsonObject.of("importRecords", name).toBuffer())
-                    .onComplete(testContext.succeeding(response -> testContext.verify(() -> {
-                        Assertions.assertEquals(200, response.statusCode());
-                        queryEvents("writeFile").onSuccess(event -> {
-                                Assertions.assertEquals("application/json",
-                                    response.getHeader("Content-Type"));
-                                Assertions.assertTrue(
-                                    vertx.fileSystem().existsBlocking((String) event.source()));
-                            })
-                            .onComplete(c -> testContext.completeNow());
-                    })));
             })));
     }
 

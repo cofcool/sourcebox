@@ -1,35 +1,36 @@
 import {useEffect, useMemo, useState} from "react";
 import {NavLink, Route, Routes, useLocation} from "react-router-dom";
 import {
-    Activity,
-    BookOpen,
-    Check,
-    Clipboard,
-    FileText,
-    Flame,
-    Heart,
-    Home as HomeIcon,
-    ListTodo,
-    Menu,
-    MessageCircle,
-    NotebookPen,
-    Pencil,
-    Plus,
-    Save,
-    Search,
-    Settings,
-    Trash2,
-    Wrench,
-    X,
+  Activity,
+  BookOpen,
+  Check,
+  Clipboard,
+  ExternalLink,
+  FileText,
+  Flame,
+  Heart,
+  Home as HomeIcon,
+  ListTodo,
+  Menu,
+  MessageCircle,
+  NotebookPen,
+  Pencil,
+  Plus,
+  Save,
+  Search,
+  Settings,
+  Trash2,
+  Wrench,
+  X,
 } from "lucide-react";
 import type {
-    ActionCheckList,
-    ActionComment,
-    ActionRecord,
-    HabitRecord,
-    SystemInfo,
-    TimerStatistics,
-    ToolInfo
+  ActionCheckList,
+  ActionComment,
+  ActionRecord,
+  HabitRecord,
+  SystemInfo,
+  TimerStatistics,
+  ToolInfo
 } from "./api/client";
 import {api, getBackendUrl} from "./api/client";
 import {invoke, isTauri} from "@tauri-apps/api/core";
@@ -108,6 +109,7 @@ function Sidebar({ tools, collapsed, mobile, onNavigate }: {
           </div>
         ))}
 
+        <NavLink to="/navigation" onClick={onNavigate}><ExternalLink size={17} /><span>网址导航</span></NavLink>
         <NavLink to="/settings" onClick={onNavigate}><Settings size={17} /><span>设置</span></NavLink>
       </nav>
     </aside>
@@ -137,6 +139,88 @@ function Home({ system, tools }: { system?: SystemInfo; tools: ToolInfo[] }) {
       </section>
     </div>
   );
+}
+
+function NavigationPage() {
+  const [links, setLinks] = useState<ActionRecord[]>([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>();
+
+  useEffect(() => {
+    api.navigationLinks()
+      .then(setLinks)
+      .catch((e) => setError(e instanceof Error ? e.message : String(e)))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filteredLinks = links.filter((link) =>
+    link.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())
+  );
+
+  return (
+    <div className="navigation-page">
+      <div className="page-heading">
+        <div>
+          <h1>网址导航</h1>
+        </div>
+        <label className="search-field navigation-search">
+          <Search size={17} />
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="按名称搜索网址"
+            aria-label="按名称搜索网址"
+          />
+        </label>
+      </div>
+
+      {error && <div className="error">{error}</div>}
+
+      {loading ? (
+        <div className="empty-todos">正在加载网址...</div>
+      ) : links.length === 0 ? (
+        <div className="empty-todos"><strong>还没有网址</strong><span>在待办工具中将链接标记为导航链接</span></div>
+      ) : filteredLinks.length === 0 ? (
+        <div className="empty-todos"><strong>没有匹配的网址</strong><span>试试其他名称</span></div>
+      ) : (
+        <section className="navigation-grid">
+          {filteredLinks.map((link) => {
+            const href = navigationHref(link);
+            const description = link.remark?.trim() && link.remark.trim() !== href ? link.remark : "";
+            return href ? (
+              <a className="navigation-card" href={href} target="_blank" rel="noopener noreferrer" key={link.id}>
+                <span className="navigation-card-icon"><ExternalLink size={18} /></span>
+                <strong>{link.name}</strong>
+                {description && <span className="navigation-card-description">{description}</span>}
+                <span className="navigation-card-url">{href}</span>
+              </a>
+            ) : (
+              <article className="navigation-card unavailable" key={link.id}>
+                <span className="navigation-card-icon"><ExternalLink size={18} /></span>
+                <strong>{link.name}</strong>
+                <span className="navigation-card-description">没有可打开的 HTTP(S) 地址</span>
+              </article>
+            );
+          })}
+        </section>
+      )}
+    </div>
+  );
+}
+
+function navigationHref(record: ActionRecord) {
+  const values = [record.remark, record.name].map((value) => value?.trim()).filter((value): value is string => Boolean(value));
+  for (const value of values) {
+    const candidate = /^https?:\/\//i.test(value) ? value : `https://${value}`;
+    try {
+      const url = new URL(candidate);
+      if ((url.protocol === "http:" || url.protocol === "https:") && url.hostname.includes(".")) return url.href;
+    } catch {
+      continue;
+    }
+  }
+  return "";
 }
 
 function ToolPage({ tool }: { tool?: ToolInfo }) {
@@ -2068,6 +2152,7 @@ export default function App() {
         {error && <div className="error">Java Backend 连接失败：{error}</div>}
         <Routes>
           <Route path="/" element={<Home system={system} tools={tools} />} />
+          <Route path="/navigation" element={<NavigationPage />} />
           <Route path="/tools/:id" element={<ToolRoute tools={tools} path={location.pathname} />} />
           <Route path="/settings" element={<SettingsPage system={system} />} />
         </Routes>

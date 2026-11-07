@@ -669,6 +669,21 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    private suspend fun <T> writeRecordDetailWithOfflineFallback(
+        server: suspend () -> T,
+        offline: suspend () -> T
+    ): Pair<T, Boolean> = syncMutex.withLock {
+        try {
+            server() to false
+        } catch (error: Exception) {
+            Log.d("API", "save record detail error: $error")
+            if (error !is IOException && (error !is ServerResponseException || !error.isRetryable)) {
+                throw error
+            }
+            offline() to true
+        }
+    }
+
     private suspend fun writeDeleteWithOfflineFallback(
         server: suspend () -> Unit,
         offline: suspend () -> Unit
@@ -1305,7 +1320,7 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
             content = content.trim(),
             createTime = currentRecordDateTime()
         )
-        val (saved, isDirty) = writeWithOfflineFallback(
+        val (saved, isDirty) = writeRecordDetailWithOfflineFallback(
             server = {
                 api.addRecordComment(actionId, comment).also { saved ->
                     withContext(Dispatchers.IO) { actionDatabase.saveActionComment(actionId, saved) }
@@ -1336,7 +1351,7 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
             actionId = actionId,
             createTime = checklist.createTime ?: currentRecordDateTime()
         )
-        val (saved, isDirty) = writeWithOfflineFallback(
+        val (saved, isDirty) = writeRecordDetailWithOfflineFallback(
             server = {
                 api.saveRecordChecklist(actionId, prepared).also { saved ->
                     withContext(Dispatchers.IO) {

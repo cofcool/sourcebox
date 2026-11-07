@@ -1332,7 +1332,7 @@ private fun HabitBoardScreen(
                                 else -> Color(0xFF8A8D93)
                             }
                             Column(
-                                Modifier.width(5p),
+                                Modifier.width(50.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center
                             ) {

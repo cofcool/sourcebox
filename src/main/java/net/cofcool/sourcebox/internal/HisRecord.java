@@ -351,9 +351,9 @@ public class HisRecord extends BaseRecord {
             categories.clear();
             labels.clear();
             categories.addAll(getRequestLocalData("/action/types?type=category", ActionTypes.class)
-                .stream().map(type -> type.name()).toList());
+                .stream().map(ActionType::name).toList());
             labels.addAll(getRequestLocalData("/action/types?type=label", ActionTypes.class)
-                .stream().map(type -> type.name()).toList());
+                .stream().map(ActionType::name).toList());
         }
 
         private void addRecord() throws IOException {

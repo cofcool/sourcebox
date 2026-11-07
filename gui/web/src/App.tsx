@@ -1,36 +1,36 @@
 import {useEffect, useMemo, useState} from "react";
 import {NavLink, Route, Routes, useLocation} from "react-router-dom";
 import {
-  Activity,
-  BookOpen,
-  Check,
-  Clipboard,
-  ExternalLink,
-  FileText,
-  Flame,
-  Heart,
-  Home as HomeIcon,
-  ListTodo,
-  Menu,
-  MessageCircle,
-  NotebookPen,
-  Pencil,
-  Plus,
-  Save,
-  Search,
-  Settings,
-  Trash2,
-  Wrench,
-  X,
+    Activity,
+    BookOpen,
+    Check,
+    Clipboard,
+    ExternalLink,
+    FileText,
+    Flame,
+    Heart,
+    Home as HomeIcon,
+    ListTodo,
+    Menu,
+    MessageCircle,
+    NotebookPen,
+    Pencil,
+    Plus,
+    Save,
+    Search,
+    Settings,
+    Trash2,
+    Wrench,
+    X,
 } from "lucide-react";
 import type {
-  ActionCheckList,
-  ActionComment,
-  ActionRecord,
-  HabitRecord,
-  SystemInfo,
-  TimerStatistics,
-  ToolInfo
+    ActionCheckList,
+    ActionComment,
+    ActionRecord,
+    HabitRecord,
+    SystemInfo,
+    TimerStatistics,
+    ToolInfo
 } from "./api/client";
 import {api, getBackendUrl} from "./api/client";
 import {invoke, isTauri} from "@tauri-apps/api/core";
@@ -188,19 +188,15 @@ function NavigationPage() {
         <section className="navigation-grid">
           {filteredLinks.map((link) => {
             const href = navigationHref(link);
-            const description = link.remark?.trim() && link.remark.trim() !== href ? link.remark : "";
             return href ? (
               <a className="navigation-card" href={href} target="_blank" rel="noopener noreferrer" key={link.id}>
-                <span className="navigation-card-icon"><ExternalLink size={18} /></span>
+                <span className="navigation-card-icon"><ExternalLink size={14} /></span>
                 <strong>{link.name}</strong>
-                {description && <span className="navigation-card-description">{description}</span>}
-                <span className="navigation-card-url">{href}</span>
               </a>
             ) : (
               <article className="navigation-card unavailable" key={link.id}>
-                <span className="navigation-card-icon"><ExternalLink size={18} /></span>
+                <span className="navigation-card-icon"><ExternalLink size={14} /></span>
                 <strong>{link.name}</strong>
-                <span className="navigation-card-description">没有可打开的 HTTP(S) 地址</span>
               </article>
             );
           })}
@@ -1676,7 +1672,10 @@ function TodoDetailDialog({ todo: listTodo, onClose, onSaved }: {
     }
   }
 
-  async function markAsNavigation() {
+  const isNavigationLink = (todo?.labels ?? "").split(",").map((label) => label.trim());
+  const navigationMarked = isNavigationLink.includes("link") && isNavigationLink.includes("nav");
+
+  async function toggleNavigationLabel() {
     if (!todo) return;
     setSaving(true);
     setError(undefined);
@@ -1686,12 +1685,12 @@ function TodoDetailDialog({ todo: listTodo, onClose, onSaved }: {
         ...todo,
         id: todo.id,
         type: "todo",
-        labels: "link,nav",
+        labels: navigationMarked ? "link" : "link,nav",
         start: todo.start ?? formatRecordDateTime(new Date()),
         end: todo.end ?? formatRecordDateTime(new Date()),
       });
       setTodo((current) => current ? { ...current, ...saved } : current);
-      setMessage("已标记为网址导航");
+      setMessage(navigationMarked ? "已取消导航标记" : "已标记为网址导航");
       onSaved();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -1740,8 +1739,8 @@ function TodoDetailDialog({ todo: listTodo, onClose, onSaved }: {
             <div className="todo-detail-actions">
               <button type="submit" disabled={saving || !todo.name.trim()}>确定</button>
               <button type="button" className="secondary" onClick={onClose} disabled={saving}>取消</button>
-              <button type="button" className="secondary" onClick={() => void markAsNavigation()} disabled={saving}>
-                {(todo.labels ?? "").split(",").map((label) => label.trim()).includes("nav") ? "已标记为导航" : "标记为导航"}
+              <button type="button" className="secondary" onClick={() => void toggleNavigationLabel()} disabled={saving}>
+                {navigationMarked ? "取消导航标记" : "标记为导航"}
               </button>
             </div>
           </form>

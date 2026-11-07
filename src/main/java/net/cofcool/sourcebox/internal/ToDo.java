@@ -127,7 +127,7 @@ public class ToDo extends BaseRecord {
                 if (!field.isEmpty()) {
                     field.deleteCharAt(field.length() - 1);
                 }
-            } else if (key >= 32 && key != 127) {
+            } else if (key >= 32) {
                 field.append((char) key);
             }
         }

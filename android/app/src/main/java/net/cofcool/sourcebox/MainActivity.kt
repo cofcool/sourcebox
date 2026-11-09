@@ -1046,16 +1046,6 @@ private fun RecordCreateScreen(
                 }
             }
         }
-        copySource?.let { source ->
-            Text(
-                if (source.type == "record") {
-                    "将复制「${source.name}」的分类、标签和备注。"
-                } else {
-                    "将从「${source.name}」复制名称和来源引用。"
-                },
-                style = MaterialTheme.typography.bodySmall
-            )
-        }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(
                 onClick = onCancel,
@@ -2768,11 +2758,13 @@ private fun TodoCard(
             Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Switch(
-                checked = todo.state == "done",
-                onCheckedChange = { if (it) onComplete() },
-                enabled = !completed
-            )
+            if (todo.state == "todo") {
+                Switch(
+                    checked = false,
+                    onCheckedChange = { if (it) onComplete() },
+                    enabled = !completed
+                )
+            }
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
                 CopyableLinkText(todo.name, fontWeight = FontWeight.SemiBold)

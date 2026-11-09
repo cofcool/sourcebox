@@ -263,10 +263,10 @@ class ActionExportDatabase(context: Context) :
         return queryPayloads(
             TABLE_ACTIONS,
             ActionExport.serializer(),
-            "action_type = ? AND action_name COLLATE NOCASE LIKE ? ESCAPE '\\' " +
+            "(action_type = ? or action_type = ?) AND action_name COLLATE NOCASE LIKE ? ESCAPE '\\' " +
                 "AND NOT EXISTS (SELECT 1 FROM $TABLE_PENDING p WHERE p.entity = 'action' " +
                 "AND p.operation = 'habit_delete' AND p.entity_id = $TABLE_ACTIONS.id)",
-            arrayOf("record", likeContains(name)),
+            arrayOf("record", "book", likeContains(name)),
             "action_created DESC",
             10
         ).map { it.record }

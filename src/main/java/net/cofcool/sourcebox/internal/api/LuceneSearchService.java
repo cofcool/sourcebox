@@ -19,10 +19,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
@@ -42,6 +39,7 @@ public class LuceneSearchService {
     private static final String ID = "id";
     private static final String KEY = "key";
     private static final String TITLE = "title";
+    private static final String ACTION_TYPE = "action_type";
     private static final int MAX_RESULTS = 100;
     private static final Map<Vertx, LuceneSearchService> INSTANCES = new ConcurrentHashMap<>();
 
@@ -101,7 +99,7 @@ public class LuceneSearchService {
         return INSTANCES.computeIfAbsent(vertx, LuceneSearchService::new);
     }
 
-    public Future<List<SearchResult>> search(String query, String type) {
+    public Future<List<SearchResult>> search(String query, String type, String actionType) {
         if (StringUtils.isBlank(query)) {
             return Future.succeededFuture(List.of());
         }
@@ -111,11 +109,17 @@ public class LuceneSearchService {
                 Query parsed = new QueryParser(CONTENT, analyzer).parse(query);
                 Query searchQuery = StringUtils.isBlank(type)
                     ? parsed
-                    : new org.apache.lucene.search.BooleanQuery.Builder()
-                        .add(parsed, org.apache.lucene.search.BooleanClause.Occur.MUST)
-                        .add(new org.apache.lucene.search.TermQuery(new Term(TYPE, type)),
-                            org.apache.lucene.search.BooleanClause.Occur.FILTER)
+                    : new BooleanQuery.Builder()
+                        .add(parsed, BooleanClause.Occur.MUST)
+                        .add(new TermQuery(new Term(TYPE, type)), BooleanClause.Occur.FILTER)
                         .build();
+                if (StringUtils.isNotBlank(actionType)) {
+                    searchQuery = new BooleanQuery.Builder()
+                        .add(parsed, BooleanClause.Occur.MUST)
+                        .add(new TermQuery(new Term(TYPE, type)), BooleanClause.Occur.FILTER)
+                        .add(new TermQuery(new Term(ACTION_TYPE, actionType)), BooleanClause.Occur.FILTER)
+                        .build();
+                }
                 TopDocs matches = searcher.search(searchQuery, MAX_RESULTS);
                 List<SearchResult> results = new ArrayList<>(matches.scoreDocs.length);
                 for (ScoreDoc match : matches.scoreDocs) {
@@ -203,26 +207,29 @@ public class LuceneSearchService {
 
     private static Document actionDocument(ActionRecord action) {
         String searchable = join(action.name(), action.device(), action.type(), action.category(), action.labels(), action.remark(), action.state());
-        return document("action", action.id(), action.name(), searchable);
+        return document("action", action.type(), action.id(), action.name(), searchable);
     }
 
     private static Document commandDocument(CommandRecord command) {
         String title = StringUtils.defaultIfBlank(command.alias(), command.cmd());
-        return document("command", command.id(), title,
+        return document("command", null, command.id(), title,
             join(command.tags() == null ? null : String.join(" ", command.tags()),
                 command.alias(), command.cmd(), command.remark()));
     }
 
     private static Document noteDocument(Note note) {
-        return document("note", note.id(), note.content(), note.content());
+        return document("note", null, note.id(), note.content(), note.content());
     }
 
-    private static Document document(String type, String id, String title, String content) {
+    private static Document document(String type, String actionType, String id, String title, String content) {
         Document document = new Document();
         document.add(new StringField(TYPE, type, Field.Store.YES));
         document.add(new StringField(ID, id, Field.Store.YES));
         document.add(new StringField(KEY, key(type, id), Field.Store.YES));
         document.add(new StoredField(TITLE, StringUtils.abbreviate(StringUtils.defaultString(title), 200)));
+        if (StringUtils.isNotBlank(actionType)) {
+            document.add(new StringField(ACTION_TYPE, actionType, Field.Store.YES));
+        }
         if (StringUtils.isNotBlank(content)) {
             document.add(new TextField(CONTENT, content, Field.Store.NO));
         }

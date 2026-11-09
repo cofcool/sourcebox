@@ -61,7 +61,7 @@ public class NoteIndex implements WebRouter {
 
         rootRouter.get("/search").respond(r -> {
             var params = r.queryParams();
-            return searchService.search(params.get("q"), params.get("type"));
+            return searchService.search(params.get("q"), params.get("type"), params.get("actionType"));
         });
 
         rootRouter.get("/develop/routes").respond(r ->

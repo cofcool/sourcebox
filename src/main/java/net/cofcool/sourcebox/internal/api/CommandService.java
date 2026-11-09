@@ -103,7 +103,7 @@ public class CommandService {
         if (StringUtils.isBlank(query) || Strings.CI.equals(query.trim(), "ALL")) {
             return find((String) null);
         }
-        return searchService.search(query, "command")
+        return searchService.search(query, "command", null)
             .map(results -> results.stream()
                 .map(LuceneSearchService.SearchResult::data)
                 .filter(CommandRecord.class::isInstance)

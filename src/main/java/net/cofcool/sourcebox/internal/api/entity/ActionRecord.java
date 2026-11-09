@@ -191,7 +191,7 @@ public record ActionRecord(
     }
 
     public static final String SYS_TEMPLATE = """
-                    sys: actionRecord 变更记录
+                    sys-action-changelog:
                     name: %s;
                     label: %s;
                     remark: %s;
@@ -201,7 +201,7 @@ public record ActionRecord(
                     """;
     public String generateSysMsg() {
         return String.format(SYS_TEMPLATE,
-            name, labels, Objects.toString(remark, ""), state, category,
+            name, Objects.toString(labels, ""), Objects.toString(remark, ""), state, Objects.toString(category, ""),
             Utils.formatDatetime(createTime), Utils.formatDatetime(updateTime)
         );
     }

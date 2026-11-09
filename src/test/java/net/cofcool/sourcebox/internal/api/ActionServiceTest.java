@@ -101,7 +101,7 @@ class ActionServiceTest extends BaseTest {
     @Test
     void fullTextSearchIndexesActionFieldsAndComments(Vertx vertx, VertxTestContext testContext) {
         LuceneSearchService.get(vertx)
-            .search("test", "action")
+            .search("test", "action", "record")
             .onComplete(testContext.succeeding(results -> testContext.verify(() -> {
                 Assertions.assertTrue(results.stream().anyMatch(result ->
                     result.id().equals(defaultRecord.id()) && result.data() instanceof ActionRecord
@@ -115,7 +115,7 @@ class ActionServiceTest extends BaseTest {
         Note note = Note.init("这是用于 Lucene 全文搜索的测试内容");
         NoteService noteService = new NoteService(vertx);
         noteService.save(note)
-            .compose(saved -> LuceneSearchService.get(vertx).search("全文搜索", "note"))
+            .compose(saved -> LuceneSearchService.get(vertx).search("全文搜索", "note", null))
             .onComplete(testContext.succeeding(results -> testContext.verify(() -> {
                 Assertions.assertTrue(results.stream().anyMatch(result ->
                     result.id().equals(note.id()) && result.data() instanceof Note

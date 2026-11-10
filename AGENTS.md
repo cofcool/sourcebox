@@ -2,10 +2,8 @@
 
 ## Project Overview
 
-- Some tools: Java
-- `desktop-gui`: KMP
-- `gui/web`: TypeScript, React 
-- `gui/tauri` Rust
+- Core: Java
+- `web`: TypeScript, React
 - `android` Android, Kotlin
 
 ## Setup commands

@@ -10,7 +10,7 @@
 
 ---
 
-使用 Java（JDK 25 起）、Python、Go 等语言实现，桌面版使用 KMP 框架，Android 使用 Kotlin，各个客户端通过调用后台服务来实现功能，基于 Vert.x，默认端口为 38080
+使用 Java（JDK 25 起）、Python、Go 等语言实现，Android 使用 Kotlin，各个客户端通过调用后台服务来实现功能，基于 Vert.x，默认端口为 38080
 
 命令参数也可通过全局配置文件进行配置，路径为 `~/.mytool/mytool.cfg`
 

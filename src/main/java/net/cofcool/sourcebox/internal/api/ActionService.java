@@ -498,14 +498,14 @@ public class ActionService {
         ).onSuccess( c -> {
                 if (saveComment) {
                     var ct = LocalDateTime.now();
-                    var content = "当前进度: " + c.content();
+                    var content = "sys-action-checklist-";
                     if (c.first().equals(0) && c.current().equals(0)) {
-                        content = content + " 创建成功";
+                        content = content + "created: " + c.content();
                         ct = pojo.createTime();
                     } else if (Objects.equals(c.current(), c.last())) {
-                        content = content + " 已完成";
+                        content = content + "finished: " + c.content();
                     } else {
-                        content = content + " " + c.current();
+                        content = content + "updated: " + c.content() + " --- " + c.current();
                     }
                     saveComment(
                         c.actionId(),

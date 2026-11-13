@@ -1,0 +1,26 @@
+{
+  "name": "thesourcebox-desktop",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "mygo dev",
+    "dev:web": "vite --host 127.0.0.1 --port 5173 --strictPort",
+    "build": "mygo build",
+    "build:web": "tsc -b && vite build",
+    "generate": "mygo generate"
+  },
+  "dependencies": {
+    "mygo-runtime": "latest",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.7",
+    "@vitejs/plugin-react": "^4.7.0",
+    "mygo-cli": "latest",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5"
+  }
+}

@@ -437,7 +437,7 @@ public class HtmlDownloader implements Tool {
             .arg(new Arg("waitexp", null, "wait element by CSS-like element selector", false, "a[href]"))
             .arg(new Arg("hrefFilter", null, "sub-link filter", false, "demo"))
             .arg(new Arg("folder", null, "html file folder path", false, null))
-            .runnerTypes(EnumSet.allOf(RunnerType.class));
+            .runnerTypes(Set.of(RunnerType.CLI, RunnerType.GUI));
     }
 
     private record Expression(String tag, Map<String, String> attributes) { }

@@ -10,12 +10,12 @@ import io.vertx.ext.web.handler.FileSystemAccess;
 import io.vertx.ext.web.handler.LoggerHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 import lombok.CustomLog;
-import lombok.RequiredArgsConstructor;
 import net.cofcool.sourcebox.*;
 import net.cofcool.sourcebox.Tool.Args;
 import net.cofcool.sourcebox.Tool.RunnerType;
-import net.cofcool.sourcebox.WebTool.RouterTypeManger;
+import net.cofcool.sourcebox.internal.api.CommandIndex;
 import net.cofcool.sourcebox.internal.api.LuceneSearchService;
+import net.cofcool.sourcebox.internal.api.NoteIndex;
 import net.cofcool.sourcebox.util.SqlRepository;
 import net.cofcool.sourcebox.util.VertxDeployer;
 import net.cofcool.sourcebox.util.VertxUtils;
@@ -23,6 +23,7 @@ import net.cofcool.sourcebox.util.VertxUtils;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
@@ -31,16 +32,19 @@ import static net.cofcool.sourcebox.ToolRunner.PASSWD_KEY;
 import static net.cofcool.sourcebox.ToolRunner.USER_KEY;
 
 @CustomLog
-@RequiredArgsConstructor
 public class WebVerticle extends AbstractVerticle implements VertxDeployer {
+
+    private static final List<ToolName> WEB_TOOLS = List.of(
+        ToolName.todo, ToolName.hisRecord,
+        ToolName.bookRecord, ToolName.timer,
+        ToolName.habits, ToolName.note
+    );
 
     static final Queue<ActionEvent> EVENT_QUEUE = new ConcurrentLinkedQueue<>();
 
     private Credentials usernamePasswordCredentials;
-    private final RunnerType runnerType;
-    private final Function<Tool, ToolContext> contextSupplier;
-
-    private final RouterTypeManger manger = new RouterTypeManger();
+    private final RunnerType runnerType = RunnerType.WEB;
+    private final Function<Tool, ToolContext> contextSupplier = a -> new WebRunner.WebToolContext();
 
     @Override
     public void init(Vertx vertx, Context context) {
@@ -105,6 +109,8 @@ public class WebVerticle extends AbstractVerticle implements VertxDeployer {
     private Router build(Credentials credentials) {
         var router = Router.router(vertx);
         var tools = App.supportTools(runnerType);
+        var webTools = new ArrayList<>(WEB_TOOLS);
+        webTools.addAll(tools.stream().map(Tool::name).toList());
 
         router.route().handler(VertxUtils.bodyHandler(null));
         router.route().handler(LoggerHandler.create());
@@ -119,7 +125,7 @@ public class WebVerticle extends AbstractVerticle implements VertxDeployer {
         });
 
         router.get("/")
-            .respond(r -> Future.succeededFuture(tools.stream().map(Tool::name).toList()));
+            .respond(r -> Future.succeededFuture(webTools));
 
         router.get("/help")
             .respond(r ->
@@ -166,7 +172,7 @@ public class WebVerticle extends AbstractVerticle implements VertxDeployer {
             null
         );
 
-        var globalConfig = VertxDeployer.getSharedArgs(getClass().getSimpleName(), vertx);
+        var globalConfig = VertxDeployer.getSharedArgs(vertx);
 
         router.get("/config")
             .handler(c -> {
@@ -181,22 +187,13 @@ public class WebVerticle extends AbstractVerticle implements VertxDeployer {
             );
         });
 
+        router.route("/*").subRouter(NoteIndex.buildRouter(vertx));
+        router.route("/*").subRouter(CommandIndex.buildRouter(vertx));
+
         for (Tool tool : tools) {
             String toolName = tool.name().name();
             var path = "/" + toolName;
-            if (tool instanceof WebTool) {
-                VertxDeployer.sharedArgs(
-                    vertx,
-                    toolName,
-                    new Args().copyConfigFrom(globalConfig.removePrefix(toolName))
-                        .copyConfigFrom(tool.config())
-                );
-                manger.registerWebRouter(
-                    ((WebTool) tool).routerType(),
-                    vertx,
-                    r -> router.route("/*").subRouter(r)
-                );
-            } else {
+            if (!(tool instanceof WebTool)) {
                 router.post(path).respond(r -> {
                     var args = new Args();
                     r.body().asJsonObject()

@@ -1,5 +1,11 @@
 package net.cofcool.sourcebox.internal;
 
+import net.cofcool.sourcebox.Tool;
+import net.cofcool.sourcebox.ToolName;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URLDecoder;
@@ -11,19 +17,11 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import net.cofcool.sourcebox.Tool;
-import net.cofcool.sourcebox.ToolName;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.StringUtils;
 
 public class FileNameFormatter implements Tool {
 
@@ -131,14 +129,15 @@ public class FileNameFormatter implements Tool {
     @Override
     public Args config() {
         return new Args()
-                .arg(new Arg("path", "./", "file path", false, null))
-                .arg(new Arg("dest", null, "dest path", false, "/tmp/"))
-                .arg(new Arg("base", null, "file base name, default is old name", false, "demo"))
-                .arg(new Arg("ignore", "^\\..*", "ignore files with regular expression", false, null))
-                .arg(new Arg("formatter", null, "new name formatter, like " + Arrays.toString(Formatter.values()), true, Formatter.order.name()))
-                .arg(new Arg("files", null, "file contains list of absolute file paths, one per line", false, null))
-                .arg(new Arg("dryrun", "true", "dry run: don't actually rename files when using list mode", false, "true"))
-                .alias("rename", name(), "path",  null);
+            .arg(new Arg("path", "./", "file path", false, null))
+            .arg(new Arg("dest", null, "dest path", false, "/tmp/"))
+            .arg(new Arg("base", null, "file base name, default is old name", false, "demo"))
+            .arg(new Arg("ignore", "^\\..*", "ignore files with regular expression", false, null))
+            .arg(new Arg("formatter", null, "new name formatter, like " + Arrays.toString(Formatter.values()), true, Formatter.order.name()))
+            .arg(new Arg("files", null, "file contains list of absolute file paths, one per line", false, null))
+            .arg(new Arg("dryrun", "true", "dry run: don't actually rename files when using list mode", false, "true"))
+            .alias("rename", name(), "path", null)
+            .runnerTypes(Set.of(RunnerType.CLI, RunnerType.GUI));
     }
 
     private static class DirEnterVisitor extends SimpleFileVisitor<Path> {

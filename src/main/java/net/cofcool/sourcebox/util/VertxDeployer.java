@@ -8,7 +8,7 @@ import net.cofcool.sourcebox.Tool.Args;
 
 public interface VertxDeployer {
 
-    String ARGS_KEY = "RUN_ARGS_KEY";
+    String ARGS_KEY = "GLOABL.RUN_ARGS_KEY";
 
     default Future<String> deploy(Args args) {
         return deploy(null, null, args);
@@ -40,16 +40,16 @@ public interface VertxDeployer {
         return vertx.deployVerticle(verticle);
     }
 
-    static Args getSharedArgs(String toolName,Vertx vertx) {
-        return (Args) App.getGlobalConfig(getName(toolName));
+    static Args getSharedArgs(Vertx vertx) {
+        return (Args) App.getGlobalConfig(getName());
     }
 
     static void sharedArgs(Vertx vertx, String toolName, Args args) {
-        App.setGlobalConfig(getName(toolName), args);
+        App.setGlobalConfig(getName(), args);
     }
 
-    static String getName(String toolName) {
-        return String.join(".", toolName, ARGS_KEY);
+    static String getName() {
+        return ARGS_KEY;
     }
 
 }

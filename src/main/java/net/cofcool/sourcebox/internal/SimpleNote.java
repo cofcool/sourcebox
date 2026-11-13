@@ -3,8 +3,6 @@ package net.cofcool.sourcebox.internal;
 import lombok.CustomLog;
 import net.cofcool.sourcebox.ToolName;
 import net.cofcool.sourcebox.WebTool;
-import net.cofcool.sourcebox.internal.api.NoteConfig;
-import net.cofcool.sourcebox.internal.api.NoteIndex;
 import net.cofcool.sourcebox.internal.api.entity.ListData;
 import net.cofcool.sourcebox.internal.api.entity.Note;
 import org.apache.commons.lang3.StringUtils;
@@ -18,7 +16,6 @@ import org.jline.terminal.TerminalBuilder;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.EnumSet;
 import java.util.Objects;
 
 @CustomLog
@@ -353,19 +350,7 @@ public class SimpleNote implements WebTool {
 
     @Override
     public Args config() {
-        return new Args()
-            .arg(new Arg(NoteConfig.PORT_KEY, NoteConfig.PORT_VAL + "", "note web server listen port", false, null))
-            .runnerTypes(EnumSet.allOf(RunnerType.class))
-            .alias("note", name(), NoteConfig.PATH_KEY,  null);
+        return new Args();
     }
 
-    @Override
-    public Class<? extends WebRouter> routerType() {
-        return NoteIndex.class;
-    }
-
-    @Override
-    public boolean supportCommand() {
-        return true;
-    }
 }

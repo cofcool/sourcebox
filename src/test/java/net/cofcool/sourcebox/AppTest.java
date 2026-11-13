@@ -104,5 +104,10 @@ class AppTest {
         }
     }
 
+    @Test
+    void logGUIConfig() throws Exception {
+        App.main(new String[]{"--mode=" + RunnerType.GUI});
+    }
+
 
 }

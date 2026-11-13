@@ -1,6 +1,14 @@
 
 package net.cofcool.sourcebox.internal;
 
+import lombok.CustomLog;
+import lombok.Getter;
+import net.cofcool.sourcebox.Tool;
+import net.cofcool.sourcebox.ToolName;
+import net.cofcool.sourcebox.util.JsonUtil;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -10,13 +18,6 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import lombok.CustomLog;
-import lombok.Getter;
-import net.cofcool.sourcebox.Tool;
-import net.cofcool.sourcebox.ToolName;
-import net.cofcool.sourcebox.util.JsonUtil;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
 
 
 @CustomLog
@@ -72,7 +73,8 @@ public class CodeGenerator implements Tool {
             .arg(new Arg("config", null, """
                 json config file, like: '{"pkg": "com.example"}'
                 """, true, "demo.json"))
-            .alias("generate", name(), "config", null);
+            .alias("generate", name(), "config", null)
+            .runnerTypes(Set.of(RunnerType.CLI, RunnerType.GUI));
     }
 
     private static class TemplateLoader extends ClassLoader {

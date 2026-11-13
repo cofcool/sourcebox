@@ -30,7 +30,7 @@ jobs:
           cache-dependency-path: web/package-lock.json
 
       - name: Build package
-        run: mvn clean package
+        run: mvn -P zip,web clean package
 
       - name: Set up JDK for Android
         uses: actions/setup-java@v5

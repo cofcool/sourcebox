@@ -19,7 +19,6 @@ import net.cofcool.sourcebox.ToolName;
 import net.cofcool.sourcebox.internal.JsonFormatterTest;
 import net.cofcool.sourcebox.internal.JsonToPojoTest;
 import net.cofcool.sourcebox.internal.api.NoteConfig;
-import net.cofcool.sourcebox.runner.WebRunner.WebToolContext;
 import net.cofcool.sourcebox.util.VertxUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -35,7 +34,7 @@ class WebRunnerTest extends BaseTest {
     static void deployVerticle(Vertx vertx, VertxTestContext testContext) throws Exception {
         System.setProperty("logging.debug", "true");
         System.setProperty("upload.dir", "target/file-uploads");
-        new WebVerticle(RunnerType.WEB, a -> new WebToolContext())
+        new WebVerticle()
             .deploy(
                 vertx,
                 null,

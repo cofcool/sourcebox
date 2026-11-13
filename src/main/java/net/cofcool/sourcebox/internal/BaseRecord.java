@@ -2,7 +2,6 @@ package net.cofcool.sourcebox.internal;
 
 import lombok.CustomLog;
 import net.cofcool.sourcebox.WebTool;
-import net.cofcool.sourcebox.internal.api.NoteIndex;
 import net.cofcool.sourcebox.internal.api.entity.ActionRecord;
 import net.cofcool.sourcebox.internal.api.entity.ActionState;
 import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
@@ -11,7 +10,7 @@ import net.cofcool.sourcebox.util.Utils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.time.LocalDateTime;
-import java.util.EnumSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static net.cofcool.sourcebox.internal.api.entity.ActionRecord.toPrintStr;
@@ -147,17 +146,7 @@ public abstract class BaseRecord implements WebTool {
                 "d5ebeacf9a0aa3319560c7aa78e8751c"))
             .arg(new Arg("delete", null, "delete item cancel by item id", false,
                 "d5ebeacf9a0aa3319560c7aa78e8751c"))
-            .runnerTypes(EnumSet.allOf(RunnerType.class));
-    }
-
-    @Override
-    public Class<? extends WebRouter> routerType() {
-        return NoteIndex.class;
-    }
-
-    @Override
-    public boolean supportCommand() {
-        return true;
+            .runnerTypes(Set.of(RunnerType.CLI));
     }
 
     public static class Actions extends ListData<ActionRecord> {

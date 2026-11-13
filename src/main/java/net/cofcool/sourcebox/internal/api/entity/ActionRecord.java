@@ -197,12 +197,13 @@ public record ActionRecord(
                     remark: %s;
                     state: %s;
                     category: %s;
-                    start-end: %s - %s
+                    start: %s;
+                    end: %s
                     """;
     public String generateSysMsg() {
         return String.format(SYS_TEMPLATE,
             name, Objects.toString(labels, ""), Objects.toString(remark, ""), state, Objects.toString(category, ""),
-            Utils.formatDatetime(createTime), Utils.formatDatetime(updateTime)
+            Utils.formatDatetime(start), end == null ? "" : Utils.formatDatetime(end)
         );
     }
 

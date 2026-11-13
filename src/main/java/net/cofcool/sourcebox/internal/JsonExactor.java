@@ -7,10 +7,8 @@ import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
-import java.util.EnumSet;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class JsonExactor implements Tool {
@@ -39,8 +37,8 @@ public class JsonExactor implements Tool {
     @Override
     public Args config() {
         return new Args()
-                .arg(new Arg("in", null, "json string", false, "'{}' or /demo.json"))
-                .arg(new Arg("jsonpath", null, "json path", true, "$.a.b"))
-                .runnerTypes(EnumSet.allOf(RunnerType.class));
+            .arg(new Arg("in", null, "json string", false, "'{}' or /demo.json"))
+            .arg(new Arg("jsonpath", null, "json path", true, "$.a.b"))
+            .runnerTypes(Set.of(RunnerType.CLI, RunnerType.GUI));
     }
 }

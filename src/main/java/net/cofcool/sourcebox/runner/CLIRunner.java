@@ -1,6 +1,5 @@
 package net.cofcool.sourcebox.runner;
 
-import io.vertx.core.Vertx;
 import lombok.CustomLog;
 import lombok.SneakyThrows;
 import net.cofcool.sourcebox.*;
@@ -38,31 +37,13 @@ public class CLIRunner implements ToolRunner {
                         args.copyConfigFrom(globalArgs.removePrefix(name));
                     }
                     var newArgs = args.copyConfigFrom(tool.config());
-                    if (tool instanceof WebTool webTool && !ToolRunner.checkLocalAPIServer(
-                        args.getArgVal(ADDRESS_KEY).orElse(null),
-                        args.getArgVal(PORT_KEY).orElse(null)
-                    )) {
-
-                        var v = Vertx.vertx();
-                        webTool.deploy(v, new CLIWebToolVerticle(webTool), newArgs)
-                            .onComplete(r -> {
-                                if (r.failed()) {
-                                    log.error("Server run error", r.cause());
-                                    v.close();
-                                } else {
-                                    log.info("Server run result is " + r.result());
-                                }
-                            }).toCompletionStage().toCompletableFuture().get();
-                        if (webTool.supportCommand()) {
-                            try {
-                                webTool.run(newArgs);
-                            } finally {
-                                v.close();
-                            }
-                        }
-                    } else {
-                        tool.run(newArgs);
+                    if (tool instanceof WebTool) {
+                        ToolRunner.setupAPIServer(
+                            args.getArgVal(ADDRESS_KEY).orElse(null),
+                            args.getArgVal(PORT_KEY).orElse(null)
+                        );
                     }
+                    tool.run(newArgs);
                 } catch (Throwable e) {
                     args.getContext().write(e.getMessage());
                     args.getContext().write("Help");

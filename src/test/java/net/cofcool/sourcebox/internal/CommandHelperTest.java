@@ -3,20 +3,21 @@ package net.cofcool.sourcebox.internal;
 import io.vertx.core.Vertx;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
-import java.io.File;
-import java.nio.charset.StandardCharsets;
 import net.cofcool.sourcebox.App;
 import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.Tool;
 import net.cofcool.sourcebox.Tool.Args;
 import net.cofcool.sourcebox.ToolRunner;
 import net.cofcool.sourcebox.runner.CLIRunner.ConsoleToolContext;
-import net.cofcool.sourcebox.runner.CLIWebToolVerticle;
+import net.cofcool.sourcebox.runner.WebVerticle;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import java.io.File;
+import java.nio.charset.StandardCharsets;
 
 @ExtendWith(VertxExtension.class)
 class CommandHelperTest extends BaseTest {
@@ -31,7 +32,7 @@ class CommandHelperTest extends BaseTest {
         var t = new CommandHelper();
         var args = new Args().copyConfigFrom(t.config())
             .context(new ConsoleToolContext());
-        t.deploy(vertx, new CLIWebToolVerticle(t), args)
+        t.deploy(vertx, new WebVerticle(), args)
             .onSuccess(a -> {
                 try {
                     t.run(args.arg("add", "@demo mytool -tool=cHelper #my #help"));

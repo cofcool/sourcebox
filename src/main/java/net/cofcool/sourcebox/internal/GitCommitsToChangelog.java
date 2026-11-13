@@ -129,7 +129,8 @@ public class GitCommitsToChangelog implements Tool {
             .arg(new Arg("full", "false", "if true, read all tags and commit log, then write into file", false, null))
             .arg(new Arg("latest", "false", "if true, read all commit log after the last tag", false, null))
             .arg(new Arg("style", Style.simple.name(), "changelog file format, like " + Arrays.toString(Style.values()), false, null))
-            .alias("gitLog", name(), "path", null);
+            .alias("gitLog", name(), "path", null)
+            .runnerTypes(Set.of(RunnerType.CLI, RunnerType.GUI));
     }
 
     enum Style {

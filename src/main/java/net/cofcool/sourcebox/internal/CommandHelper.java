@@ -1,37 +1,27 @@
 package net.cofcool.sourcebox.internal;
 
-import java.io.File;
-import java.net.URLEncoder;
-import java.net.http.HttpRequest.BodyPublishers;
-import java.net.http.HttpRequest.Builder;
-import java.nio.charset.StandardCharsets;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.stream.Collectors;
 import lombok.CustomLog;
 import lombok.SneakyThrows;
-import net.cofcool.sourcebox.App;
-import net.cofcool.sourcebox.ToolContext;
-import net.cofcool.sourcebox.ToolName;
-import net.cofcool.sourcebox.ToolRunner;
-import net.cofcool.sourcebox.WebTool;
-import net.cofcool.sourcebox.internal.api.CommandIndex;
+import net.cofcool.sourcebox.*;
 import net.cofcool.sourcebox.internal.api.CommandService.ImportParam;
 import net.cofcool.sourcebox.internal.api.entity.CommandRecord;
 import net.cofcool.sourcebox.internal.api.entity.ListData;
 import net.cofcool.sourcebox.util.Utils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.jline.reader.Candidate;
-import org.jline.reader.Completer;
-import org.jline.reader.EndOfFileException;
-import org.jline.reader.LineReader;
-import org.jline.reader.LineReaderBuilder;
-import org.jline.reader.ParsedLine;
-import org.jline.reader.UserInterruptException;
+import org.jline.reader.*;
 import org.jline.reader.impl.DefaultParser;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
+
+import java.io.File;
+import java.net.URLEncoder;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpRequest.Builder;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @CustomLog
 public class CommandHelper implements WebTool {
@@ -125,17 +115,7 @@ public class CommandHelper implements WebTool {
             .arg(new Arg("import", null, "import bash history, zsh history or jsonline",  false, "local:bash:~/.bash_history"))
             .arg(new Arg("export", null, "export all history with the out path",  false, "./export-his.txt"))
             .arg(new Arg("download", null, "download history from some server and import to local db",  false, "http://xxx:38080"))
-            .runnerTypes(EnumSet.allOf(RunnerType.class));
-    }
-
-    @Override
-    public boolean supportCommand() {
-        return true;
-    }
-
-    @Override
-    public Class<? extends WebRouter> routerType() {
-        return CommandIndex.class;
+            .runnerTypes(Set.of(RunnerType.CLI, RunnerType.GUI));
     }
 
     public static class Commands extends ListData<CommandRecord> {

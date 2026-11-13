@@ -6,19 +6,20 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.Json;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
-import java.time.LocalDateTime;
-import java.util.List;
 import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.Tool.Args;
 import net.cofcool.sourcebox.internal.api.NoteConfig;
 import net.cofcool.sourcebox.internal.api.entity.ActionRecord;
 import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
 import net.cofcool.sourcebox.internal.api.entity.Note;
-import net.cofcool.sourcebox.runner.CLIWebToolVerticle;
+import net.cofcool.sourcebox.runner.WebVerticle;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @ExtendWith(VertxExtension.class)
 class SimpleNoteTest extends BaseTest {
@@ -28,7 +29,7 @@ class SimpleNoteTest extends BaseTest {
     @BeforeAll
     static void deployVerticle(Vertx vertx, VertxTestContext testContext) throws Exception {
         var note = new SimpleNote();
-        note.deploy(vertx, new CLIWebToolVerticle(note), new Args().copyConfigFrom(note.config())
+        note.deploy(vertx, new WebVerticle(), new Args().copyConfigFrom(note.config())
                 .arg(NoteConfig.PATH_KEY, PATH)
             )
             .onComplete(testContext.succeeding(t -> testContext.completeNow()));

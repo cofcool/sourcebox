@@ -7,7 +7,7 @@ import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.Tool;
 import net.cofcool.sourcebox.Tool.Args;
 import net.cofcool.sourcebox.ToolContext;
-import net.cofcool.sourcebox.runner.CLIWebToolVerticle;
+import net.cofcool.sourcebox.runner.WebVerticle;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.junit.jupiter.api.BeforeAll;
@@ -45,7 +45,7 @@ class ToDoTest extends BaseTest {
         var idContext = new IdContext();
         var args = new Args().copyConfigFrom(t.config())
             .context(idContext);
-        t.deploy(vertx, new CLIWebToolVerticle(t), args)
+        t.deploy(vertx, new WebVerticle(), args)
             .onSuccess(a -> {
                 try {
                     t.run(args.arg("add", "buy something"));

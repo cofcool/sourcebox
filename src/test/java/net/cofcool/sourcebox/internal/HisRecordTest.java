@@ -6,7 +6,7 @@ import io.vertx.junit5.VertxTestContext;
 import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.Tool;
 import net.cofcool.sourcebox.Tool.Args;
-import net.cofcool.sourcebox.runner.CLIWebToolVerticle;
+import net.cofcool.sourcebox.runner.WebVerticle;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
@@ -30,7 +30,7 @@ class HisRecordTest extends BaseTest {
         var idContext = new ToDoTest.IdContext();
         var args = new Args().copyConfigFrom(t.config())
             .context(idContext);
-        t.deploy(vertx, new CLIWebToolVerticle(t), args)
+        t.deploy(vertx, new WebVerticle(), args)
             .onSuccess(a -> {
                 try {
                     t.run(args.arg("add", "buy something"));

@@ -577,6 +577,7 @@ public class FileTools implements Tool {
             .arg(new Arg("filter", ".*", "regular expression matched against each target name", false, ".*\\.txt"))
             .arg(new Arg("folder", "false", "apply to folders instead of files", false, "true"))
             .arg(new Arg("clippingsToMdType", ClippingsToMd.ClipType.kindle.name(), "support: " + Arrays.toString(ClippingsToMd.ClipType.values()), false, null))
-            .arg(new Arg("dry-run", "true", "print commands without executing them", false, "false"));
+            .arg(new Arg("dry-run", "true", "print commands without executing them", false, "false"))
+            .runnerTypes(Set.of(RunnerType.CLI, RunnerType.GUI));
     }
 }

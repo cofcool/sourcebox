@@ -1,11 +1,18 @@
 package net.cofcool.sourcebox.internal;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import io.vertx.core.Vertx;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
+import net.cofcool.sourcebox.App;
+import net.cofcool.sourcebox.BaseTest;
+import net.cofcool.sourcebox.Tool.Args;
+import net.cofcool.sourcebox.ToolRunner;
+import net.cofcool.sourcebox.Utils;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
+
 import java.io.File;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -18,16 +25,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.random.RandomGenerator;
 import java.util.stream.Collectors;
-import net.cofcool.sourcebox.App;
-import net.cofcool.sourcebox.BaseTest;
-import net.cofcool.sourcebox.Tool.Args;
-import net.cofcool.sourcebox.ToolRunner;
-import net.cofcool.sourcebox.Utils;
-import net.cofcool.sourcebox.runner.CLIWebToolVerticle;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.io.TempDir;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(VertxExtension.class)
 class DirWebServerTest extends BaseTest {
@@ -35,18 +35,16 @@ class DirWebServerTest extends BaseTest {
     static final String UPLOAD_FILE = "clippingsKindle.txt";
     String URL = App.getGlobalConfig(ToolRunner.ADDRESS_KEY) + ":" + getPort();
 
-    static Args ARGS;
-
     @TempDir
     static File file;
 
     HttpClient client = HttpClient.newBuilder().followRedirects(Redirect.ALWAYS).build();
 
-    @BeforeEach
-    void deployVerticle(Vertx vertx, VertxTestContext testContext) throws Exception {
+    @BeforeAll
+    static void deployVerticle(Vertx vertx, VertxTestContext testContext) throws Exception {
         var server = new DirWebServer();
-        ARGS = new Args().copyConfigFrom(server.config()).arg("root", file.getAbsolutePath());
-        server.deploy(vertx, new CLIWebToolVerticle(server), ARGS)
+        var args = new Args().copyConfigFrom(server.config()).arg("root", file.getAbsolutePath());
+        server.deploy(Vertx.vertx(), new DirWebServer.DirVerticle(), args)
             .onComplete(testContext.succeeding(t -> testContext.completeNow()));
     }
 

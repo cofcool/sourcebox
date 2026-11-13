@@ -6,7 +6,6 @@ import io.vertx.core.json.Json;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 import lombok.CustomLog;
-import net.cofcool.sourcebox.WebTool.WebRouter;
 import net.cofcool.sourcebox.internal.api.NoteConfig.NoteCodec;
 import net.cofcool.sourcebox.internal.api.entity.Note;
 import net.cofcool.sourcebox.util.JsonUtil;
@@ -16,9 +15,9 @@ import java.util.List;
 import java.util.Map;
 
 @CustomLog
-public class NoteIndex implements WebRouter {
+public class NoteIndex {
 
-    public Router buildRouter(Vertx vertx) {
+    public static Router buildRouter(Vertx vertx) {
         var noteService = new NoteService(vertx);
         var actionIndex = new ActionIndex(vertx, noteService);
         var searchService = LuceneSearchService.get(vertx);
@@ -76,10 +75,5 @@ public class NoteIndex implements WebRouter {
 
     private static List<String> readRouteNames(Router router) {
         return router.getRoutes().stream().map(Route::getName).toList();
-    }
-
-    @Override
-    public Router router(Vertx vertx) {
-        return buildRouter(vertx);
     }
 }

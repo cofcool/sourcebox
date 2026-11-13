@@ -1,14 +1,7 @@
 package net.cofcool.sourcebox;
 
 import net.cofcool.sourcebox.Tool.Args;
-import net.cofcool.sourcebox.util.Utils;
 import org.apache.commons.lang3.StringUtils;
-
-import java.net.http.HttpRequest.Builder;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static net.cofcool.sourcebox.util.Utils.isLocalhost;
 
 public interface ToolRunner {
 
@@ -35,7 +28,7 @@ public interface ToolRunner {
         App.setGlobalConfig(PORT_KEY, String.valueOf(DEFAULT_PORT));
     }
 
-    static boolean checkLocalAPIServer(String address, String port) {
+    static void setupAPIServer(String address, String port) {
         if (StringUtils.isBlank(address)) {
             address = DEFAULT_ADDRESS;
         }
@@ -44,19 +37,6 @@ public interface ToolRunner {
         }
         App.setGlobalConfig(ADDRESS_KEY, address);
         App.setGlobalConfig(PORT_KEY, port);
-
-        var flag = new AtomicBoolean();
-        if (isLocalhost(address)) {
-            Utils.requestAPI(address, port, "/", List.class, Builder::GET, e -> {
-                if (e == null || e instanceof IllegalStateException) {
-                    flag.set(true);
-                }
-            });
-        } else {
-            flag.set(true);
-        }
-
-        return flag.get();
     }
 
 }

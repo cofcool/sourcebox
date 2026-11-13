@@ -7,7 +7,7 @@ import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.Tool;
 import net.cofcool.sourcebox.Tool.Args;
 import net.cofcool.sourcebox.internal.api.entity.ActionRecord;
-import net.cofcool.sourcebox.runner.CLIWebToolVerticle;
+import net.cofcool.sourcebox.runner.WebVerticle;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;
@@ -40,7 +40,7 @@ class BookRecordTest extends BaseTest {
         var idContext = new ToDoTest.IdContext();
         var args = new Args().copyConfigFrom(t.config())
             .context(idContext);
-        t.deploy(vertx, new CLIWebToolVerticle(t), args)
+        t.deploy(vertx, new WebVerticle(), args)
             .onSuccess(a -> {
                 try {
                     t.run(args.arg("add", "book1;ebook;a test book"));

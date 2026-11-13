@@ -3,7 +3,6 @@ package net.cofcool.sourcebox;
 import io.vertx.core.Future;
 import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;
-import io.vertx.ext.web.Router;
 import net.cofcool.sourcebox.util.JsonUtil;
 import net.cofcool.sourcebox.util.Utils;
 import net.cofcool.sourcebox.util.VertxDeployer;
@@ -11,27 +10,10 @@ import net.cofcool.sourcebox.util.VertxUtils;
 
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpRequest.Builder;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 public interface WebTool extends Tool, VertxDeployer {
-
-    interface WebRouter {
-
-        Router router(Vertx vertx);
-    }
-
-    Class<? extends WebRouter> routerType();
-
-    default boolean supportCommand() {
-        return false;
-    }
-
-    default boolean needDatabase() {
-        return true;
-    }
 
     @Override
     default Future<String> deploy(Vertx vertx, Verticle verticle, Args args) {
@@ -79,19 +61,5 @@ public interface WebTool extends Tool, VertxDeployer {
 
     default boolean deleteRequestLocalData(String methodPath) {
         return requestLocalData(methodPath, Boolean.class, Builder::DELETE);
-    }
-
-    class RouterTypeManger {
-
-        private final Map<Class<? extends WebRouter>, Router> routerMap = new ConcurrentHashMap<>();
-
-        public Router registerWebRouter(Class<? extends WebRouter> clazz, Vertx vertx,
-            Consumer<Router> action) {
-            return routerMap.computeIfAbsent(clazz, k -> {
-                var r = Utils.instance(clazz).router(vertx);
-                action.accept(r);
-                return r;
-            });
-        }
     }
 }

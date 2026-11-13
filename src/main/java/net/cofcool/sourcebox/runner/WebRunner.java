@@ -28,7 +28,7 @@ public class WebRunner implements ToolRunner {
     @Override
     public boolean run(Args args) throws Exception {
         Vertx v = Vertx.vertx();
-        new WebVerticle(RunnerType.WEB, a -> new WebToolContext()).deploy(v, null, args)
+        new WebVerticle().deploy(v, null, args)
             .onComplete(VertxUtils.logResult(log, e -> v.close()));
         return true;
     }
@@ -38,7 +38,7 @@ public class WebRunner implements ToolRunner {
         return String.join(", ", ToolRunner.USER_KEY,  ToolRunner.PASSWD_KEY,  ToolRunner.PORT_KEY);
     }
 
-    static class WebToolContext implements ToolContext {
+    public static class WebToolContext implements ToolContext {
 
         Map<String, String> out = new ConcurrentHashMap<>();
 

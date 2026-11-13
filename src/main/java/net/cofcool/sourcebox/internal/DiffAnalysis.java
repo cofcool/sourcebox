@@ -1,15 +1,5 @@
 package net.cofcool.sourcebox.internal;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
@@ -18,6 +8,13 @@ import net.cofcool.sourcebox.ToolName;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 public class DiffAnalysis implements Tool {
 
@@ -188,7 +185,8 @@ public class DiffAnalysis implements Tool {
             .arg(new Arg("formatter", "csv", "output formatter: " + Arrays.toString(Outputs.values()), false, null))
             .arg(new Arg("uncommit", "false", "if true, will log that dose not be committed files", false, null))
             .arg(new Arg("out", null, "out file path", false, "./diff-analysis.csv"))
-            .alias("analysisDiff", name(), "path", null);
+            .alias("analysisDiff", name(), "path", null)
+            .runnerTypes(Set.of(RunnerType.CLI, RunnerType.GUI));
     }
 
     enum Token {

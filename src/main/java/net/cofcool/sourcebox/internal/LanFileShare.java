@@ -68,7 +68,8 @@ public class LanFileShare implements Tool {
             .arg(new Arg("conflict", "skip", "receiver conflict policy: skip or overwrite", false, "overwrite"))
             .arg(new Arg("allowDownload", "false", "enable clients to list and download files", false, "true"))
             .arg(new Arg("reqFiles", null, "comma-separated relative paths to download", false, "docs/readme.txt,images/logo.png"))
-            .arg(new Arg("out", "./downloads", "local directory for downloaded files", false, "./downloads"));
+            .arg(new Arg("out", "./downloads", "local directory for downloaded files", false, "./downloads"))
+            .runnerTypes(Set.of(RunnerType.CLI, RunnerType.GUI));
     }
 
     private void receive(Args args) throws Exception {

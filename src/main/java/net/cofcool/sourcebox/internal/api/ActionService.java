@@ -22,6 +22,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @CustomLog
 public class ActionService {
@@ -263,7 +264,7 @@ public class ActionService {
         );
     }
 
-    public Future<List<RecordStatistics>> findRecordStatistics(Type t) {
+    public Future<List<RecordStatistics>> find15DayRecordStatistics(Type t) {
         var a = actionRecordSqlRepository.execute(
             QueryBuilder.builder()
                 .select("CAST(start AS DATE) AS day")
@@ -285,8 +286,82 @@ public class ActionService {
         });
     }
 
-    public Future<List<YearRecordStatistics>> findRecordYearStatistics(Type t, Integer year, ActionState state) {
-        return Future.succeededFuture(List.of());
+    public Future<List<RecordDateStatistic>> findRecordYearStatistics(Type t, String state) {
+        var a = actionRecordSqlRepository.execute(
+            QueryBuilder.builder()
+                .select("EXTRACT(year from start) AS year")
+                .select("COUNT(*) AS cnt")
+                .select("SUM(COALESCE(duration, 0)) AS total")
+                .select("ROUND(AVG(duration), 2) AS avg_duration")
+                .select("SUM(CASE WHEN state='done' THEN 1 ELSE 0 END) AS completed")
+                .from(ActionRecord.class)
+                .and("type=?", t.name())
+                .and(StringUtils.isNotBlank(state), "state=?", () -> new String[]{state})
+                .groupBy("year")
+                .orderBy("year")
+        );
+
+        return a.compose(r -> {
+            var list = new ArrayList<RecordDateStatistic>();
+            for (Row row : r) {
+                list.add(new RecordDateStatistic(
+                    row.getInteger("YEAR"),
+                    row.getLong("CNT"),
+                    row.getLong("TOTAL"),
+                    row.getDouble("AVG_DURATION"),
+                    row.getLong("COMPLETED")
+                ));
+            }
+            return Future.succeededFuture(list);
+        });
+    }
+
+    public Future<List<RecordDateStatistic>> findRecordMonthStatistics(Type t, String year, String state) {
+        var yearStart = LocalDate.of(Integer.parseInt(year), 1, 1);
+        var yearEnd = yearStart.plusYears(1);
+        var a = actionRecordSqlRepository.execute(
+            QueryBuilder.builder()
+                .select("EXTRACT(month from start) AS month")
+                .select("COUNT(*) AS cnt")
+                .select("SUM(COALESCE(duration, 0)) AS total")
+                .select("ROUND(AVG(duration), 2) AS avg_duration")
+                .select("SUM(CASE WHEN state='done' THEN 1 ELSE 0 END) AS completed")
+                .from(ActionRecord.class)
+                .and("type=?", t.name())
+                .and("start >= ? and end < ?", yearStart, yearEnd)
+                .and(StringUtils.isNotBlank(state), "state=?", () -> new String[]{state})
+                .groupBy("month")
+                .orderBy("month")
+        );
+
+        return a.compose(r -> {
+            var list = new ArrayList<RecordDateStatistic>();
+            for (Row row : r) {
+                list.add(new RecordDateStatistic(
+                    row.getInteger("MONTH"),
+                    row.getLong("CNT"),
+                    row.getLong("TOTAL"),
+                    row.getDouble("AVG_DURATION"),
+                    row.getLong("COMPLETED")
+                ));
+            }
+            return Future.succeededFuture(fillMonths(list));
+        });
+    }
+
+    private List<RecordDateStatistic> fillMonths(List<RecordDateStatistic> data) {
+        Map<Integer, RecordDateStatistic> map = data.stream()
+            .collect(Collectors.toMap(
+                RecordDateStatistic::date,
+                Function.identity()
+            ));
+
+        return IntStream.rangeClosed(1, 12)
+            .mapToObj(month -> map.getOrDefault(
+                month,
+                new RecordDateStatistic(month, 0L, 0L, 0D, 0L)
+            ))
+            .toList();
     }
 
     public Future<ActionRecord> example() {
@@ -584,10 +659,12 @@ public class ActionService {
         Long total
     ){}
 
-    public record YearRecordStatistics (
-        Integer year,
-        Long cnt,
-        Long total
-    ){}
+    public record RecordDateStatistic(
+        Integer date,
+        Long total,
+        Long totalDuration,
+        Double averageDuration,
+        Long completed
+    ) {}
 
 }

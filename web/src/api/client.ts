@@ -306,7 +306,7 @@ export const api = {
     });
   },
   timerStatistics: async (): Promise<TimerStatistics[]> => {
-    return request<TimerStatistics[]>("/action/statistics/timer");
+    return request<TimerStatistics[]>("/action/statistics/day/timer");
   },
   recordList: async (query = "", page = 1, size = 10): Promise<ActionRecord[]> => {
     if (query.trim()) {

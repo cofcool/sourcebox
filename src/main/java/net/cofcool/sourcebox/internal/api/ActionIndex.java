@@ -54,7 +54,13 @@ public class ActionIndex {
 
         router.get("/refs/:actionId").respond(r -> actionService.findAllRefs(r.pathParam("actionId")));
 
-        router.get("/statistics/:type").respond(r -> actionService.findRecordStatistics(Type.valueOf(r.pathParam("type"))));
+        router.get("/statistics/day/:type").respond(r -> actionService.find15DayRecordStatistics(Type.valueOf(r.pathParam("type"))));
+        router.get("/statistics/month/:type").respond(r ->
+            actionService.findRecordMonthStatistics(Type.valueOf(r.pathParam("type")), r.queryParams().get("year"), r.queryParams().get("state"))
+        );
+        router.get("/statistics/year/:type").respond(r ->
+            actionService.findRecordYearStatistics(Type.valueOf(r.pathParam("type")), r.queryParams().get("state"))
+        );
 
         router.post("/actions").respond(r ->
             actionService.saveAll(JsonUtil.toPojoList(r.body().buffer().getBytes(), ActionRecord.class))

@@ -5,6 +5,7 @@ import lombok.Getter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Supplier;
 
 public final class QueryBuilder {
 
@@ -42,6 +43,14 @@ public final class QueryBuilder {
 
     public QueryBuilder from(Class<?> table) {
         this.fromTable = TableInfoHelper.tableInfo(table).name();
+        return this;
+    }
+
+    public QueryBuilder and(boolean predicate, String condition, Supplier<Object[]> params) {
+        if (predicate) {
+            and(condition, params.get());
+        }
+
         return this;
     }
 

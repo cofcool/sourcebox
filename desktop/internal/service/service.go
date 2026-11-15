@@ -14,16 +14,16 @@ import (
 )
 
 type Services struct {
-	store  *store.Store
-	mu     sync.RWMutex
-	client *http.Client
+	store   *store.Store
+	mu      sync.RWMutex
+	client  *http.Client
 	baseURL string
 	token   string // intentionally memory-only; use OS keychain before production
 }
 
 func New(db *store.Store) *Services {
 	s := &Services{
-		store: db,
+		store:  db,
 		client: &http.Client{Timeout: 30 * time.Second},
 	}
 	if v, err := db.GetConfig("api.base_url"); err == nil {
@@ -32,12 +32,23 @@ func New(db *store.Store) *Services {
 	return s
 }
 
-func (s *Services) ListCommands() ([]store.Command, error) { return s.store.ListCommands() }
+func (s *Services) ListCommands() ([]store.Command, error)         { return s.store.ListCommands() }
+func (s *Services) ClearBusinessData() error                       { return s.store.ClearBusinessData() }
 func (s *Services) ListHistory(limit int) ([]store.History, error) { return s.store.ListHistory(limit) }
-func (s *Services) DeleteCustomCommand(id string) error { return s.store.DeleteCustomCommand(id) }
+func (s *Services) DeleteCustomCommand(id string) error            { return s.store.DeleteCustomCommand(id) }
 
 func (s *Services) SetBackend(baseURL, token string) error {
-	u, err := url.Parse(strings.TrimSpace(baseURL))
+	baseURL = strings.TrimSpace(baseURL)
+	if baseURL == "" {
+		if err := s.store.DeleteConfig("api.base_url"); err != nil {
+			return err
+		}
+		s.mu.Lock()
+		s.baseURL, s.token = "", ""
+		s.mu.Unlock()
+		return nil
+	}
+	u, err := url.Parse(baseURL)
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
 		return errors.New("backend URL must be a valid http or https URL")
 	}
@@ -52,6 +63,14 @@ func (s *Services) SetBackend(baseURL, token string) error {
 	s.baseURL, s.token = baseURL, token
 	s.mu.Unlock()
 	return nil
+}
+
+// SetBackendURL changes only the persistent base URL and preserves the in-memory token.
+func (s *Services) SetBackendURL(baseURL string) error {
+	s.mu.RLock()
+	token := s.token
+	s.mu.RUnlock()
+	return s.SetBackend(baseURL, token)
 }
 
 func (s *Services) BackendURL() string {
@@ -111,4 +130,3 @@ func (s *Services) RequestBackend(method, path, body string) (HTTPResult, error)
 	}
 	return HTTPResult{StatusCode: resp.StatusCode, Body: string(data)}, nil
 }
-

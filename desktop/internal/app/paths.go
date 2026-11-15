@@ -6,11 +6,11 @@ import (
 )
 
 func DataDir() (string, error) {
-	base, err := os.UserConfigDir()
+	base, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
-	dir := filepath.Join(base, "TheSourceBox")
+	dir := filepath.Join(base, ".mytool", "desktop")
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return "", err
 	}

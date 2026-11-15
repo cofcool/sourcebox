@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"path/filepath"
 	"os"
+	"path/filepath"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -39,7 +39,9 @@ type History struct {
 }
 
 func Open(dataDir string) (*Store, error) {
-	if err := os.MkdirAll(dataDir, 0o700); err != nil { return nil, err }
+	if err := os.MkdirAll(dataDir, 0o700); err != nil {
+		return nil, err
+	}
 	dbPath := filepath.Join(dataDir, "app.db")
 	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
@@ -227,4 +229,26 @@ func (s *Store) GetConfig(key string) (string, error) {
 	var value string
 	err := s.db.QueryRow(`SELECT value FROM app_config WHERE key=?`, key).Scan(&value)
 	return value, err
+}
+
+// ClearBusinessData removes user-created commands and execution history.
+// App configuration and built-in commands are intentionally preserved.
+func (s *Store) ClearBusinessData() error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err := tx.Exec(`DELETE FROM command_history`); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`DELETE FROM commands WHERE kind='custom'`); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func (s *Store) DeleteConfig(key string) error {
+	_, err := s.db.Exec(`DELETE FROM app_config WHERE key=?`, key)
+	return err
 }

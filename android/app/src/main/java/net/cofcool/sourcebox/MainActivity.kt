@@ -613,7 +613,7 @@ private fun TodayActionCard(action: ActionRecord, onClick: () -> Unit) {
             ) {
                 Text(action.name, Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.width(8.dp))
-                Text("$typeLabel · $stateLabel", style = MaterialTheme.typography.labelSmall)
+                Text("$typeLabel", style = MaterialTheme.typography.labelSmall)
             }
             action.remark?.takeIf(String::isNotBlank)?.let {
                 CopyableLinkText(it, style = MaterialTheme.typography.bodySmall)

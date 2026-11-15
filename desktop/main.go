@@ -28,15 +28,36 @@ func main() {
 	mygo.Bind(api)
 
 	launcher := desktop.NewLauncher(services)
+	settings := desktop.NewSettings(services)
 	mygo.App.WhenReady(func() {
 		mygo.NewWindow(mygo.WindowOptions{
-			Title: "TheSourceBox Launcher",
-			Width: 420,
-			Height: 520,
-			MinWidth: 360,
+			Title:     "TheSourceBox",
+			URL:       "/",
+			Width:     1180,
+			Height:    780,
+			MinWidth:  850,
+			MinHeight: 560,
+			StateKey:  "main",
+		})
+
+		mygo.NewWindow(mygo.WindowOptions{
+			Title:     "TheSourceBox Settings",
+			Width:     560,
+			Height:    520,
+			MinWidth:  480,
+			MinHeight: 440,
+			StateKey:  "settings",
+			Content:   ui.View(settings.View),
+		})
+
+		mygo.NewWindow(mygo.WindowOptions{
+			Title:     "TheSourceBox Launcher",
+			Width:     420,
+			Height:    520,
+			MinWidth:  360,
 			MinHeight: 420,
-			StateKey: "launcher",
-			Content: ui.View(launcher.View),
+			StateKey:  "launcher",
+			Content:   ui.View(launcher.View),
 		})
 
 		desktop.RegisterSystemIntegration()

@@ -15,6 +15,7 @@ import net.cofcool.sourcebox.util.Utils;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -286,66 +287,47 @@ public class ActionService {
         });
     }
 
-    public Future<List<RecordDateStatistic>> findRecordYearStatistics(Type t, String state) {
+    public Future<List<RecordDateStatistic>> findRecordStatistics(Type t, String dateType, @Nullable String year,  @Nullable String state,  @Nullable String category) {
+        var dt = switch (dateType) {
+            case "month" -> "EXTRACT(month from start) AS dt";
+            case "year" -> "EXTRACT(year from start) AS dt";
+            default -> throw new IllegalArgumentException("dateType must be month or year");
+        };
         var a = actionRecordSqlRepository.execute(
             QueryBuilder.builder()
-                .select("EXTRACT(year from start) AS year")
+                .select(dt)
                 .select("COUNT(*) AS cnt")
                 .select("SUM(COALESCE(duration, 0)) AS total")
                 .select("ROUND(AVG(duration), 2) AS avg_duration")
                 .select("SUM(CASE WHEN state='done' THEN 1 ELSE 0 END) AS completed")
                 .from(ActionRecord.class)
                 .and("type=?", t.name())
+                .and(year != null, "start >= ? and end < ?", () -> {
+                    var yearStart = LocalDate.of(Integer.parseInt(year), 1, 1);
+                    var yearEnd = yearStart.plusYears(1);
+                    return new LocalDate[]{yearStart, yearEnd};
+                })
                 .and(StringUtils.isNotBlank(state), "state=?", () -> new String[]{state})
-                .groupBy("year")
-                .orderBy("year")
+                .and(StringUtils.isNotBlank(category), "category=?", () -> new String[]{category})
+                .groupBy("dt")
+                .orderBy("dt")
         );
 
         return a.compose(r -> {
-            var list = new ArrayList<RecordDateStatistic>();
+            List<RecordDateStatistic> list = new ArrayList<>();
             for (Row row : r) {
                 list.add(new RecordDateStatistic(
-                    row.getInteger("YEAR"),
+                    row.getInteger("DT"),
                     row.getLong("CNT"),
                     row.getLong("TOTAL"),
                     row.getDouble("AVG_DURATION"),
                     row.getLong("COMPLETED")
                 ));
+            }
+            if ("month".equals(dateType)) {
+                list = fillMonths(list);
             }
             return Future.succeededFuture(list);
-        });
-    }
-
-    public Future<List<RecordDateStatistic>> findRecordMonthStatistics(Type t, String year, String state) {
-        var yearStart = LocalDate.of(Integer.parseInt(year), 1, 1);
-        var yearEnd = yearStart.plusYears(1);
-        var a = actionRecordSqlRepository.execute(
-            QueryBuilder.builder()
-                .select("EXTRACT(month from start) AS month")
-                .select("COUNT(*) AS cnt")
-                .select("SUM(COALESCE(duration, 0)) AS total")
-                .select("ROUND(AVG(duration), 2) AS avg_duration")
-                .select("SUM(CASE WHEN state='done' THEN 1 ELSE 0 END) AS completed")
-                .from(ActionRecord.class)
-                .and("type=?", t.name())
-                .and("start >= ? and end < ?", yearStart, yearEnd)
-                .and(StringUtils.isNotBlank(state), "state=?", () -> new String[]{state})
-                .groupBy("month")
-                .orderBy("month")
-        );
-
-        return a.compose(r -> {
-            var list = new ArrayList<RecordDateStatistic>();
-            for (Row row : r) {
-                list.add(new RecordDateStatistic(
-                    row.getInteger("MONTH"),
-                    row.getLong("CNT"),
-                    row.getLong("TOTAL"),
-                    row.getDouble("AVG_DURATION"),
-                    row.getLong("COMPLETED")
-                ));
-            }
-            return Future.succeededFuture(fillMonths(list));
         });
     }
 

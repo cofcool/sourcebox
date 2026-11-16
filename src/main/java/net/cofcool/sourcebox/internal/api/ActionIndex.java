@@ -56,10 +56,14 @@ public class ActionIndex {
 
         router.get("/statistics/day/:type").respond(r -> actionService.find15DayRecordStatistics(Type.valueOf(r.pathParam("type"))));
         router.get("/statistics/month/:type").respond(r ->
-            actionService.findRecordMonthStatistics(Type.valueOf(r.pathParam("type")), r.queryParams().get("year"), r.queryParams().get("state"))
+            actionService.findRecordStatistics(Type.valueOf(r.pathParam("type")), "month",
+                r.queryParams().get("year"), r.queryParams().get("state"), r.queryParams().get("category")
+            )
         );
         router.get("/statistics/year/:type").respond(r ->
-            actionService.findRecordYearStatistics(Type.valueOf(r.pathParam("type")), r.queryParams().get("state"))
+            actionService.findRecordStatistics(Type.valueOf(r.pathParam("type")), "year",
+                null, r.queryParams().get("state"), r.queryParams().get("category")
+            )
         );
 
         router.post("/actions").respond(r ->

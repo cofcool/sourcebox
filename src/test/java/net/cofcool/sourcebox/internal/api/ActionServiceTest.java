@@ -291,7 +291,7 @@ class ActionServiceTest extends BaseTest {
     @Test
     void findRecordMonthStatistics(Vertx vertx, VertxTestContext testContext) {
         actionService
-            .findRecordMonthStatistics(Type.record, "2026", ActionState.todo.name())
+            .findRecordStatistics(Type.record, "month", "2026", ActionState.todo.name(), "video")
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 System.out.println(r);
                 Assertions.assertFalse(r.isEmpty());
@@ -302,7 +302,7 @@ class ActionServiceTest extends BaseTest {
     @Test
     void findRecordYearStatistics(Vertx vertx, VertxTestContext testContext) {
         actionService
-            .findRecordYearStatistics(Type.record, null)
+            .findRecordStatistics(Type.record, "year", null, null, null)
             .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
                 System.out.println(r);
                 Assertions.assertFalse(r.isEmpty());

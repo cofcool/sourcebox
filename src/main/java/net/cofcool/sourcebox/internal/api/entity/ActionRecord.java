@@ -222,5 +222,12 @@ public record ActionRecord(
         public RecordRet(ActionRecord record, List<Comment> comments,  List<CheckList> checklists) {
             this(record, comments, checklists, null);
         }
+
+        public RecordRet(ActionRecord record, List<Comment> comments, List<CheckList> checklists, Object other) {
+            this.record = record;
+            this.comments = comments.stream().sorted((a1, a2) -> a2.createTime().compareTo(a1.createTime())).toList();
+            this.checklists = checklists.stream().sorted((a1, a2) -> a2.createTime().compareTo(a1.createTime())).toList();
+            this.other = other;
+        }
     }
 }

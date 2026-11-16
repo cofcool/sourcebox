@@ -1161,7 +1161,7 @@ private fun RecordBoardScreen(
                             )
                         }
                         if (!record.remark.isNullOrBlank()) {
-                            Text(record.remark, style = MaterialTheme.typography.bodySmall)
+                            Text(record.remark, style = MaterialTheme.typography.bodySmall, maxLines = 1)
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             record.category?.takeIf(String::isNotBlank)?.let {

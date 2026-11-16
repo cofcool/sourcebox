@@ -201,7 +201,6 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         createTimerNotificationChannel()
         connectivityManager.registerDefaultNetworkCallback(networkCallback)
         refreshTools()
-        syncAllData()
         viewModelScope.launch {
             while (isActive) {
                 delay(DIRTY_SYNC_RETRY_INTERVAL)

@@ -702,7 +702,6 @@ private fun MoreScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(Modifier.weight(1f)) {
-                        Text("数据同步", style = MaterialTheme.typography.titleMedium)
                         Text("行动 ${vm.localActionCount} · 便笺 ${vm.localNoteCount}")
                     }
                     OutlinedButton(
@@ -713,11 +712,7 @@ private fun MoreScreen(
                     }
                 }
                 Text(
-                    vm.lastActionSync?.let { "行动最近同步：$it" } ?: "行动尚未同步",
-                    style = MaterialTheme.typography.bodySmall
-                )
-                Text(
-                    "便笺：${vm.lastNoteSync ?: "尚未同步"} · 类型：${vm.lastTypeSync ?: "尚未同步"}",
+                    vm.lastActionSync?.let { "最近同步：$it" } ?: "尚未同步",
                     style = MaterialTheme.typography.bodySmall
                 )
                 Text(
@@ -731,25 +726,25 @@ private fun MoreScreen(
         MoreToolCard(
             icon = Icons.Default.Description,
             title = "便笺",
-            description = "查看和管理本地同步的便笺",
+            description = "查看和管理便笺",
             onClick = onNotes
         )
         MoreToolCard(
             icon = Icons.Default.Timer,
             title = "番茄钟",
-            description = "专注计时并记录每个阶段",
+            description = "专注计时",
             onClick = onTimer
         )
         MoreToolCard(
             icon = Icons.Default.FolderOpen,
             title = "文件",
-            description = "上传文件到局域网设备，或下载共享文件",
+            description = "局域网文件同步",
             onClick = onFiles
         )
         MoreToolCard(
             icon = Icons.Default.Description,
             title = "书籍",
-            description = "查看和筛选书籍记录",
+            description = "查看书籍记录",
             onClick = onBooks
         )
         MoreToolCard(

@@ -289,8 +289,8 @@ public class ActionService {
 
     public Future<List<RecordDateStatistic>> findRecordStatistics(Type t, String dateType, @Nullable String year,  @Nullable String state,  @Nullable String category) {
         var dt = switch (dateType) {
-            case "month" -> "EXTRACT(month from start) AS dt";
-            case "year" -> "EXTRACT(year from start) AS dt";
+            case "month" -> "EXTRACT(month from end) AS dt";
+            case "year" -> "EXTRACT(year from end) AS dt";
             default -> throw new IllegalArgumentException("dateType must be month or year");
         };
         var a = actionRecordSqlRepository.execute(
@@ -302,7 +302,7 @@ public class ActionService {
                 .select("SUM(CASE WHEN state='done' THEN 1 ELSE 0 END) AS completed")
                 .from(ActionRecord.class)
                 .and("type=?", t.name())
-                .and(year != null, "start >= ? and end < ?", () -> {
+                .and(year != null, "end >= ? and end < ?", () -> {
                     var yearStart = LocalDate.of(Integer.parseInt(year), 1, 1);
                     var yearEnd = yearStart.plusYears(1);
                     return new LocalDate[]{yearStart, yearEnd};

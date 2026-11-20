@@ -203,6 +203,14 @@ private fun SourceboxApp(
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
+    val requestLocalNetPermission = {
+        if (
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN &&
+            context.checkSelfPermission(Manifest.permission.ACCESS_LOCAL_NETWORK) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.ACCESS_LOCAL_NETWORK)
+        }
+    }
     fun navigateBack() {
         page = when (page) {
             "files-download" -> "files"
@@ -333,7 +341,8 @@ private fun SourceboxApp(
                         settingsUser = vm.username
                         settingsPassword = vm.password
                         page = "settings"
-                    }
+                    },
+                    onSyncData = requestLocalNetPermission
                 )
                 "server-tools" -> ServerToolsScreen(
                     vm = vm,
@@ -613,7 +622,7 @@ private fun TodayActionCard(action: ActionRecord, onClick: () -> Unit) {
             ) {
                 Text(action.name, Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.width(8.dp))
-                Text("$typeLabel", style = MaterialTheme.typography.labelSmall)
+                Text("$typeLabel · $stateLabel", style = MaterialTheme.typography.labelSmall)
             }
             action.remark?.takeIf(String::isNotBlank)?.let {
                 CopyableLinkText(it, style = MaterialTheme.typography.bodySmall)
@@ -683,7 +692,8 @@ private fun MoreScreen(
     onFiles: () -> Unit,
     onBooks: () -> Unit,
     onServerTools: () -> Unit,
-    onSettings: () -> Unit
+    onSettings: () -> Unit,
+    onSyncData: () -> Unit
 ) {
     Column(
         modifier
@@ -705,7 +715,10 @@ private fun MoreScreen(
                         Text("行动 ${vm.localActionCount} · 便笺 ${vm.localNoteCount}")
                     }
                     OutlinedButton(
-                        onClick = vm::syncAllData,
+                        onClick = {
+                            onSyncData()
+                            vm.syncAllData()
+                        },
                         enabled = !vm.busy
                     ) {
                         Text("立即同步")

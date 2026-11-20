@@ -972,7 +972,11 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
     ) = perform {
         val filters = buildList {
             query.takeIf(String::isNotBlank)?.let {
-                add("name=${java.net.URLEncoder.encode(it, "UTF-8")}")
+                if (it.startsWith("#")) {
+                    add("label=${java.net.URLEncoder.encode(it.substring(1), "UTF-8")}")
+                } else {
+                    add("name=${java.net.URLEncoder.encode(it, "UTF-8")}")
+                }
             }
             category?.let { add("category=${java.net.URLEncoder.encode(it, "UTF-8")}") }
             label?.let { add("label=${java.net.URLEncoder.encode(it, "UTF-8")}") }

@@ -52,8 +52,8 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.FolderOpen
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -128,6 +128,7 @@ import net.cofcool.sourcebox.data.TodoRecord
 import net.cofcool.sourcebox.data.ToolInfo
 import net.cofcool.sourcebox.data.isHabitRequiredOnDate
 import net.cofcool.sourcebox.ui.ToolboxViewModel
+import java.time.LocalDate
 
 class MainActivity : ComponentActivity() {
     private val sharedText = mutableStateOf<String?>(null)
@@ -157,14 +158,14 @@ private fun Intent.sharedPlainText(): String? {
 }
 
 private val pages = listOf(
-    "tools" to "首页",
+    "tools" to "今日",
     "todos" to "待办",
     "habits" to "习惯",
     "task" to "任务",
     "more" to "更多"
 )
 
-private val moreToolPages = setOf("notes", "timer", "files", "files-download", "books", "settings", "server-tools")
+private val moreToolPages = setOf("timer", "files", "files-download", "books", "settings", "server-tools")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -295,7 +296,7 @@ private fun SourceboxApp(
                     NavigationBar {
                         pages.forEach { (destination, label) ->
                             val icon = when (destination) {
-                                "tools" -> Icons.Default.Home
+                                "tools" -> Icons.Default.LightMode
                                 "todos" -> Icons.AutoMirrored.Filled.List
                                 "habits" -> Icons.Default.Alarm
                                 "task" -> Icons.Default.Build
@@ -559,17 +560,9 @@ private fun HomeScreen(
         modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("今日推荐", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-            IconButton(onClick = vm::refreshTodayActions, enabled = !vm.busy) {
-                Icon(Icons.Default.Refresh, contentDescription = "刷新今日行动")
-            }
-        }
         if (vm.todayActions.isEmpty()) {
             EmptyState("今天暂无行动")
         } else {
@@ -663,7 +656,7 @@ private fun ServerToolsScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 vm.tools.filterNot {
-                    it.id in setOf("note", "todo", "hisRecord", "bookRecord", "timer", "habits")
+                    it.id in setOf("todo", "hisRecord", "bookRecord", "timer", "habits")
                 }.forEach { tool ->
                     Card(onClick = { onSelectTool(tool) }, modifier = Modifier.fillMaxWidth()) {
                         Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -712,7 +705,7 @@ private fun MoreScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(Modifier.weight(1f)) {
-                        Text("行动 ${vm.localActionCount} · 便笺 ${vm.localNoteCount}")
+                        Text("行动 ${vm.localActionCount}")
                     }
                     OutlinedButton(
                         onClick = {
@@ -736,12 +729,6 @@ private fun MoreScreen(
                 )
             }
         }
-        MoreToolCard(
-            icon = Icons.Default.Description,
-            title = "便笺",
-            description = "查看和管理便笺",
-            onClick = onNotes
-        )
         MoreToolCard(
             icon = Icons.Default.Timer,
             title = "番茄钟",
@@ -1221,10 +1208,8 @@ private fun HabitBoardScreen(
     modifier: Modifier,
     onOpenHabit: (ActionRecord) -> Unit
 ) {
-    var query by remember { mutableStateOf("") }
     var appliedQuery by remember { mutableStateOf("") }
-    val keyboardController = LocalSoftwareKeyboardController.current
-    val today = java.time.LocalDate.now()
+    val today = LocalDate.now()
     val recentDays = (0..4).map { today.minusDays(it.toLong()) }
     val visibleHabits = vm.habits.filter {
         appliedQuery.isBlank() || it.name.contains(appliedQuery, ignoreCase = true)
@@ -1282,6 +1267,19 @@ private fun HabitBoardScreen(
                         .groupBy({ it.first }, { it.second })
                         .mapValues { (_, entries) -> entries.maxBy { it.createTime.orEmpty() } }
                 }
+                val completedDates = remember(export?.checklists) {
+                    export?.checklists.orEmpty()
+                        .asSequence()
+                        .filter { it.current >= 1 }
+                        .mapNotNull { entry ->
+                            entry.createTime?.take(10)?.let {
+                                runCatching {
+                                    LocalDate.parse(it)
+                                }.getOrNull()
+                            }
+                        }
+                        .toSortedSet()
+                }
                 Card(
                     onClick = { onOpenHabit(habit) },
                     modifier = Modifier.fillMaxWidth(),
@@ -1317,12 +1315,11 @@ private fun HabitBoardScreen(
                                 entry?.current == 1
                             }
                             val required = isHabitRequiredOnDate(
-                                habit.start,
-                                habit.createTime,
-                                export?.habit?.createTime,
+                                LocalDate.of(1970, 1, 1),
                                 export?.habit?.freqNum,
                                 export?.habit?.freqDen,
-                                date
+                                date,
+                                completedDates
                             )
                             val statusColor = when {
                                 achieved -> Color(0xFF1976D2)
@@ -1908,6 +1905,30 @@ private fun HabitCalendar(
         }.groupBy({ it.first }, { it.second })
             .mapValues { (_, entries) -> entries.maxBy { it.createTime.orEmpty() } }
     }
+    val completedDates = remember(checkLists) {
+        checkLists.asSequence()
+            .filter { it.current >= 1 }
+            .mapNotNull { entry ->
+                entry.createTime?.take(10)?.let {
+                    runCatching {
+                        LocalDate.parse(it)
+                    }.getOrNull()
+                }
+            }
+            .toSortedSet()
+    }
+    val habitStartDate = remember(
+        start,
+        actionCreateTime,
+        habitCreateTime
+    ) {
+        listOf(start, actionCreateTime, habitCreateTime)
+            .firstNotNullOfOrNull { value ->
+                value?.take(10)?.let {
+                    runCatching { LocalDate.parse(it) }.getOrNull()
+                }
+            }
+    }
 
     val firstDayOffset = displayedMonth.atDay(1).dayOfWeek.value - 1
     val calendarDays = buildList<java.time.LocalDate?> {
@@ -2015,12 +2036,11 @@ private fun HabitCalendar(
                                 isHabitValueAchieved(entry.current, targetValue, targetType)
                             } else entry.current == 1
                             val required = isHabitRequiredOnDate(
-                                start,
-                                actionCreateTime,
-                                habitCreateTime,
+                                habitStartDate,
                                 freqNum,
                                 freqDen,
-                                date
+                                date,
+                                completedDates
                             )
                             val shape = RoundedCornerShape(8.dp)
                             val background = when {

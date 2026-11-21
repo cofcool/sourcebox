@@ -1,14 +1,13 @@
 package net.cofcool.sourcebox.data
 
-import android.content.Context
 import android.content.ContentValues
+import android.content.Context
 import android.net.Uri
-import android.os.SystemClock
 import android.os.Environment
+import android.os.SystemClock
 import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.util.Log
-import net.cofcool.sourcebox.CrashLogStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -22,6 +21,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+import net.cofcool.sourcebox.CrashLogStore
 import okhttp3.Credentials
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -35,6 +35,7 @@ import java.security.MessageDigest
 import java.util.Base64
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.milliseconds
 
 @Serializable
 data class ToolArgument(
@@ -263,13 +264,13 @@ class SourceboxApi(context: Context) {
                     event.source?.displayValue()?.let(output::add)
                 }
             }
-            delay(600)
+            delay(600.milliseconds)
         }
         throw IOException("等待工具执行结果超时")
     }
 
     suspend fun exportAllNotes(): List<NoteRecord> =
-        json.decodeFromString<List<NoteRecord>>(request("/note/exportAll"))
+        listOf()
 
     suspend fun saveNote(note: NoteRecord): NoteRecord {
         val updated = note.copy(

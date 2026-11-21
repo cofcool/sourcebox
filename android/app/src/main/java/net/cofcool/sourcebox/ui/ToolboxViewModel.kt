@@ -50,6 +50,7 @@ import net.cofcool.sourcebox.data.isHabitRequiredOnDate
 import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
+import java.time.LocalDate
 import java.util.UUID
 
 private const val DIRTY_SYNC_RETRY_INTERVAL = 30_000L
@@ -226,18 +227,37 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
             val activeRecords = actionDatabase.randomActions("record", "doing", 5)
             val dueHabits = actionDatabase.allHabitExports()
                 .filter { export ->
+                    export.record.state == "doing"
+                }
+                .filter { export ->
                     val habit = export.habit
+                    val ck = export.checklists
+                    val completedDate = ck
+                        .asSequence()
+                        .filter { it.current >= 1 }
+                        .mapNotNull { entry ->
+                            entry.createTime?.take(10)?.let {
+                                runCatching {
+                                    LocalDate.parse(it)
+                                }.getOrNull()
+                            }
+                        }
+                        .maxOrNull()
+                    val d = completedDate ?: LocalDate.parse(habit?.createTime!!.take(10))
+
                     isHabitRequiredOnDate(
-                        export.record.start,
-                        export.record.createTime,
-                        habit?.createTime,
+                        d,
                         habit?.freqNum,
                         habit?.freqDen,
                         today
                     )
                 }
                 .map { it.record }
-            todayTodos + activeRecords + dueHabits
+            var n = todayTodos + activeRecords + dueHabits
+            n = n.sortedByDescending { it
+                it.start
+            }
+            n
         }
     }
 

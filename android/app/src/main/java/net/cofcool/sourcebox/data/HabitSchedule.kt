@@ -1,31 +1,45 @@
 package net.cofcool.sourcebox.data
 
 import java.time.LocalDate
-import java.time.temporal.ChronoUnit
 
 fun isHabitRequiredOnDate(
-    start: String?,
-    actionCreateTime: String?,
-    habitCreateTime: String?,
+    baseDate: LocalDate,
     freqNum: Int?,
     freqDen: Int?,
     date: LocalDate
 ): Boolean {
-    val numerator = freqNum ?: 1
-    val denominator = freqDen ?: 1
-    if (numerator <= 0 || denominator <= 0) return false
+    if (date.isBefore(baseDate)) return false
 
-    val anchorDate = sequenceOf(start, actionCreateTime, habitCreateTime)
-        .mapNotNull { value ->
-            value?.take(10)?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
-        }
-        .firstOrNull() ?: LocalDate.of(1970, 1, 1)
-    if (date.isBefore(anchorDate)) return false
-    if (numerator >= denominator) return true
+    val interval = freqDen ?: return false
+    val numerator = freqNum ?: return false
 
-    val dayInCycle = ChronoUnit.DAYS.between(anchorDate, date) % denominator
-    return (0 until numerator).any { occurrence ->
-        val dueOffset = (occurrence.toLong() * denominator + numerator / 2L) / numerator
-        dayInCycle == dueOffset
-    }
+    if (interval <= 0 || numerator != 1) return false
+
+    return !date.isBefore(baseDate.plusDays(interval.toLong()))
+}
+
+fun isHabitRequiredOnDate(
+    startDate: LocalDate?,
+    freqNum: Int?,
+    freqDen: Int?,
+    date: LocalDate,
+    completedDates: Set<LocalDate>
+): Boolean {
+
+    if (startDate == null) return false
+    if (date.isBefore(startDate)) return false
+
+    val interval = freqDen ?: return false
+    val numerator = freqNum ?: return false
+
+    if (interval <= 0 || numerator != 1) return false
+
+    val lastCompleted = completedDates
+        .asSequence()
+        .filter { !it.isBefore(startDate) && it.isBefore(date) }
+        .maxOrNull()
+
+    val baseDate = lastCompleted ?: startDate
+
+    return !date.isBefore(baseDate.plusDays(interval.toLong()))
 }

@@ -11,7 +11,6 @@ public enum ToolName {
     dirWebServer("start a simple web directory server", DirWebServer.class),
     lanShare("send files or directories to another LAN peer", LanFileShare.class),
     rename("rename file conveniently", FileNameFormatter.class),
-    note("simple web notebook, routes: /note, /action", SimpleNote.class),
     json("make json more readable", JsonFormatter.class),
     htmlDown("download html from links", HtmlDownloader.class),
     cHelper("manage commands, like alias, tag...", CommandHelper.class),

@@ -6,9 +6,7 @@ import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.Tool.Args;
-import net.cofcool.sourcebox.ToolName;
 import net.cofcool.sourcebox.ToolRunner;
-import net.cofcool.sourcebox.internal.api.NoteConfig;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -26,7 +24,6 @@ public class WebRunnerAuthTest extends BaseTest {
                 vertx,
                 null,
                 new Args()
-                    .arg(ToolName.note.name() + "." + NoteConfig.PATH_KEY, "./target/")
                     .arg(ToolRunner.USER_KEY, "demo")
                     .arg(ToolRunner.PASSWD_KEY, "demo")
                     .arg(ToolRunner.PORT_KEY, getPort())

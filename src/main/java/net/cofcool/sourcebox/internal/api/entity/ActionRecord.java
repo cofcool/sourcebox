@@ -58,7 +58,7 @@ public record ActionRecord(
     String labels,
     @Column(name = "refs", type = JDBCType.VARCHAR, length = 512, nullable = true)
     String refs,
-    @Column(name = "remark", type = JDBCType.VARCHAR, length = 512, nullable = true)
+    @Column(name = "remark", type = JDBCType.VARCHAR, length = 5000, nullable = true)
     String remark,
     @Column(name = "create_time", type = JDBCType.TIMESTAMP)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

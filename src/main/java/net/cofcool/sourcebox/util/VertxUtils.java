@@ -1,10 +1,6 @@
 package net.cofcool.sourcebox.util;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
+import io.vertx.core.*;
 import io.vertx.core.file.FileSystemException;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerRequest;
@@ -16,27 +12,24 @@ import io.vertx.ext.web.FileUpload;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.ext.web.handler.BasicAuthHandler;
-import io.vertx.ext.web.handler.BodyHandler;
-import io.vertx.ext.web.handler.FileSystemAccess;
-import io.vertx.ext.web.handler.LoggerHandler;
-import io.vertx.ext.web.handler.SessionHandler;
-import io.vertx.ext.web.handler.StaticHandler;
+import io.vertx.ext.web.handler.*;
 import io.vertx.ext.web.sstore.SessionStore;
 import io.vertx.jdbcclient.JDBCConnectOptions;
 import io.vertx.jdbcclient.JDBCPool;
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.PoolOptions;
-import java.util.ArrayList;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import lombok.Getter;
+import net.cofcool.sourcebox.App;
 import net.cofcool.sourcebox.logging.Logger;
 import org.apache.commons.io.FilenameUtils;
 
+import java.util.ArrayList;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+
 public final class VertxUtils {
 
-    private static final String GLOBAL_UPLOAD_DIR = System.getProperty("upload.dir", BodyHandler.DEFAULT_UPLOADS_DIRECTORY);
+    private static final String GLOBAL_UPLOAD_DIR = System.getProperty("upload.dir", App.globalCfgDir("upload"));
     private static final String GLOBAL_WEB_ROOT = System.getProperty("webroot.dir");
 
     static {

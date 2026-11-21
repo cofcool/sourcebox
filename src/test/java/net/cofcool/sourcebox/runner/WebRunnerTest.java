@@ -18,7 +18,6 @@ import net.cofcool.sourcebox.Tool.RunnerType;
 import net.cofcool.sourcebox.ToolName;
 import net.cofcool.sourcebox.internal.JsonFormatterTest;
 import net.cofcool.sourcebox.internal.JsonToPojoTest;
-import net.cofcool.sourcebox.internal.api.NoteConfig;
 import net.cofcool.sourcebox.util.VertxUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -39,7 +38,6 @@ class WebRunnerTest extends BaseTest {
                 vertx,
                 null,
                 new Args()
-                    .arg(ToolName.note.name() + "." + NoteConfig.PATH_KEY, "./target/")
             )
             .onComplete(testContext.succeeding(t -> testContext.completeNow()));
     }

@@ -1,0 +1,30 @@
+package net.cofcool.sourcebox.internal.api.entity;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.Builder;
+import net.cofcool.sourcebox.util.TableInfoHelper.Column;
+import net.cofcool.sourcebox.util.TableInfoHelper.Entity;
+import net.cofcool.sourcebox.util.TableInfoHelper.ID;
+
+import java.sql.JDBCType;
+import java.time.LocalDateTime;
+
+@Builder
+@Entity(name = "recommend")
+public record Recommend(
+    @ID
+    @Column(name = "id", type = JDBCType.CHAR, length = 32)
+    String id,
+    @Column(name = "data_id", type = JDBCType.VARCHAR, length = 32)
+    String dataId,
+    @Column(name = "table", type = JDBCType.VARCHAR, length = 32)
+    String table,
+    @Column(name = "create_time", type = JDBCType.TIMESTAMP)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    LocalDateTime createTime,
+    @Column(name = "update_time", type = JDBCType.TIMESTAMP)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    LocalDateTime updateTime
+) {
+
+}

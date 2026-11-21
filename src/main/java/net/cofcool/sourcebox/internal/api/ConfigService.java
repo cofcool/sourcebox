@@ -17,7 +17,7 @@ import java.util.Map;
 @CustomLog
 public class ConfigService {
 
-    static final int DB_VERSION = 8;
+    static final int DB_VERSION = 9;
 
     private static final class ServiceHolder {
         private static final ConfigService SERVICE = new ConfigService();
@@ -87,8 +87,13 @@ public class ConfigService {
             "ALTER TABLE action_record ADD COLUMN category VARCHAR(50) null"
         ));
 
-        migrationSteps.put(DB_VERSION, List.of(
+        migrationSteps.put(8, List.of(
             "DROP TABLE check_list"
+        ));
+
+        migrationSteps.put(DB_VERSION, List.of(
+            "ALTER TABLE action_record ALTER COLUMN remark VARCHAR(5000)",
+            "ALTER TABLE comment ALTER COLUMN content VARCHAR(5000)"
         ));
 
         try (Connection conn = DriverManager.getConnection(config.getUrl());

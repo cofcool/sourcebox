@@ -1,25 +1,36 @@
 package net.cofcool.sourcebox.internal.api.entity;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public enum RefType {
-    none, unknown, note, action;
+    none, unknown, note, action, schedule;
 
     public String refStr(String val) {
         return name() + ":" + val;
     }
 
-    public static Pair<RefType, String> parse(String val) {
+    public static String appendRefStr(String... refs) {
+        return String.join(";", refs);
+    }
+
+    public static Map<RefType, String> parse(String val) {
         if (StringUtils.isBlank(val)) {
-            return Pair.of(none, null);
+            return Map.of(none, "none");
         }
 
-        var s = val.split(":");
-        if (s.length != 2) {
-            return Pair.of(unknown, val);
+        var ret = new HashMap<RefType, String>();
+        for (String p : val.split(";")) {
+            var s = p.split(":");
+            if (s.length != 2) {
+                ret.put(unknown, p);
+            } else {
+                ret.put(RefType.valueOf(s[0]), s[1]);
+            }
         }
 
-        return Pair.of(RefType.valueOf(s[0]), s[1]);
+        return ret;
     }
 }

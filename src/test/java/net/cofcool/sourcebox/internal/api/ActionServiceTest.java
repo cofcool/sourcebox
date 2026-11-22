@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.time.LocalDateTime;
+import java.time.Period;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -332,6 +333,37 @@ class ActionServiceTest extends BaseTest {
         actionService
             .saveCheckList(defaultRecord.id(), CheckList.builder().content("01").first(0).last(10).current(2).build(), true)
             .onComplete(testContext.succeeding(r -> testContext.verify(testContext::completeNow)));
+    }
+
+    @Test
+    void saveRepeatTodoAction(Vertx vertx, VertxTestContext testContext) {
+        String schedule = Period.ofMonths(1).toString();
+        ActionRecord record = new ActionRecord(
+            "test repeat todo",
+            "repeat todo",
+            null,
+            "mac",
+            Type.todo.name(),
+            "repeat",
+            ActionState.done.name(),
+            LocalDateTime.now(),
+            null,
+            null,
+            null,
+            null,
+            "xx",
+            RefType.appendRefStr(RefType.schedule.refStr(schedule)),
+            LocalDateTime.now()
+        );
+        actionService
+            .generateRepeatTodo(record)
+            .compose(r -> actionService.find(ActionRecord.builder().refs(RefType.action.refStr(record.id())).build())
+                .onComplete(testContext.succeeding(actions -> testContext.verify(() -> {
+                    Assertions.assertFalse(actions.isEmpty());
+                    Assertions.assertTrue(actions.stream().anyMatch(a -> a.refs().contains(RefType.schedule.refStr(schedule))));
+                    Assertions.assertTrue(actions.stream().anyMatch(a -> a.start().minusMonths(1).toLocalDate().equals(record.start().toLocalDate())));
+                    testContext.completeNow();
+                }))));
     }
 
     @Test

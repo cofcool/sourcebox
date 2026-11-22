@@ -19,6 +19,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -147,8 +148,34 @@ public class ActionService {
                 }
             }
             searchService.indexAction(a);
-        });
+        }).onSuccess(this::generateRepeatTodo);
         return ret;
+    }
+
+    Future<ActionRecord> generateRepeatTodo(ActionRecord a) {
+        if (Objects.equals(a.state(), ActionState.done.name())
+        && Objects.equals(a.type(), Type.todo.name())
+        && Objects.equals(a.category(), "repeat")) {
+           var scheduleRef = RefType.parse(a.refs()).entrySet().stream()
+               .filter(e -> e.getKey() == RefType.schedule).findFirst();
+            if (scheduleRef.isPresent()) {
+                var schedule = scheduleRef.get().getValue();
+                ActionRecord next = ActionRecord.builder()
+                    .name(a.name())
+                    .type(a.type())
+                    .category(a.category())
+                    .state(ActionState.todo.name())
+                    .remark(a.remark())
+                    .labels(a.labels())
+                    .refs(RefType.appendRefStr(RefType.action.refStr(a.id()), RefType.schedule.refStr(schedule)))
+                    .start(a.start().plus(Period.parse(schedule)))
+                    .build();
+                return saveAction(next)
+                .onFailure(new Log("Generate next repeat action error: " + a.name() + "(" + a.id() + ")" + " -> " + schedule));
+            }
+        }
+
+        return Future.succeededFuture(a);
     }
 
     public Future<ActionRecord> saveHabit(Habit.HabitRecord habitRecord) {
@@ -410,6 +437,9 @@ public class ActionService {
         if (StringUtils.isNotBlank(record.labels())) {
             builder.and("labels=?", record.labels());
         }
+        if (StringUtils.isNotBlank(record.refs())) {
+            builder.and("refs like ?", "%" + record.refs() + "%");
+        }
         return actionRecordSqlRepository.find(builder);
     }
 
@@ -418,17 +448,17 @@ public class ActionService {
             .compose(a ->
                 Future.all(findComment(a.id()), findCheckList(a.id()))
                     .compose(c -> Future.succeededFuture(new ActionRecord.RecordRet(a, c.resultAt(0), c.resultAt(1)))))
-            .compose(a -> {
-                var ref = RefType.parse(a.record().refs());
-                var refObj = switch (ref.getKey()) {
-                    case action -> find(ref.getValue());
-                    case note -> noteService.find(new Note(ref.getValue()));
-                    default -> Future.succeededFuture();
-                };
-                return refObj.compose(f -> Future.succeededFuture(
+            .compose(a ->
+                Future.all(RefType.parse(a.record().refs()).entrySet().stream().map(ref ->
+                        switch (ref.getKey()) {
+                            case action -> find(ref.getValue());
+                            case note -> noteService.find(new Note(ref.getValue()));
+                            default -> Future.succeededFuture();
+                        }
+                    ).toList()
+                ).compose(f -> Future.succeededFuture(
                     new ActionRecord.RecordRet(a.record(), a.comments(), a.checklists(), f)
-                ));
-            });
+                )));
     }
 
     public Future<Map<String, Object>> findAllType() {

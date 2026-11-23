@@ -88,6 +88,7 @@ public final class VertxUtils {
     public static BodyHandler bodyHandler(String persistencePath) {
         return BodyHandler
             .create()
+            .bodyLimit(1024 * 1024 * 1024)
             .setUploadsDirectory(persistencePath != null ? persistencePath : GLOBAL_UPLOAD_DIR);
     }
 

@@ -108,6 +108,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.LinkAnnotation
@@ -121,6 +123,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -187,6 +190,8 @@ private fun SourceboxApp(
     var selectedRecord by remember { mutableStateOf<ActionRecord?>(null) }
     var selectedTodo by remember { mutableStateOf<TodoRecord?>(null) }
     var selectedHabit by remember { mutableStateOf<ActionRecord?>(null) }
+    var todoReturnPage by remember { mutableStateOf("todos") }
+    var habitReturnPage by remember { mutableStateOf("habits") }
     var showArchivedHabits by remember { mutableStateOf(false) }
     var showCompletedTodos by remember { mutableStateOf(false) }
     var recordReturnPage by remember { mutableStateOf("task") }
@@ -227,8 +232,9 @@ private fun SourceboxApp(
             "files-text-editor" -> "files"
             "record-detail" -> recordReturnPage
             "record-create" -> "task"
-            "habit-detail", "habit-create" -> "habits"
-            "todo-detail" -> "todos"
+            "habit-detail" -> habitReturnPage
+            "habit-create" -> "habits"
+            "todo-detail" -> todoReturnPage
             "todo-create" -> "todos"
             "crash-logs" -> "settings"
             in moreToolPages -> "more"
@@ -377,8 +383,45 @@ private fun SourceboxApp(
                 "tools" -> HomeScreen(
                     vm = vm,
                     modifier = Modifier.padding(padding),
-                    onOpenTodo = { selectedTodo = it; page = "todo-detail" },
-                    onTodos = { page = "todos" }
+                    onOpenAction = { action ->
+                        when (action.type) {
+                            "todo" -> {
+                                todoReturnPage = "tools"
+                                selectedTodo = TodoRecord(
+                                    id = action.id,
+                                    name = action.name,
+                                    state = action.state,
+                                    remark = action.remark,
+                                    type = action.type,
+                                    category = action.category,
+                                    refs = action.refs,
+                                    start = action.start,
+                                    end = action.end
+                                )
+                                page = "todo-detail"
+                            }
+                            "record" -> {
+                                selectedRecord = action
+                                recordReturnPage = "tools"
+                                vm.loadRecordDetails(action)
+                                page = "record-detail"
+                            }
+                            "habit" -> {
+                                habitReturnPage = "tools"
+                                selectedHabit = action
+                                vm.loadHabitDetails(action)
+                                page = "habit-detail"
+                            }
+                            "timer" -> {
+                                vm.refreshTimerRecords()
+                                page = "timer"
+                            }
+                            "book" -> {
+                                vm.refreshBooks()
+                                page = "books"
+                            }
+                        }
+                    }
                 )
                 "more" -> MoreScreen(
                     vm = vm,
@@ -487,6 +530,7 @@ private fun SourceboxApp(
                     modifier = Modifier.padding(padding),
                     showArchived = showArchivedHabits,
                     onOpenHabit = { habit ->
+                        habitReturnPage = "habits"
                         selectedHabit = habit
                         vm.loadHabitDetails(habit)
                         page = "habit-detail"
@@ -500,7 +544,11 @@ private fun SourceboxApp(
                     vm = vm,
                     modifier = Modifier.padding(padding),
                     showCompleted = showCompletedTodos,
-                    onOpenTodo = { selectedTodo = it; page = "todo-detail" }
+                    onOpenTodo = {
+                        todoReturnPage = "todos"
+                        selectedTodo = it
+                        page = "todo-detail"
+                    }
                 )
                 "todo-detail" -> selectedTodo?.let { todo ->
                     TodoDetailsScreen(
@@ -510,7 +558,7 @@ private fun SourceboxApp(
                         onSave = { updated ->
                             vm.saveTodo(updated) {
                                 selectedTodo = updated
-                                page = "todos"
+                                page = todoReturnPage
                             }
                         }
                     )
@@ -624,8 +672,7 @@ private fun SourceboxApp(
 private fun HomeScreen(
     vm: ToolboxViewModel,
     modifier: Modifier,
-    onOpenTodo: (TodoRecord) -> Unit,
-    onTodos: () -> Unit
+    onOpenAction: (ActionRecord) -> Unit
 ) {
     LaunchedEffect(Unit) { vm.refreshTodayActions() }
     Column(
@@ -636,26 +683,13 @@ private fun HomeScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         if (vm.todayActions.isEmpty()) {
-            EmptyState("今天暂无行动")
+            EmptyState("今日暂无行动")
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 vm.todayActions.forEach { action ->
-                    val todo = action.takeIf { it.type == "todo" }?.let {
-                        TodoRecord(
-                            id = it.id,
-                            name = it.name,
-                            state = it.state,
-                            category = it.category,
-                            refs = it.refs,
-                            remark = it.remark,
-                            type = it.type,
-                            start = it.start,
-                            end = it.end
-                        )
-                    }
                     TodayActionCard(
                         action = action,
-                        onClick = { todo?.let(onOpenTodo) }
+                        onClick = { onOpenAction(action) }
                     )
                 }
             }
@@ -697,11 +731,7 @@ private fun TodayActionCard(action: ActionRecord, onClick: () -> Unit) {
             Text(action.start.orEmpty(), style = MaterialTheme.typography.labelSmall)
         }
     }
-    if (action.type == "todo") {
-        Card(onClick = onClick, modifier = Modifier.fillMaxWidth(), content = content)
-    } else {
-        Card(modifier = Modifier.fillMaxWidth(), content = content)
-    }
+    Card(onClick = onClick, modifier = Modifier.fillMaxWidth(), content = content)
 }
 
 @Composable
@@ -2244,6 +2274,11 @@ private fun HabitCalendar(
         if (statsPeriod == "year") "${index + 1}月"
         else periodStart.plusDays(index.toLong()).dayOfMonth.toString()
     }
+    val selectedChartIndex = if (statsPeriod == "year") {
+        selectedDate.monthValue - 1
+    } else {
+        java.time.temporal.ChronoUnit.DAYS.between(periodStart, selectedDate).toInt()
+    }.coerceIn(chartValues.indices)
     val chartLineColor = MaterialTheme.colorScheme.primary
     val chartGridColor = MaterialTheme.colorScheme.outlineVariant
 
@@ -2410,8 +2445,23 @@ private fun HabitCalendar(
                     }
                 }
                 drawPath(path, chartLineColor, style = androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx()))
-                points.forEach { point ->
+                val valuePaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+                    color = chartLineColor.toArgb()
+                    textSize = 10.sp.toPx()
+                    textAlign = android.graphics.Paint.Align.CENTER
+                }
+                points.forEachIndexed { index, point ->
                     drawCircle(chartLineColor, radius = 3.dp.toPx(), center = point)
+                    if (isValueHabit && (statsPeriod == "year" || index == selectedChartIndex)) {
+                        val value = formatHabitStoredValue(chartValues[index].toLong()) +
+                            unit?.let { " $it" }.orEmpty()
+                        val labelY = if (point.y < top + 16.dp.toPx()) {
+                            point.y + 16.dp.toPx()
+                        } else {
+                            point.y - 8.dp.toPx()
+                        }
+                        drawContext.canvas.nativeCanvas.drawText(value, point.x, labelY, valuePaint)
+                    }
                 }
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -3214,9 +3264,14 @@ private fun TimerScreen(
         vm.refreshTimerRecords()
     }
 
-    val totalFocusSeconds = vm.timerRecords
-        .filter { it.name.startsWith("workTime-") }
-        .sumOf { it.duration ?: 0 }
+    val focusRecords = vm.timerRecords.filter { it.name.startsWith("workTime-") }
+    val dailyFocusStats = focusRecords
+        .groupBy { it.end?.take(10) ?: it.start?.take(10) ?: "日期未知" }
+        .map { (date, records) ->
+            Triple(date, records.sumOf { it.duration ?: 0 }, records.size)
+        }
+        .sortedByDescending { it.first }
+    val totalFocusSeconds = focusRecords.sumOf { it.duration ?: 0 }
 
     Column(
         modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
@@ -3281,22 +3336,14 @@ private fun TimerScreen(
         Text("已完成 ${timer.completedCycles} 个周期 · 累计专注 ${formatTimerDuration(totalFocusSeconds.toLong())}")
 
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("最近阶段记录", style = MaterialTheme.typography.titleMedium)
-            if (vm.timerRecords.isEmpty()) {
-                Text("暂无计时记录", style = MaterialTheme.typography.bodySmall)
+            Text("每日专注统计", style = MaterialTheme.typography.titleMedium)
+            if (dailyFocusStats.isEmpty()) {
+                Text("暂无专注记录", style = MaterialTheme.typography.bodySmall)
             } else {
-                vm.timerRecords.forEach { record ->
+                dailyFocusStats.forEach { (date, duration, count) ->
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Column(Modifier.weight(1f)) {
-                            Text(
-                                when {
-                                    record.name.startsWith("workTime-") -> "专注 · ${record.remark.orEmpty()}"
-                                    else -> "休息 · ${record.remark.orEmpty()}"
-                                }
-                            )
-                            Text(record.end.orEmpty(), style = MaterialTheme.typography.labelSmall)
-                        }
-                        Text(formatTimerDuration(record.duration?.toLong() ?: 0))
+                        Text(date, modifier = Modifier.weight(1f))
+                        Text("${formatTimerDuration(duration.toLong())} · $count 次")
                     }
                 }
             }
@@ -3671,7 +3718,7 @@ private fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text("后端连接", style = MaterialTheme.typography.headlineSmall)
-        Text("Android 模拟器访问开发电脑通常使用 http://10.0.2.2:38080。")
+        Text("例如 http://10.0.2.2:38080。")
         OutlinedTextField(
             url,
             onUrl,
@@ -3703,7 +3750,6 @@ private fun SettingsScreen(
             Spacer(Modifier.width(8.dp))
             Text("查看异常日志")
         }
-        Text("接口与桌面端一致，使用 TheSourceBox 服务端 API。")
         Text("使用局域网或生产服务时，建议启用 HTTPS 并保护服务端访问凭据。", style = MaterialTheme.typography.bodySmall)
         Text(
             "CofCool@TheSourceBox ${BuildConfig.BUILD_DATE}(${BuildConfig.COMMIT_ID})",

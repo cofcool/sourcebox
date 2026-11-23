@@ -184,10 +184,6 @@
 
 Java，可把后缀为`.desktop`，`.webloc`的多个网页快捷文件提取到链接并输出到Markdown文件。
 
-## 简单笔记
-
-简单笔记软件，开发目的是为局域网内部的多台设备进行信息同步
-
 ## JSON 格式化
 
 使用: `./sourcebox.sh --tool=json [--json='{}'] [--path=dmeo.json]`，支持 JSON Line

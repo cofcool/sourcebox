@@ -404,9 +404,7 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
 
     fun refreshTimerRecords() = perform {
         timerRecords = withContext(Dispatchers.IO) {
-            actionDatabase.actions("timer", "", size = 500)
-                .sortedByDescending { it.end.orEmpty() }
-                .take(10)
+            actionDatabase.allActions("timer")
         }
     }
 
@@ -549,9 +547,7 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
                     }
                 )
                 timerRecords = withContext(Dispatchers.IO) {
-                    actionDatabase.actions("timer", "", size = 500)
-                        .sortedByDescending { it.end.orEmpty() }
-                        .take(10)
+                    actionDatabase.allActions("timer")
                 }
                 localActionCount = withContext(Dispatchers.IO) { actionDatabase.actionCount() }
                 refreshPendingCount()
@@ -653,9 +649,7 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
                 recordCategories = withContext(Dispatchers.IO) { actionDatabase.actionCategories() }
                 loadTodayActions()
                 timerRecords = withContext(Dispatchers.IO) {
-                    actionDatabase.actions("timer", "", size = 500)
-                        .sortedByDescending { it.end.orEmpty() }
-                        .take(10)
+                    actionDatabase.allActions("timer")
                 }
                 message = "已同步 ${exported.actions.size} 条行动、${exported.notes.size} 条便笺、${exported.types.types.size} 个类型"
             }

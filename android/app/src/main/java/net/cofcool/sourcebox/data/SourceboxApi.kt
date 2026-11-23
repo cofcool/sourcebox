@@ -24,6 +24,7 @@ import kotlinx.serialization.json.put
 import net.cofcool.sourcebox.CrashLogStore
 import okhttp3.Credentials
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -66,6 +67,8 @@ data class TodoRecord(
     val state: String = "todo",
     val remark: String? = null,
     val type: String = "todo",
+    val category: String? = null,
+    val refs: String? = null,
     val start: String? = null,
     val end: String? = null
 )
@@ -576,6 +579,39 @@ class SourceboxApi(context: Context) {
     suspend fun deleteRecordChecklist(id: String) {
         request("/action/checklist/${Uri.encode(id)}", "DELETE")
     }
+
+    suspend fun uploadTextFile(fileName: String, content: String): String =
+        withContext(Dispatchers.IO) {
+            val base = baseUrl()
+            if (base.isBlank()) throw IOException("请先在设置中配置后端根地址")
+            val body = MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart(
+                    "file",
+                    fileName,
+                    content.toRequestBody("text/plain; charset=utf-8".toMediaType())
+                )
+                .build()
+            val builder = Request.Builder()
+                .url("$base/upload")
+                .header("Accept", "application/json")
+                .post(body)
+            val user = username()
+            if (user.isNotBlank()) {
+                builder.header("Authorization", Credentials.basic(user, password()))
+            }
+            client.newCall(builder.build()).execute().use { response ->
+                val responseContent = response.body?.string().orEmpty()
+                if (!response.isSuccessful) {
+                    recordApiFailure("POST", "/upload", response.code, responseContent)
+                    throw ServerResponseException(
+                        response.code,
+                        "HTTP ${response.code}: ${responseContent.take(300)}"
+                    )
+                }
+                responseContent
+            }
+        }
 
     private suspend fun request(path: String, method: String = "GET", body: String? = null): String =
         withContext(Dispatchers.IO) {

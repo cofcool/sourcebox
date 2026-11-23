@@ -183,6 +183,18 @@ class ActionExportDatabase(context: Context) :
                 conditions += "action_category = ?"
                 arguments += it
             }
+            parameters["state"]?.takeIf(String::isNotBlank)?.let {
+                conditions += "action_state = ?"
+                arguments += it
+            }
+            parameters["startyear"]?.takeIf(String::isNotBlank)?.let {
+                conditions += "substr(action_start, 1, 4) = ?"
+                arguments += it
+            }
+            parameters["endyear"]?.takeIf(String::isNotBlank)?.let {
+                conditions += "substr(action_end, 1, 4) = ?"
+                arguments += it
+            }
             parameters["label"]?.takeIf(String::isNotBlank)?.let {
                 conditions += "instr(action_labels, ',' || ? || ',') > 0"
                 arguments += it.lowercase(Locale.ROOT).trim()

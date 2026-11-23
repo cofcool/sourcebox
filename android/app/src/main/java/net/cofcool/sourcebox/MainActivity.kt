@@ -19,6 +19,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,11 +46,13 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Alarm
+import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -59,6 +62,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -81,6 +85,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
@@ -113,6 +119,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
@@ -180,6 +187,8 @@ private fun SourceboxApp(
     var selectedRecord by remember { mutableStateOf<ActionRecord?>(null) }
     var selectedTodo by remember { mutableStateOf<TodoRecord?>(null) }
     var selectedHabit by remember { mutableStateOf<ActionRecord?>(null) }
+    var showArchivedHabits by remember { mutableStateOf(false) }
+    var showCompletedTodos by remember { mutableStateOf(false) }
     var recordReturnPage by remember { mutableStateOf("task") }
     var appliedCategory by remember { mutableStateOf<String?>(null) }
     var appliedLabel by remember { mutableStateOf<String?>(null) }
@@ -215,10 +224,12 @@ private fun SourceboxApp(
     fun navigateBack() {
         page = when (page) {
             "files-download" -> "files"
+            "files-text-editor" -> "files"
             "record-detail" -> recordReturnPage
             "record-create" -> "task"
             "habit-detail", "habit-create" -> "habits"
             "todo-detail" -> "todos"
+            "todo-create" -> "todos"
             "crash-logs" -> "settings"
             in moreToolPages -> "more"
             else -> "tools"
@@ -255,7 +266,9 @@ private fun SourceboxApp(
                                 "tool" -> selectedTool?.id ?: "工具"
                                 "server-tools" -> "服务端工具"
                                 "todo-detail" -> "待办详情"
+                                "todo-create" -> "添加待办"
                                 "task" -> "任务"
+                                "habits" -> if (showArchivedHabits) "归档习惯" else "习惯"
                                 "record-create" -> "添加任务"
                                 "record-detail" -> "编辑任务"
                                 "habit-detail" -> "习惯详情"
@@ -263,6 +276,7 @@ private fun SourceboxApp(
                                 "books" -> "书籍记录"
                                 "timer" -> "番茄钟"
                                 "files" -> "文件工具"
+                                "files-text-editor" -> "文本编辑"
                                 "files-download" -> "下载共享文件"
                                 "settings" -> "连接设置"
                                 "crash-logs" -> "异常日志"
@@ -284,15 +298,52 @@ private fun SourceboxApp(
                             "task" -> IconButton(onClick = { page = "record-create" }) {
                                 Icon(Icons.Default.Add, contentDescription = "添加任务")
                             }
-                            "habits" -> IconButton(onClick = { page = "habit-create" }) {
-                                Icon(Icons.Default.Add, contentDescription = "添加习惯")
+                            "files" -> IconButton(onClick = { page = "files-text-editor" }) {
+                                Icon(Icons.Default.Edit, contentDescription = "文本编辑")
+                            }
+                            "todos" -> {
+                                IconButton(onClick = { showCompletedTodos = !showCompletedTodos }) {
+                                    Icon(
+                                        if (showCompletedTodos) Icons.Default.Unarchive else Icons.Default.Archive,
+                                        contentDescription = if (showCompletedTodos) "返回待办" else "查看已完成"
+                                    )
+                                }
+                                IconButton(onClick = {
+                                    showCompletedTodos = false
+                                    selectedTodo = TodoRecord()
+                                    page = "todo-create"
+                                }) {
+                                    Icon(Icons.Default.Add, contentDescription = "添加待办")
+                                }
+                            }
+                            "habits" -> {
+                                IconButton(onClick = { showArchivedHabits = !showArchivedHabits }) {
+                                    Icon(
+                                        if (showArchivedHabits) Icons.Default.Unarchive else Icons.Default.Archive,
+                                        contentDescription = if (showArchivedHabits) {
+                                            "查看进行中的习惯"
+                                        } else {
+                                            "查看归档习惯"
+                                        }
+                                    )
+                                }
+                                IconButton(onClick = {
+                                    showArchivedHabits = false
+                                    page = "habit-create"
+                                }) {
+                                    Icon(Icons.Default.Add, contentDescription = "添加习惯")
+                                }
                             }
                         }
                     }
                 )
             },
             bottomBar = {
-                if (page !in setOf("record-detail", "record-create", "habit-detail", "habit-create", "todo-detail")) {
+                if (page !in setOf(
+                        "record-detail", "record-create", "habit-detail", "habit-create",
+                        "todo-detail", "todo-create", "files-text-editor"
+                    )
+                ) {
                     NavigationBar {
                         pages.forEach { (destination, label) ->
                             val icon = when (destination) {
@@ -434,6 +485,7 @@ private fun SourceboxApp(
                 "habits" -> HabitBoardScreen(
                     vm = vm,
                     modifier = Modifier.padding(padding),
+                    showArchived = showArchivedHabits,
                     onOpenHabit = { habit ->
                         selectedHabit = habit
                         vm.loadHabitDetails(habit)
@@ -447,8 +499,7 @@ private fun SourceboxApp(
                 "todos" -> TodosScreen(
                     vm = vm,
                     modifier = Modifier.padding(padding),
-                    sharedText = sharedText,
-                    onShareConsumed = onShareConsumed,
+                    showCompleted = showCompletedTodos,
                     onOpenTodo = { selectedTodo = it; page = "todo-detail" }
                 )
                 "todo-detail" -> selectedTodo?.let { todo ->
@@ -458,6 +509,20 @@ private fun SourceboxApp(
                         busy = vm.busy,
                         onSave = { updated ->
                             vm.saveTodo(updated) {
+                                selectedTodo = updated
+                                page = "todos"
+                            }
+                        }
+                    )
+                }
+                "todo-create" -> selectedTodo?.let { todo ->
+                    TodoDetailsScreen(
+                        todo = todo,
+                        modifier = Modifier.padding(padding),
+                        busy = vm.busy,
+                        isNew = true,
+                        onSave = { updated ->
+                            vm.createTodo(updated) {
                                 selectedTodo = updated
                                 page = "todos"
                             }
@@ -482,6 +547,10 @@ private fun SourceboxApp(
                         vm.resetLanShareDownloadState()
                         page = "files"
                     }
+                )
+                "files-text-editor" -> FilesTextEditorScreen(
+                    modifier = Modifier.padding(padding),
+                    vm = vm
                 )
                 "files-download" -> FilesScreen(
                     modifier = Modifier.padding(padding),
@@ -522,8 +591,11 @@ private fun SourceboxApp(
                 confirmButton = {
                     Row {
                         TextButton(onClick = {
-                            page = "todos"
+                            showCompletedTodos = false
+                            selectedTodo = TodoRecord(name = sharedText)
+                            page = "todo-create"
                             showShareTargetDialog = false
+                            onShareConsumed()
                         }) {
                             Text("待办")
                         }
@@ -573,6 +645,8 @@ private fun HomeScreen(
                             id = it.id,
                             name = it.name,
                             state = it.state,
+                            category = it.category,
+                            refs = it.refs,
                             remark = it.remark,
                             type = it.type,
                             start = it.start,
@@ -767,11 +841,18 @@ private fun TodoDetailsScreen(
     todo: TodoRecord,
     modifier: Modifier,
     busy: Boolean,
+    isNew: Boolean = false,
     onSave: (TodoRecord) -> Unit
 ) {
     var name by remember(todo.id) { mutableStateOf(todo.name) }
     var remark by remember(todo.id) { mutableStateOf(todo.remark.orEmpty()) }
     var start by remember(todo.id) { mutableStateOf(todo.start.orEmpty()) }
+    val initialSchedule = remember(todo.id) { todoScheduleConfig(todo.refs) }
+    var repeatCount by remember(todo.id) { mutableStateOf(initialSchedule.first) }
+    var repeatUnit by remember(todo.id) { mutableStateOf(initialSchedule.second) }
+    var repeatUnitMenuExpanded by remember(todo.id) { mutableStateOf(false) }
+    val parsedRepeatCount = repeatCount.toIntOrNull()
+    val repeatUnits = listOf("D" to "日", "W" to "周", "M" to "月", "Y" to "年")
 
     Column(
         modifier
@@ -796,6 +877,42 @@ private fun TodoDetailsScreen(
             minLines = 3,
             enabled = !busy
         )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedTextField(
+                value = repeatCount,
+                onValueChange = { repeatCount = it },
+                modifier = Modifier.weight(1f),
+                label = { Text("重复间隔") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+                enabled = !busy
+            )
+            Box {
+                OutlinedButton(
+                    onClick = { repeatUnitMenuExpanded = true },
+                    enabled = !busy
+                ) {
+                    Text(repeatUnits.first { it.first == repeatUnit }.second)
+                }
+                DropdownMenu(
+                    expanded = repeatUnitMenuExpanded,
+                    onDismissRequest = { repeatUnitMenuExpanded = false }
+                ) {
+                    repeatUnits.forEach { (unit, label) ->
+                        DropdownMenuItem(
+                            text = { Text(label) },
+                            onClick = {
+                                repeatUnit = unit
+                                repeatUnitMenuExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
         RecordDateTimePicker(
             value = start,
             label = "开始日期",
@@ -803,20 +920,45 @@ private fun TodoDetailsScreen(
         )
         Button(
             onClick = {
+                val count = parsedRepeatCount ?: return@Button
                 onSave(
                     todo.copy(
                         name = name.trim(),
                         remark = remark.trim().ifBlank { null },
                         start = start.ifBlank { null }
+                    ).withTodoSchedule(
+                        count,
+                        repeatUnit
                     )
                 )
             },
             modifier = Modifier.fillMaxWidth(),
-            enabled = !busy && name.isNotBlank()
+            enabled = !busy && name.isNotBlank() && parsedRepeatCount != null && parsedRepeatCount >= 0
         ) {
-            Text("保存")
+            Text(if (isNew) "添加待办" else "保存")
         }
     }
+}
+
+private fun todoScheduleConfig(refs: String?): Pair<String, String> {
+    val schedule = refs.orEmpty()
+        .split(";")
+        .firstNotNullOfOrNull { it.trim().takeIf { ref -> ref.startsWith("schedule:") } }
+        ?.substringAfter("schedule:")
+    val match = Regex("^P(\\d+)([DWMY])$").matchEntire(schedule.orEmpty()) ?: return "0" to "D"
+    return match.groupValues[1] to match.groupValues[2]
+}
+
+private fun TodoRecord.withTodoSchedule(count: Int, unit: String): TodoRecord {
+    val otherRefs = refs.orEmpty()
+        .split(";")
+        .map(String::trim)
+        .filter { it.isNotBlank() && it.substringBefore(':') != "schedule" }
+    val schedule = if (count > 0) listOf("schedule:P$count$unit") else emptyList()
+    return copy(
+        category = if (count > 0) "repeat" else category?.takeUnless { it == "repeat" },
+        refs = (otherRefs + schedule).joinToString(";").ifBlank { null }
+    )
 }
 
 @Composable
@@ -1080,11 +1222,29 @@ private fun RecordBoardScreen(
 ) {
     var query by remember { mutableStateOf("") }
     var appliedQuery by remember { mutableStateOf("") }
+    var categoryFilter by remember(appliedCategory) { mutableStateOf(appliedCategory.orEmpty()) }
+    var stateFilter by remember { mutableStateOf("") }
+    var appliedState by remember { mutableStateOf("") }
+    var startYearFilter by remember { mutableStateOf("") }
+    var appliedStartYear by remember { mutableStateOf("") }
+    var endYearFilter by remember { mutableStateOf("") }
+    var appliedEndYear by remember { mutableStateOf("") }
     var page by remember { mutableStateOf(1) }
     val keyboardController = LocalSoftwareKeyboardController.current
+    val years = remember {
+        (2020..java.time.Year.now().value).map { it.toString() }
+    }
 
-    LaunchedEffect(appliedQuery, appliedCategory, appliedLabel, page) {
-        vm.refreshRecords(appliedQuery, page, appliedCategory, appliedLabel)
+    LaunchedEffect(appliedQuery, appliedCategory, appliedLabel, appliedState, appliedStartYear, appliedEndYear, page) {
+        vm.refreshRecords(
+            appliedQuery,
+            page,
+            appliedCategory,
+            appliedLabel,
+            appliedState.takeIf(String::isNotBlank),
+            appliedStartYear.toIntOrNull(),
+            appliedEndYear.toIntOrNull()
+        )
     }
     LaunchedEffect(Unit) {
         vm.refreshRecordCategories()
@@ -1109,16 +1269,59 @@ private fun RecordBoardScreen(
                 onClick = {
                     keyboardController?.hide()
                     appliedQuery = query.trim()
-                    onFilterChanged(null, null)
+                    onFilterChanged(categoryFilter.takeIf(String::isNotBlank), null)
+                    appliedState = stateFilter
+                    appliedStartYear = startYearFilter
+                    appliedEndYear = endYearFilter
                     page = 1
                 },
                 enabled = !vm.busy
             ) { Icon(Icons.Default.Search, contentDescription = "查询记录") }
         }
 
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            RecordFilterDropdown(
+                title = "状态",
+                selected = stateFilter,
+                options = listOf(
+                    "" to "全部",
+                    "todo" to "待办",
+                    "doing" to "进行中",
+                    "done" to "已完成",
+                    "cancel" to "已取消"
+                ),
+                modifier = Modifier.weight(1f),
+                onSelected = { stateFilter = it }
+            )
+            RecordFilterDropdown(
+                title = "分类",
+                selected = categoryFilter,
+                options = listOf("" to "全部") + vm.recordCategories.map { it to it },
+                modifier = Modifier.weight(1f),
+                onSelected = { categoryFilter = it }
+            )
+            RecordFilterDropdown(
+                title = "开始",
+                selected = startYearFilter,
+                options = listOf("" to "全部") + years.map { it to it },
+                modifier = Modifier.weight(1f),
+                onSelected = { startYearFilter = it }
+            )
+            RecordFilterDropdown(
+                title = "结束",
+                selected = endYearFilter,
+                options = listOf("" to "全部") + years.map { it to it },
+                modifier = Modifier.weight(1f),
+                onSelected = { endYearFilter = it }
+            )
+        }
+
         if (vm.records.isEmpty()) {
             EmptyState(
-                if (appliedQuery.isNotBlank() || appliedCategory != null || appliedLabel != null) {
+                if (
+                    appliedQuery.isNotBlank() || appliedCategory != null || appliedLabel != null ||
+                    appliedState.isNotBlank() || appliedStartYear.isNotBlank() || appliedEndYear.isNotBlank()
+                ) {
                     "没有匹配的记录"
                 } else {
                     "还没有记录，添加一条开始使用"
@@ -1203,16 +1406,46 @@ private fun RecordBoardScreen(
 }
 
 @Composable
+private fun RecordFilterDropdown(
+    title: String,
+    selected: String,
+    options: List<Pair<String, String>>,
+    modifier: Modifier = Modifier,
+    onSelected: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedLabel = options.firstOrNull { it.first == selected }?.second ?: options.first().second
+    Box(modifier) {
+        OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) {
+            Text("$title\n$selectedLabel", maxLines = 2)
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            options.forEach { (value, label) ->
+                DropdownMenuItem(
+                    text = { Text(label) },
+                    onClick = {
+                        onSelected(value)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun HabitBoardScreen(
     vm: ToolboxViewModel,
     modifier: Modifier,
+    showArchived: Boolean,
     onOpenHabit: (ActionRecord) -> Unit
 ) {
     var appliedQuery by remember { mutableStateOf("") }
     val today = LocalDate.now()
     val recentDays = (0..4).map { today.minusDays(it.toLong()) }
     val visibleHabits = vm.habits.filter {
-        appliedQuery.isBlank() || it.name.contains(appliedQuery, ignoreCase = true)
+        it.state == (if (showArchived) "cancel" else "doing") &&
+            (appliedQuery.isBlank() || it.name.contains(appliedQuery, ignoreCase = true))
     }
 
     LaunchedEffect(Unit) {
@@ -1225,7 +1458,11 @@ private fun HabitBoardScreen(
     ) {
         if (visibleHabits.isEmpty()) {
             EmptyState(
-                if (appliedQuery.isNotBlank()) "没有匹配的习惯" else "还没有习惯，点击右上角添加"
+                when {
+                    appliedQuery.isNotBlank() -> if (showArchived) "没有匹配的归档习惯" else "没有匹配的习惯"
+                    showArchived -> "还没有归档习惯"
+                    else -> "还没有习惯，点击右上角添加"
+                }
             )
         } else {
             Row(
@@ -1690,8 +1927,29 @@ private fun HabitDetailsScreen(
                     )
                 }
                 definition?.question?.takeIf(String::isNotBlank)?.let { Text("打卡问题：$it") }
-                OutlinedButton(onClick = { editing = !editing }, enabled = !busy) {
-                    Text(if (editing) "收起修改" else "修改习惯")
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(
+                        onClick = { editing = !editing },
+                        enabled = !busy,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(if (editing) "收起修改" else "修改习惯")
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            onSaveHabit(
+                                habit.copy(
+                                    action = habit.action.copy(
+                                        state = if (habit.action.state == "cancel") "doing" else "cancel"
+                                    )
+                                )
+                            )
+                        },
+                        enabled = !busy,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(if (habit.action.state == "cancel") "激活习惯" else "归档习惯")
+                    }
                 }
             }
         }
@@ -2252,6 +2510,7 @@ private fun RecordDetails(
     var checklistName by remember(record.id) { mutableStateOf("") }
     var checklistFirst by remember(record.id) { mutableStateOf("0") }
     var checklistLast by remember(record.id) { mutableStateOf("") }
+    var selectedCommentTab by remember(record.id) { mutableStateOf(0) }
     var durationHours by remember(record.id) {
         mutableStateOf(
             record.duration?.let {
@@ -2397,7 +2656,20 @@ private fun RecordDetails(
             ) { Text("添加 Checklist") }
             if (checklists.isEmpty()) Text("还没有 Checklist", style = MaterialTheme.typography.bodySmall)
             checklists.forEach { checklist ->
-                ChecklistItem(checklist, busy, onSaveChecklist, onDeleteChecklist)
+                ChecklistItem(
+                    checklist,
+                    busy,
+                    onSaveChecklist,
+                    onDeleteChecklist,
+                    onLongClick = {
+                        val reference = "@cl:${checklist.id} "
+                        reply += if (reply.isBlank() || reply.last().isWhitespace()) {
+                            reference
+                        } else {
+                            " $reference"
+                        }
+                    }
+                )
             }
 
             androidx.compose.material3.HorizontalDivider()
@@ -2414,10 +2686,44 @@ private fun RecordDetails(
                 enabled = !busy && reply.isNotBlank(),
                 modifier = Modifier.fillMaxWidth()
             ) { Text("添加回复") }
-            if (comments.isEmpty()) Text("还没有回复", style = MaterialTheme.typography.bodySmall)
-            comments.forEach { comment ->
+            val replyComments = comments.filterNot { it.id.startsWith("sys-") }
+            val systemComments = comments.filter { it.id.startsWith("sys-") }
+            TabRow(selectedTabIndex = selectedCommentTab) {
+                listOf("回复", "系统").forEachIndexed { index, title ->
+                    Tab(
+                        selected = selectedCommentTab == index,
+                        onClick = { selectedCommentTab = index },
+                        text = { Text(title) }
+                    )
+                }
+            }
+            val visibleComments = if (selectedCommentTab == 0) replyComments else systemComments
+            if (visibleComments.isEmpty()) {
+                Text(
+                    if (selectedCommentTab == 0) "还没有回复" else "还没有系统消息",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            visibleComments.forEach { comment ->
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(comment.content)
+                    val content = buildAnnotatedString {
+                        var position = 0
+                        Regex("@cl:([^\\s]+)").findAll(comment.content).forEach { match ->
+                            append(comment.content.substring(position, match.range.first))
+                            val checklistId = match.groupValues[1]
+                            val checklistContent = checklists.firstOrNull { it.id == checklistId }?.content
+                            if (checklistContent != null) {
+                                withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary)) {
+                                    append(checklistContent)
+                                }
+                            } else {
+                                append(match.value)
+                            }
+                            position = match.range.last + 1
+                        }
+                        append(comment.content.substring(position))
+                    }
+                    Text(content)
                     Text(comment.createTime.orEmpty(), style = MaterialTheme.typography.labelSmall)
                     androidx.compose.material3.HorizontalDivider()
                 }
@@ -2605,15 +2911,24 @@ private fun EditableDropdownField(
 }
 
 @Composable
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 private fun ChecklistItem(
     checklist: ActionCheckList,
     busy: Boolean,
     onSave: (ActionCheckList) -> Unit,
-    onDelete: (String) -> Unit
+    onDelete: (String) -> Unit,
+    onLongClick: () -> Unit
 ) {
     var current by remember(checklist.id, checklist.current) { mutableStateOf(checklist.current.toString()) }
     val isTodo = checklist.first == 0 && checklist.last == 1
-    Card(Modifier.fillMaxWidth()) {
+    val displayContent = checklist.content +
+        if (checklist.last > 0 && !isTodo) " (${checklist.first}-${checklist.last})" else ""
+    Card(
+        Modifier.fillMaxWidth().combinedClickable(
+            onClick = {},
+            onLongClick = onLongClick
+        )
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -2627,7 +2942,7 @@ private fun ChecklistItem(
                     enabled = !busy
                 )
                 Text(
-                    checklist.content,
+                    displayContent,
                     modifier = Modifier.weight(1f),
                     fontWeight = if (checklist.current == 1) FontWeight.Normal else FontWeight.SemiBold,
                     color = if (checklist.current == 1) MaterialTheme.colorScheme.onSurfaceVariant
@@ -2635,7 +2950,7 @@ private fun ChecklistItem(
                 )
             } else {
                 Text(
-                    checklist.content,
+                    displayContent,
                     modifier = Modifier.weight(1f),
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1
@@ -2666,53 +2981,25 @@ private fun ChecklistItem(
 private fun TodosScreen(
     vm: ToolboxViewModel,
     modifier: Modifier,
-    sharedText: String?,
-    onShareConsumed: () -> Unit,
+    showCompleted: Boolean,
     onOpenTodo: (TodoRecord) -> Unit
 ) {
-    var name by remember { mutableStateOf("") }
-    var remark by remember { mutableStateOf("") }
     var query by remember { mutableStateOf("") }
     var appliedQuery by remember { mutableStateOf("") }
     var page by remember { mutableStateOf(1) }
-    var showCompleted by remember { mutableStateOf(false) }
     val keyboardController = LocalSoftwareKeyboardController.current
 
     LaunchedEffect(appliedQuery, page, showCompleted) {
         vm.refreshTodos(appliedQuery, page, if (showCompleted) "done" else "todo")
     }
-
-    LaunchedEffect(sharedText) {
-        if (!sharedText.isNullOrBlank()) {
-            name = sharedText
-            onShareConsumed()
-        }
+    LaunchedEffect(showCompleted) {
+        page = 1
     }
 
     Column(modifier
         .fillMaxSize()
         .verticalScroll(rememberScrollState())
         .padding(16.dp)) {
-        OutlinedTextField(
-            name,
-            { name = it },
-            Modifier.fillMaxWidth(),
-            label = { Text("待办事项") },
-            maxLines = 4
-        )
-        OutlinedTextField(remark, { remark = it }, Modifier.fillMaxWidth(), label = { Text("备注（可选）") }, maxLines = 4)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(
-                onClick = { vm.addTodo(name, remark); name = ""; remark = "" },
-                enabled = !vm.busy
-            ) { Text("添加待办") }
-            OutlinedButton(
-                onClick = { showCompleted = !showCompleted; page = 1 },
-                enabled = !vm.busy
-            ) {
-                Text(if (showCompleted) "返回待办" else "已完成")
-            }
-        }
         Row(Modifier.padding(bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             OutlinedTextField(
                 query,
@@ -3023,6 +3310,83 @@ private fun formatTimerDuration(seconds: Long): String {
     val remainingSeconds = seconds % 60
     return if (hours > 0) "%d:%02d:%02d".format(hours, minutes, remainingSeconds)
     else "%d:%02d".format(minutes, remainingSeconds)
+}
+
+@Composable
+private fun FilesTextEditorScreen(
+    modifier: Modifier,
+    vm: ToolboxViewModel
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val file = remember(context) { java.io.File(context.filesDir, "text-editor.txt") }
+    var content by remember { mutableStateOf("") }
+    var loaded by remember { mutableStateOf(false) }
+    var saving by remember { mutableStateOf(false) }
+
+    LaunchedEffect(file) {
+        try {
+            content = withContext(Dispatchers.IO) {
+                if (file.isFile) file.readText() else ""
+            }
+        } catch (error: java.io.IOException) {
+            vm.showMessage("读取文本失败：${error.message ?: "未知错误"}")
+        } finally {
+            loaded = true
+        }
+    }
+
+    Column(
+        modifier.fillMaxSize().padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        OutlinedTextField(
+            value = content,
+            onValueChange = { content = it },
+            modifier = Modifier.fillMaxWidth().weight(1f),
+            label = { Text("文本内容") },
+            placeholder = { Text("在此输入文本") },
+            enabled = loaded && !saving && !vm.busy
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Button(
+                onClick = {
+                    saving = true
+                    scope.launch {
+                        try {
+                            withContext(Dispatchers.IO) { file.writeText(content) }
+                            vm.showMessage("已保存到应用目录：${file.name}")
+                        } catch (error: java.io.IOException) {
+                            vm.showMessage("保存文本失败：${error.message ?: "未知错误"}")
+                        } finally {
+                            saving = false
+                        }
+                    }
+                },
+                modifier = Modifier.weight(1f),
+                enabled = loaded && !saving && !vm.busy
+            ) {
+                Text("保存")
+            }
+            OutlinedButton(
+                onClick = { content = "" },
+                modifier = Modifier.weight(1f),
+                enabled = loaded && !saving && !vm.busy
+            ) {
+                Text("清空")
+            }
+            OutlinedButton(
+                onClick = { vm.uploadTextFile(content) },
+                modifier = Modifier.weight(1f),
+                enabled = loaded && !saving && !vm.busy
+            ) {
+                Text("上传")
+            }
+        }
+    }
 }
 
 @Composable

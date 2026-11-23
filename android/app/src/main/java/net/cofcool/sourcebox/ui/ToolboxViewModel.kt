@@ -297,6 +297,11 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         message = text
     }
 
+    fun uploadTextFile(content: String) = perform {
+        api.uploadTextFile("text-editor.txt", content)
+        message = "文本已上传"
+    }
+
     fun uploadLanShareFiles(receiverUrl: String, token: String, files: List<Uri>) = perform {
         require(files.isNotEmpty()) { "请先选择要上传的文件" }
         lanShareUploadState = LanShareUploadState(totalFiles = files.size)
@@ -911,6 +916,41 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         message = if (isDirty) "待办已添加到本地，等待联网同步" else "待办已添加"
     }
 
+    fun createTodo(todo: TodoRecord, onCreated: () -> Unit = {}) = perform(
+        onSuccess = { (_, isDirty) ->
+            refreshPendingCount()
+            loadTodos(currentTodoQuery, currentTodoPage, currentTodoState)
+            loadTodayActions()
+            message = if (isDirty) "待办已添加到本地，等待联网同步" else "待办已添加"
+            onCreated()
+        }
+    ) {
+        require(todo.name.isNotBlank()) { "待办名称不能为空" }
+        val now = currentRecordDateTime()
+        val pendingAction = todo.toActionRecord().copy(
+            id = UUID.randomUUID().toString().replace("-", ""),
+            name = todo.name.trim(),
+            state = "todo",
+            type = "todo",
+            start = todo.start ?: now,
+            end = todo.end ?: now,
+            createTime = now
+        )
+        val (saved, isDirty) = writeWithOfflineFallback(
+            server = {
+                api.addTodo(pendingAction)
+                withContext(Dispatchers.IO) { actionDatabase.saveAction(pendingAction) }
+                pendingAction
+            },
+            offline = {
+                withContext(Dispatchers.IO) { actionDatabase.markActionDirty(pendingAction) }
+                pendingAction
+            }
+        )
+        localActionCount = withContext(Dispatchers.IO) { actionDatabase.actionCount() }
+        saved.toTodoRecord() to isDirty
+    }
+
     fun completeTodo(todo: TodoRecord) = perform {
         val current = withContext(Dispatchers.IO) { actionDatabase.actionDetails(todo.id) }
             ?.record ?: todo.toActionRecord()
@@ -947,7 +987,9 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         val updatedLocal = current.copy(
             name = todo.name.trim(),
             remark = todo.remark?.trim()?.ifBlank { null },
-            start = todo.start
+            start = todo.start,
+            category = todo.category,
+            refs = todo.refs
         )
         val (saved, isDirty) = writeWithOfflineFallback(
             server = {
@@ -988,7 +1030,10 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         query: String = "",
         page: Int = 1,
         category: String? = null,
-        label: String? = null
+        label: String? = null,
+        state: String? = null,
+        startYear: Int? = null,
+        endYear: Int? = null
     ) = perform {
         val filters = buildList {
             query.takeIf(String::isNotBlank)?.let {
@@ -1000,6 +1045,9 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
             }
             category?.let { add("category=${java.net.URLEncoder.encode(it, "UTF-8")}") }
             label?.let { add("label=${java.net.URLEncoder.encode(it, "UTF-8")}") }
+            state?.let { add("state=${java.net.URLEncoder.encode(it, "UTF-8")}") }
+            startYear?.let { add("startYear=$it") }
+            endYear?.let { add("endYear=$it") }
         }
         val localQuery = filters.joinToString("&")
         val result = withContext(Dispatchers.IO) {
@@ -1450,6 +1498,8 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         state = state,
         remark = remark,
         type = type,
+        category = category,
+        refs = refs,
         start = start,
         end = end
     )
@@ -1460,6 +1510,8 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         state = state,
         remark = remark,
         type = type,
+        category = category,
+        refs = refs,
         start = start,
         end = end
     )

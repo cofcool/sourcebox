@@ -1,14 +1,14 @@
 package net.cofcool.sourcebox.internal.api.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.vertx.sqlclient.Row;
+import java.sql.JDBCType;
+import java.time.LocalDateTime;
 import lombok.Builder;
 import net.cofcool.sourcebox.util.TableInfoHelper.Column;
 import net.cofcool.sourcebox.util.TableInfoHelper.DefaultMapper;
 import net.cofcool.sourcebox.util.TableInfoHelper.Entity;
 import net.cofcool.sourcebox.util.TableInfoHelper.ID;
-
-import java.sql.JDBCType;
-import java.time.LocalDateTime;
 
 @Builder
 @Entity(name = "photo")
@@ -23,13 +23,13 @@ public record Photo(
     @Column(name = "size", type = JDBCType.BIGINT) Long size,
     @Column(name = "width", type = JDBCType.INTEGER, nullable = true) Integer width,
     @Column(name = "height", type = JDBCType.INTEGER, nullable = true) Integer height,
-    @Column(name = "taken_at", type = JDBCType.TIMESTAMP, nullable = true) LocalDateTime takenAt,
+    @Column(name = "taken_at", type = JDBCType.TIMESTAMP, nullable = true) @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime takenAt,
     @Column(name = "metadata_status", type = JDBCType.VARCHAR, length = 20) String metadataStatus,
     @Column(name = "metadata_json", type = JDBCType.VARCHAR, length = 8000, nullable = true) String metadataJson,
     @Column(name = "status", type = JDBCType.VARCHAR, length = 20) String status,
     @Column(name = "trashed_at", type = JDBCType.TIMESTAMP, nullable = true) LocalDateTime trashedAt,
-    @Column(name = "create_time", type = JDBCType.TIMESTAMP) LocalDateTime createTime,
-    @Column(name = "update_time", type = JDBCType.TIMESTAMP) LocalDateTime updateTime
+    @Column(name = "create_time", type = JDBCType.TIMESTAMP) @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime createTime,
+    @Column(name = "update_time", type = JDBCType.TIMESTAMP) @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime updateTime
 ) {
     @DefaultMapper
     public static Photo of(Row row) {

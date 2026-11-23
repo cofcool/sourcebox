@@ -1,18 +1,21 @@
 package net.cofcool.sourcebox.internal.api;
 
 import io.vertx.core.Future;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.CustomLog;
 import net.cofcool.sourcebox.internal.api.entity.Config;
 import net.cofcool.sourcebox.util.JsonUtil;
 import net.cofcool.sourcebox.util.RepositoryUtil;
 import net.cofcool.sourcebox.util.SqlRepository;
 import net.cofcool.sourcebox.util.VertxUtils.JDBCPoolConfig;
-
-import java.sql.*;
-import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 @CustomLog
 public class ConfigService {
@@ -79,17 +82,10 @@ public class ConfigService {
             "ALTER TABLE command_record ALTER COLUMN cmd VARCHAR(2048)"
         ));
 
-        migrationSteps.put(6, List.of(
-            "DROP TABLE action_type"
-        ));
-
         migrationSteps.put(7, List.of(
             "ALTER TABLE action_record ADD COLUMN category VARCHAR(50) null"
         ));
 
-        migrationSteps.put(8, List.of(
-            "DROP TABLE check_list"
-        ));
 
         migrationSteps.put(DB_VERSION, List.of(
             "ALTER TABLE action_record ALTER COLUMN remark VARCHAR(5000)",

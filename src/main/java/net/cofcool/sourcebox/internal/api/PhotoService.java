@@ -4,21 +4,12 @@ import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import net.cofcool.sourcebox.internal.api.entity.Photo;
-import net.cofcool.sourcebox.internal.api.entity.PhotoAlbum;
-import net.cofcool.sourcebox.internal.api.entity.SmartAlbum;
-import net.cofcool.sourcebox.util.RepositoryUtil;
-import net.cofcool.sourcebox.util.SqlRepository;
-import org.apache.commons.lang3.StringUtils;
-
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -28,19 +19,44 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import javax.imageio.ImageIO;
+import lombok.CustomLog;
+import lombok.SneakyThrows;
+import net.cofcool.sourcebox.internal.api.entity.Photo;
+import net.cofcool.sourcebox.internal.api.entity.PhotoAlbum;
+import net.cofcool.sourcebox.internal.api.entity.SmartAlbum;
+import net.cofcool.sourcebox.util.RepositoryUtil;
+import net.cofcool.sourcebox.util.SqlRepository;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 
+@CustomLog
 public class PhotoService {
+    public static final String SCAN_ADDRESS = "sourcebox.photo.scan";
+    public static final String BACKUP_ADDRESS = "sourcebox.photo.backup";
+    private static final List<String> EXTENSIONS = List.of("jpg", "jpeg", "png", "gif", "bmp",
+        "webp", "heic", "heif", "mp4");
+
     private final Vertx vertx;
     private final SqlRepository<PhotoAlbum> albumRepository;
     private final SqlRepository<Photo> photoRepository;
     private final SqlRepository<SmartAlbum> smartRepository;
     private final ConcurrentMap<String, JsonObject> jobs = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, JsonObject> backupJobs = new ConcurrentHashMap<>();
 
     public PhotoService(Vertx vertx) {
         this.vertx = vertx;
         albumRepository = RepositoryUtil.getRepository(PhotoAlbum.class);
         photoRepository = RepositoryUtil.getRepository(Photo.class);
         smartRepository = RepositoryUtil.getRepository(SmartAlbum.class);
+        vertx.eventBus().consumer(SCAN_ADDRESS, message -> {
+            if (!(message.body() instanceof JsonObject job)) return;
+            executeScan(job.getString("jobId"), job.getJsonObject("request"));
+        });
+        vertx.eventBus().consumer(BACKUP_ADDRESS, message -> {
+            if (!(message.body() instanceof JsonObject job)) return;
+            executeBackup(job);
+        });
     }
 
     public Future<PhotoAlbum> saveAlbum(PhotoAlbum album) {
@@ -82,47 +98,72 @@ public class PhotoService {
     public Future<JsonObject> scan(JsonObject request) {
         var jobId = UUID.randomUUID().toString();
         var result = new JsonObject()
-            .put("jobId", jobId).put("status", "RUNNING")
+            .put("jobId", jobId).put("status", "QUEUED")
             .put("scanned", 0).put("added", 0).put("skipped", 0).put("failed", 0);
         jobs.put(jobId, result);
 
-        var roots = request.getJsonArray("sourceRoots");
-        if (roots == null) {
-            roots = new JsonArray();
-            var one = request.getString("rootPath");
-            if (StringUtils.isNotBlank(one)) roots.add(one);
+        vertx.eventBus().send(SCAN_ADDRESS, new JsonObject()
+            .put("jobId", jobId)
+            .put("request", request.copy()));
+
+        return Future.succeededFuture(result.copy());
+    }
+
+    private void executeScan(String jobId, JsonObject request) {
+        var result = jobs.get(jobId);
+        if (result == null) {
+            return;
         }
-        var rootList = roots.stream().map(Object::toString).filter(StringUtils::isNotBlank).distinct().toList();
-        var recursive = request.getBoolean("recursive", true);
-        var albumName = StringUtils.defaultIfBlank(
-            request.getString("albumName"),
-            rootList.isEmpty() ? "未命名相册" : Path.of(rootList.getFirst()).getFileName().toString()
-        );
+        result.put("status", "RUNNING");
         var albumId = request.getString("albumId");
 
         Future<PhotoAlbum> albumFuture;
         if (StringUtils.isNotBlank(albumId)) {
-            albumFuture = findAlbum(albumId).compose(existing -> {
-                var mergedRoots = mergeRoots(existing.sourceRoots(), rootList);
-                return saveAlbum(new PhotoAlbum(
-                    existing.id(), existing.name(), existing.type(), mergedRoots, recursive,
-                    existing.coverPhotoId(), existing.status(), existing.createTime(), existing.updateTime()
-                ));
-            });
+            albumFuture = findAlbum(albumId);
         } else {
+            var roots = request.getJsonArray("sourceRoots");
+            if (roots == null) {
+                roots = new JsonArray();
+                var one = request.getString("rootPath");
+                if (StringUtils.isNotBlank(one)) {
+                    roots.add(one);
+                }
+            }
+            var rootList = roots.stream().map(Object::toString)
+                .filter(StringUtils::isNotBlank).distinct().toList();
+            var recursive = request.getBoolean("recursive", true);
+            var albumName = StringUtils.defaultIfBlank(
+                request.getString("albumName"),
+                rootList.isEmpty() ? "未命名相册"
+                    : Path.of(rootList.getFirst()).getFileName().toString()
+            );
             albumFuture = saveAlbum(PhotoAlbum.builder()
                 .name(albumName).type("MANUAL").sourceRoots(String.join("\n", rootList))
                 .recursive(recursive).status("NORMAL").build());
         }
 
-        return albumFuture.compose(album ->
-            vertx.executeBlocking(() -> collectCandidates(album, rootList, recursive))
-        ).compose(candidates -> {
+        albumFuture.compose(a -> {
+            var rootList = Arrays.stream(a.sourceRoots().split("\\n"))
+                .map(String::trim).filter(StringUtils::isNotBlank).distinct().toList();
+            var recursive = a.recursive() == null || a.recursive();
+            log.info("Start photo scan job {0}, album={1}, roots={2}, recursive={3}",
+                jobId, a.name(), rootList, recursive);
+            var candidates = collectCandidates(a, rootList, recursive);
             var album = candidates.album;
             var total = candidates.files.size();
             result.put("scanned", total);
-            return scanCandidates(album, candidates.files, result).map(result.put("status", "COMPLETED"));
-        }).onFailure(error -> result.put("status", "FAILED").put("error", error.getMessage()));
+            log.info("Photo scan job {0} found {1} image files in album {2}",
+                jobId, total, album.name());
+            return scanCandidates(album, candidates.files, result);
+        }).onSuccess(ignored -> {
+            result.put("status", "COMPLETED");
+            log.info("Photo scan job {0} completed: added={1}, skipped={2}, failed={3}",
+                jobId, result.getInteger("added"), result.getInteger("skipped"),
+                result.getInteger("failed"));
+        }).onFailure(error -> {
+            result.put("status", "FAILED").put("error", error.getMessage());
+            log.error("Photo scan job " + jobId + " failed", error);
+        });
     }
 
     public JsonObject scanJob(String jobId) {
@@ -133,11 +174,17 @@ public class PhotoService {
         Future<Void> chain = Future.succeededFuture();
         for (var file : files) {
             chain = chain.compose(ignored ->
-                scanFile(album, file).onSuccess(added -> result.put(
-                    added ? "added" : "skipped",
-                    result.getInteger(added ? "added" : "skipped") + 1
-                )).recover(error -> {
+                scanFile(album, file).onSuccess(added -> {
+                    var key = added ? "added" : "skipped";
+                    result.put(key, result.getInteger(key) + 1);
+                    if (added) {
+                        log.info("Added photo {0} to album {1}", file.toAbsolutePath(), album.name());
+                    } else {
+                        log.debug("Skipped duplicate photo {0} in album {1}", file.toAbsolutePath(), album.name());
+                    }
+                }).recover(error -> {
                     result.put("failed", result.getInteger("failed") + 1);
+                    log.error("Failed to scan photo " + file.toAbsolutePath(), error);
                     return Future.succeededFuture(false);
                 }).mapEmpty()
             );
@@ -149,53 +196,57 @@ public class PhotoService {
 
     private ScanCandidates collectCandidates(PhotoAlbum album, List<String> roots, boolean recursive) {
         var files = new ArrayList<Path>();
-        var extensions = List.of(".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".heic", ".heif");
         for (var root : roots) {
             var rootPath = Path.of(root);
-            if (!Files.exists(rootPath)) continue;
-            try (var paths = recursive ? Files.walk(rootPath) : Files.walk(rootPath, 1)) {
-                paths.filter(Files::isRegularFile)
-                    .filter(path -> {
-                        var name = path.getFileName().toString().toLowerCase(Locale.ROOT);
-                        var dot = name.lastIndexOf('.');
-                        return dot >= 0 && extensions.contains(name.substring(dot));
-                    })
-                    .forEach(files::add);
-            } catch (Exception ignored) {
+            if (!Files.exists(rootPath)) {
+                log.info("Photo scan skips missing root {0}", rootPath.toAbsolutePath());
+                continue;
             }
+            try (var paths = recursive ? Files.walk(rootPath) : Files.walk(rootPath, 1)) {
+                files.addAll(paths.filter(Files::isRegularFile)
+                    .filter(path -> {
+                        var ext = FilenameUtils.getExtension(path.getFileName().toString())
+                            .toLowerCase();
+                        return EXTENSIONS.contains(ext);
+                    })
+                    .toList()
+                );
+            } catch (Exception error) {
+                log.error("Failed to scan photo root " + rootPath.toAbsolutePath(), error);
+            }
+            log.info("Finished scanning photo root {0}", rootPath.toAbsolutePath());
         }
         return new ScanCandidates(album, files);
     }
 
+    @SneakyThrows
     private Future<Boolean> scanFile(PhotoAlbum album, Path file) {
-        return vertx.executeBlocking(() -> {
-            var hash = sha256(file);
-            var dimensions = imageDimensions(file.toFile());
-            var relative = relativePath(album, file);
-            var mime = Files.probeContentType(file);
-            var modified = Files.getLastModifiedTime(file).toInstant();
-            var now = LocalDateTime.now();
-            var takenAt = LocalDateTime.ofInstant(modified, ZoneId.systemDefault());
-            return new Photo(
-                UUID.randomUUID().toString(), album.id(), file.getFileName().toString(),
-                relative, file.toAbsolutePath().toString(), mime, hash, Files.size(file),
-                dimensions[0], dimensions[1], takenAt, "SCANNED",
-                new JsonObject()
-                    .put("size", Files.size(file))
-                    .put("width", dimensions[0])
-                    .put("height", dimensions[1])
-                    .put("modifiedAt", takenAt.toString())
-                    .encode(),
-                "NORMAL", null, now, now
-            );
-        }).compose(photo ->
-            photoRepository.find(Photo.builder()
+        var hash = sha256(file);
+        var dimensions = imageDimensions(file.toFile());
+        var relative = relativePath(album, file);
+        var mime = Files.probeContentType(file);
+        var modified = Files.getLastModifiedTime(file).toInstant();
+        var now = LocalDateTime.now();
+        var takenAt = LocalDateTime.ofInstant(modified, ZoneId.systemDefault());
+        var photo = new Photo(
+            UUID.randomUUID().toString(), album.id(), file.getFileName().toString(),
+            relative, file.toAbsolutePath().toString(), mime, hash, Files.size(file),
+            dimensions[0], dimensions[1], takenAt, "SCANNED",
+            new JsonObject()
+                .put("size", Files.size(file))
+                .put("width", dimensions[0])
+                .put("height", dimensions[1])
+                .put("modifiedAt", takenAt.toString())
+                .encode(),
+            "NORMAL", null, now, now);
+        return photoRepository.find(Photo.builder()
                 .albumId(photo.albumId()).sha256(photo.sha256()).status("NORMAL").build())
-                .compose(existing -> {
-                    if (!existing.isEmpty()) return Future.succeededFuture(false);
-                    return photoRepository.save(photo).map(saved -> true);
-                })
-        );
+            .compose(existing -> {
+                if (!existing.isEmpty()) {
+                    return Future.succeededFuture(false);
+                }
+                return photoRepository.save(photo).map(saved -> true);
+            });
     }
 
     private String relativePath(PhotoAlbum album, Path file) {
@@ -343,26 +394,84 @@ public class PhotoService {
             .collect(java.util.stream.Collectors.joining("\n"));
     }
 
-    public Future<Photo> backup(String albumId, Path tempFile, String fileName,
-                                String relativePath, String sha256) {
-        return findAlbum(albumId).compose(album -> vertx.executeBlocking(() -> {
-            var firstRoot = Arrays.stream(album.sourceRoots().split("\\n"))
-                .map(String::trim).filter(StringUtils::isNotBlank).findFirst();
-            if (firstRoot.isEmpty()) throw new IllegalArgumentException("相册未配置目录");
-            var target = Path.of(firstRoot.get()).resolve(relativePath == null ? fileName : relativePath);
-            Files.createDirectories(target.getParent());
-            Files.copy(tempFile, target, StandardCopyOption.REPLACE_EXISTING);
+    public JsonObject backup(String albumId, Path tempFile, String fileName,
+                             String relativePath, String sha256) {
+        var jobId = UUID.randomUUID().toString();
+        var result = new JsonObject()
+            .put("jobId", jobId)
+            .put("status", "QUEUED")
+            .put("fileName", fileName)
+            .put("albumId", albumId);
+        backupJobs.put(jobId, result);
 
-            var digest = sha256 == null || sha256.isBlank() ? sha256(tempFile) : sha256;
-            var dimensions = imageDimensions(target.toFile());
-            var now = LocalDateTime.now();
-            return new Photo(
-                UUID.randomUUID().toString(), albumId, fileName,
-                target.getFileName().toString(), target.toString(),
-                Files.probeContentType(target), digest, Files.size(target),
-                dimensions[0], dimensions[1], null, "SCANNED", "{}", "NORMAL", null, now, now
-            );
-        })).compose(photoRepository::save);
+        vertx.eventBus().send(BACKUP_ADDRESS, new JsonObject()
+            .put("jobId", jobId)
+            .put("albumId", albumId)
+            .put("tempFile", tempFile.toAbsolutePath().toString())
+            .put("fileName", fileName)
+            .put("relativePath", relativePath)
+            .put("sha256", sha256));
+
+        return result.copy();
+    }
+
+    public JsonObject backupJob(String jobId) {
+        return backupJobs.get(jobId);
+    }
+
+    private void executeBackup(JsonObject job) {
+        var jobId = job.getString("jobId");
+        var result = backupJobs.get(jobId);
+        if (result == null) return;
+        result.put("status", "RUNNING");
+
+        var albumId = job.getString("albumId");
+        var tempFile = Path.of(job.getString("tempFile"));
+        var fileName = job.getString("fileName");
+        var relativePath = job.getString("relativePath");
+        var sha256 = job.getString("sha256");
+
+        executeBackupFile(albumId, tempFile, fileName, relativePath, sha256)
+            .onSuccess(photo -> {
+                result.put("status", "COMPLETED").put("photoId", photo.id());
+                log.info("Photo backup job {0} completed: photo={1}", jobId, photo.id());
+            })
+            .onFailure(error -> {
+                result.put("status", "FAILED").put("error", error.getMessage());
+                log.error("Photo backup job " + jobId + " failed", error);
+            });
+    }
+
+    private Future<Photo> executeBackupFile(String albumId, Path tempFile, String fileName,
+                                            String relativePath, String sha256) {
+        return findAlbum(albumId)
+            .compose(album -> createBackupPhoto(albumId, tempFile, fileName, relativePath, sha256, album))
+            .compose(photoRepository::save)
+            .onSuccess(result -> {
+                tempFile.toFile().delete();
+            });
+    }
+
+    @SneakyThrows
+    private static Future<Photo> createBackupPhoto(String albumId, Path tempFile, String fileName,
+        String relativePath, String sha256, PhotoAlbum album) {
+        var firstRoot = Arrays.stream(album.sourceRoots().split("\\n"))
+            .map(String::trim).filter(StringUtils::isNotBlank).findFirst();
+        if (firstRoot.isEmpty()) throw new IllegalArgumentException("相册未配置目录");
+        var target = Path.of(firstRoot.get()).resolve(
+            relativePath == null ? fileName : relativePath);
+        Files.createDirectories(target.getParent());
+        Files.copy(tempFile, target, StandardCopyOption.REPLACE_EXISTING);
+
+        var digest = sha256 == null || sha256.isBlank() ? sha256(tempFile) : sha256;
+        var dimensions = imageDimensions(target.toFile());
+        var now = LocalDateTime.now();
+        return Future.succeededFuture(new Photo(
+            UUID.randomUUID().toString(), albumId, fileName,
+            target.getFileName().toString(), target.toString(),
+            Files.probeContentType(target), digest, Files.size(target),
+            dimensions[0], dimensions[1], null, "SCANNED", "{}", "NORMAL", null, now, now
+        ));
     }
 
     private static String sha256(Path path) throws Exception {

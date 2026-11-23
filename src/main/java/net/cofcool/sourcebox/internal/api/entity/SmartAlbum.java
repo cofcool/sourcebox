@@ -1,14 +1,14 @@
 package net.cofcool.sourcebox.internal.api.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.vertx.sqlclient.Row;
+import java.sql.JDBCType;
+import java.time.LocalDateTime;
 import lombok.Builder;
 import net.cofcool.sourcebox.util.TableInfoHelper.Column;
 import net.cofcool.sourcebox.util.TableInfoHelper.DefaultMapper;
 import net.cofcool.sourcebox.util.TableInfoHelper.Entity;
 import net.cofcool.sourcebox.util.TableInfoHelper.ID;
-
-import java.sql.JDBCType;
-import java.time.LocalDateTime;
 
 @Builder
 @Entity(name = "smart_album")
@@ -18,8 +18,8 @@ public record SmartAlbum(
     @Column(name = "match_type", type = JDBCType.VARCHAR, length = 10) String matchType,
     @Column(name = "rules_json", type = JDBCType.VARCHAR, length = 8000) String rulesJson,
     @Column(name = "enabled", type = JDBCType.BOOLEAN) Boolean enabled,
-    @Column(name = "create_time", type = JDBCType.TIMESTAMP) LocalDateTime createTime,
-    @Column(name = "update_time", type = JDBCType.TIMESTAMP) LocalDateTime updateTime
+    @Column(name = "create_time", type = JDBCType.TIMESTAMP) @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime createTime,
+    @Column(name = "update_time", type = JDBCType.TIMESTAMP) @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime updateTime
 ) {
     @DefaultMapper
     public static SmartAlbum of(Row row) {

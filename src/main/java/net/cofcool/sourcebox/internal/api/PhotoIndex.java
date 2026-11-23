@@ -1,15 +1,11 @@
 package net.cofcool.sourcebox.internal.api;
 
 import io.vertx.core.Vertx;
-import io.vertx.core.json.Json;
 import io.vertx.ext.web.Router;
-import io.vertx.ext.web.handler.BodyHandler;
+import java.io.File;
 import net.cofcool.sourcebox.internal.api.entity.PhotoAlbum;
 import net.cofcool.sourcebox.internal.api.entity.SmartAlbum;
 import net.cofcool.sourcebox.util.VertxUtils;
-
-import java.io.File;
-import java.nio.file.Files;
 
 public class PhotoIndex {
     public static Router buildRouter(Vertx vertx) {
@@ -77,11 +73,17 @@ public class PhotoIndex {
                 return;
             }
             var uploaded = uploads.getFirst();
-            service.backup(albumId, java.nio.file.Path.of(uploaded.uploadedFileName()),
+            var job = service.backup(albumId, java.nio.file.Path.of(uploaded.uploadedFileName()),
                     fileName == null ? new File(uploaded.fileName()).getName() : fileName,
-                    relativePath, sha256)
-                .onSuccess(photo -> r.json(photo))
-                .onFailure(error -> r.response().setStatusCode(400).end(error.getMessage()));
+                    relativePath, sha256);
+            r.response().setStatusCode(202);
+            r.json(job);
+        });
+
+        router.get("/backups/:jobId").handler(r -> {
+            var job = service.backupJob(r.pathParam("jobId"));
+            if (job == null) r.response().setStatusCode(404).end();
+            else r.json(job);
         });
 
         var rootRouter = Router.router(vertx);

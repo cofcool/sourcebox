@@ -25,6 +25,7 @@ public enum ToolName {
     jsonex("exactor values by json path", JsonExactor.class),
     task("repeat execute task(go)", GoAdapter.Task.class),
     mobileBackup("backup android phone files by adb(go)", GoAdapter.MobileBackup.class),
+    photo("manage photo albums and scanned image directories", PhotoManager.class),
     habits("simple habit tool", Habits.class);
 
     private final String desc;

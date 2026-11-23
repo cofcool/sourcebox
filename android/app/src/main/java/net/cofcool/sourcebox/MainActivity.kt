@@ -36,6 +36,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -131,9 +134,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import net.cofcool.sourcebox.data.ActionCheckList
 import net.cofcool.sourcebox.data.ActionRecord
 import net.cofcool.sourcebox.data.NoteRecord
+import net.cofcool.sourcebox.data.PhotoAlbum
+import net.cofcool.sourcebox.data.PhotoRecord
 import net.cofcool.sourcebox.data.TodoRecord
 import net.cofcool.sourcebox.data.ToolInfo
 import net.cofcool.sourcebox.data.isHabitRequiredOnDate
@@ -175,7 +183,10 @@ private val pages = listOf(
     "more" to "更多"
 )
 
-private val moreToolPages = setOf("timer", "files", "files-download", "books", "settings", "server-tools")
+private val moreToolPages = setOf(
+    "timer", "files", "files-download", "books", "photos", "photo-detail",
+    "settings", "server-tools"
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -190,6 +201,8 @@ private fun SourceboxApp(
     var selectedRecord by remember { mutableStateOf<ActionRecord?>(null) }
     var selectedTodo by remember { mutableStateOf<TodoRecord?>(null) }
     var selectedHabit by remember { mutableStateOf<ActionRecord?>(null) }
+    var selectedPhotoAlbum by remember { mutableStateOf<PhotoAlbum?>(null) }
+    var selectedPhoto by remember { mutableStateOf<PhotoRecord?>(null) }
     var todoReturnPage by remember { mutableStateOf("todos") }
     var habitReturnPage by remember { mutableStateOf("habits") }
     var showArchivedHabits by remember { mutableStateOf(false) }
@@ -280,6 +293,8 @@ private fun SourceboxApp(
                                 "habit-detail" -> "习惯详情"
                                 "habit-create" -> "添加习惯"
                                 "books" -> "书籍记录"
+                                "photos" -> "照片"
+                                "photo-detail" -> "照片详情"
                                 "timer" -> "番茄钟"
                                 "files" -> "文件工具"
                                 "files-text-editor" -> "文本编辑"
@@ -430,6 +445,7 @@ private fun SourceboxApp(
                     onTimer = { page = "timer"; vm.refreshTimerRecords() },
                     onFiles = { page = "files" },
                     onBooks = { page = "books"; vm.refreshBooks() },
+                    onPhotos = { page = "photos" },
                     onServerTools = { vm.refreshTools(); page = "server-tools" },
                     onSettings = {
                         settingsUrl = vm.baseUrl
@@ -439,6 +455,23 @@ private fun SourceboxApp(
                     },
                     onSyncData = requestLocalNetPermission
                 )
+                "photos" -> PhotosScreen(
+                    vm = vm,
+                    modifier = Modifier.padding(padding),
+                    onOpenPhoto = { album, photo ->
+                        selectedPhotoAlbum = album
+                        selectedPhoto = photo
+                        page = "photo-detail"
+                    }
+                )
+                "photo-detail" -> selectedPhoto?.let { photo ->
+                    PhotoDetailScreen(
+                        vm = vm,
+                        photo = photo,
+                        modifier = Modifier.padding(padding),
+                        onDeleted = { page = "photos" }
+                    )
+                }
                 "server-tools" -> ServerToolsScreen(
                     vm = vm,
                     modifier = Modifier.padding(padding),
@@ -788,6 +821,7 @@ private fun MoreScreen(
     onTimer: () -> Unit,
     onFiles: () -> Unit,
     onBooks: () -> Unit,
+    onPhotos: () -> Unit,
     onServerTools: () -> Unit,
     onSettings: () -> Unit,
     onSyncData: () -> Unit
@@ -821,6 +855,7 @@ private fun MoreScreen(
                         Text("立即同步")
                     }
                 }
+
                 Text(
                     vm.lastActionSync?.let { "最近同步：$it" } ?: "尚未同步",
                     style = MaterialTheme.typography.bodySmall
@@ -852,6 +887,12 @@ private fun MoreScreen(
             onClick = onBooks
         )
         MoreToolCard(
+            icon = Icons.Default.Archive,
+            title = "照片",
+            description = "相册、照片查看与备份",
+            onClick = onPhotos
+        )
+        MoreToolCard(
             icon = Icons.Default.Build,
             title = "服务端工具",
             description = "后端提供的其他工具",
@@ -863,6 +904,162 @@ private fun MoreScreen(
             description = "管理后端连接等",
             onClick = onSettings
         )
+    }
+}
+
+@Composable
+private fun PhotosScreen(
+    vm: ToolboxViewModel,
+    modifier: Modifier,
+    onOpenPhoto: (PhotoAlbum, PhotoRecord) -> Unit
+) {
+    var albums by remember { mutableStateOf<List<PhotoAlbum>>(emptyList()) }
+    var photos by remember { mutableStateOf<List<PhotoRecord>>(emptyList()) }
+    var selectedAlbum by remember { mutableStateOf<PhotoAlbum?>(null) }
+    var showCreate by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        try { albums = vm.photoAlbums() } catch (e: Exception) { error = e.message }
+    }
+    fun openAlbum(album: PhotoAlbum) {
+        selectedAlbum = album
+        photos = emptyList()
+        scope.launch {
+            try { photos = vm.photoAlbumPhotos(album.id) } catch (e: Exception) { error = e.message }
+        }
+    }
+
+    Column(modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        if (selectedAlbum == null) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("相册", modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+                OutlinedButton(onClick = { showCreate = true }) { Text("新建相册") }
+            }
+            if (error != null) Text(error.orEmpty(), color = MaterialTheme.colorScheme.error)
+            if (albums.isEmpty()) {
+                EmptyState("暂无相册。可新建相册并配置一个或多个图片目录。")
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(albums, key = { it.id }) { album ->
+                        Card(onClick = { openAlbum(album) }, modifier = Modifier.fillMaxWidth()) {
+                            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Icon(Icons.Default.Archive, contentDescription = null)
+                                Text(album.name, fontWeight = FontWeight.SemiBold)
+                                Text(album.sourceRoots.replace('\n', ','), maxLines = 2,
+                                    style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(selectedAlbum!!.name, modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+                OutlinedButton(onClick = {
+                    scope.launch {
+                        try {
+                            vm.scanPhotoAlbum(selectedAlbum!!.id)
+                            photos = vm.photoAlbumPhotos(selectedAlbum!!.id)
+                        } catch (e: Exception) { error = e.message }
+                    }
+                }) { Text("扫描") }
+                Spacer(Modifier.width(8.dp))
+                TextButton(onClick = { selectedAlbum = null; photos = emptyList() }) { Text("返回") }
+            }
+            if (photos.isEmpty()) {
+                EmptyState("相册中暂无照片")
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(120.dp),
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    items(photos, key = { it.id }) { photo ->
+                        Card(onClick = { onOpenPhoto(selectedAlbum!!, photo) },
+                            modifier = Modifier.size(120.dp)) {
+                            AsyncImage(
+                                model = vm.photoThumbnailUrl(photo.id),
+                                contentDescription = photo.fileName,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showCreate) {
+        var name by remember { mutableStateOf("") }
+        var roots by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { showCreate = false },
+            title = { Text("新建照片相册") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(name, { name = it }, label = { Text("相册名称") })
+                    OutlinedTextField(roots, { roots = it },
+                        label = { Text("目录列表，每行一个目录") }, minLines = 3)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (name.isBlank()) return@TextButton
+                    scope.launch {
+                        try {
+                            val album = vm.savePhotoAlbum(PhotoAlbum(
+                                name = name.trim(),
+                                sourceRoots = roots.lineSequence().joinToString("\n") { it.trim() }
+                            ))
+                            vm.scanPhotoAlbum(album.id)
+                            albums = vm.photoAlbums()
+                            showCreate = false
+                            openAlbum(album)
+                        } catch (e: Exception) { error = e.message; showCreate = false }
+                    }
+                }) { Text("创建并扫描") }
+            },
+            dismissButton = { TextButton(onClick = { showCreate = false }) { Text("取消") } }
+        )
+    }
+}
+
+@Composable
+private fun PhotoDetailScreen(
+    vm: ToolboxViewModel,
+    photo: PhotoRecord,
+    modifier: Modifier,
+    onDeleted: () -> Unit
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    Column(modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Card(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            AsyncImage(model = vm.photoContentUrl(photo.id), contentDescription = photo.fileName,
+                modifier = Modifier.fillMaxSize())
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(onClick = {
+                val share = Intent(Intent.ACTION_SEND).apply {
+                    type = photo.mimeType ?: "image/*"
+                    putExtra(Intent.EXTRA_TEXT, vm.photoContentUrl(photo.id))
+                }
+                context.startActivity(Intent.createChooser(share, "分享照片"))
+            }, modifier = Modifier.weight(1f)) { Text("分享") }
+            Button(onClick = {
+                scope.launch {
+                    try { vm.trashPhoto(photo.id); onDeleted() } catch (_: Exception) {}
+                }
+            }, modifier = Modifier.weight(1f)) { Text("删除") }
+        }
     }
 }
 

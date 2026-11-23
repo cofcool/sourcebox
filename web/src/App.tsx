@@ -10,6 +10,7 @@ import {
     Flame,
     Heart,
     Home as HomeIcon,
+    Image,
     ListTodo,
     Menu,
     MessageCircle,
@@ -28,6 +29,8 @@ import type {
     ActionComment,
     ActionRecord,
     HabitRecord,
+    PhotoAlbum,
+    PhotoRecord,
     SystemInfo,
     TimerStatistics,
     ToolInfo
@@ -231,6 +234,8 @@ function ToolPage({ tool }: { tool?: ToolInfo }) {
   }
 
   switch (tool.id) {
+    case "photo":
+      return <PhotoPage />;
     case "note":
       return <NotePanel />;
     case "todo":
@@ -265,6 +270,215 @@ function ToolPage({ tool }: { tool?: ToolInfo }) {
         </div>
       );
   }
+}
+
+function PhotoPage() {
+  const [albums, setAlbums] = useState<PhotoAlbum[]>([]);
+  const [photos, setPhotos] = useState<PhotoRecord[]>([]);
+  const [trash, setTrash] = useState<PhotoRecord[]>([]);
+  const [selectedAlbumId, setSelectedAlbumId] = useState("");
+  const [selectedPhoto, setSelectedPhoto] = useState<PhotoRecord>();
+  const [name, setName] = useState("");
+  const [roots, setRoots] = useState("");
+  const [tab, setTab] = useState<"albums" | "trash">("albums");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>();
+
+  async function refreshAlbums() {
+    setLoading(true);
+    try {
+      setAlbums(await api.photoAlbums());
+      setError(undefined);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function openAlbum(album: PhotoAlbum) {
+    setSelectedAlbumId(album.id);
+    setSelectedPhoto(undefined);
+    setLoading(true);
+    try {
+      setPhotos(await api.photoAlbumPhotos(album.id));
+      setError(undefined);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function refreshTrash() {
+    setTab("trash");
+    setLoading(true);
+    try {
+      setTrash(await api.photoTrashList());
+      setError(undefined);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void refreshAlbums();
+  }, []);
+
+  async function createAlbum() {
+    if (!name.trim()) return;
+    setLoading(true);
+    try {
+      const album = await api.photoCreateAlbum({
+        name: name.trim(),
+        type: "MANUAL",
+        sourceRoots: roots.split(/\r?\n|,/).map((root) => root.trim()).filter(Boolean).join("\n"),
+        recursive: true,
+        status: "NORMAL",
+      });
+      setName("");
+      setRoots("");
+      await refreshAlbums();
+      await openAlbum(album);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function scanAlbum() {
+    if (!selectedAlbumId) return;
+    setLoading(true);
+    try {
+      await api.photoScanAlbum(selectedAlbumId);
+      await openAlbum(albums.find((album) => album.id === selectedAlbumId)!);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function deleteAlbum(album: PhotoAlbum) {
+    if (!window.confirm(`删除相册“${album.name}”？原始图片不会删除。`)) return;
+    await api.photoDeleteAlbum(album.id);
+    if (selectedAlbumId === album.id) {
+      setSelectedAlbumId("");
+      setPhotos([]);
+    }
+    await refreshAlbums();
+  }
+
+  async function trashPhoto(photo: PhotoRecord) {
+    await api.photoTrash(photo.id);
+    setSelectedPhoto(undefined);
+    await openAlbum(albums.find((album) => album.id === selectedAlbumId)!);
+  }
+
+  async function restorePhoto(photo: PhotoRecord) {
+    await api.photoRestore(photo.id);
+    await refreshTrash();
+  }
+
+  return (
+    <div className="photo-page">
+      <div className="page-heading">
+        <div><h1>照片</h1><p className="muted">管理相册、扫描目录、查看图片和回收站。</p></div>
+        <div className="action-row compact">
+          <button className={tab === "albums" ? "primary" : ""} onClick={() => setTab("albums")}>相册</button>
+          <button className={tab === "trash" ? "primary" : ""} onClick={() => void refreshTrash()}>回收站</button>
+        </div>
+      </div>
+
+      {error && <div className="error">{error}</div>}
+
+      {tab === "albums" ? (
+        <>
+          <section className="panel photo-create">
+            <h2>新建相册</h2>
+            <div className="photo-create-fields">
+              <input value={name} onChange={(event) => setName(event.target.value)} placeholder="相册名称" />
+              <textarea value={roots} onChange={(event) => setRoots(event.target.value)} rows={3}
+                placeholder="扫描目录，每行或逗号分隔一个目录" />
+              <button onClick={() => void createAlbum()} disabled={loading || !name.trim()}>创建相册</button>
+            </div>
+          </section>
+
+          <section className="photo-layout">
+            <aside className="panel photo-album-list">
+              <h2>相册</h2>
+              {loading && <div className="muted">加载中...</div>}
+              {albums.map((album) => (
+                <div className={`photo-album-item ${selectedAlbumId === album.id ? "selected" : ""}`} key={album.id}>
+                  <button type="button" className="photo-album-open" onClick={() => void openAlbum(album)}>
+                    <strong>{album.name}</strong>
+                    <span>{album.sourceRoots.split("\n").filter(Boolean).join(" · ")}</span>
+                  </button>
+                  <button type="button" className="icon-button danger" title="删除相册"
+                    onClick={() => void deleteAlbum(album)}><Trash2 size={15} /></button>
+                </div>
+              ))}
+              {!loading && albums.length === 0 && <div className="empty-todos">暂无相册</div>}
+            </aside>
+
+            <section className="panel photo-gallery-panel">
+              <div className="photo-gallery-heading">
+                <h2>{albums.find((album) => album.id === selectedAlbumId)?.name ?? "图片"}</h2>
+                {selectedAlbumId && <button onClick={() => void scanAlbum()} disabled={loading}>重新扫描</button>}
+              </div>
+              {selectedAlbumId === "" ? (
+                <div className="empty-todos">选择一个相册查看图片</div>
+              ) : photos.length === 0 ? (
+                <div className="empty-todos">相册中暂无图片</div>
+              ) : (
+                <div className="photo-grid">
+                  {photos.map((photo) => (
+                    <button type="button" className="photo-card" key={photo.id}
+                      onClick={() => setSelectedPhoto(photo)}>
+                      <img src={api.photoThumbnailUrl(photo.id)} alt={photo.fileName} loading="lazy" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </section>
+          </section>
+        </>
+      ) : (
+        <section className="panel">
+          <h2>回收站</h2>
+          {trash.length === 0 ? (
+            <div className="empty-todos">回收站为空</div>
+          ) : (
+            <div className="photo-grid">
+              {trash.map((photo) => (
+                <article className="photo-card trash" key={photo.id}>
+                  <img src={api.photoThumbnailUrl(photo.id)} alt={photo.fileName} loading="lazy" />
+                  <button onClick={() => void restorePhoto(photo)}>恢复</button>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {selectedPhoto && (
+        <div className="photo-preview-backdrop" role="dialog" aria-modal="true"
+          onClick={() => setSelectedPhoto(undefined)}>
+          <div className="photo-preview" onClick={(event) => event.stopPropagation()}>
+            <button className="photo-preview-close" onClick={() => setSelectedPhoto(undefined)}><X size={18} /></button>
+            <img src={api.photoContentUrl(selectedPhoto.id)} alt={selectedPhoto.fileName} />
+            <div className="photo-preview-footer">
+              <strong>{selectedPhoto.fileName}</strong>
+              <button className="danger" onClick={() => void trashPhoto(selectedPhoto)}>删除到回收站</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function SettingsPage({ system }: { system?: SystemInfo }) {
@@ -2320,6 +2534,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home system={system} tools={tools} />} />
           <Route path="/navigation" element={<NavigationPage />} />
+          <Route path="/photos" element={<PhotoPage />} />
           <Route path="/tools/:id" element={<ToolRoute tools={tools} path={location.pathname} />} />
           <Route path="/settings" element={<SettingsPage system={system} />} />
         </Routes>

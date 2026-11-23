@@ -187,6 +187,40 @@ data class ToolEvent(
     val success: Boolean = true
 )
 
+@Serializable
+data class PhotoAlbum(
+    val id: String = "",
+    val name: String = "",
+    val type: String = "MANUAL",
+    val sourceRoots: String = "",
+    val recursive: Boolean = true,
+    val coverPhotoId: String? = null,
+    val status: String = "NORMAL",
+    val createTime: String? = null,
+    val updateTime: String? = null
+)
+
+@Serializable
+data class PhotoRecord(
+    val id: String = "",
+    val albumId: String = "",
+    val fileName: String = "",
+    val relativePath: String = "",
+    val sourcePath: String = "",
+    val mimeType: String? = null,
+    val sha256: String = "",
+    val size: Long = 0,
+    val width: Int? = null,
+    val height: Int? = null,
+    val takenAt: String? = null,
+    val metadataStatus: String = "SCANNED",
+    val metadataJson: String? = null,
+    val status: String = "NORMAL",
+    val trashedAt: String? = null,
+    val createTime: String? = null,
+    val updateTime: String? = null
+)
+
 private val json = Json {
     ignoreUnknownKeys = true
     isLenient = true
@@ -579,6 +613,43 @@ class SourceboxApi(context: Context) {
     suspend fun deleteRecordChecklist(id: String) {
         request("/action/checklist/${Uri.encode(id)}", "DELETE")
     }
+
+    suspend fun photoAlbums(): List<PhotoAlbum> =
+        json.decodeFromString(request("/photo/albums"))
+
+    suspend fun savePhotoAlbum(album: PhotoAlbum): PhotoAlbum =
+        json.decodeFromString(request(
+            "/photo/albums",
+            "POST",
+            json.encodeToString(album)
+        ))
+
+    suspend fun photoAlbumPhotos(albumId: String): List<PhotoRecord> =
+        json.decodeFromString(request("/photo/albums/${Uri.encode(albumId)}/photos"))
+
+    suspend fun scanPhotoAlbum(albumId: String): JsonElement =
+        json.parseToJsonElement(request(
+            "/photo/albums/${Uri.encode(albumId)}/scan",
+            "POST",
+            "{}"
+        ))
+
+    suspend fun trashPhoto(photoId: String) {
+        request("/photo/photos/${Uri.encode(photoId)}", "DELETE")
+    }
+
+    suspend fun trashPhotos(): List<PhotoRecord> =
+        json.decodeFromString(request("/photo/trash/photos"))
+
+    suspend fun restorePhoto(photoId: String) {
+        request("/photo/trash/${Uri.encode(photoId)}/restore", "POST")
+    }
+
+    fun photoContentUrl(photoId: String): String =
+        "${baseUrl()}/photo/photos/${Uri.encode(photoId)}/content"
+
+    fun photoThumbnailUrl(photoId: String): String =
+        "${baseUrl()}/photo/photos/${Uri.encode(photoId)}/thumbnail"
 
     suspend fun uploadTextFile(fileName: String, content: String): String =
         withContext(Dispatchers.IO) {

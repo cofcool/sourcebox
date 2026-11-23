@@ -107,6 +107,38 @@ export interface HabitRecord {
   checkLists: ActionCheckList[];
 }
 
+export interface PhotoAlbum {
+  id: string;
+  name: string;
+  type: "MANUAL" | "SMART";
+  sourceRoots: string;
+  recursive: boolean;
+  coverPhotoId?: string | null;
+  status: string;
+  createTime?: string | null;
+  updateTime?: string | null;
+}
+
+export interface PhotoRecord {
+  id: string;
+  albumId: string;
+  fileName: string;
+  relativePath: string;
+  sourcePath: string;
+  mimeType?: string | null;
+  sha256: string;
+  size: number;
+  width?: number | null;
+  height?: number | null;
+  takenAt?: string | null;
+  metadataStatus: string;
+  metadataJson?: string | null;
+  status: string;
+  trashedAt?: string | null;
+  createTime?: string | null;
+  updateTime?: string | null;
+}
+
 export interface ActionType {
   id: string;
   name: string;
@@ -167,6 +199,46 @@ function normalizeTools(raw: string[]): ToolInfo[] {
 }
 
 export const api = {
+  photoAlbums: async (): Promise<PhotoAlbum[]> =>
+    request<PhotoAlbum[]>("/photo/albums"),
+  photoCreateAlbum: async (album: Partial<PhotoAlbum>): Promise<PhotoAlbum> =>
+    request<PhotoAlbum>("/photo/albums", {
+      method: "POST",
+      body: JSON.stringify(album),
+    }),
+  photoUpdateAlbum: async (id: string, album: Partial<PhotoAlbum>): Promise<PhotoAlbum> =>
+    request<PhotoAlbum>(`/photo/albums/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      body: JSON.stringify(album),
+    }),
+  photoDeleteAlbum: async (id: string): Promise<void> => {
+    await request<void>(`/photo/albums/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
+  },
+  photoAlbumPhotos: async (id: string): Promise<PhotoRecord[]> =>
+    request<PhotoRecord[]>(`/photo/albums/${encodeURIComponent(id)}/photos`),
+  photoScanAlbum: async (id: string): Promise<Record<string, unknown>> =>
+    request<Record<string, unknown>>(`/photo/albums/${encodeURIComponent(id)}/scan`, {
+      method: "POST",
+      body: "{}",
+    }),
+  photoTrash: async (id: string): Promise<void> => {
+    await request<void>(`/photo/photos/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
+  },
+  photoRestore: async (id: string): Promise<void> => {
+    await request<void>(`/photo/trash/${encodeURIComponent(id)}/restore`, {
+      method: "POST",
+    });
+  },
+  photoTrashList: async (): Promise<PhotoRecord[]> =>
+    request<PhotoRecord[]>("/photo/trash/photos"),
+  photoThumbnailUrl: (id: string): string =>
+    `${baseUrl}/photo/photos/${encodeURIComponent(id)}/thumbnail`,
+  photoContentUrl: (id: string): string =>
+    `${baseUrl}/photo/photos/${encodeURIComponent(id)}/content`,
   systemInfo: async (): Promise<SystemInfo> => {
     await request<string[]>("/");
     return {

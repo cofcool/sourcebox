@@ -42,6 +42,8 @@ import net.cofcool.sourcebox.data.HabitDefinition
 import net.cofcool.sourcebox.data.HabitRecord
 import net.cofcool.sourcebox.data.HabitValueChange
 import net.cofcool.sourcebox.data.NoteRecord
+import net.cofcool.sourcebox.data.PhotoAlbum
+import net.cofcool.sourcebox.data.PhotoRecord
 import net.cofcool.sourcebox.data.ServerResponseException
 import net.cofcool.sourcebox.data.SourceboxApi
 import net.cofcool.sourcebox.data.TodoRecord
@@ -214,6 +216,25 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         tools = api.tools()
         message = "已连接，加载 ${tools.size} 个工具"
     }
+
+    suspend fun photoAlbums(): List<PhotoAlbum> =
+        withContext(Dispatchers.IO) { api.photoAlbums() }
+
+    suspend fun savePhotoAlbum(album: PhotoAlbum): PhotoAlbum =
+        withContext(Dispatchers.IO) { api.savePhotoAlbum(album) }
+
+    suspend fun photoAlbumPhotos(albumId: String): List<PhotoRecord> =
+        withContext(Dispatchers.IO) { api.photoAlbumPhotos(albumId) }
+
+    suspend fun scanPhotoAlbum(albumId: String) =
+        withContext(Dispatchers.IO) { api.scanPhotoAlbum(albumId) }
+
+    suspend fun trashPhoto(photoId: String) =
+        withContext(Dispatchers.IO) { api.trashPhoto(photoId) }
+
+    fun photoThumbnailUrl(photoId: String): String = api.photoThumbnailUrl(photoId)
+
+    fun photoContentUrl(photoId: String): String = api.photoContentUrl(photoId)
 
     fun refreshTodayActions() = perform {
         loadTodayActions()

@@ -136,6 +136,22 @@ public final class SqlRepository<T> implements AsyncCrudRepository<T> {
             });
     }
 
+    public Future<T> updateIncludingNulls(Object id, T entity) {
+        var columns = readProperties(entity, false);
+        var args = new ArrayList<>(columns.values());
+        args.add(id);
+        return preparedQuery(
+                "UPDATE " + tableInfo.name()
+                    + " SET "
+                    + columns.keySet().stream().map(k -> " " + k + "=?").collect(Collectors.joining(","))
+                    + " WHERE " + tableInfo.id().name() + "=?"
+            )
+            .execute(Tuple.wrap(args.toArray()))
+            .compose(rows -> rows.rowCount() > 0
+                ? find((String) id)
+                : Future.failedFuture("No data update by id " + id));
+    }
+
     private Future<T> insertEntity(T entity) {
         var columns = readProperties(entity);
         return preparedQuery(

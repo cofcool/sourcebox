@@ -16,6 +16,7 @@ import net.cofcool.sourcebox.Tool.RunnerType;
 import net.cofcool.sourcebox.internal.api.CommandIndex;
 import net.cofcool.sourcebox.internal.api.LuceneSearchService;
 import net.cofcool.sourcebox.internal.api.NoteIndex;
+import net.cofcool.sourcebox.internal.api.PhotoIndex;
 import net.cofcool.sourcebox.util.SqlRepository;
 import net.cofcool.sourcebox.util.VertxDeployer;
 import net.cofcool.sourcebox.util.VertxUtils;
@@ -37,7 +38,7 @@ public class WebVerticle extends AbstractVerticle implements VertxDeployer {
     private static final List<ToolName> WEB_TOOLS = List.of(
         ToolName.todo, ToolName.hisRecord,
         ToolName.bookRecord, ToolName.timer,
-        ToolName.habits
+        ToolName.habits, ToolName.photo
     );
 
     static final Queue<ActionEvent> EVENT_QUEUE = new ConcurrentLinkedQueue<>();
@@ -189,6 +190,7 @@ public class WebVerticle extends AbstractVerticle implements VertxDeployer {
 
         router.route("/*").subRouter(NoteIndex.buildRouter(vertx));
         router.route("/*").subRouter(CommandIndex.buildRouter(vertx));
+        router.route("/*").subRouter(PhotoIndex.buildRouter(vertx));
 
         for (Tool tool : tools) {
             String toolName = tool.name().name();

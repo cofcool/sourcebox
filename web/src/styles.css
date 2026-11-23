@@ -86,6 +86,30 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .navigation-card strong { min-width: 0; overflow-wrap: anywhere; font-size: 14px; line-height: 1.35; }
 .navigation-card.unavailable { color: #737983; }
 .navigation-card.unavailable .navigation-card-icon { background: #f0f1f3; color: #737983; }
+.photo-create-fields { display: grid; grid-template-columns: minmax(180px, 240px) 1fr auto; gap: 10px; align-items: stretch; }
+.photo-create-fields input, .photo-create-fields textarea { border: 1px solid #d9dde3; border-radius: 7px; padding: 10px 12px; font: inherit; }
+.photo-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 14px; }
+.photo-layout .panel { margin-top: 14px; }
+.photo-album-list { min-height: 420px; }
+.photo-album-item { display: flex; align-items: center; gap: 6px; border: 1px solid #e5e7eb; border-radius: 8px; margin-top: 8px; overflow: hidden; }
+.photo-album-item.selected { border-color: #87968a; background: #f4f7f4; }
+.photo-album-open { display: flex; flex: 1; min-width: 0; flex-direction: column; align-items: flex-start; gap: 4px; border: 0; background: transparent; padding: 10px; text-align: left; }
+.photo-album-open span { max-width: 180px; overflow: hidden; color: #737983; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.icon-button { display: grid; place-items: center; width: 34px; height: 34px; border: 0; background: transparent; }
+.icon-button.danger { color: #a33; }
+.photo-gallery-heading { display: flex; align-items: center; justify-content: space-between; }
+.photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 12px; }
+.photo-card { position: relative; display: block; aspect-ratio: 1; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; background: #f3f4f5; padding: 0; }
+.photo-card img { width: 100%; height: 100%; object-fit: cover; }
+.photo-card.trash { aspect-ratio: auto; padding-bottom: 42px; }
+.photo-card.trash img { height: 150px; }
+.photo-card.trash button { position: absolute; left: 8px; right: 8px; bottom: 7px; min-height: 30px; }
+.photo-preview-backdrop { position: fixed; z-index: 40; inset: 0; display: grid; place-items: center; background: rgba(20, 24, 28, .72); padding: 24px; }
+.photo-preview { position: relative; display: flex; width: min(900px, 94vw); max-height: 90vh; flex-direction: column; border-radius: 10px; overflow: hidden; background: white; }
+.photo-preview > img { width: 100%; max-height: calc(90vh - 68px); object-fit: contain; background: #181a1c; }
+.photo-preview-close { position: absolute; z-index: 2; top: 8px; right: 8px; display: grid; width: 34px; height: 34px; place-items: center; border: 0; border-radius: 50%; background: rgba(255,255,255,.92); }
+.photo-preview-footer { display: flex; min-height: 58px; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; }
+.photo-preview-footer strong { overflow-wrap: anywhere; }
 .book-page .page-heading h1 { display: flex; align-items: center; gap: 9px; }
 .book-toolbar { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
 .book-toolbar select { min-height: 40px; padding: 0 12px; border: 1px solid #d9dde3; border-radius: 7px; background: white; color: #20242a; font: inherit; }
@@ -238,6 +262,12 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 @media (max-width: 640px) { .todo-detail-modal { max-height: calc(100vh - 20px); } .todo-detail-actions button { flex: 1 1 auto; } }
 @media (max-width: 640px) { .habit-value-form { align-items: stretch; flex-direction: column; } .habit-value-form button { width: 100%; } .habit-detail-modal { max-height: calc(100vh - 20px); } }
 @media (max-width: 640px) { .note-list-heading { align-items: stretch; flex-direction: column; } .note-list-heading .helper-search { width: 100%; } }
+@media (max-width: 760px) {
+  .photo-create-fields { grid-template-columns: 1fr; }
+  .photo-layout { grid-template-columns: 1fr; }
+  .photo-album-list { min-height: 0; }
+  .photo-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+}
 @media (max-width: 760px) {
   .sidebar, .sidebar.sidebar-collapsed { position: fixed; top: 0; bottom: 0; left: 0; z-index: 20; width: min(280px, 85vw); height: 100vh; transform: translateX(-100%); box-shadow: 8px 0 28px rgb(16 24 18 / 12%); }
   .sidebar.sidebar-open { transform: translateX(0); }

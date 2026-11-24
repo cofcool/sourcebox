@@ -5,6 +5,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowSet;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -422,6 +423,10 @@ public class ActionService {
     }
 
     public Future<List<ActionRecord>> find(ActionRecord record, int page, int size) {
+        return find(record, page, size, null);
+    }
+
+    public Future<List<ActionRecord>> find(ActionRecord record, int page, int size, @Nullable String date) {
         if (page < 1 || size < 1) {
             return Future.failedFuture("page and size must be positive");
         }
@@ -454,7 +459,107 @@ public class ActionService {
         if (StringUtils.isNotBlank(record.refs())) {
             builder.and("refs like ?", "%" + record.refs() + "%");
         }
+        if (StringUtils.isNotBlank(date)) {
+            try {
+                var day = LocalDate.parse(date);
+                var start = day.atStartOfDay();
+                var end = day.plusDays(1).atStartOfDay();
+                builder.and("(start >= ? AND start < ? OR create_time >= ? AND create_time < ?)",
+                    start, end, start, end);
+            } catch (Exception e) {
+                return Future.failedFuture("invalid date: " + date);
+            }
+        }
         return actionRecordSqlRepository.find(builder);
+    }
+
+    public Future<ActionStatistics> findStatistics(@Nullable String date,
+                                                   @Nullable String state,
+                                                   @Nullable String category) {
+        LocalDate day;
+        if (StringUtils.isNotBlank(date)) {
+            try {
+                day = LocalDate.parse(date);
+            } catch (Exception e) {
+                return Future.failedFuture("invalid date: " + date);
+            }
+        } else {
+            day = null;
+        }
+
+        var totalQuery = statisticsFilter(
+            QueryBuilder.builder().count().from(ActionRecord.class), day, state, category);
+        var statusQuery = statisticsFilter(
+            QueryBuilder.builder()
+                .select("COALESCE(state, '未分类') AS name")
+                .select("COUNT(*) AS cnt")
+                .from(ActionRecord.class)
+                .groupBy("COALESCE(state, '未分类')")
+                .orderBy("name"),
+            day, state, category);
+        var categoryQuery = statisticsFilter(
+            QueryBuilder.builder()
+                .select("COALESCE(category, '未分类') AS name")
+                .select("COUNT(*) AS cnt")
+                .from(ActionRecord.class)
+                .groupBy("COALESCE(category, '未分类')")
+                .orderBy("name"),
+            day, state, category);
+        var statusOptionsQuery = QueryBuilder.builder()
+            .select("DISTINCT state AS name")
+            .from(ActionRecord.class)
+            .and("state IS NOT NULL")
+            .orderBy("name");
+        var categoryOptionsQuery = QueryBuilder.builder()
+            .select("DISTINCT category AS name")
+            .from(ActionRecord.class)
+            .and("category IS NOT NULL")
+            .orderBy("name");
+
+        return Future.all(
+            actionRecordSqlRepository.count(totalQuery),
+            actionRecordSqlRepository.execute(statusQuery),
+            actionRecordSqlRepository.execute(categoryQuery),
+            actionRecordSqlRepository.execute(statusOptionsQuery),
+            actionRecordSqlRepository.execute(categoryOptionsQuery)
+        ).map(result -> new ActionStatistics(
+            result.resultAt(0),
+            dimensionCounts(result.resultAt(1)),
+            dimensionCounts(result.resultAt(2)),
+            optionNames(result.resultAt(3)),
+            optionNames(result.resultAt(4))
+        ));
+    }
+
+    private QueryBuilder statisticsFilter(QueryBuilder query, @Nullable LocalDate day,
+                                          @Nullable String state, @Nullable String category) {
+        if (day != null) {
+            query.and("CAST(COALESCE(start, create_time) AS DATE)=?", day);
+        }
+        if (StringUtils.isNotBlank(state)) {
+            query.and("state=?", state);
+        }
+        if (StringUtils.isNotBlank(category)) {
+            query.and("category=?", category);
+        }
+        return query;
+    }
+
+    private List<DimensionCount> dimensionCounts(RowSet<Row> rows) {
+        var counts = new ArrayList<DimensionCount>();
+        for (Row row : rows) {
+            counts.add(new DimensionCount(row.getString("NAME"), row.getLong("CNT").intValue()));
+        }
+        return counts;
+    }
+
+    private List<String> optionNames(RowSet<Row> rows) {
+        var names = new ArrayList<String>();
+        for (Row row : rows) {
+            var name = row.getString("NAME");
+            if (StringUtils.isNotBlank(name)) names.add(name);
+        }
+        return names;
     }
 
     public Future<ActionRecord.RecordRet> find(String id) {
@@ -734,6 +839,16 @@ public class ActionService {
         Long totalDuration,
         Double averageDuration,
         Long completed
+    ) {}
+
+    public record DimensionCount(String name, int count) {}
+
+    public record ActionStatistics(
+        int total,
+        List<DimensionCount> statusCounts,
+        List<DimensionCount> categoryCounts,
+        List<String> statusOptions,
+        List<String> categoryOptions
     ) {}
 
 }

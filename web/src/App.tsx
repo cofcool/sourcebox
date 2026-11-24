@@ -1,39 +1,41 @@
 import {useEffect, useMemo, useState} from "react";
 import {NavLink, Route, Routes, useLocation} from "react-router-dom";
 import {
-    Activity,
-    BookOpen,
-    Check,
-    Clipboard,
-    ExternalLink,
-    FileText,
-    Flame,
-    Heart,
-    Home as HomeIcon,
-    Image,
-    ListTodo,
-    Menu,
-    MessageCircle,
-    NotebookPen,
-    Pencil,
-    Plus,
-    Save,
-    Search,
-    Settings,
-    Trash2,
-    Wrench,
-    X,
+  Activity,
+  BarChart3,
+  BookOpen,
+  Check,
+  Clipboard,
+  ExternalLink,
+  FileText,
+  Flame,
+  Heart,
+  Home as HomeIcon,
+  ListTodo,
+  Menu,
+  MessageCircle,
+  NotebookPen,
+  Pencil,
+  Plus,
+  Save,
+  Search,
+  Settings,
+  Trash2,
+  Wrench,
+  X,
 } from "lucide-react";
 import type {
-    ActionCheckList,
-    ActionComment,
-    ActionRecord,
-    HabitRecord,
-    PhotoAlbum,
-    PhotoRecord,
-    SystemInfo,
-    TimerStatistics,
-    ToolInfo
+  ActionCheckList,
+  ActionComment,
+  ActionRecord,
+  ActionStatistics,
+  HabitRecord,
+  PhotoAlbum,
+  PhotoRecord,
+  PhotoStatistics,
+  SystemInfo,
+  TimerStatistics,
+  ToolInfo
 } from "./api/client";
 import {api, getBackendUrl} from "./api/client";
 import {invoke, isTauri} from "@tauri-apps/api/core";
@@ -45,7 +47,7 @@ interface TodoItem {
   state: string;
   type?: string;
   labels?: string | null;
-  createTime?: string;
+  createTime?: string | null;
   start?: string;
   end?: string;
 }
@@ -114,6 +116,7 @@ function Sidebar({ tools, collapsed, mobile, onNavigate }: {
         ))}
 
         <NavLink to="/navigation" onClick={onNavigate}><ExternalLink size={17} /><span>网址导航</span></NavLink>
+        <NavLink to="/statistics" onClick={onNavigate}><BarChart3 size={17} /><span>数据统计</span></NavLink>
         <NavLink to="/settings" onClick={onNavigate}><Settings size={17} /><span>设置</span></NavLink>
       </nav>
     </aside>
@@ -275,6 +278,7 @@ function ToolPage({ tool }: { tool?: ToolInfo }) {
 function PhotoPage() {
   const [albums, setAlbums] = useState<PhotoAlbum[]>([]);
   const [photos, setPhotos] = useState<PhotoRecord[]>([]);
+  const [albumNames, setAlbumNames] = useState<Map<string, string>>(new Map());
   const [trash, setTrash] = useState<PhotoRecord[]>([]);
   const [selectedAlbumId, setSelectedAlbumId] = useState("");
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoRecord>();
@@ -476,6 +480,241 @@ function PhotoPage() {
             </div>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+function StatisticsPage() {
+  const [date, setDate] = useState("");
+  const [status, setStatus] = useState("");
+  const [category, setCategory] = useState("");
+  const [actionStats, setActionStats] = useState<ActionStatistics>();
+  const [photoStats, setPhotoStats] = useState<PhotoStatistics>();
+  const [actions, setActions] = useState<ActionRecord[]>([]);
+  const [photos, setPhotos] = useState<PhotoRecord[]>([]);
+  const [albumNames, setAlbumNames] = useState<Map<string, string>>(new Map());
+  const [actionPageNumber, setActionPageNumber] = useState(1);
+  const [photoPageNumber, setPhotoPageNumber] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>();
+  const pageSize = 10;
+
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      api.actionStatistics(date, status, category),
+      api.photoStatistics(date, status, category),
+    ])
+      .then(([nextActionStats, nextPhotoStats]) => {
+        setActionStats(nextActionStats);
+        setPhotoStats(nextPhotoStats);
+        setError(undefined);
+      })
+      .catch((e) => setError(e instanceof Error ? e.message : String(e)))
+      .finally(() => setLoading(false));
+  }, [date, status, category]);
+
+  useEffect(() => {
+    api.actionPage(actionPageNumber, pageSize, date, status, category)
+      .then(setActions)
+      .catch((e) => setError(e instanceof Error ? e.message : String(e)));
+  }, [actionPageNumber, date, status, category]);
+
+  useEffect(() => {
+    api.photoPage(photoPageNumber, pageSize, date, status, category)
+      .then(setPhotos)
+      .catch((e) => setError(e instanceof Error ? e.message : String(e)));
+  }, [photoPageNumber, date, status, category]);
+
+  useEffect(() => {
+    api.photoAlbums()
+      .then((albums) => setAlbumNames(new Map(albums.map((album) => [album.id, album.name]))))
+      .catch((e) => setError(e instanceof Error ? e.message : String(e)));
+  }, []);
+
+  const datePrefix = (value?: string | null) => value?.slice(0, 10) ?? "";
+  const actionDate = (record: ActionRecord) =>
+    datePrefix(record.start) || datePrefix(record.createTime);
+  const photoDate = (photo: PhotoRecord) =>
+    datePrefix(photo.takenAt) || datePrefix(photo.createTime);
+
+  const statusOptions = Array.from(new Set([
+    ...(actionStats?.statusOptions ?? []),
+    ...(photoStats?.statusOptions ?? []),
+  ])).sort();
+  const categoryOptions = Array.from(new Set([
+    ...(actionStats?.categoryOptions ?? []),
+    ...(photoStats?.categoryOptions ?? []),
+  ])).sort();
+
+  const resetFilters = () => {
+    setDate("");
+    setStatus("");
+    setCategory("");
+    setActionPageNumber(1);
+    setPhotoPageNumber(1);
+  };
+
+  const updateFilter = (setter: (value: string) => void, value: string) => {
+    setter(value);
+    setActionPageNumber(1);
+    setPhotoPageNumber(1);
+  };
+
+  return (
+    <div className="statistics-page">
+      <div className="page-heading">
+        <div>
+          <h1>数据统计</h1>
+          <p className="muted">查看 action 与 photo 的数据量、状态、分类和明细。</p>
+        </div>
+      </div>
+
+      {error && <div className="error">{error}</div>}
+
+      <section className="panel statistics-filter">
+        <label>
+          指定日期
+          <input type="date" value={date} onChange={(event) => updateFilter(setDate, event.target.value)} />
+        </label>
+        <label>
+          状态
+          <select value={status} onChange={(event) => updateFilter(setStatus, event.target.value)}>
+            <option value="">全部状态</option>
+            {statusOptions.map((value) => <option value={value} key={value}>{value}</option>)}
+          </select>
+        </label>
+        <label>
+          分类
+          <select value={category} onChange={(event) => updateFilter(setCategory, event.target.value)}>
+            <option value="">全部分类</option>
+            {categoryOptions.map((value) => <option value={value} key={value}>{value}</option>)}
+          </select>
+        </label>
+        <button className="secondary" onClick={resetFilters}>清除筛选</button>
+      </section>
+
+      {loading ? (
+        <div className="empty-todos">正在统计数据...</div>
+      ) : (
+        <>
+          <section className="statistics-cards">
+            <article className="statistics-card">
+              <span>Action 总数</span>
+              <strong>{actionStats?.total ?? 0}</strong>
+              <small>当前筛选结果</small>
+            </article>
+            <article className="statistics-card">
+              <span>Photo 总数</span>
+              <strong>{photoStats?.total ?? 0}</strong>
+              <small>当前筛选结果</small>
+            </article>
+            <article className="statistics-card">
+              <span>相册总数</span>
+              <strong>{photoStats?.albumCount ?? 0}</strong>
+              <small>不包含已删除相册</small>
+            </article>
+          </section>
+
+          <section className="statistics-grid">
+            <article className="panel statistics-summary">
+              <h2>Action 维度</h2>
+              <div className="statistics-breakdown">
+                <div>
+                  <h3>状态数量</h3>
+                  {!actionStats?.statusCounts.length ? <p className="muted">暂无数据</p> :
+                    actionStats.statusCounts.map(({name, count}) =>
+                      <div className="statistics-count" key={name}><span>{name}</span><strong>{count}</strong></div>
+                    )}
+                </div>
+                <div>
+                  <h3>分类数量</h3>
+                  {!actionStats?.categoryCounts.length ? <p className="muted">暂无数据</p> :
+                    actionStats.categoryCounts.map(({name, count}) =>
+                      <div className="statistics-count" key={name}><span>{name}</span><strong>{count}</strong></div>
+                    )}
+                </div>
+              </div>
+            </article>
+
+            <article className="panel statistics-summary">
+              <h2>Photo 维度</h2>
+              <div className="statistics-breakdown">
+                <div>
+                  <h3>状态数量</h3>
+                  {!photoStats?.statusCounts.length ? <p className="muted">暂无数据</p> :
+                    photoStats.statusCounts.map(({name, count}) =>
+                      <div className="statistics-count" key={name}><span>{name}</span><strong>{count}</strong></div>
+                    )}
+                </div>
+                <div>
+                  <h3>相册数量</h3>
+                  {!photoStats?.categoryCounts.length ? <p className="muted">暂无数据</p> :
+                    photoStats.categoryCounts.map(({name, count}) =>
+                      <div className="statistics-count" key={name}><span>{name}</span><strong>{count}</strong></div>
+                    )}
+                </div>
+              </div>
+            </article>
+          </section>
+
+          <section className="panel statistics-list">
+            <h2>Action 数据列表</h2>
+            {actions.length === 0 ? <div className="empty-todos">没有符合筛选条件的数据</div> : (
+              <div className="statistics-table-wrap">
+                <table>
+                  <thead><tr><th>名称</th><th>类型</th><th>状态</th><th>分类</th><th>日期</th></tr></thead>
+                  <tbody>
+                    {actions.map((record) =>
+                      <tr key={record.id}>
+                        <td>{record.name}</td><td>{record.type}</td><td>{record.state}</td>
+                        <td>{record.category || "-"}</td><td>{actionDate(record) || "-"}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <div className="statistics-pagination">
+              <button className="secondary" disabled={actionPageNumber === 1}
+                onClick={() => setActionPageNumber((page) => Math.max(1, page - 1))}>上一页</button>
+              <span>第 {actionPageNumber} 页</span>
+              <button className="secondary" disabled={actions.length < pageSize}
+                onClick={() => setActionPageNumber((page) => page + 1)}>下一页</button>
+            </div>
+          </section>
+
+          <section className="panel statistics-list">
+            <h2>Photo 数据列表</h2>
+            {photos.length === 0 ? <div className="empty-todos">没有符合筛选条件的数据</div> : (
+              <div className="statistics-table-wrap">
+                <table>
+                  <thead><tr><th>文件名</th><th>相册</th><th>状态</th><th>日期</th><th>大小</th></tr></thead>
+                  <tbody>
+                    {photos.map((photo) =>
+                      <tr key={photo.id}>
+                        <td>{photo.fileName}</td>
+                        <td>{albumNames.get(photo.albumId) ?? "未分类相册"}</td>
+                        <td>{photo.status}</td>
+                        <td>{photoDate(photo) || "-"}</td><td>{photo.size >= 1024 * 1024
+                          ? `${(photo.size / 1024 / 1024).toFixed(1)} MB`
+                          : `${Math.max(1, Math.round(photo.size / 1024))} KB`}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <div className="statistics-pagination">
+              <button className="secondary" disabled={photoPageNumber === 1}
+                onClick={() => setPhotoPageNumber((page) => Math.max(1, page - 1))}>上一页</button>
+              <span>第 {photoPageNumber} 页</span>
+              <button className="secondary" disabled={photos.length < pageSize}
+                onClick={() => setPhotoPageNumber((page) => page + 1)}>下一页</button>
+            </div>
+          </section>
+        </>
       )}
     </div>
   );
@@ -2535,6 +2774,7 @@ export default function App() {
           <Route path="/" element={<Home system={system} tools={tools} />} />
           <Route path="/navigation" element={<NavigationPage />} />
           <Route path="/photos" element={<PhotoPage />} />
+          <Route path="/statistics" element={<StatisticsPage />} />
           <Route path="/tools/:id" element={<ToolRoute tools={tools} path={location.pathname} />} />
           <Route path="/settings" element={<SettingsPage system={system} />} />
         </Routes>

@@ -20,7 +20,7 @@ export interface TodoRecord {
   type?: string;
   labels?: string | null;
   remark?: string | null;
-  createTime?: string;
+  createTime?: string | null;
   start?: string;
   end?: string;
 }
@@ -61,6 +61,8 @@ export interface ActionRecord {
   start?: string | null;
   end?: string | null;
   duration?: number | null;
+  createTime?: string | null;
+  updateTime?: string | null;
 }
 
 export interface ActionComment {
@@ -153,6 +155,28 @@ export interface SearchResult<T> {
   data: T;
 }
 
+export interface DimensionCount {
+  name: string;
+  count: number;
+}
+
+export interface ActionStatistics {
+  total: number;
+  statusCounts: DimensionCount[];
+  categoryCounts: DimensionCount[];
+  statusOptions: string[];
+  categoryOptions: string[];
+}
+
+export interface PhotoStatistics {
+  total: number;
+  albumCount: number;
+  statusCounts: DimensionCount[];
+  categoryCounts: DimensionCount[];
+  statusOptions: string[];
+  categoryOptions: string[];
+}
+
 let baseUrl = import.meta.env.DEV ? "/proxy" : window.location.origin;
 
 export function setBackendUrl(url: string) {
@@ -199,6 +223,40 @@ function normalizeTools(raw: string[]): ToolInfo[] {
 }
 
 export const api = {
+  actionStatistics: async (date = "", state = "", category = ""): Promise<ActionStatistics> => {
+    const params = new URLSearchParams();
+    if (date) params.set("date", date);
+    if (state) params.set("state", state);
+    if (category) params.set("category", category);
+    return request<ActionStatistics>(`/action/statistics/summary${params.size ? `?${params}` : ""}`);
+  },
+  actionPage: async (page = 1, size = 10, date = "", state = "", category = ""): Promise<ActionRecord[]> => {
+    const params = new URLSearchParams({
+      page: String(page),
+      size: String(size),
+    });
+    if (date) params.set("date", date);
+    if (state) params.set("state", state);
+    if (category) params.set("category", category);
+    return request<ActionRecord[]>(`/action?${params}`);
+  },
+  photoStatistics: async (date = "", status = "", category = ""): Promise<PhotoStatistics> => {
+    const params = new URLSearchParams();
+    if (date) params.set("date", date);
+    if (status) params.set("state", status);
+    if (category) params.set("category", category);
+    return request<PhotoStatistics>(`/photo/statistics/summary${params.size ? `?${params}` : ""}`);
+  },
+  photoPage: async (page = 1, size = 10, date = "", status = "", category = ""): Promise<PhotoRecord[]> => {
+    const params = new URLSearchParams({
+      page: String(page),
+      size: String(size),
+    });
+    if (date) params.set("date", date);
+    if (status) params.set("state", status);
+    if (category) params.set("category", category);
+    return request<PhotoRecord[]>(`/photo/photos?${params}`);
+  },
   photoAlbums: async (): Promise<PhotoAlbum[]> =>
     request<PhotoAlbum[]>("/photo/albums"),
   photoCreateAlbum: async (album: Partial<PhotoAlbum>): Promise<PhotoAlbum> =>

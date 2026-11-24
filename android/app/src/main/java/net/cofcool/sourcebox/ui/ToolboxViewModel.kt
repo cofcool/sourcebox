@@ -58,6 +58,7 @@ import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.time.LocalDate
 import java.util.UUID
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val DIRTY_SYNC_RETRY_INTERVAL = 30_000L
 private const val TIMER_NOTIFICATION_CHANNEL = "pomodoro_timer_alarm"
@@ -216,7 +217,7 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         refreshTools()
         viewModelScope.launch {
             while (isActive) {
-                delay(DIRTY_SYNC_RETRY_INTERVAL)
+                delay(DIRTY_SYNC_RETRY_INTERVAL.milliseconds)
                 retryPendingChanges()
             }
         }

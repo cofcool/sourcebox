@@ -171,6 +171,17 @@ class ActionServiceTest extends BaseTest {
     }
 
     @Test
+    void statisticsUsesSqlAggregates(VertxTestContext testContext) {
+        actionService.findStatistics(null, null, null)
+            .onComplete(testContext.succeeding(statistics -> testContext.verify(() -> {
+                Assertions.assertTrue(statistics.total() >= 2);
+                Assertions.assertFalse(statistics.statusCounts().isEmpty());
+                Assertions.assertFalse(statistics.statusOptions().isEmpty());
+                testContext.completeNow();
+            })));
+    }
+
+    @Test
     void findByRecordPage(Vertx vertx, VertxTestContext testContext) {
         LocalDateTime baseTime = LocalDateTime.of(2025, 1, 1, 0, 0);
         List<ActionRecord> records = IntStream.range(0, 3)

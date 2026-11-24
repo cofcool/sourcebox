@@ -15,8 +15,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
-import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.App;
+import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.internal.api.entity.PhotoAlbum;
 import net.cofcool.sourcebox.internal.api.entity.SmartAlbum;
 import net.cofcool.sourcebox.util.SqlRepository;
@@ -39,6 +39,15 @@ class PhotoServiceTest extends BaseTest {
         vertx = testVertx;
         SqlRepository.init(vertx);
         photoService = new PhotoService(vertx);
+    }
+
+    @Test
+    void statisticsUsesSqlAggregates() throws Exception {
+        var statistics = await(photoService.findStatistics(null, null, null));
+        assertTrue(statistics.total() >= 0);
+        assertTrue(statistics.albumCount() >= 0);
+        assertNotNull(statistics.statusCounts());
+        assertNotNull(statistics.categoryCounts());
     }
 
     @Test

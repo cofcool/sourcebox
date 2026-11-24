@@ -4,12 +4,15 @@ import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowSet;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -21,11 +24,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import javax.imageio.ImageIO;
 import lombok.CustomLog;
-import net.cofcool.sourcebox.App;
 import lombok.SneakyThrows;
+import net.cofcool.sourcebox.App;
 import net.cofcool.sourcebox.internal.api.entity.Photo;
 import net.cofcool.sourcebox.internal.api.entity.PhotoAlbum;
 import net.cofcool.sourcebox.internal.api.entity.SmartAlbum;
+import net.cofcool.sourcebox.util.QueryBuilder;
 import net.cofcool.sourcebox.util.RepositoryUtil;
 import net.cofcool.sourcebox.util.SqlRepository;
 import org.apache.commons.io.FileUtils;
@@ -310,6 +314,139 @@ public class PhotoService {
         return photoRepository.find();
     }
 
+    public Future<List<Photo>> findPhotoPage(String date, String status, String category,
+                                              int page, int size) {
+        if (page < 1 || size < 1) {
+            return Future.failedFuture("page and size must be positive");
+        }
+        LocalDate day;
+        if (StringUtils.isNotBlank(date)) {
+            try {
+                day = LocalDate.parse(date);
+            } catch (Exception e) {
+                return Future.failedFuture("invalid date: " + date);
+            }
+        } else {
+            day = null;
+        }
+
+        var offset = (long) (page - 1) * size;
+        var query = QueryBuilder.builder()
+            .select("p.*")
+            .from("photo p")
+            .leftJoin("photo_album pa ON p.album_id=pa.id")
+            .orderBy("COALESCE(p.taken_at,p.create_time) DESC")
+            .limit(size);
+        if (offset > 0) query.offset(offset);
+        if (day != null) {
+            query.and("CAST(COALESCE(p.taken_at,p.create_time) AS DATE)=?", day);
+        }
+        if (StringUtils.isNotBlank(status)) {
+            query.and("p.status=?", status);
+        }
+        if (StringUtils.isNotBlank(category)) {
+            query.and("COALESCE(pa.name,'未分类相册')=?", category);
+        }
+        return photoRepository.find(query);
+    }
+
+    public Future<PhotoStatistics> findStatistics(String date, String status, String category) {
+        LocalDate day;
+        if (StringUtils.isNotBlank(date)) {
+            try {
+                day = LocalDate.parse(date);
+            } catch (Exception e) {
+                return Future.failedFuture("invalid date: " + date);
+            }
+        } else {
+            day = null;
+        }
+
+        var totalQuery = photoStatisticsFilter(
+            QueryBuilder.builder().count().from("photo p")
+                .leftJoin("photo_album pa ON p.album_id=pa.id"),
+            day, status, category);
+        var statusQuery = photoStatisticsFilter(
+            QueryBuilder.builder()
+                .select("COALESCE(p.status, '未分类') AS name")
+                .select("COUNT(*) AS cnt")
+                .from("photo p")
+                .leftJoin("photo_album pa ON p.album_id=pa.id")
+                .groupBy("COALESCE(p.status, '未分类')")
+                .orderBy("name"),
+            day, status, category);
+        var categoryQuery = photoStatisticsFilter(
+            QueryBuilder.builder()
+                .select("COALESCE(pa.name, '未分类相册') AS name")
+                .select("COUNT(*) AS cnt")
+                .from("photo p")
+                .leftJoin("photo_album pa ON p.album_id=pa.id")
+                .groupBy("COALESCE(pa.name, '未分类相册')")
+                .orderBy("name"),
+            day, status, category);
+        var statusOptionsQuery = QueryBuilder.builder()
+            .select("DISTINCT status AS name")
+            .from("photo")
+            .and("status IS NOT NULL")
+            .orderBy("name");
+        var categoryOptionsQuery = QueryBuilder.builder()
+            .select("DISTINCT name AS name")
+            .from("photo_album")
+            .and("status<>?", "DELETED")
+            .orderBy("name");
+        var albumCountQuery = QueryBuilder.builder()
+            .count()
+            .from("photo_album")
+            .and("status<>?", "DELETED");
+
+        return Future.all(
+            photoRepository.count(totalQuery),
+            photoRepository.execute(statusQuery),
+            photoRepository.execute(categoryQuery),
+            photoRepository.execute(statusOptionsQuery),
+            photoRepository.execute(categoryOptionsQuery),
+            albumRepository.count(albumCountQuery)
+        ).map(result -> new PhotoStatistics(
+            result.resultAt(0),
+            ((Integer) result.resultAt(5)).longValue(),
+            photoDimensionCounts(result.resultAt(1)),
+            photoDimensionCounts(result.resultAt(2)),
+            photoOptionNames(result.resultAt(3)),
+            photoOptionNames(result.resultAt(4))
+        ));
+    }
+
+    private QueryBuilder photoStatisticsFilter(QueryBuilder query, LocalDate day,
+                                                String status, String category) {
+        if (day != null) {
+            query.and("CAST(COALESCE(p.taken_at,p.create_time) AS DATE)=?", day);
+        }
+        if (StringUtils.isNotBlank(status)) {
+            query.and("p.status=?", status);
+        }
+        if (StringUtils.isNotBlank(category)) {
+            query.and("COALESCE(pa.name,'未分类相册')=?", category);
+        }
+        return query;
+    }
+
+    private List<DimensionCount> photoDimensionCounts(RowSet<Row> rows) {
+        var counts = new ArrayList<DimensionCount>();
+        for (Row row : rows) {
+            counts.add(new DimensionCount(row.getString("NAME"), row.getLong("CNT").intValue()));
+        }
+        return counts;
+    }
+
+    private List<String> photoOptionNames(RowSet<Row> rows) {
+        var names = new ArrayList<String>();
+        for (Row row : rows) {
+            var name = row.getString("NAME");
+            if (StringUtils.isNotBlank(name)) names.add(name);
+        }
+        return names;
+    }
+
     public Future<Boolean> permanentlyDeletePhoto(String id) {
         return findPhoto(id).compose(photo -> {
             try {
@@ -561,4 +698,15 @@ public class PhotoService {
             return new Integer[]{null, null};
         }
     }
+
+    public record DimensionCount(String name, int count) {}
+
+    public record PhotoStatistics(
+        int total,
+        long albumCount,
+        List<DimensionCount> statusCounts,
+        List<DimensionCount> categoryCounts,
+        List<String> statusOptions,
+        List<String> categoryOptions
+    ) {}
 }

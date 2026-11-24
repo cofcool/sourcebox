@@ -1,16 +1,16 @@
 package net.cofcool.sourcebox.util;
 
-import lombok.Getter;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
+import lombok.Getter;
 
 public final class QueryBuilder {
 
     private final List<String> selectFields = new ArrayList<>();
     private String fromTable;
+    private final List<String> joinClauses = new ArrayList<>();
     private final List<String> whereClauses = new ArrayList<>();
     @Getter
     private final List<Object> parameters = new ArrayList<>();
@@ -43,6 +43,16 @@ public final class QueryBuilder {
 
     public QueryBuilder from(Class<?> table) {
         this.fromTable = TableInfoHelper.tableInfo(table).name();
+        return this;
+    }
+
+    public QueryBuilder join(String joinClause) {
+        this.joinClauses.add("JOIN " + joinClause);
+        return this;
+    }
+
+    public QueryBuilder leftJoin(String joinClause) {
+        this.joinClauses.add("LEFT JOIN " + joinClause);
         return this;
     }
 
@@ -106,6 +116,9 @@ public final class QueryBuilder {
         StringBuilder sb = new StringBuilder();
         sb.append("SELECT ").append(String.join(", ", selectFields));
         sb.append(" FROM ").append(fromTable);
+        if (!joinClauses.isEmpty()) {
+            sb.append(" ").append(String.join(" ", joinClauses));
+        }
 
         if (!whereClauses.isEmpty()) {
             sb.append(" WHERE ");

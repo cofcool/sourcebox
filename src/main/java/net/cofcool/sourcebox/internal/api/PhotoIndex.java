@@ -1,7 +1,6 @@
 package net.cofcool.sourcebox.internal.api;
 
 import io.vertx.core.Vertx;
-import io.vertx.core.Future;
 import io.vertx.ext.web.Router;
 import java.io.File;
 import net.cofcool.sourcebox.internal.api.entity.PhotoAlbum;
@@ -26,17 +25,20 @@ public class PhotoIndex {
         });
         router.delete("/albums/:id").respond(r -> service.deleteAlbum(r.pathParam("id")));
         router.get("/albums/:id/photos").respond(r -> service.findAlbumPhotos(r.pathParam("id")));
-        router.get("/exportAll").respond(r ->
-            Future.all(
-                service.findAlbums(),
-                service.findAllPhotos(),
-                service.findSmartAlbums()
-            ).map(result -> new io.vertx.core.json.JsonObject()
-                .put("albums", result.resultAt(0))
-                .put("photos", result.resultAt(1))
-                .put("smartAlbums", result.resultAt(2))));
         router.post("/albums/:id/scan").respond(r -> service.scan(r.body().asJsonObject()
             .put("albumId", r.pathParam("id"))));
+        router.get("/statistics/summary").respond(r -> service.findStatistics(
+            r.queryParam("date").stream().findFirst().orElse(null),
+            r.queryParam("state").stream().findFirst().orElse(null),
+            r.queryParam("category").stream().findFirst().orElse(null)
+        ));
+        router.get("/photos").respond(r -> service.findPhotoPage(
+            r.queryParam("date").stream().findFirst().orElse(null),
+            r.queryParam("state").stream().findFirst().orElse(r.queryParam("status").stream().findFirst().orElse(null)),
+            r.queryParam("category").stream().findFirst().orElse(null),
+            parsePage(r.queryParam("page").stream().findFirst().orElse(null)),
+            parsePageSize(r.queryParam("size").stream().findFirst().orElse(null))
+        ));
 
         router.post("/scans").respond(r -> service.scan(r.body().asJsonObject()));
         router.get("/scans/:jobId").handler(r -> {
@@ -118,5 +120,13 @@ public class PhotoIndex {
         var rootRouter = Router.router(vertx);
         rootRouter.route("/photo/*").subRouter(router);
         return rootRouter;
+    }
+
+    private static int parsePage(String value) {
+        return value == null ? 1 : Integer.parseInt(value);
+    }
+
+    private static int parsePageSize(String value) {
+        return value == null ? 10 : Integer.parseInt(value);
     }
 }

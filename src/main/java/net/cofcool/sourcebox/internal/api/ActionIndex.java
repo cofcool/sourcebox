@@ -57,7 +57,11 @@ public class ActionIndex {
         router.delete("/recommend/:actionId")
             .respond(r -> actionService.cancelRecommendation(r.pathParam("actionId")));
 
-        router.get("/exportAll").respond(context -> actionService.find());
+        router.get("/statistics/summary").respond(r -> actionService.findStatistics(
+            r.queryParams().get("date"),
+            r.queryParams().get("state"),
+            r.queryParams().get("category")
+        ));
 
         router.get("/:actionId").respond(r -> actionService.find(r.pathParam("actionId")));
 
@@ -110,7 +114,7 @@ public class ActionIndex {
         try {
             int page = parsePageParameter(map.get("page"), ActionService.DEFAULT_PAGE);
             int size = parsePageParameter(map.get("size"), ActionService.DEFAULT_PAGE_SIZE);
-            return actionService.find(condition, page, size);
+            return actionService.find(condition, page, size, map.get("date"));
         } catch (NumberFormatException e) {
             return Future.failedFuture(e);
         }

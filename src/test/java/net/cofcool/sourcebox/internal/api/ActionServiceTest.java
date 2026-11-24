@@ -4,9 +4,19 @@ import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
+import java.time.LocalDateTime;
+import java.time.Period;
+import java.util.List;
+import java.util.stream.IntStream;
 import net.cofcool.sourcebox.BaseTest;
-import net.cofcool.sourcebox.internal.api.entity.*;
+import net.cofcool.sourcebox.internal.api.entity.ActionRecord;
+import net.cofcool.sourcebox.internal.api.entity.ActionState;
 import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
+import net.cofcool.sourcebox.internal.api.entity.CheckList;
+import net.cofcool.sourcebox.internal.api.entity.Comment;
+import net.cofcool.sourcebox.internal.api.entity.Habit;
+import net.cofcool.sourcebox.internal.api.entity.Note;
+import net.cofcool.sourcebox.internal.api.entity.RefType;
 import net.cofcool.sourcebox.logging.LoggerFactory;
 import net.cofcool.sourcebox.util.SqlRepository;
 import net.cofcool.sourcebox.util.Utils;
@@ -15,11 +25,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import java.time.LocalDateTime;
-import java.time.Period;
-import java.util.List;
-import java.util.stream.IntStream;
 
 @ExtendWith(VertxExtension.class)
 class ActionServiceTest extends BaseTest {
@@ -97,6 +102,35 @@ class ActionServiceTest extends BaseTest {
                 System.out.println(r);
                 testContext.completeNow();
             })));
+    }
+
+    @Test
+    void recommendationIsIdempotentAndCanBeCancelled(VertxTestContext testContext) {
+        actionService.recommend(defaultRecord.id())
+            .compose(first -> actionService.recommend(defaultRecord.id())
+                .compose(second -> {
+                    Assertions.assertEquals(first.id(), second.id());
+                    return actionService.findRecommendations();
+                })
+                .compose(recommendations -> {
+                    Assertions.assertEquals(
+                        1,
+                        recommendations.stream()
+                            .filter(recommend -> defaultRecord.id().equals(recommend.dataId()))
+                            .count()
+                    );
+                    return actionService.cancelRecommendation(defaultRecord.id());
+                })
+                .compose(ignored -> actionService.cancelRecommendation(defaultRecord.id()))
+                .compose(ignored -> actionService.findRecommendations())
+                .onSuccess(recommendations -> testContext.verify(() -> {
+                    Assertions.assertTrue(
+                        recommendations.stream().noneMatch(recommend -> defaultRecord.id().equals(recommend.dataId()))
+                    );
+                    testContext.completeNow();
+                }))
+            )
+            .onFailure(testContext::failNow);
     }
 
     @Test

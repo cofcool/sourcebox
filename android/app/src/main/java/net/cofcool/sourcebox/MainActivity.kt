@@ -65,6 +65,9 @@ import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material3.AlertDialog
@@ -114,6 +117,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.LinkAnnotation
@@ -248,6 +252,15 @@ private fun SourceboxApp(
             "files-download" -> "files"
             "files-text-editor" -> "files"
             "photo-backup" -> "photos"
+            "photo-detail" -> "photos"
+            "photos" -> {
+                if (selectedPhotoAlbum != null) {
+                    selectedPhotoAlbum = null
+                    "photos"
+                } else {
+                    "more"
+                }
+            }
             "record-detail" -> recordReturnPage
             "record-create" -> "task"
             "habit-detail" -> habitReturnPage
@@ -270,6 +283,11 @@ private fun SourceboxApp(
     LaunchedEffect(sharedText) {
         showShareTargetDialog = !sharedText.isNullOrBlank()
     }
+    LaunchedEffect(page) {
+        if (page in setOf("todos", "task", "todo-detail", "record-detail")) {
+            vm.refreshRecommendations()
+        }
+    }
     BackHandler(enabled = page !in pages.map { it.first }) {
         navigateBack()
     }
@@ -283,7 +301,7 @@ private fun SourceboxApp(
     ) {
         Scaffold(
             topBar = {
-                TopAppBar(
+                if (page != "photo-detail") TopAppBar(
                     title = {
                         Text(
                             when (page) {
@@ -324,6 +342,28 @@ private fun SourceboxApp(
                         when (page) {
                             "photos" -> IconButton(onClick = { page = "photo-backup" }) {
                                 Icon(Icons.Default.Backup, contentDescription = "自动备份")
+                            }
+                            "todo-detail" -> selectedTodo?.let { todo ->
+                                IconButton(
+                                    onClick = { vm.setRecommended(todo.id, todo.id !in vm.recommendedIds) },
+                                    enabled = !vm.busy
+                                ) {
+                                    Icon(
+                                        if (todo.id in vm.recommendedIds) Icons.Default.Star else Icons.Default.StarBorder,
+                                        contentDescription = if (todo.id in vm.recommendedIds) "取消推荐" else "推荐到首页"
+                                    )
+                                }
+                            }
+                            "record-detail" -> selectedRecord?.let { record ->
+                                IconButton(
+                                    onClick = { vm.setRecommended(record.id, record.id !in vm.recommendedIds) },
+                                    enabled = !vm.busy
+                                ) {
+                                    Icon(
+                                        if (record.id in vm.recommendedIds) Icons.Default.Star else Icons.Default.StarBorder,
+                                        contentDescription = if (record.id in vm.recommendedIds) "取消推荐" else "推荐到首页"
+                                    )
+                                }
                             }
                             "task" -> IconButton(onClick = { page = "record-create" }) {
                                 Icon(Icons.Default.Add, contentDescription = "添加任务")
@@ -371,7 +411,7 @@ private fun SourceboxApp(
             bottomBar = {
                 if (page !in setOf(
                         "record-detail", "record-create", "habit-detail", "habit-create",
-                        "todo-detail", "todo-create", "files-text-editor"
+                        "todo-detail", "todo-create", "files-text-editor", "photo-detail"
                     )
                 ) {
                     NavigationBar {
@@ -467,6 +507,9 @@ private fun SourceboxApp(
                 "photos" -> PhotosScreen(
                     vm = vm,
                     modifier = Modifier.padding(padding),
+                    initialAlbum = selectedPhotoAlbum,
+                    onCloseAlbum = { selectedPhotoAlbum = null },
+                    onOpenAlbum = { selectedPhotoAlbum = it },
                     onOpenPhoto = { album, photo ->
                         selectedPhotoAlbum = album
                         selectedPhoto = photo
@@ -735,6 +778,7 @@ private fun HomeScreen(
                 vm.todayActions.forEach { action ->
                     TodayActionCard(
                         action = action,
+                        isRecommended = action.id in vm.recommendedIds,
                         onClick = { onOpenAction(action) }
                     )
                 }
@@ -744,7 +788,7 @@ private fun HomeScreen(
 }
 
 @Composable
-private fun TodayActionCard(action: ActionRecord, onClick: () -> Unit) {
+private fun TodayActionCard(action: ActionRecord, isRecommended: Boolean, onClick: () -> Unit) {
     val typeLabel = when (action.type) {
         "todo" -> "待办"
         "record" -> "任务"
@@ -769,6 +813,14 @@ private fun TodayActionCard(action: ActionRecord, onClick: () -> Unit) {
             ) {
                 Text(action.name, Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.width(8.dp))
+                if (isRecommended) {
+                    Text(
+                        "置顶",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(Modifier.width(6.dp))
+                }
                 Text("$typeLabel · $stateLabel", style = MaterialTheme.typography.labelSmall)
             }
             action.remark?.takeIf(String::isNotBlank)?.let {
@@ -924,20 +976,27 @@ private fun MoreScreen(
 private fun PhotosScreen(
     vm: ToolboxViewModel,
     modifier: Modifier,
+    initialAlbum: PhotoAlbum?,
+    onCloseAlbum: () -> Unit,
+    onOpenAlbum: (PhotoAlbum) -> Unit,
     onOpenPhoto: (PhotoAlbum, PhotoRecord) -> Unit
 ) {
     var albums by remember { mutableStateOf<List<PhotoAlbum>>(emptyList()) }
     var photos by remember { mutableStateOf<List<PhotoRecord>>(emptyList()) }
-    var selectedAlbum by remember { mutableStateOf<PhotoAlbum?>(null) }
+    var selectedAlbum by remember(initialAlbum?.id) { mutableStateOf(initialAlbum) }
     var showCreate by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         try { albums = vm.photoAlbums() } catch (e: Exception) { error = e.message }
+        initialAlbum?.let { album ->
+            try { photos = vm.photoAlbumPhotos(album.id) } catch (e: Exception) { error = e.message }
+        }
     }
     fun openAlbum(album: PhotoAlbum) {
         selectedAlbum = album
+        onOpenAlbum(album)
         photos = emptyList()
         scope.launch {
             try { photos = vm.photoAlbumPhotos(album.id) } catch (e: Exception) { error = e.message }
@@ -984,7 +1043,11 @@ private fun PhotosScreen(
                     }
                 }) { Text("扫描") }
                 Spacer(Modifier.width(8.dp))
-                TextButton(onClick = { selectedAlbum = null; photos = emptyList() }) { Text("返回") }
+                TextButton(onClick = {
+                    selectedAlbum = null
+                    photos = emptyList()
+                    onCloseAlbum()
+                }) { Text("返回") }
             }
             if (photos.isEmpty()) {
                 EmptyState("相册中暂无照片")
@@ -1259,24 +1322,49 @@ private fun PhotoDetailScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    Column(modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Card(modifier = Modifier.weight(1f).fillMaxWidth()) {
-            AsyncImage(model = vm.photoContentUrl(photo.id), contentDescription = photo.fileName,
-                modifier = Modifier.fillMaxSize())
-        }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = {
-                val share = Intent(Intent.ACTION_SEND).apply {
-                    type = photo.mimeType ?: "image/*"
-                    putExtra(Intent.EXTRA_TEXT, vm.photoContentUrl(photo.id))
+    var controlsVisible by remember { mutableStateOf(false) }
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color.Black)
+            .clickable { controlsVisible = !controlsVisible }
+    ) {
+        AsyncImage(
+            model = vm.photoContentUrl(photo.id),
+            contentDescription = photo.fileName,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.fillMaxSize()
+        )
+        if (controlsVisible) {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .background(Color.Black.copy(alpha = 0.55f))
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = {
+                    val share = Intent(Intent.ACTION_SEND).apply {
+                        type = photo.mimeType ?: "image/*"
+                        putExtra(Intent.EXTRA_TEXT, vm.photoContentUrl(photo.id))
+                    }
+                    context.startActivity(Intent.createChooser(share, "分享照片"))
+                }) {
+                    Icon(Icons.Default.Share, contentDescription = "分享",
+                        tint = Color.White)
                 }
-                context.startActivity(Intent.createChooser(share, "分享照片"))
-            }, modifier = Modifier.weight(1f)) { Text("分享") }
-            Button(onClick = {
-                scope.launch {
-                    try { vm.trashPhoto(photo.id); onDeleted() } catch (_: Exception) {}
+                Spacer(Modifier.width(32.dp))
+                IconButton(onClick = {
+                    scope.launch {
+                        try { vm.trashPhoto(photo.id); onDeleted() } catch (_: Exception) {}
+                    }
+                }) {
+                    Icon(Icons.Default.Delete, contentDescription = "删除",
+                        tint = Color.White)
                 }
-            }, modifier = Modifier.weight(1f)) { Text("删除") }
+            }
         }
     }
 }

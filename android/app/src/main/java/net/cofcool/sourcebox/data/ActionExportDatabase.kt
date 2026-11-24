@@ -27,6 +27,7 @@ class ActionExportDatabase(context: Context) :
 
     override fun onCreate(db: SQLiteDatabase) {
         createTable(db, TABLE_ACTIONS)
+        createTable(db, TABLE_RECOMMENDS)
         createTable(db, TABLE_NOTES)
         createTable(db, TABLE_COMMANDS)
         createTable(db, TABLE_PHOTO_ALBUMS)
@@ -74,6 +75,9 @@ class ActionExportDatabase(context: Context) :
             createTable(db, TABLE_SMART_ALBUMS)
             createPhotoRelationsTable(db)
         }
+        if (oldVersion < 7) {
+            createTable(db, TABLE_RECOMMENDS)
+        }
     }
 
     fun replaceExportData(
@@ -81,10 +85,12 @@ class ActionExportDatabase(context: Context) :
         notes: List<NoteRecord>,
         actionTypes: ActionTypeResponse,
         photos: PhotoExport,
+        recommendations: List<RecommendRecord>,
         syncedAt: String
     ) {
         validateIds(actions.map { it.record.id }, "行动记录")
         validateIds(notes.map { it.id }, "便笺")
+        validateIds(recommendations.map { it.id }, "推荐")
         validateIds(photos.albums.map { it.id }, "照片相册")
         validateIds(photos.photos.map { it.id }, "照片")
         validateIds(photos.smartAlbums.map { it.id }, "智能相册")
@@ -96,6 +102,11 @@ class ActionExportDatabase(context: Context) :
                     TABLE_ACTIONS,
                     actions.map { it.record.id to json.encodeToString(it) })
                 replaceRows(this, TABLE_NOTES, notes.map { it.id to json.encodeToString(it) })
+                replaceRows(
+                    this,
+                    TABLE_RECOMMENDS,
+                    recommendations.map { it.id to json.encodeToString(it) }
+                )
                 replaceRows(this, TABLE_PHOTO_ALBUMS,
                     photos.albums.map { it.id to json.encodeToString(it) })
                 replaceRows(this, TABLE_PHOTOS,
@@ -104,7 +115,15 @@ class ActionExportDatabase(context: Context) :
                     photos.smartAlbums.map { it.id to json.encodeToString(it) })
                 replacePhotoRelations(this, photos)
                 replaceTypes(this, actionTypes)
-                listOf("actions", "notes", "types", "photos", "photo_albums", "smart_albums").forEach { dataset ->
+                listOf(
+                    "actions",
+                    "notes",
+                    "types",
+                    "photos",
+                    "photo_albums",
+                    "smart_albums",
+                    "recommendations"
+                ).forEach { dataset ->
                     val syncValues = ContentValues().apply {
                         put("dataset", dataset)
                         put("synced_at", syncedAt)
@@ -129,6 +148,36 @@ class ActionExportDatabase(context: Context) :
             arrayOf("NORMAL"),
             "note_date DESC"
         )
+
+    fun recommendations(): List<RecommendRecord> =
+        queryPayloads(
+            TABLE_RECOMMENDS,
+            RecommendRecord.serializer(),
+            "payload IS NOT NULL",
+            orderBy = "id"
+        )
+
+    fun replaceRecommendations(recommendations: List<RecommendRecord>) {
+        validateIds(recommendations.map { it.id }, "推荐")
+        val db = writableDatabase
+        db.transaction {
+            replaceRows(
+                this,
+                TABLE_RECOMMENDS,
+                recommendations.map { it.id to json.encodeToString(it) }
+            )
+        }
+    }
+
+    fun saveRecommendation(recommendation: RecommendRecord) {
+        require(recommendation.id.isNotBlank()) { "推荐记录 ID 不能为空" }
+        require(recommendation.dataId.isNotBlank()) { "推荐数据 ID 不能为空" }
+        upsert(TABLE_RECOMMENDS, recommendation.id, json.encodeToString(recommendation))
+    }
+
+    fun deleteRecommendation(id: String) {
+        delete(TABLE_RECOMMENDS, id)
+    }
 
     fun photoAlbums(): List<PhotoAlbum> =
         queryPayloads(
@@ -655,6 +704,7 @@ class ActionExportDatabase(context: Context) :
         try {
             listOf(
                 TABLE_ACTIONS,
+                TABLE_RECOMMENDS,
                 TABLE_NOTES,
                 TABLE_COMMANDS,
                 TABLE_PENDING,
@@ -1128,8 +1178,9 @@ class ActionExportDatabase(context: Context) :
 
     companion object {
         private const val DATABASE_NAME = "sourcebox-local.db"
-        private const val DATABASE_VERSION = 6
+        private const val DATABASE_VERSION = 7
         private const val TABLE_ACTIONS = "exported_actions"
+        private const val TABLE_RECOMMENDS = "exported_recommendations"
         private const val TABLE_NOTES = "exported_notes"
         private const val TABLE_COMMANDS = "exported_commands"
         private const val TABLE_SYNC = "sync_metadata"

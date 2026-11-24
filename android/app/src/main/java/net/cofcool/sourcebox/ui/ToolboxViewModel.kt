@@ -47,6 +47,7 @@ import net.cofcool.sourcebox.data.PhotoRecord
 import net.cofcool.sourcebox.data.PhotoBackupConfig
 import net.cofcool.sourcebox.data.PhotoBackupJob
 import net.cofcool.sourcebox.data.PhotoExport
+import net.cofcool.sourcebox.data.RecommendRecord
 import net.cofcool.sourcebox.data.ServerResponseException
 import net.cofcool.sourcebox.data.SourceboxApi
 import net.cofcool.sourcebox.data.TodoRecord
@@ -101,7 +102,8 @@ private data class ExportData(
     val actions: List<ActionExport>,
     val notes: List<NoteRecord>,
     val types: ActionTypeResponse,
-    val photos: PhotoExport
+    val photos: PhotoExport,
+    val recommendations: List<RecommendRecord>
 )
 
 class ToolboxViewModel(application: Application) : AndroidViewModel(application) {
@@ -148,6 +150,10 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
     var todoHasNextPage by mutableStateOf(false)
         private set
     var todayActions by mutableStateOf<List<ActionRecord>>(emptyList())
+        private set
+    var recommendedIds by mutableStateOf(
+        actionDatabase.recommendations().map { it.dataId }.toSet()
+    )
         private set
     var commands by mutableStateOf<List<CommandRecord>>(emptyList())
         private set
@@ -298,10 +304,54 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
 
     fun refreshTodayActions() = perform {
         loadTodayActions()
+        if (api.baseUrl().isNotBlank()) {
+            syncRecommendationsFromServer()
+            loadTodayActions()
+        }
+    }
+
+    fun refreshRecommendations() = perform {
+        if (api.baseUrl().isNotBlank()) {
+            syncRecommendationsFromServer()
+        }
+        loadTodayActions()
+    }
+
+    fun setRecommended(actionId: String, recommended: Boolean) = perform {
+        require(actionId.isNotBlank()) { "行动 ID 不能为空" }
+        if (recommended) {
+            val saved = api.recommendAction(actionId)
+            withContext(Dispatchers.IO) { actionDatabase.saveRecommendation(saved) }
+        } else {
+            api.cancelRecommendation(actionId)
+            withContext(Dispatchers.IO) {
+                actionDatabase.recommendations()
+                    .filter { it.dataId == actionId }
+                    .forEach { actionDatabase.deleteRecommendation(it.id) }
+            }
+        }
+        recommendedIds = withContext(Dispatchers.IO) {
+            actionDatabase.recommendations().map { it.dataId }.toSet()
+        }
+        loadTodayActions()
+        message = if (recommended) "已推荐到首页" else "已取消推荐"
+    }
+
+    private suspend fun syncRecommendationsFromServer() {
+        val recommendations = api.recommendations()
+        withContext(Dispatchers.IO) {
+            actionDatabase.replaceRecommendations(recommendations)
+        }
+        recommendedIds = recommendations.map { it.dataId }.toSet()
     }
 
     private suspend fun loadTodayActions() {
         val today = java.time.LocalDate.now()
+        val recommendations = withContext(Dispatchers.IO) {
+            actionDatabase.recommendations()
+                .filter { it.table == "action_record" }
+        }
+        recommendedIds = recommendations.map { it.dataId }.toSet()
         todayActions = withContext(Dispatchers.IO) {
             val date = today.toString()
             val todayTodos = actionDatabase.actionsStartingOn(date, "todo")
@@ -334,11 +384,12 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
                     )
                 }
                 .map { it.record }
-            var n = todayTodos + activeRecords + dueHabits
-            n = n.sortedByDescending { it
-                it.start
+            val recommendedActions = recommendations.mapNotNull { recommendation ->
+                actionDatabase.actionDetails(recommendation.dataId)?.record
             }
-            n
+            (todayTodos + activeRecords + dueHabits + recommendedActions)
+                .distinctBy { it.id }
+                .sortedByDescending { it.start.orEmpty() }
         }
     }
 
@@ -704,7 +755,14 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
                     val notes = async { api.exportAllNotes() }
                     val types = async { api.actionTypes() }
                     val photos = async { api.exportAllPhotos() }
-                    ExportData(actions.await(), notes.await(), types.await(), photos.await())
+                    val recommendations = async { api.recommendations() }
+                    ExportData(
+                        actions.await(),
+                        notes.await(),
+                        types.await(),
+                        photos.await(),
+                        recommendations.await()
+                    )
                 }
                 val syncedAt = currentRecordDateTime()
                 withContext(Dispatchers.IO) {
@@ -713,9 +771,11 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
                         notes = exported.notes,
                         actionTypes = exported.types,
                         photos = exported.photos,
+                        recommendations = exported.recommendations,
                         syncedAt = syncedAt
                     )
                 }
+                recommendedIds = exported.recommendations.map { it.dataId }.toSet()
                 localActionCount = exported.actions.size
                 lastActionSync = syncedAt
                 localNoteCount = exported.notes.size

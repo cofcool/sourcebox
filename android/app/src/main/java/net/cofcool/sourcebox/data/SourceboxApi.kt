@@ -175,6 +175,15 @@ data class ActionExport(
 )
 
 @Serializable
+data class RecommendRecord(
+    val id: String,
+    val dataId: String,
+    val table: String,
+    val createTime: String? = null,
+    val updateTime: String? = null
+)
+
+@Serializable
 data class HabitValueChange(
     val checklistId: String,
     val checklist: ActionCheckList
@@ -605,6 +614,16 @@ class SourceboxApi(context: Context) {
 
     suspend fun exportAllActions(): List<ActionExport> =
         json.decodeFromString<List<ActionExport>>(request("/action/exportAll"))
+
+    suspend fun recommendations(): List<RecommendRecord> =
+        json.decodeFromString(request("/action/recommend"))
+
+    suspend fun recommendAction(actionId: String): RecommendRecord =
+        json.decodeFromString(request("/action/recommend/${Uri.encode(actionId)}", "POST"))
+
+    suspend fun cancelRecommendation(actionId: String) {
+        request("/action/recommend/${Uri.encode(actionId)}", "DELETE")
+    }
 
     suspend fun actionTypes(): ActionTypeResponse =
         json.decodeFromString(request("/action/types"))

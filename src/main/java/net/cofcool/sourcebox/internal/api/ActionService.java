@@ -5,26 +5,38 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.sqlclient.Row;
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.Period;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import javax.annotation.Nullable;
 import lombok.CustomLog;
-import net.cofcool.sourcebox.internal.api.entity.*;
+import net.cofcool.sourcebox.internal.api.entity.ActionRecord;
+import net.cofcool.sourcebox.internal.api.entity.ActionState;
+import net.cofcool.sourcebox.internal.api.entity.ActionType;
 import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
+import net.cofcool.sourcebox.internal.api.entity.CheckList;
+import net.cofcool.sourcebox.internal.api.entity.Comment;
+import net.cofcool.sourcebox.internal.api.entity.Habit;
+import net.cofcool.sourcebox.internal.api.entity.Note;
+import net.cofcool.sourcebox.internal.api.entity.Recommend;
+import net.cofcool.sourcebox.internal.api.entity.RefType;
 import net.cofcool.sourcebox.util.QueryBuilder;
 import net.cofcool.sourcebox.util.RepositoryUtil;
 import net.cofcool.sourcebox.util.SqlRepository;
 import net.cofcool.sourcebox.util.Utils;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
-
-import javax.annotation.Nullable;
-import java.io.IOException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.Period;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 @CustomLog
 public class ActionService {
@@ -37,6 +49,7 @@ public class ActionService {
     private final SqlRepository<ActionType> actionTypeSqlRepository;
     private final SqlRepository<CheckList>  checklistSqlRepository;
     private final SqlRepository<Habit> habitSqlRepository;
+    private final SqlRepository<Recommend> recommendSqlRepository;
     private final LuceneSearchService searchService;
 
     private final List<ActionInterceptor> saveInterceptors = List.of(new LinkInterceptor(), new RecordInterceptor(), new LinkLabelInterceptor());
@@ -49,6 +62,7 @@ public class ActionService {
         this.actionTypeSqlRepository = RepositoryUtil.getRepository(ActionType.class);
         this.checklistSqlRepository = RepositoryUtil.getRepository(CheckList.class);
         this.habitSqlRepository = RepositoryUtil.getRepository(Habit.class);
+        this.recommendSqlRepository = RepositoryUtil.getRepository(Recommend.class);
         this.noteService = noteService;
         this.searchService = LuceneSearchService.get(vertx);
     }
@@ -459,6 +473,49 @@ public class ActionService {
                 ).compose(f -> Future.succeededFuture(
                     new ActionRecord.RecordRet(a.record(), a.comments(), a.checklists(), f)
                 )));
+    }
+
+    public Future<List<Recommend>> findRecommendations() {
+        return recommendSqlRepository.find();
+    }
+
+    public Future<Recommend> recommend(String actionId) {
+        return actionRecordSqlRepository.find(actionId).compose(action -> {
+            if (!Objects.equals(action.type(), Type.todo.name()) &&
+                !Objects.equals(action.type(), Type.record.name())) {
+                return Future.failedFuture("Only todos and records can be recommended");
+            }
+            Recommend condition = Recommend.builder()
+                .dataId(actionId)
+                .table("action_record")
+                .build();
+            return recommendSqlRepository.find(condition).compose(existing -> {
+                if (!existing.isEmpty()) {
+                    return Future.succeededFuture(existing.getFirst());
+                }
+                LocalDateTime now = LocalDateTime.now();
+                return recommendSqlRepository.save(
+                    Recommend.builder()
+                        .id(Utils.generateShortUUID())
+                        .dataId(actionId)
+                        .table("action_record")
+                        .createTime(now)
+                        .updateTime(now)
+                        .build()
+                );
+            });
+        });
+    }
+
+    public Future<Void> cancelRecommendation(String actionId) {
+        Recommend condition = Recommend.builder()
+            .dataId(actionId)
+            .table("action_record")
+            .build();
+        return recommendSqlRepository.find(condition)
+            .compose(existing -> Future.all(
+                existing.stream().map(recommend -> recommendSqlRepository.delete(recommend.id())).toList()
+            ).mapEmpty());
     }
 
     public Future<Map<String, Object>> findAllType() {

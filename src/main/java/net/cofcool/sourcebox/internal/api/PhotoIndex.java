@@ -1,6 +1,7 @@
 package net.cofcool.sourcebox.internal.api;
 
 import io.vertx.core.Vertx;
+import io.vertx.core.Future;
 import io.vertx.ext.web.Router;
 import java.io.File;
 import net.cofcool.sourcebox.internal.api.entity.PhotoAlbum;
@@ -25,6 +26,15 @@ public class PhotoIndex {
         });
         router.delete("/albums/:id").respond(r -> service.deleteAlbum(r.pathParam("id")));
         router.get("/albums/:id/photos").respond(r -> service.findAlbumPhotos(r.pathParam("id")));
+        router.get("/exportAll").respond(r ->
+            Future.all(
+                service.findAlbums(),
+                service.findAllPhotos(),
+                service.findSmartAlbums()
+            ).map(result -> new io.vertx.core.json.JsonObject()
+                .put("albums", result.resultAt(0))
+                .put("photos", result.resultAt(1))
+                .put("smartAlbums", result.resultAt(2))));
         router.post("/albums/:id/scan").respond(r -> service.scan(r.body().asJsonObject()
             .put("albumId", r.pathParam("id"))));
 
@@ -62,6 +72,18 @@ public class PhotoIndex {
         router.get("/smart-albums/:id/photos").respond(r ->
             service.findSmartAlbumPhotos(r.pathParam("id")));
 
+        router.post("/backups").handler(r -> {
+            var body = r.body().asJsonObject();
+            var jobId = java.util.UUID.randomUUID().toString();
+            var job = service.startBackupJob(
+                jobId,
+                body.getString("albumId"),
+                body.getString("sourceDirectory")
+            );
+            r.response().setStatusCode(202);
+            r.json(job);
+        });
+
         router.post("/backups/:jobId/items").handler(r -> {
             var albumId = r.request().getParam("albumId");
             var fileName = r.request().getParam("fileName");
@@ -73,11 +95,18 @@ public class PhotoIndex {
                 return;
             }
             var uploaded = uploads.getFirst();
-            var job = service.backup(albumId, java.nio.file.Path.of(uploaded.uploadedFileName()),
+            var job = service.backupItem(r.pathParam("jobId"), albumId,
+                    java.nio.file.Path.of(uploaded.uploadedFileName()),
                     fileName == null ? new File(uploaded.fileName()).getName() : fileName,
                     relativePath, sha256);
             r.response().setStatusCode(202);
             r.json(job);
+        });
+
+        router.post("/backups/:jobId/finish").handler(r -> {
+            var job = service.finishBackupJob(r.pathParam("jobId"));
+            if (job == null) r.response().setStatusCode(404).end();
+            else r.json(job);
         });
 
         router.get("/backups/:jobId").handler(r -> {

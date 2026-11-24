@@ -14,6 +14,14 @@ val commitId = providers.exec {
 }.standardOutput.asText.get().trim()
 
 android {
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("${projectDir}/debug.jks")
+            storePassword = "123456"
+            keyPassword = "123456"
+            keyAlias = "key0"
+        }
+    }
     namespace = "net.cofcool.sourcebox"
     compileSdk = 37
 
@@ -65,4 +73,5 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:5.5.0")
     implementation("io.coil-kt.coil3:coil-compose:3.3.0")
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.3.0")
+    implementation("androidx.documentfile:documentfile:1.1.0")
 }

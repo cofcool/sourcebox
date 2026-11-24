@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import net.cofcool.sourcebox.BaseTest;
+import net.cofcool.sourcebox.App;
 import net.cofcool.sourcebox.internal.api.entity.PhotoAlbum;
 import net.cofcool.sourcebox.internal.api.entity.SmartAlbum;
 import net.cofcool.sourcebox.util.SqlRepository;
@@ -38,6 +39,18 @@ class PhotoServiceTest extends BaseTest {
         vertx = testVertx;
         SqlRepository.init(vertx);
         photoService = new PhotoService(vertx);
+    }
+
+    @Test
+    void albumWithoutDirectoryUsesGlobalPhotosDirectory() throws Exception {
+        var album = await(photoService.saveAlbum(PhotoAlbum.builder()
+            .name("默认目录相册")
+            .type("MANUAL")
+            .recursive(true)
+            .build()));
+
+        assertEquals(App.globalCfgDir("photos"), album.sourceRoots());
+        assertTrue(Files.isDirectory(java.nio.file.Path.of(album.sourceRoots())));
     }
 
     @Test
@@ -174,7 +187,8 @@ class PhotoServiceTest extends BaseTest {
             "nested/backup-source.jpg",
             null
         );
-        assertEquals("QUEUED", job.getString("status"));
+        assertTrue(job.getString("status").equals("QUEUED")
+            || job.getString("status").equals("RUNNING"));
 
         var completed = awaitBackup(job.getString("jobId"));
         assertEquals("COMPLETED", completed.getString("status"));

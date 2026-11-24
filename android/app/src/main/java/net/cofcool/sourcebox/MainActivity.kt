@@ -50,6 +50,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Archive
+import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
@@ -130,6 +131,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.documentfile.provider.DocumentFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -142,11 +144,13 @@ import net.cofcool.sourcebox.data.ActionRecord
 import net.cofcool.sourcebox.data.NoteRecord
 import net.cofcool.sourcebox.data.PhotoAlbum
 import net.cofcool.sourcebox.data.PhotoRecord
+import net.cofcool.sourcebox.data.PhotoBackupConfig
 import net.cofcool.sourcebox.data.TodoRecord
 import net.cofcool.sourcebox.data.ToolInfo
 import net.cofcool.sourcebox.data.isHabitRequiredOnDate
 import net.cofcool.sourcebox.ui.ToolboxViewModel
 import java.time.LocalDate
+import java.io.IOException
 
 class MainActivity : ComponentActivity() {
     private val sharedText = mutableStateOf<String?>(null)
@@ -184,7 +188,7 @@ private val pages = listOf(
 )
 
 private val moreToolPages = setOf(
-    "timer", "files", "files-download", "books", "photos", "photo-detail",
+    "timer", "files", "files-download", "books", "photos", "photo-detail", "photo-backup",
     "settings", "server-tools"
 )
 
@@ -243,6 +247,7 @@ private fun SourceboxApp(
         page = when (page) {
             "files-download" -> "files"
             "files-text-editor" -> "files"
+            "photo-backup" -> "photos"
             "record-detail" -> recordReturnPage
             "record-create" -> "task"
             "habit-detail" -> habitReturnPage
@@ -295,6 +300,7 @@ private fun SourceboxApp(
                                 "books" -> "书籍记录"
                                 "photos" -> "照片"
                                 "photo-detail" -> "照片详情"
+                                "photo-backup" -> "照片自动备份"
                                 "timer" -> "番茄钟"
                                 "files" -> "文件工具"
                                 "files-text-editor" -> "文本编辑"
@@ -316,6 +322,9 @@ private fun SourceboxApp(
                     },
                     actions = {
                         when (page) {
+                            "photos" -> IconButton(onClick = { page = "photo-backup" }) {
+                                Icon(Icons.Default.Backup, contentDescription = "自动备份")
+                            }
                             "task" -> IconButton(onClick = { page = "record-create" }) {
                                 Icon(Icons.Default.Add, contentDescription = "添加任务")
                             }
@@ -472,6 +481,10 @@ private fun SourceboxApp(
                         onDeleted = { page = "photos" }
                     )
                 }
+                "photo-backup" -> PhotoBackupScreen(
+                    vm = vm,
+                    modifier = Modifier.padding(padding)
+                )
                 "server-tools" -> ServerToolsScreen(
                     vm = vm,
                     modifier = Modifier.padding(padding),
@@ -1029,6 +1042,211 @@ private fun PhotosScreen(
             },
             dismissButton = { TextButton(onClick = { showCreate = false }) { Text("取消") } }
         )
+    }
+}
+
+@Composable
+private fun PhotoBackupScreen(
+    vm: ToolboxViewModel,
+    modifier: Modifier
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var albums by remember { mutableStateOf<List<PhotoAlbum>>(emptyList()) }
+    val initialConfig = remember { vm.photoBackupConfig() }
+    var sourceUri by remember { mutableStateOf(initialConfig.sourceUri) }
+    var albumId by remember { mutableStateOf(initialConfig.albumId) }
+    var wifiOnly by remember { mutableStateOf(initialConfig.wifiOnly) }
+    var autoEnabled by remember { mutableStateOf(initialConfig.autoEnabled) }
+    var logs by remember { mutableStateOf<List<String>>(emptyList()) }
+    var status by remember { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var albumMenu by remember { mutableStateOf(false) }
+
+    fun appendLog(message: String) {
+        val entry = "${java.time.LocalDateTime.now()}: $message"
+        logs = (logs + entry).takeLast(200)
+    }
+
+    val sourcePicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        if (uri != null) {
+            val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+            try {
+                context.contentResolver.takePersistableUriPermission(uri, flags)
+            } catch (_: Exception) {}
+            sourceUri = uri.toString()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        try { albums = vm.photoAlbums() } catch (e: Exception) { error = e.message }
+        if (albumId.isBlank()) albumId = albums.firstOrNull()?.id.orEmpty()
+    }
+
+    fun saveConfig() {
+        vm.savePhotoBackupConfig(
+            PhotoBackupConfig(
+                sourceUri = sourceUri,
+                albumId = albumId,
+                wifiOnly = wifiOnly,
+                autoEnabled = autoEnabled
+            )
+        )
+    }
+
+    fun isWifiConnected(): Boolean {
+        val cm = context.getSystemService(android.net.ConnectivityManager::class.java)
+        val network = cm.activeNetwork ?: return false
+        val capabilities = cm.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI)
+    }
+
+    fun collectFiles(directory: DocumentFile, relativePrefix: String = ""): List<Pair<DocumentFile, String>> {
+        val files = mutableListOf<Pair<DocumentFile, String>>()
+        directory.listFiles().forEach { child ->
+            val name = child.name ?: return@forEach
+            val relativePath = if (relativePrefix.isBlank()) name else "$relativePrefix/$name"
+            if (child.isDirectory) {
+                files += collectFiles(child, relativePath)
+            } else if (child.isFile && (
+                name.substringAfterLast('.', "").lowercase()
+                    in setOf("jpg", "jpeg", "png", "gif", "bmp", "webp", "heic", "heif")
+            )) {
+                files += child to relativePath
+            }
+        }
+        return files
+    }
+
+    Column(
+        modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("备份配置", fontWeight = FontWeight.SemiBold)
+                OutlinedButton(onClick = { sourcePicker.launch(null) }, modifier = Modifier.fillMaxWidth()) {
+                    Text(if (sourceUri.isBlank()) "选择照片目录" else "已选择：$sourceUri")
+                }
+                Box {
+                    OutlinedButton(onClick = { albumMenu = true }, modifier = Modifier.fillMaxWidth()) {
+                        Text(albums.firstOrNull { it.id == albumId }?.name ?: "选择目标相册")
+                    }
+                    DropdownMenu(expanded = albumMenu, onDismissRequest = { albumMenu = false }) {
+                        albums.forEach { album ->
+                            DropdownMenuItem(
+                                text = { Text(album.name) },
+                                onClick = { albumId = album.id; albumMenu = false }
+                            )
+                        }
+                    }
+                }
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text("仅 Wi-Fi 备份", Modifier.weight(1f))
+                    Switch(checked = wifiOnly, onCheckedChange = { wifiOnly = it })
+                }
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text("启用自动备份", Modifier.weight(1f))
+                    Switch(checked = autoEnabled, onCheckedChange = { autoEnabled = it })
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { saveConfig(); status = "配置已保存" }) { Text("保存配置") }
+                    Button(
+                        enabled = !busy,
+                        onClick = {
+                            saveConfig()
+                            if (sourceUri.isBlank() || albumId.isBlank()) {
+                                error = "请选择照片目录和目标相册"
+                                return@Button
+                            }
+                            if (wifiOnly && !isWifiConnected()) {
+                                error = "当前不是 Wi-Fi 网络"
+                                return@Button
+                            }
+                            busy = true
+                            status = "正在扫描本地照片..."
+                            scope.launch {
+                                try {
+                                    val uri = Uri.parse(sourceUri)
+                                    val directory = DocumentFile.fromTreeUri(context, uri)
+                                        ?: throw IOException("无法读取照片目录")
+                                    val files = collectFiles(directory)
+                                        .filter { (file, relativePath) ->
+                                            vm.photoNeedsIncrementalBackup(
+                                                sourceUri,
+                                                albumId,
+                                                relativePath,
+                                                file.length(),
+                                                file.lastModified()
+                                            )
+                                        }
+                                    if (files.isEmpty()) {
+                                        status = "没有需要增量备份的照片"
+                                        busy = false
+                                        appendLog(status)
+                                        return@launch
+                                    }
+                                    val job = vm.createPhotoBackup(albumId, sourceUri)
+                                    appendLog("开始备份，任务 ${job.jobId}，共 ${files.size} 张")
+                                    for ((index, item) in files.withIndex()) {
+                                        val file = item.first
+                                        val relativePath = item.second
+                                        val fileUri = file.uri
+                                        status = "正在备份 ${index + 1}/${files.size}"
+                                        vm.uploadPhotoBackupItem(
+                                            job.jobId,
+                                            albumId,
+                                            fileUri,
+                                            relativePath
+                                        )
+                                        vm.markPhotoIncrementalBackup(
+                                            sourceUri,
+                                            albumId,
+                                            relativePath,
+                                            file.length(),
+                                            file.lastModified()
+                                        )
+                                    }
+                                    val finished = vm.finishPhotoBackup(job.jobId)
+                                    var finalJob = finished
+                                    repeat(100) {
+                                        if (finalJob.status.contains("COMPLETED")) return@repeat
+                                        kotlinx.coroutines.delay(100)
+                                        finalJob = vm.photoBackupJob(job.jobId)
+                                    }
+                                    status = if (finalJob.status.contains("COMPLETED")) "备份完成"
+                                        else "备份结束：${finalJob.status}"
+                                    appendLog(status)
+                                } catch (e: Exception) {
+                                    error = e.message
+                                    appendLog("备份失败：${e.message}")
+                                } finally {
+                                    busy = false
+                                }
+                            }
+                        }
+                    ) { Text(if (busy) "备份中..." else "立即备份") }
+                }
+                if (status.isNotBlank()) Text(status, style = MaterialTheme.typography.bodySmall)
+                if (error != null) Text(error.orEmpty(), color = MaterialTheme.colorScheme.error)
+            }
+        }
+
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("备份日志", fontWeight = FontWeight.SemiBold)
+                if (logs.isEmpty()) {
+                    Text("暂无日志", style = MaterialTheme.typography.bodySmall)
+                } else {
+                    logs.asReversed().take(50).forEach { log ->
+                        Text(log, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
+        }
     }
 }
 

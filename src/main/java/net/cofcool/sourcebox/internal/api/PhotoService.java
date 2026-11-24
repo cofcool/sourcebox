@@ -21,12 +21,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import javax.imageio.ImageIO;
 import lombok.CustomLog;
+import net.cofcool.sourcebox.App;
 import lombok.SneakyThrows;
 import net.cofcool.sourcebox.internal.api.entity.Photo;
 import net.cofcool.sourcebox.internal.api.entity.PhotoAlbum;
 import net.cofcool.sourcebox.internal.api.entity.SmartAlbum;
 import net.cofcool.sourcebox.util.RepositoryUtil;
 import net.cofcool.sourcebox.util.SqlRepository;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -59,9 +61,14 @@ public class PhotoService {
         });
     }
 
+    @SneakyThrows
     public Future<PhotoAlbum> saveAlbum(PhotoAlbum album) {
         var now = LocalDateTime.now();
         var roots = normalizeRoots(album.sourceRoots());
+        if (StringUtils.isBlank(roots)) {
+            roots = App.globalCfgDir("photos");
+            FileUtils.forceMkdir(new File(roots));
+        }
         var saved = new PhotoAlbum(
             StringUtils.defaultIfBlank(album.id(), UUID.randomUUID().toString()),
             StringUtils.defaultIfBlank(album.name(), "未命名相册"),
@@ -299,6 +306,10 @@ public class PhotoService {
             .filter(p -> "TRASH".equals(p.status())).toList());
     }
 
+    public Future<List<Photo>> findAllPhotos() {
+        return photoRepository.find();
+    }
+
     public Future<Boolean> permanentlyDeletePhoto(String id) {
         return findPhoto(id).compose(photo -> {
             try {
@@ -397,12 +408,35 @@ public class PhotoService {
     public JsonObject backup(String albumId, Path tempFile, String fileName,
                              String relativePath, String sha256) {
         var jobId = UUID.randomUUID().toString();
+        startBackupJob(jobId, albumId, null);
+        backupItem(jobId, albumId, tempFile, fileName, relativePath, sha256);
+        return backupJobs.get(jobId).copy();
+    }
+
+    public JsonObject startBackupJob(String jobId, String albumId, String sourceDirectory) {
         var result = new JsonObject()
             .put("jobId", jobId)
             .put("status", "QUEUED")
-            .put("fileName", fileName)
-            .put("albumId", albumId);
+            .put("albumId", albumId)
+            .put("sourceDirectory", sourceDirectory)
+            .put("total", 0)
+            .put("completed", 0)
+            .put("failed", 0)
+            .put("pending", 0)
+            .put("finishRequested", false);
         backupJobs.put(jobId, result);
+        return result.copy();
+    }
+
+    public JsonObject backupItem(String jobId, String albumId, Path tempFile,
+                                 String fileName, String relativePath, String sha256) {
+        var result = backupJobs.computeIfAbsent(jobId, id -> new JsonObject()
+            .put("jobId", id).put("status", "QUEUED").put("albumId", albumId)
+            .put("total", 0).put("completed", 0).put("failed", 0)
+            .put("pending", 0).put("finishRequested", false));
+        result.put("status", "RUNNING");
+        result.put("total", result.getInteger("total") + 1);
+        result.put("pending", result.getInteger("pending") + 1);
 
         vertx.eventBus().send(BACKUP_ADDRESS, new JsonObject()
             .put("jobId", jobId)
@@ -411,7 +445,22 @@ public class PhotoService {
             .put("fileName", fileName)
             .put("relativePath", relativePath)
             .put("sha256", sha256));
+        return result.copy();
+    }
 
+    public JsonObject finishBackupJob(String jobId) {
+        var result = backupJobs.get(jobId);
+        if (result == null) return null;
+        result.put("finishRequested", true);
+        if (result.getInteger("pending") == 0) {
+            if (result.getInteger("failed") > 0) {
+                result.put("status", "COMPLETED_WITH_ERRORS");
+            } else {
+                result.put("status", "COMPLETED");
+            }
+        } else {
+            result.put("status", "RUNNING");
+        }
         return result.copy();
     }
 
@@ -433,11 +482,29 @@ public class PhotoService {
 
         executeBackupFile(albumId, tempFile, fileName, relativePath, sha256)
             .onSuccess(photo -> {
-                result.put("status", "COMPLETED").put("photoId", photo.id());
+                result.put("completed", result.getInteger("completed") + 1)
+                    .put("photoId", photo.id());
+                result.put("pending", Math.max(0, result.getInteger("pending") - 1));
+                if (result.getString("sourceDirectory") == null && result.getInteger("pending") == 0) {
+                    result.put("status", "COMPLETED");
+                } else if (result.getBoolean("finishRequested")
+                    && result.getInteger("pending") == 0) {
+                    result.put("status",
+                        result.getInteger("failed") > 0 ? "COMPLETED_WITH_ERRORS" : "COMPLETED");
+                }
                 log.info("Photo backup job {0} completed: photo={1}", jobId, photo.id());
             })
             .onFailure(error -> {
-                result.put("status", "FAILED").put("error", error.getMessage());
+                result.put("failed", result.getInteger("failed") + 1)
+                    .put("error", error.getMessage());
+                result.put("pending", Math.max(0, result.getInteger("pending") - 1));
+                if (result.getString("sourceDirectory") == null && result.getInteger("pending") == 0) {
+                    result.put("status", "FAILED");
+                } else if (result.getBoolean("finishRequested")
+                    && result.getInteger("pending") == 0) {
+                    result.put("status",
+                        result.getInteger("failed") > 0 ? "COMPLETED_WITH_ERRORS" : "COMPLETED");
+                }
                 log.error("Photo backup job " + jobId + " failed", error);
             });
     }
@@ -446,10 +513,7 @@ public class PhotoService {
                                             String relativePath, String sha256) {
         return findAlbum(albumId)
             .compose(album -> createBackupPhoto(albumId, tempFile, fileName, relativePath, sha256, album))
-            .compose(photoRepository::save)
-            .onSuccess(result -> {
-                tempFile.toFile().delete();
-            });
+            .compose(photoRepository::save);
     }
 
     @SneakyThrows
@@ -461,9 +525,9 @@ public class PhotoService {
         var target = Path.of(firstRoot.get()).resolve(
             relativePath == null ? fileName : relativePath);
         Files.createDirectories(target.getParent());
-        Files.copy(tempFile, target, StandardCopyOption.REPLACE_EXISTING);
+        Files.move(tempFile, target, StandardCopyOption.REPLACE_EXISTING);
 
-        var digest = sha256 == null || sha256.isBlank() ? sha256(tempFile) : sha256;
+        var digest = sha256 == null || sha256.isBlank() ? sha256(target) : sha256;
         var dimensions = imageDimensions(target.toFile());
         var now = LocalDateTime.now();
         return Future.succeededFuture(new Photo(

@@ -12,6 +12,8 @@ import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.util.Locale
 
+import net.cofcool.sourcebox.data.PhotoExport
+
 data class PendingChange(
     val id: Long,
     val entity: String,
@@ -27,6 +29,10 @@ class ActionExportDatabase(context: Context) :
         createTable(db, TABLE_ACTIONS)
         createTable(db, TABLE_NOTES)
         createTable(db, TABLE_COMMANDS)
+        createTable(db, TABLE_PHOTO_ALBUMS)
+        createTable(db, TABLE_PHOTOS)
+        createTable(db, TABLE_SMART_ALBUMS)
+        createPhotoRelationsTable(db)
         ensureQuerySchema(db)
         createTypesTable(db)
         createSyncTable(db)
@@ -62,16 +68,26 @@ class ActionExportDatabase(context: Context) :
             ensureQuerySchema(db)
             rebuildQueryColumns(db)
         }
+        if (oldVersion < 6) {
+            createTable(db, TABLE_PHOTO_ALBUMS)
+            createTable(db, TABLE_PHOTOS)
+            createTable(db, TABLE_SMART_ALBUMS)
+            createPhotoRelationsTable(db)
+        }
     }
 
     fun replaceExportData(
         actions: List<ActionExport>,
         notes: List<NoteRecord>,
         actionTypes: ActionTypeResponse,
+        photos: PhotoExport,
         syncedAt: String
     ) {
         validateIds(actions.map { it.record.id }, "行动记录")
         validateIds(notes.map { it.id }, "便笺")
+        validateIds(photos.albums.map { it.id }, "照片相册")
+        validateIds(photos.photos.map { it.id }, "照片")
+        validateIds(photos.smartAlbums.map { it.id }, "智能相册")
         val db = writableDatabase
         db.transaction {
             try {
@@ -80,8 +96,15 @@ class ActionExportDatabase(context: Context) :
                     TABLE_ACTIONS,
                     actions.map { it.record.id to json.encodeToString(it) })
                 replaceRows(this, TABLE_NOTES, notes.map { it.id to json.encodeToString(it) })
+                replaceRows(this, TABLE_PHOTO_ALBUMS,
+                    photos.albums.map { it.id to json.encodeToString(it) })
+                replaceRows(this, TABLE_PHOTOS,
+                    photos.photos.map { it.id to json.encodeToString(it) })
+                replaceRows(this, TABLE_SMART_ALBUMS,
+                    photos.smartAlbums.map { it.id to json.encodeToString(it) })
+                replacePhotoRelations(this, photos)
                 replaceTypes(this, actionTypes)
-                listOf("actions", "notes", "types").forEach { dataset ->
+                listOf("actions", "notes", "types", "photos", "photo_albums", "smart_albums").forEach { dataset ->
                     val syncValues = ContentValues().apply {
                         put("dataset", dataset)
                         put("synced_at", syncedAt)
@@ -105,6 +128,34 @@ class ActionExportDatabase(context: Context) :
             "note_state = ?",
             arrayOf("NORMAL"),
             "note_date DESC"
+        )
+
+    fun photoAlbums(): List<PhotoAlbum> =
+        queryPayloads(
+            TABLE_PHOTO_ALBUMS,
+            PhotoAlbum.serializer(),
+            "payload IS NOT NULL",
+            emptyArray(),
+            "id"
+        )
+
+    fun photoAlbumPhotos(albumId: String): List<PhotoRecord> =
+        queryPayloads(
+            TABLE_PHOTOS,
+            PhotoRecord.serializer(),
+            "id IN (SELECT photo_id FROM photo_album_photos WHERE album_id = ?) " +
+                "AND payload LIKE '%' || ? || '%' ",
+            arrayOf(albumId, "\"status\":\"NORMAL\""),
+            "id"
+        )
+
+    fun trashPhotos(): List<PhotoRecord> =
+        queryPayloads(
+            TABLE_PHOTOS,
+            PhotoRecord.serializer(),
+            "payload LIKE '%' || ? || '%' ",
+            arrayOf("\"status\":\"TRASH\""),
+            "id"
         )
 
     fun commands(query: String): List<CommandRecord> {
@@ -609,7 +660,11 @@ class ActionExportDatabase(context: Context) :
                 TABLE_PENDING,
                 TABLE_SYNC,
                 TABLE_SYNC_ALL,
-                TABLE_TYPES
+                TABLE_TYPES,
+                TABLE_PHOTO_ALBUMS,
+                TABLE_PHOTOS,
+                TABLE_SMART_ALBUMS,
+                "photo_album_photos"
             ).filter { tableExists(db, it) }.forEach { table ->
                 check(db.delete(table, null, null) >= 0) { "清除本地数据失败：$table" }
             }
@@ -1042,9 +1097,38 @@ class ActionExportDatabase(context: Context) :
         }
     }
 
+    private fun createPhotoRelationsTable(db: SQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS photo_album_photos (
+                album_id TEXT NOT NULL,
+                photo_id TEXT NOT NULL,
+                PRIMARY KEY (album_id, photo_id)
+            )
+            """.trimIndent()
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_photo_relation_photo ON photo_album_photos(photo_id)")
+    }
+
+    private fun replacePhotoRelations(db: SQLiteDatabase, photos: PhotoExport) {
+        db.delete("photo_album_photos", null, null)
+        photos.photos.forEach { photo ->
+            val values = ContentValues().apply {
+                put("album_id", photo.albumId)
+                put("photo_id", photo.id)
+            }
+            db.insertWithOnConflict(
+                "photo_album_photos",
+                null,
+                values,
+                SQLiteDatabase.CONFLICT_IGNORE
+            )
+        }
+    }
+
     companion object {
         private const val DATABASE_NAME = "sourcebox-local.db"
-        private const val DATABASE_VERSION = 5
+        private const val DATABASE_VERSION = 6
         private const val TABLE_ACTIONS = "exported_actions"
         private const val TABLE_NOTES = "exported_notes"
         private const val TABLE_COMMANDS = "exported_commands"
@@ -1052,6 +1136,9 @@ class ActionExportDatabase(context: Context) :
         private const val TABLE_SYNC_ALL = "dataset_sync_metadata"
         private const val TABLE_PENDING = "pending_changes"
         private const val TABLE_TYPES = "exported_action_types"
+        private const val TABLE_PHOTO_ALBUMS = "exported_photo_albums"
+        private const val TABLE_PHOTOS = "exported_photos"
+        private const val TABLE_SMART_ALBUMS = "exported_smart_albums"
         private val json = Json {
             encodeDefaults = true
             explicitNulls = false

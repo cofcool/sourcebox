@@ -44,6 +44,9 @@ import net.cofcool.sourcebox.data.HabitValueChange
 import net.cofcool.sourcebox.data.NoteRecord
 import net.cofcool.sourcebox.data.PhotoAlbum
 import net.cofcool.sourcebox.data.PhotoRecord
+import net.cofcool.sourcebox.data.PhotoBackupConfig
+import net.cofcool.sourcebox.data.PhotoBackupJob
+import net.cofcool.sourcebox.data.PhotoExport
 import net.cofcool.sourcebox.data.ServerResponseException
 import net.cofcool.sourcebox.data.SourceboxApi
 import net.cofcool.sourcebox.data.TodoRecord
@@ -97,7 +100,8 @@ data class LanShareDownloadState(
 private data class ExportData(
     val actions: List<ActionExport>,
     val notes: List<NoteRecord>,
-    val types: ActionTypeResponse
+    val types: ActionTypeResponse,
+    val photos: PhotoExport
 )
 
 class ToolboxViewModel(application: Application) : AndroidViewModel(application) {
@@ -218,13 +222,25 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
     }
 
     suspend fun photoAlbums(): List<PhotoAlbum> =
-        withContext(Dispatchers.IO) { api.photoAlbums() }
+        withContext(Dispatchers.IO) {
+            try {
+                api.photoAlbums()
+            } catch (_: Exception) {
+                actionDatabase.photoAlbums()
+            }
+        }
 
     suspend fun savePhotoAlbum(album: PhotoAlbum): PhotoAlbum =
         withContext(Dispatchers.IO) { api.savePhotoAlbum(album) }
 
     suspend fun photoAlbumPhotos(albumId: String): List<PhotoRecord> =
-        withContext(Dispatchers.IO) { api.photoAlbumPhotos(albumId) }
+        withContext(Dispatchers.IO) {
+            try {
+                api.photoAlbumPhotos(albumId)
+            } catch (_: Exception) {
+                actionDatabase.photoAlbumPhotos(albumId)
+            }
+        }
 
     suspend fun scanPhotoAlbum(albumId: String) =
         withContext(Dispatchers.IO) { api.scanPhotoAlbum(albumId) }
@@ -235,6 +251,50 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
     fun photoThumbnailUrl(photoId: String): String = api.photoThumbnailUrl(photoId)
 
     fun photoContentUrl(photoId: String): String = api.photoContentUrl(photoId)
+
+    fun photoBackupConfig(): PhotoBackupConfig = api.photoBackupConfig()
+
+    fun savePhotoBackupConfig(config: PhotoBackupConfig) {
+        api.savePhotoBackupConfig(config)
+    }
+
+    suspend fun createPhotoBackup(albumId: String, sourceDirectory: String): PhotoBackupJob =
+        withContext(Dispatchers.IO) { api.createPhotoBackup(albumId, sourceDirectory) }
+
+    suspend fun uploadPhotoBackupItem(
+        jobId: String,
+        albumId: String,
+        sourceUri: Uri,
+        relativePath: String
+    ): PhotoBackupJob =
+        withContext(Dispatchers.IO) {
+            api.uploadPhotoBackupItem(jobId, albumId, sourceUri, relativePath)
+        }
+
+    suspend fun finishPhotoBackup(jobId: String): PhotoBackupJob =
+        withContext(Dispatchers.IO) { api.finishPhotoBackup(jobId) }
+
+    suspend fun photoBackupJob(jobId: String): PhotoBackupJob =
+        withContext(Dispatchers.IO) { api.photoBackupJob(jobId) }
+
+    fun photoNeedsIncrementalBackup(
+        sourceDirectory: String,
+        albumId: String,
+        relativePath: String,
+        size: Long,
+        lastModified: Long
+    ): Boolean =
+        api.photoNeedsIncrementalBackup(sourceDirectory, albumId, relativePath, size, lastModified)
+
+    fun markPhotoIncrementalBackup(
+        sourceDirectory: String,
+        albumId: String,
+        relativePath: String,
+        size: Long,
+        lastModified: Long
+    ) {
+        api.markPhotoIncrementalBackup(sourceDirectory, albumId, relativePath, size, lastModified)
+    }
 
     fun refreshTodayActions() = perform {
         loadTodayActions()
@@ -643,7 +703,8 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
                     }
                     val notes = async { api.exportAllNotes() }
                     val types = async { api.actionTypes() }
-                    ExportData(actions.await(), notes.await(), types.await())
+                    val photos = async { api.exportAllPhotos() }
+                    ExportData(actions.await(), notes.await(), types.await(), photos.await())
                 }
                 val syncedAt = currentRecordDateTime()
                 withContext(Dispatchers.IO) {
@@ -651,6 +712,7 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
                         actions = exported.actions,
                         notes = exported.notes,
                         actionTypes = exported.types,
+                        photos = exported.photos,
                         syncedAt = syncedAt
                     )
                 }
@@ -665,7 +727,7 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
                 timerRecords = withContext(Dispatchers.IO) {
                     actionDatabase.allActions("timer")
                 }
-                message = "已同步 ${exported.actions.size} 条行动、${exported.notes.size} 条便笺、${exported.types.types.size} 个类型"
+                message = "已同步 ${exported.actions.size} 条行动、${exported.notes.size} 条便笺、${exported.photos.albums.size} 个相册、${exported.photos.photos.size} 张照片"
             }
         }
     }

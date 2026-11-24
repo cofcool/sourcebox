@@ -27,6 +27,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okio.BufferedSink
 import java.io.IOException
@@ -221,6 +222,44 @@ data class PhotoRecord(
     val updateTime: String? = null
 )
 
+@Serializable
+data class SmartAlbum(
+    val id: String = "",
+    val name: String = "",
+    val matchType: String = "ALL",
+    val rulesJson: String = "[]",
+    val enabled: Boolean = true,
+    val createTime: String? = null,
+    val updateTime: String? = null
+)
+
+@Serializable
+data class PhotoExport(
+    val albums: List<PhotoAlbum> = emptyList(),
+    val photos: List<PhotoRecord> = emptyList(),
+    val smartAlbums: List<SmartAlbum> = emptyList()
+)
+
+@Serializable
+data class PhotoBackupJob(
+    val jobId: String = "",
+    val status: String = "QUEUED",
+    val albumId: String = "",
+    val sourceDirectory: String? = null,
+    val total: Int = 0,
+    val completed: Int = 0,
+    val failed: Int = 0,
+    val error: String? = null
+)
+
+@Serializable
+data class PhotoBackupConfig(
+    val sourceUri: String = "",
+    val albumId: String = "",
+    val wifiOnly: Boolean = true,
+    val autoEnabled: Boolean = false
+)
+
 private val json = Json {
     ignoreUnknownKeys = true
     isLenient = true
@@ -229,6 +268,7 @@ private val json = Json {
 }
 
 class SourceboxApi(context: Context) {
+    private val appContext = context.applicationContext
     private val preferences = context.getSharedPreferences("sourcebox", Context.MODE_PRIVATE)
     private val crashLogStore = CrashLogStore(context.applicationContext)
     private val client = OkHttpClient.Builder()
@@ -617,6 +657,125 @@ class SourceboxApi(context: Context) {
     suspend fun photoAlbums(): List<PhotoAlbum> =
         json.decodeFromString(request("/photo/albums"))
 
+    suspend fun exportAllPhotos(): PhotoExport =
+        json.decodeFromString(request("/photo/exportAll"))
+
+    fun photoBackupConfig(): PhotoBackupConfig =
+        PhotoBackupConfig(
+            sourceUri = preferences.getString("photo_backup_source_uri", "").orEmpty(),
+            albumId = preferences.getString("photo_backup_album_id", "").orEmpty(),
+            wifiOnly = preferences.getBoolean("photo_backup_wifi_only", true),
+            autoEnabled = preferences.getBoolean("photo_backup_auto_enabled", false)
+        )
+
+    fun savePhotoBackupConfig(config: PhotoBackupConfig) {
+        preferences.edit()
+            .putString("photo_backup_source_uri", config.sourceUri)
+            .putString("photo_backup_album_id", config.albumId)
+            .putBoolean("photo_backup_wifi_only", config.wifiOnly)
+            .putBoolean("photo_backup_auto_enabled", config.autoEnabled)
+            .apply()
+    }
+
+    fun photoNeedsIncrementalBackup(
+        sourceDirectory: String,
+        albumId: String,
+        relativePath: String,
+        size: Long,
+        lastModified: Long
+    ): Boolean {
+        val key = photoBackupFingerprint(sourceDirectory, albumId, relativePath, size, lastModified)
+        val fingerprints = preferences.getStringSet("photo_backup_fingerprints", emptySet()).orEmpty()
+        return key !in fingerprints
+    }
+
+    fun markPhotoIncrementalBackup(
+        sourceDirectory: String,
+        albumId: String,
+        relativePath: String,
+        size: Long,
+        lastModified: Long
+    ) {
+        val key = photoBackupFingerprint(sourceDirectory, albumId, relativePath, size, lastModified)
+        val fingerprints = preferences.getStringSet("photo_backup_fingerprints", emptySet()).orEmpty().toMutableSet()
+        fingerprints.add(key)
+        preferences.edit()
+            .putStringSet("photo_backup_fingerprints", fingerprints)
+            .apply()
+    }
+
+    private fun photoBackupFingerprint(
+        sourceDirectory: String,
+        albumId: String,
+        relativePath: String,
+        size: Long,
+        lastModified: Long
+    ): String = listOf(sourceDirectory, albumId, relativePath, size.toString(), lastModified.toString())
+        .joinToString("|")
+
+    suspend fun createPhotoBackup(albumId: String, sourceDirectory: String): PhotoBackupJob =
+        json.decodeFromString(request(
+            "/photo/backups",
+            "POST",
+            json.encodeToString(mapOf(
+                "albumId" to albumId,
+                "sourceDirectory" to sourceDirectory
+            ))
+        ))
+
+    suspend fun finishPhotoBackup(jobId: String): PhotoBackupJob =
+        json.decodeFromString(request(
+            "/photo/backups/${Uri.encode(jobId)}/finish",
+            "POST",
+            "{}"
+        ))
+
+    suspend fun photoBackupJob(jobId: String): PhotoBackupJob =
+        json.decodeFromString(request("/photo/backups/${Uri.encode(jobId)}"))
+
+    suspend fun uploadPhotoBackupItem(
+        jobId: String,
+        albumId: String,
+        sourceUri: Uri,
+        relativePath: String
+    ): PhotoBackupJob = withContext(Dispatchers.IO) {
+        val temp = java.io.File.createTempFile("sourcebox-photo-", ".upload")
+        try {
+            val input = appContext.contentResolver.openInputStream(sourceUri)
+                ?: throw IOException("无法读取所选照片")
+            input.use { stream -> temp.outputStream().use(stream::copyTo) }
+            val fileName = java.net.URLDecoder.decode(
+                sourceUri.lastPathSegment?.substringAfterLast('/') ?: "photo.jpg",
+                "UTF-8"
+            )
+            val body = MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("file", fileName,
+                    temp.asRequestBody("application/octet-stream".toMediaType()))
+                .build()
+            val base = baseUrl()
+            if (base.isBlank()) throw IOException("请先在设置中配置后端根地址")
+            val builder = Request.Builder()
+                .url("$base/photo/backups/${Uri.encode(jobId)}/items" +
+                    "?albumId=${Uri.encode(albumId)}" +
+                    "&fileName=${Uri.encode(fileName)}" +
+                    "&relativePath=${Uri.encode(relativePath)}")
+                .header("Accept", "application/json")
+                .post(body)
+            val user = username()
+            if (user.isNotBlank()) {
+                builder.header("Authorization", Credentials.basic(user, password()))
+            }
+            client.newCall(builder.build()).execute().use { response ->
+                val content = response.body?.string().orEmpty()
+                if (!response.isSuccessful) throw IOException("HTTP ${response.code}: $content")
+                json.decodeFromString(content)
+            }
+        } finally {
+            temp.delete()
+        }
+    }
+
     suspend fun savePhotoAlbum(album: PhotoAlbum): PhotoAlbum =
         json.decodeFromString(request(
             "/photo/albums",
@@ -697,7 +856,8 @@ class SourceboxApi(context: Context) {
                     body.toRequestBody("application/json; charset=utf-8".toMediaType())
                 )
             } else if (method != "GET") {
-                builder.method(method, null)
+                val emptyBody = "{}".toRequestBody("application/json; charset=utf-8".toMediaType())
+                builder.method(method, emptyBody)
             }
             val user = username()
             if (user.isNotBlank()) {

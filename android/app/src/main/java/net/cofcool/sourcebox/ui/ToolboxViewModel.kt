@@ -610,14 +610,7 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
             message = "阶段已结束；请开启通知权限以接收番茄钟提醒"
             return
         }
-        val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Notification.Builder(getApplication(), TIMER_NOTIFICATION_CHANNEL)
-        } else {
-            Notification.Builder(getApplication()).apply {
-                setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM))
-                setPriority(Notification.PRIORITY_MAX)
-            }
-        }
+        val builder = Notification.Builder(getApplication(), TIMER_NOTIFICATION_CHANNEL)
         val notification = builder
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle(title)

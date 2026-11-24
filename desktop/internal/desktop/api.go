@@ -35,6 +35,18 @@ func (a *API) SetBackend(baseURL, token string) error {
 	return a.services.SetBackend(baseURL, token)
 }
 
+func (a *API) SetBackendCredentials(baseURL, username, password string) error {
+	return a.services.SetBackendCredentials(baseURL, username, password)
+}
+
+func (a *API) SyncSourceboxData() (store.SourceboxCounts, error) {
+	return a.services.SyncSourceboxData()
+}
+
+func (a *API) SourceboxCounts() (store.SourceboxCounts, error) {
+	return a.services.SourceboxCounts()
+}
+
 func (a *API) RequestBackend(method, path, body string) (service.HTTPResult, error) {
 	return a.services.RequestBackend(method, path, body)
 }

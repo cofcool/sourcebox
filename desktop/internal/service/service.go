@@ -3,6 +3,7 @@ package service
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -14,11 +15,13 @@ import (
 )
 
 type Services struct {
-	store   *store.Store
-	mu      sync.RWMutex
-	client  *http.Client
-	baseURL string
-	token   string // intentionally memory-only; use OS keychain before production
+	store    *store.Store
+	mu       sync.RWMutex
+	client   *http.Client
+	baseURL  string
+	token    string // intentionally memory-only; use OS keychain before production
+	username string
+	password string
 }
 
 func New(db *store.Store) *Services {
@@ -44,7 +47,7 @@ func (s *Services) SetBackend(baseURL, token string) error {
 			return err
 		}
 		s.mu.Lock()
-		s.baseURL, s.token = "", ""
+		s.baseURL, s.token, s.username, s.password = "", "", "", ""
 		s.mu.Unlock()
 		return nil
 	}
@@ -61,6 +64,21 @@ func (s *Services) SetBackend(baseURL, token string) error {
 	}
 	s.mu.Lock()
 	s.baseURL, s.token = baseURL, token
+	s.username, s.password = "", ""
+	s.mu.Unlock()
+	return nil
+}
+
+// SetBackendCredentials configures Android-compatible Basic authentication for this session.
+func (s *Services) SetBackendCredentials(baseURL, username, password string) error {
+	if err := s.SetBackend(baseURL, ""); err != nil {
+		return err
+	}
+	if strings.TrimSpace(baseURL) == "" {
+		return nil
+	}
+	s.mu.Lock()
+	s.username, s.password = strings.TrimSpace(username), password
 	s.mu.Unlock()
 	return nil
 }
@@ -68,9 +86,17 @@ func (s *Services) SetBackend(baseURL, token string) error {
 // SetBackendURL changes only the persistent base URL and preserves the in-memory token.
 func (s *Services) SetBackendURL(baseURL string) error {
 	s.mu.RLock()
-	token := s.token
+	token, username, password := s.token, s.username, s.password
 	s.mu.RUnlock()
-	return s.SetBackend(baseURL, token)
+	if err := s.SetBackend(baseURL, token); err != nil {
+		return err
+	}
+	if strings.TrimSpace(baseURL) != "" && username != "" {
+		s.mu.Lock()
+		s.username, s.password = username, password
+		s.mu.Unlock()
+	}
+	return nil
 }
 
 func (s *Services) BackendURL() string {
@@ -85,6 +111,10 @@ type HTTPResult struct {
 }
 
 func (s *Services) RequestBackend(method, path, body string) (HTTPResult, error) {
+	return s.requestBackend(method, path, body, 2<<20)
+}
+
+func (s *Services) requestBackend(method, path, body string, maxResponseSize int64) (HTTPResult, error) {
 	method = strings.ToUpper(strings.TrimSpace(method))
 	switch method {
 	case http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
@@ -93,7 +123,7 @@ func (s *Services) RequestBackend(method, path, body string) (HTTPResult, error)
 	}
 
 	s.mu.RLock()
-	baseURL, token := s.baseURL, s.token
+	baseURL, token, username, password := s.baseURL, s.token, s.username, s.password
 	s.mu.RUnlock()
 	if baseURL == "" {
 		return HTTPResult{}, errors.New("backend URL is not configured")
@@ -119,14 +149,20 @@ func (s *Services) RequestBackend(method, path, body string) (HTTPResult, error)
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
+	if username != "" {
+		req.SetBasicAuth(username, password)
+	}
 	resp, err := s.client.Do(req)
 	if err != nil {
 		return HTTPResult{}, err
 	}
 	defer resp.Body.Close()
-	data, err := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseSize+1))
 	if err != nil {
 		return HTTPResult{}, err
+	}
+	if int64(len(data)) > maxResponseSize {
+		return HTTPResult{}, fmt.Errorf("backend response exceeds %d MiB", maxResponseSize>>20)
 	}
 	return HTTPResult{StatusCode: resp.StatusCode, Body: string(data)}, nil
 }

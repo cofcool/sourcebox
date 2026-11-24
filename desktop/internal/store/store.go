@@ -98,7 +98,10 @@ CREATE INDEX IF NOT EXISTS idx_command_history_created
   ON command_history(created_at DESC);
 `
 	_, err := s.db.Exec(schema)
-	return err
+	if err != nil {
+		return err
+	}
+	return s.migrateSourcebox()
 }
 
 func (s *Store) seed() error {

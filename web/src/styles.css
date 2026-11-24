@@ -236,7 +236,10 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .record-replies h3 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; }
 .record-reply-form { display: grid; gap: 9px; }
 .record-reply-form button { justify-self: end; }
-.record-reply-list { display: flex; flex-direction: column; gap: 9px; }
+.record-reply-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 10px; }
+.record-reply-group { display: grid; min-width: 0; gap: 8px; }
+.record-reply-group h4 { margin: 0; color: #585f69; font-size: 12px; }
+.record-reply-list { display: flex; min-width: 0; flex-direction: column; gap: 9px; }
 .record-reply { padding: 11px 12px; border: 1px solid #e3e6e3; border-radius: 6px; background: white; }
 .record-reply p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.5; }
 .record-reply time { display: block; margin-top: 8px; color: #9298a1; font-size: 11px; }

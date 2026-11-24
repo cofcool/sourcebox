@@ -38,7 +38,6 @@ import type {
   ToolInfo
 } from "./api/client";
 import {api, getBackendUrl} from "./api/client";
-import {invoke, isTauri} from "@tauri-apps/api/core";
 
 interface TodoItem {
   id: string;
@@ -1083,6 +1082,9 @@ function RecordBoard() {
     }
   }
 
+  const systemComments = comments.filter((comment) => comment.content.startsWith("sys-"));
+  const otherComments = comments.filter((comment) => !comment.content.startsWith("sys-"));
+
   return (
     <div className="tool-page record-board">
       <div className="page-heading">
@@ -1284,12 +1286,19 @@ function RecordBoard() {
                   <textarea value={reply} onChange={(event) => setReply(event.target.value)} rows={3} placeholder="添加回复..." />
                   <button type="submit" disabled={saving || !reply.trim()}>添加回复</button>
                 </form>
-                <div className="record-reply-list">
-                  {comments.length === 0 ? <div className="record-reply-empty">还没有回复</div> : comments.map((comment) => (
-                    <article className="record-reply" key={comment.id}>
-                      <p>{comment.content}</p>
-                      <time>{comment.createTime ?? ""}</time>
-                    </article>
+                <div className="record-reply-groups">
+                  {[{ title: "系统", items: systemComments }, { title: "回复", items: otherComments }].map((group) => (
+                    <section className="record-reply-group" key={group.title}>
+                      <h4>{group.title}</h4>
+                      <div className="record-reply-list">
+                        {group.items.length === 0 ? <div className="record-reply-empty">{comments.length === 0 ? "还没有回复" : "暂无数据"}</div> : group.items.map((comment) => (
+                          <article className="record-reply" key={comment.id}>
+                            <p>{comment.content}</p>
+                            <time>{comment.createTime ?? ""}</time>
+                          </article>
+                        ))}
+                      </div>
+                    </section>
                   ))}
                 </div>
               </section>
@@ -1432,15 +1441,6 @@ function TimerPage() {
   }
 
   const displayTime = `${String(Math.floor(remaining / 60)).padStart(2, "0")}:${String(remaining % 60).padStart(2, "0")}`;
-
-  useEffect(() => {
-    if (!isTauri()) return;
-    const phaseLabel = phase === "work" ? "Work" : "Break";
-    const stateLabel = timerState === "running" ? "" : timerState === "paused" ? " (paused)" : " (stopped)";
-    void invoke("set_tray_timer", { text: `${phaseLabel}: ${displayTime}${stateLabel}` }).catch((e) => {
-      console.error("Failed to update timer tray tooltip", e);
-    });
-  }, [displayTime, phase, timerState]);
 
   return (
     <div className="tool-page timer-page">

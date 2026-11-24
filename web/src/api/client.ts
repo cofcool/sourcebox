@@ -208,8 +208,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.text() as unknown as T;
 }
 
-async function search<T>(query: string, type: string): Promise<SearchResult<T>[]> {
+async function search<T>(query: string, type: string, actionType?: string): Promise<SearchResult<T>[]> {
   const params = new URLSearchParams({ q: query.trim(), type });
+  if (actionType) params.set("actionType", actionType);
   return request<SearchResult<T>[]>(`/search?${params.toString()}`);
 }
 
@@ -311,7 +312,7 @@ export const api = {
   },
   todoList: async (query = "", page = 1, size = 10): Promise<TodoRecord[]> => {
     if (query.trim()) {
-      const results = await search<ActionRecord>(query, "action");
+      const results = await search<ActionRecord>(query, "action", "todo");
       const todos = results
         .map((result) => result.data)
         .filter((record) => record.type === "todo" && record.state === "todo")
@@ -374,7 +375,7 @@ export const api = {
   },
   habitList: async (query = "", page = 1, size = 10): Promise<ActionRecord[]> => {
     if (query.trim()) {
-      const results = await search<ActionRecord>(query, "action");
+      const results = await search<ActionRecord>(query, "action", "habit");
       const habits = results
         .map((result) => result.data)
         .filter((record) => record.type === "habit");
@@ -440,7 +441,7 @@ export const api = {
   },
   recordList: async (query = "", page = 1, size = 10): Promise<ActionRecord[]> => {
     if (query.trim()) {
-      const results = await search<ActionRecord>(query, "action");
+      const results = await search<ActionRecord>(query, "action", "record");
       const records = results
         .map((result) => result.data)
         .filter((record) => record.type === "record");

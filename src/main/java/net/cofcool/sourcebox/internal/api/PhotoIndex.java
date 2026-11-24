@@ -1,11 +1,13 @@
 package net.cofcool.sourcebox.internal.api;
 
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
-import java.io.File;
 import net.cofcool.sourcebox.internal.api.entity.PhotoAlbum;
 import net.cofcool.sourcebox.internal.api.entity.SmartAlbum;
 import net.cofcool.sourcebox.util.VertxUtils;
+
+import java.io.File;
 
 public class PhotoIndex {
     public static Router buildRouter(Vertx vertx) {
@@ -27,6 +29,17 @@ public class PhotoIndex {
         router.get("/albums/:id/photos").respond(r -> service.findAlbumPhotos(r.pathParam("id")));
         router.post("/albums/:id/scan").respond(r -> service.scan(r.body().asJsonObject()
             .put("albumId", r.pathParam("id"))));
+
+        router.get("/exportAll").respond(r ->
+            Future.all(
+                service.findAlbums(),
+                service.findAllPhotos(),
+                service.findSmartAlbums()
+            ).map(result -> new io.vertx.core.json.JsonObject()
+                .put("albums", result.resultAt(0))
+                .put("photos", result.resultAt(1))
+                .put("smartAlbums", result.resultAt(2))));
+
         router.get("/statistics/summary").respond(r -> service.findStatistics(
             r.queryParam("date").stream().findFirst().orElse(null),
             r.queryParam("state").stream().findFirst().orElse(null),

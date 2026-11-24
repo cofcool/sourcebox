@@ -1614,6 +1614,12 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         syncAllData()
     }
 
+    fun photoDiskCacheSizeMb(): Int = api.photoDiskCacheSizeMb()
+
+    fun savePhotoDiskCacheSizeMb(sizeMb: Int) {
+        api.savePhotoDiskCacheSizeMb(sizeMb)
+    }
+
     private fun <T> perform(onSuccess: suspend (T) -> Unit = {}, action: suspend () -> T) {
         viewModelScope.launch {
             busy = true

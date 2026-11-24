@@ -300,6 +300,15 @@ class SourceboxApi(context: Context) {
 
     fun password(): String = preferences.getString("password", "").orEmpty()
 
+    fun photoDiskCacheSizeMb(): Int =
+        preferences.getInt("photo_disk_cache_size_mb", 100).coerceIn(10, 1024)
+
+    fun savePhotoDiskCacheSizeMb(sizeMb: Int) {
+        preferences.edit()
+            .putInt("photo_disk_cache_size_mb", sizeMb.coerceIn(10, 1024))
+            .apply()
+    }
+
     suspend fun tools(): List<ToolInfo> {
         val names = json.decodeFromString<List<String>>(request("/"))
         val help = json.parseToJsonElement(request("/help")).jsonObject

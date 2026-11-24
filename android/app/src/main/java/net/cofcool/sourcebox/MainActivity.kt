@@ -143,6 +143,11 @@ import kotlinx.coroutines.withContext
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import coil3.ImageLoader
+import coil3.SingletonImageLoader
+import coil3.disk.DiskCache
+import coil3.memory.MemoryCache
+import okio.Path.Companion.toOkioPath
 import net.cofcool.sourcebox.data.ActionCheckList
 import net.cofcool.sourcebox.data.ActionRecord
 import net.cofcool.sourcebox.data.NoteRecord
@@ -156,11 +161,32 @@ import net.cofcool.sourcebox.ui.ToolboxViewModel
 import java.time.LocalDate
 import java.io.IOException
 
+@OptIn(coil3.annotation.DelicateCoilApi::class)
+private fun configurePhotoDiskCache(context: android.content.Context) {
+    val preferences = context.getSharedPreferences("sourcebox", android.content.Context.MODE_PRIVATE)
+    val sizeMb = preferences.getInt("photo_disk_cache_size_mb", 100).coerceIn(10, 1024)
+    val diskCache = DiskCache.Builder()
+        .directory(context.cacheDir.resolve("photo-disk-cache").toOkioPath())
+        .maxSizeBytes(sizeMb.toLong() * 1024 * 1024)
+        .build()
+    val loader = ImageLoader.Builder(context)
+        .diskCache(diskCache)
+        .memoryCache {
+            MemoryCache.Builder()
+                .maxSizePercent(context, 0.25)
+                .build()
+        }
+        .crossfade(true)
+        .build()
+    SingletonImageLoader.setUnsafe(loader)
+}
+
 class MainActivity : ComponentActivity() {
     private val sharedText = mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        configurePhotoDiskCache(applicationContext)
         sharedText.value = intent.sharedPlainText()
         setContent {
             SourceboxApp(
@@ -221,6 +247,7 @@ private fun SourceboxApp(
     var settingsUrl by remember { mutableStateOf(vm.baseUrl) }
     var settingsUser by remember { mutableStateOf(vm.username) }
     var settingsPassword by remember { mutableStateOf(vm.password) }
+    var photoCacheSizeMb by remember { mutableStateOf(vm.photoDiskCacheSizeMb()) }
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -711,6 +738,12 @@ private fun SourceboxApp(
                     password = settingsPassword,
                     onPassword = { settingsPassword = it },
                     onSave = { vm.saveConnection(settingsUrl, settingsUser, settingsPassword); page = "more" },
+                    photoCacheSizeMb = photoCacheSizeMb,
+                    onPhotoCacheSizeMb = { size ->
+                        photoCacheSizeMb = size
+                        vm.savePhotoDiskCacheSizeMb(size)
+                        configurePhotoDiskCache(context)
+                    },
                     onClearLocalDatabase = vm::clearLocalDatabase,
                     onViewCrashLogs = { page = "crash-logs" }
                 )
@@ -4208,10 +4241,15 @@ private fun SettingsScreen(
     password: String,
     onPassword: (String) -> Unit,
     onSave: () -> Unit,
+    photoCacheSizeMb: Int,
+    onPhotoCacheSizeMb: (Int) -> Unit,
     onClearLocalDatabase: () -> Unit,
     onViewCrashLogs: () -> Unit
 ) {
     var showClearDatabaseConfirmation by remember { mutableStateOf(false) }
+    var cacheSizeText by remember(photoCacheSizeMb) {
+        mutableStateOf(photoCacheSizeMb.toString())
+    }
 
     Column(
         modifier
@@ -4240,6 +4278,29 @@ private fun SettingsScreen(
             singleLine = true
         )
         Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) { Text("保存并连接") }
+        Text("照片缓存", style = MaterialTheme.typography.titleMedium)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            OutlinedTextField(
+                value = cacheSizeText,
+                onValueChange = { cacheSizeText = it.filter(Char::isDigit).take(4) },
+                modifier = Modifier.weight(1f),
+                label = { Text("磁盘缓存大小（MB）") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true
+            )
+            Button(onClick = {
+                val size = cacheSizeText.toIntOrNull()?.coerceIn(10, 1024) ?: 100
+                cacheSizeText = size.toString()
+                onPhotoCacheSizeMb(size)
+            }) {
+                Text("保存")
+            }
+        }
+        Text("默认 100 MB，修改后立即应用。", style = MaterialTheme.typography.bodySmall)
         OutlinedButton(
             onClick = { showClearDatabaseConfirmation = true },
             modifier = Modifier.fillMaxWidth()

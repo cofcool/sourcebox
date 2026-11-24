@@ -19,8 +19,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,10 +35,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -134,32 +134,31 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.documentfile.provider.DocumentFile
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil3.ImageLoader
+import coil3.SingletonImageLoader
+import coil3.compose.AsyncImage
+import coil3.disk.DiskCache
+import coil3.memory.MemoryCache
+import coil3.request.crossfade
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import coil3.compose.AsyncImage
-import coil3.request.ImageRequest
-import coil3.request.crossfade
-import coil3.ImageLoader
-import coil3.SingletonImageLoader
-import coil3.disk.DiskCache
-import coil3.memory.MemoryCache
-import okio.Path.Companion.toOkioPath
 import net.cofcool.sourcebox.data.ActionCheckList
 import net.cofcool.sourcebox.data.ActionRecord
 import net.cofcool.sourcebox.data.NoteRecord
 import net.cofcool.sourcebox.data.PhotoAlbum
-import net.cofcool.sourcebox.data.PhotoRecord
 import net.cofcool.sourcebox.data.PhotoBackupConfig
+import net.cofcool.sourcebox.data.PhotoRecord
 import net.cofcool.sourcebox.data.TodoRecord
 import net.cofcool.sourcebox.data.ToolInfo
 import net.cofcool.sourcebox.data.isHabitRequiredOnDate
 import net.cofcool.sourcebox.ui.ToolboxViewModel
-import java.time.LocalDate
+import okio.Path.Companion.toOkioPath
 import java.io.IOException
+import java.time.LocalDate
 
 @OptIn(coil3.annotation.DelicateCoilApi::class)
 private fun configurePhotoDiskCache(context: android.content.Context) {
@@ -3272,8 +3271,8 @@ private fun RecordDetails(
                 enabled = !busy && reply.isNotBlank(),
                 modifier = Modifier.fillMaxWidth()
             ) { Text("添加回复") }
-            val replyComments = comments.filterNot { it.id.startsWith("sys-") }
-            val systemComments = comments.filter { it.id.startsWith("sys-") }
+            val replyComments = comments.filterNot { it.content.startsWith("sys-") }
+            val systemComments = comments.filter { it.content.startsWith("sys-") }
             TabRow(selectedTabIndex = selectedCommentTab) {
                 listOf("回复", "系统").forEachIndexed { index, title ->
                     Tab(

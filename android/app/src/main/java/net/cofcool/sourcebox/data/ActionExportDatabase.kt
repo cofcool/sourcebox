@@ -102,11 +102,7 @@ class ActionExportDatabase(context: Context) :
                     TABLE_ACTIONS,
                     actions.map { it.record.id to json.encodeToString(it) })
                 replaceRows(this, TABLE_NOTES, notes.map { it.id to json.encodeToString(it) })
-                replaceRows(
-                    this,
-                    TABLE_RECOMMENDS,
-                    recommendations.map { it.id to json.encodeToString(it) }
-                )
+                replaceRecommendationRows(this, recommendations)
                 replaceRows(this, TABLE_PHOTO_ALBUMS,
                     photos.albums.map { it.id to json.encodeToString(it) })
                 replaceRows(this, TABLE_PHOTOS,
@@ -161,11 +157,7 @@ class ActionExportDatabase(context: Context) :
         validateIds(recommendations.map { it.id }, "推荐")
         val db = writableDatabase
         db.transaction {
-            replaceRows(
-                this,
-                TABLE_RECOMMENDS,
-                recommendations.map { it.id to json.encodeToString(it) }
-            )
+            replaceRecommendationRows(this, recommendations)
         }
     }
 
@@ -177,6 +169,35 @@ class ActionExportDatabase(context: Context) :
 
     fun deleteRecommendation(id: String) {
         delete(TABLE_RECOMMENDS, id)
+    }
+
+    fun markRecommendationDirty(actionId: String, recommended: Boolean) {
+        require(actionId.isNotBlank()) { "行动 ID 不能为空" }
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            deleteRecommendationsForAction(db, actionId)
+            if (recommended) {
+                val local = RecommendRecord(
+                    id = localRecommendationId(actionId),
+                    dataId = actionId,
+                    table = "action_record"
+                )
+                upsert(db, TABLE_RECOMMENDS, local.id, json.encodeToString(local), dirty = 1)
+            }
+            val values = ContentValues().apply {
+                put("entity", "recommendation")
+                put("entity_id", actionId)
+                put("operation", if (recommended) "save" else "delete")
+                put("payload", actionId)
+            }
+            check(db.insertOrThrow(TABLE_PENDING, null, values) != -1L) {
+                "保存推荐待同步修改失败：$actionId"
+            }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
     }
 
     fun photoAlbums(): List<PhotoAlbum> =
@@ -725,6 +746,10 @@ class ActionExportDatabase(context: Context) :
     }
 
     fun completePendingChange(change: PendingChange, canonicalPayload: String? = null) {
+        if (change.entity == "recommendation") {
+            completeRecommendationChange(change, canonicalPayload)
+            return
+        }
         val table = tableForEntity(change.entity)
         val db = writableDatabase
         db.beginTransaction()
@@ -742,6 +767,37 @@ class ActionExportDatabase(context: Context) :
                 upsert(db, table, change.entityId, canonicalPayload, dirty = 0)
             } else {
                 db.execSQL("UPDATE $table SET dirty = 0 WHERE id = ?", arrayOf(change.entityId))
+            }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+    }
+
+    private fun completeRecommendationChange(change: PendingChange, canonicalPayload: String?) {
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            db.delete(TABLE_PENDING, "id = ?", arrayOf(change.id.toString()))
+            val stillPending = db.rawQuery(
+                "SELECT 1 FROM $TABLE_PENDING WHERE entity = 'recommendation' AND entity_id = ? LIMIT 1",
+                arrayOf(change.entityId)
+            ).use { it.moveToFirst() }
+            if (!stillPending) {
+                deleteRecommendationsForAction(db, change.entityId)
+                when (change.operation) {
+                    "save" -> {
+                        val saved = canonicalPayload?.let {
+                            json.decodeFromString(RecommendRecord.serializer(), it)
+                        } ?: throw IOException("推荐同步未返回推荐记录：${change.entityId}")
+                        if (saved.dataId != change.entityId) {
+                            throw IOException("推荐同步返回了不匹配的行动 ID：${saved.dataId}")
+                        }
+                        upsert(db, TABLE_RECOMMENDS, saved.id, json.encodeToString(saved))
+                    }
+                    "delete" -> Unit
+                    else -> throw IOException("未知的待同步推荐操作：${change.operation}")
+                }
             }
             db.setTransactionSuccessful()
         } finally {
@@ -797,6 +853,56 @@ class ActionExportDatabase(context: Context) :
             upsert(db, table, id, payload, dirty = 0)
         }
         dirtyRows.forEach { (id, payload) -> upsert(db, table, id, payload, dirty = 1) }
+    }
+
+    private fun replaceRecommendationRows(
+        db: SQLiteDatabase,
+        recommendations: List<RecommendRecord>
+    ) {
+        val pendingOperations = db.rawQuery(
+            "SELECT entity_id, operation FROM $TABLE_PENDING WHERE entity = 'recommendation' ORDER BY id",
+            null
+        ).use { cursor ->
+            buildMap {
+                while (cursor.moveToNext()) put(cursor.getString(0), cursor.getString(1))
+            }
+        }
+        val preserved = readPayloads(db, TABLE_RECOMMENDS, RecommendRecord.serializer())
+            .filter { it.dataId in pendingOperations && pendingOperations[it.dataId] == "save" }
+            .distinctBy { it.dataId }
+            .toMutableList()
+        pendingOperations.filterValues { it == "save" }.keys.forEach { actionId ->
+            if (preserved.none { it.dataId == actionId }) {
+                preserved += localRecommendation(actionId)
+            }
+        }
+
+        db.delete(TABLE_RECOMMENDS, null, null)
+        val pendingIds = pendingOperations.keys
+        (recommendations.filterNot { it.dataId in pendingIds } + preserved).forEach { recommendation ->
+            val isPending = recommendation.dataId in pendingIds
+            upsert(
+                db,
+                TABLE_RECOMMENDS,
+                recommendation.id,
+                json.encodeToString(recommendation),
+                dirty = if (isPending) 1 else 0
+            )
+        }
+    }
+
+    private fun localRecommendation(actionId: String) = RecommendRecord(
+        id = localRecommendationId(actionId),
+        dataId = actionId,
+        table = "action_record"
+    )
+
+    private fun localRecommendationId(actionId: String) = "offline:$actionId"
+
+    private fun deleteRecommendationsForAction(db: SQLiteDatabase, actionId: String) {
+        readPayloads(db, TABLE_RECOMMENDS, RecommendRecord.serializer())
+            .filter { it.dataId == actionId }
+            .forEach { db.delete(TABLE_RECOMMENDS, "id = ?", arrayOf(it.id)) }
     }
 
     private fun <T> queryPayloads(

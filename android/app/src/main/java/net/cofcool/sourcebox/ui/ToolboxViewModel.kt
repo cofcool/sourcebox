@@ -319,30 +319,44 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
 
     fun setRecommended(actionId: String, recommended: Boolean) = perform {
         require(actionId.isNotBlank()) { "行动 ID 不能为空" }
-        if (recommended) {
-            val saved = api.recommendAction(actionId)
-            withContext(Dispatchers.IO) { actionDatabase.saveRecommendation(saved) }
-        } else {
-            api.cancelRecommendation(actionId)
-            withContext(Dispatchers.IO) {
-                actionDatabase.recommendations()
-                    .filter { it.dataId == actionId }
-                    .forEach { actionDatabase.deleteRecommendation(it.id) }
+        val (_, offline) = writeWithOfflineFallback(
+            server = {
+                if (recommended) {
+                    val saved = api.recommendAction(actionId)
+                    withContext(Dispatchers.IO) { actionDatabase.saveRecommendation(saved) }
+                } else {
+                    api.cancelRecommendation(actionId)
+                    withContext(Dispatchers.IO) {
+                        actionDatabase.recommendations()
+                            .filter { it.dataId == actionId }
+                            .forEach { actionDatabase.deleteRecommendation(it.id) }
+                    }
+                }
+            },
+            offline = {
+                withContext(Dispatchers.IO) {
+                    actionDatabase.markRecommendationDirty(actionId, recommended)
+                }
             }
-        }
+        )
         recommendedIds = withContext(Dispatchers.IO) {
             actionDatabase.recommendations().map { it.dataId }.toSet()
         }
-        loadTodayActions()
-        message = if (recommended) "已推荐到首页" else "已取消推荐"
+        refreshPendingCount()
+        message = when {
+            offline && recommended -> "已保存推荐，联网后同步"
+            offline -> "已保存取消推荐，联网后同步"
+            recommended -> "已推荐到首页"
+            else -> "已取消推荐"
+        }
     }
 
     private suspend fun syncRecommendationsFromServer() {
         val recommendations = api.recommendations()
-        withContext(Dispatchers.IO) {
+        recommendedIds = withContext(Dispatchers.IO) {
             actionDatabase.replaceRecommendations(recommendations)
+            actionDatabase.recommendations().map { it.dataId }.toSet()
         }
-        recommendedIds = recommendations.map { it.dataId }.toSet()
     }
 
     private suspend fun loadTodayActions() {
@@ -923,6 +937,10 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
                     api.saveRecordChecklist(change.entityId, checklist)
                 }
                 "action" to "checklist_delete" -> api.deleteRecordChecklist(change.payload)
+                "recommendation" to "save" -> {
+                    canonicalPayload = json.encodeToString(api.recommendAction(change.entityId))
+                }
+                "recommendation" to "delete" -> api.cancelRecommendation(change.entityId)
                 else -> throw IllegalStateException(
                     "无法处理待同步操作：${change.entity}/${change.operation}"
                 )

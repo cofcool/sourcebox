@@ -22,6 +22,20 @@ data class PendingChange(
     val payload: String
 )
 
+data class ActionDimensionCount(
+    val name: String,
+    val count: Int
+)
+
+data class ActionStatistics(
+    val total: Int,
+    val statusCounts: List<ActionDimensionCount>,
+    val categoryCounts: List<ActionDimensionCount>,
+    val typeCounts: List<ActionDimensionCount>,
+    val statusOptions: List<String>,
+    val categoryOptions: List<String>
+)
+
 class ActionExportDatabase(context: Context) :
     SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
@@ -804,6 +818,80 @@ class ActionExportDatabase(context: Context) :
             db.endTransaction()
         }
     }
+
+    fun actionStatistics(year: String, state: String, category: String): ActionStatistics {
+        val conditions = mutableListOf(
+            "NOT EXISTS (SELECT 1 FROM $TABLE_PENDING p WHERE p.entity = 'action' " +
+                "AND p.operation = 'habit_delete' AND p.entity_id = $TABLE_ACTIONS.id)"
+        )
+        val arguments = mutableListOf<String>()
+        if (year.isNotBlank()) {
+            val parsedYear = year.toIntOrNull()
+            require(parsedYear != null && parsedYear in 2019..java.time.LocalDate.now().year) {
+                "无效年份：$year"
+            }
+            conditions += "substr(COALESCE(NULLIF(action_start, ''), action_created), 1, 4) = ?"
+            arguments += year
+        }
+        if (state.isNotBlank()) {
+            conditions += "action_state = ?"
+            arguments += state
+        }
+        if (category.isNotBlank()) {
+            conditions += "action_category = ?"
+            arguments += category
+        }
+        val where = conditions.joinToString(" AND ")
+        val queryArguments = arguments.toTypedArray()
+        val total = readableDatabase.rawQuery(
+            "SELECT COUNT(*) FROM $TABLE_ACTIONS WHERE $where",
+            queryArguments
+        ).use { cursor ->
+            if (cursor.moveToFirst()) cursor.getInt(0) else 0
+        }
+
+        return ActionStatistics(
+            total = total,
+            statusCounts = actionDimensionCounts("action_state", where, queryArguments),
+            categoryCounts = actionDimensionCounts("action_category", where, queryArguments),
+            typeCounts = actionDimensionCounts("action_type", where, queryArguments),
+            statusOptions = actionDimensionOptions("action_state"),
+            categoryOptions = actionDimensionOptions("action_category")
+        )
+    }
+
+    private fun actionDimensionCounts(
+        column: String,
+        where: String,
+        arguments: Array<String>
+    ): List<ActionDimensionCount> {
+        val dimension = "COALESCE(NULLIF($column, ''), '未分类')"
+        return readableDatabase.rawQuery(
+            "SELECT $dimension, COUNT(*) FROM $TABLE_ACTIONS " +
+                "WHERE $where GROUP BY $dimension ORDER BY $dimension",
+            arguments
+        ).use { cursor ->
+            buildList {
+                while (cursor.moveToNext()) {
+                    add(ActionDimensionCount(cursor.getString(0), cursor.getInt(1)))
+                }
+            }
+        }
+    }
+
+    private fun actionDimensionOptions(column: String): List<String> =
+        readableDatabase.rawQuery(
+            "SELECT DISTINCT $column FROM $TABLE_ACTIONS " +
+                "WHERE $column IS NOT NULL AND trim($column) <> '' " +
+                "AND NOT EXISTS (SELECT 1 FROM $TABLE_PENDING p WHERE p.entity = 'action' " +
+                "AND p.operation = 'habit_delete' AND p.entity_id = $TABLE_ACTIONS.id) " +
+                "ORDER BY $column",
+            null
+        ).use { cursor ->
+            buildList {
+                while (cursor.moveToNext()) add(cursor.getString(0))
+            }
+        }
 
     fun actionCount(): Int = rowCount(TABLE_ACTIONS)
 

@@ -263,6 +263,8 @@ data class PhotoBackupJob(
 
 @Serializable
 data class PhotoBackupConfig(
+    val id: String = UUID.randomUUID().toString(),
+    val name: String = "",
     val sourceUri: String = "",
     val albumId: String = "",
     val wifiOnly: Boolean = true,
@@ -688,20 +690,28 @@ class SourceboxApi(context: Context) {
     suspend fun exportAllPhotos(): PhotoExport =
         json.decodeFromString(request("/photo/exportAll"))
 
-    fun photoBackupConfig(): PhotoBackupConfig =
-        PhotoBackupConfig(
+    fun photoBackupConfigs(): List<PhotoBackupConfig> {
+        if (preferences.contains("photo_backup_configs")) {
+            val savedConfigs: List<PhotoBackupConfig> =
+                json.decodeFromString(preferences.getString("photo_backup_configs", "[]").orEmpty())
+            if (savedConfigs.isNotEmpty()) return savedConfigs
+        }
+
+        val legacyConfig = PhotoBackupConfig(
+            name = "备份配置 1",
             sourceUri = preferences.getString("photo_backup_source_uri", "").orEmpty(),
             albumId = preferences.getString("photo_backup_album_id", "").orEmpty(),
             wifiOnly = preferences.getBoolean("photo_backup_wifi_only", true),
             autoEnabled = preferences.getBoolean("photo_backup_auto_enabled", false)
         )
+        val configs = listOf(legacyConfig)
+        savePhotoBackupConfigs(configs)
+        return configs
+    }
 
-    fun savePhotoBackupConfig(config: PhotoBackupConfig) {
+    fun savePhotoBackupConfigs(configs: List<PhotoBackupConfig>) {
         preferences.edit()
-            .putString("photo_backup_source_uri", config.sourceUri)
-            .putString("photo_backup_album_id", config.albumId)
-            .putBoolean("photo_backup_wifi_only", config.wifiOnly)
-            .putBoolean("photo_backup_auto_enabled", config.autoEnabled)
+            .putString("photo_backup_configs", json.encodeToString(configs))
             .apply()
     }
 

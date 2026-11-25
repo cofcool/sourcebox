@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -50,9 +51,12 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Archive
+import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
@@ -62,6 +66,9 @@ import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -148,6 +155,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.cofcool.sourcebox.data.ActionCheckList
 import net.cofcool.sourcebox.data.ActionRecord
+import net.cofcool.sourcebox.data.ActionDimensionCount
+import net.cofcool.sourcebox.data.ActionStatistics
 import net.cofcool.sourcebox.data.NoteRecord
 import net.cofcool.sourcebox.data.PhotoAlbum
 import net.cofcool.sourcebox.data.PhotoBackupConfig
@@ -218,7 +227,7 @@ private val pages = listOf(
 
 private val moreToolPages = setOf(
     "timer", "files", "files-download", "books", "photos", "photo-detail", "photo-backup",
-    "settings", "server-tools"
+    "settings", "server-tools", "statistics"
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -333,6 +342,7 @@ private fun SourceboxApp(
                             when (page) {
                                 "tool" -> selectedTool?.id ?: "工具"
                                 "server-tools" -> "服务端工具"
+                                "statistics" -> "数据统计"
                                 "todo-detail" -> "待办详情"
                                 "todo-create" -> "添加待办"
                                 "task" -> "任务"
@@ -521,6 +531,7 @@ private fun SourceboxApp(
                     onFiles = { page = "files" },
                     onBooks = { page = "books"; vm.refreshBooks() },
                     onPhotos = { page = "photos" },
+                    onStatistics = { page = "statistics" },
                     onServerTools = { vm.refreshTools(); page = "server-tools" },
                     onSettings = {
                         settingsUrl = vm.baseUrl
@@ -541,6 +552,10 @@ private fun SourceboxApp(
                         selectedPhoto = photo
                         page = "photo-detail"
                     }
+                )
+                "statistics" -> StatisticsScreen(
+                    vm = vm,
+                    modifier = Modifier.padding(padding)
                 )
                 "photo-detail" -> selectedPhoto?.let { photo ->
                     PhotoDetailScreen(
@@ -846,11 +861,7 @@ private fun TodayActionCard(action: ActionRecord, isRecommended: Boolean, onClic
                 Text(action.name, Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.width(8.dp))
                 if (isRecommended) {
-                    Text(
-                        "置顶",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    Icon(Icons.Default.PushPin, contentDescription = "Pin", tint = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.width(6.dp))
                 }
                 Text("$typeLabel · $stateLabel", style = MaterialTheme.typography.labelSmall)
@@ -919,6 +930,7 @@ private fun MoreScreen(
     onFiles: () -> Unit,
     onBooks: () -> Unit,
     onPhotos: () -> Unit,
+    onStatistics: () -> Unit,
     onServerTools: () -> Unit,
     onSettings: () -> Unit,
     onSyncData: () -> Unit
@@ -990,6 +1002,12 @@ private fun MoreScreen(
             onClick = onPhotos
         )
         MoreToolCard(
+            icon = Icons.Default.Assessment,
+            title = "数据统计",
+            description = "按年份、状态和类别统计任务",
+            onClick = onStatistics
+        )
+        MoreToolCard(
             icon = Icons.Default.Build,
             title = "服务端工具",
             description = "后端提供的其他工具",
@@ -1001,6 +1019,169 @@ private fun MoreScreen(
             description = "管理后端连接等",
             onClick = onSettings
         )
+    }
+}
+
+@Composable
+private fun StatisticsScreen(
+    vm: ToolboxViewModel,
+    modifier: Modifier
+) {
+    val currentYear = remember { LocalDate.now().year }
+    val years = remember(currentYear) { (currentYear downTo 2019).map(Int::toString) }
+    var year by remember { mutableStateOf("") }
+    var state by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf("") }
+    var statistics by remember { mutableStateOf<ActionStatistics?>(null) }
+    var loading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(year, state, category) {
+        loading = true
+        error = null
+        try {
+            statistics = vm.actionStatistics(year, state, category)
+        } catch (e: Exception) {
+            error = e.message ?: "加载统计数据失败"
+        } finally {
+            loading = false
+        }
+    }
+
+    Column(
+        modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Card(Modifier.fillMaxWidth()) {
+            Column(
+                Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                StatisticsFilter(
+                    label = "年份",
+                    selected = year,
+                    allLabel = "全部年份",
+                    options = years,
+                    onSelected = { year = it }
+                )
+                StatisticsFilter(
+                    label = "状态",
+                    selected = state,
+                    allLabel = "全部状态",
+                    options = statistics?.statusOptions.orEmpty(),
+                    onSelected = { state = it }
+                )
+                StatisticsFilter(
+                    label = "类别",
+                    selected = category,
+                    allLabel = "全部类别",
+                    options = statistics?.categoryOptions.orEmpty(),
+                    onSelected = { category = it }
+                )
+            }
+        }
+
+        error?.let {
+            Text(it, color = MaterialTheme.colorScheme.error)
+        }
+
+        if (loading && statistics == null) {
+            Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else {
+            statistics?.let { result ->
+                Card(Modifier.fillMaxWidth()) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("筛选后的任务总数", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            result.total.toString(),
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+                StatisticsGroup("类型统计", result.typeCounts)
+                StatisticsGroup("类别统计", result.categoryCounts)
+                StatisticsGroup("状态统计", result.statusCounts)
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatisticsFilter(
+    label: String,
+    selected: String,
+    allLabel: String,
+    options: List<String>,
+    onSelected: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(label, style = MaterialTheme.typography.labelLarge)
+        Box {
+            OutlinedButton(
+                onClick = { expanded = true },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(if (selected.isBlank()) allLabel else selected)
+            }
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.heightIn(max = 320.dp)
+            ) {
+                DropdownMenuItem(
+                    text = { Text(allLabel) },
+                    onClick = {
+                        onSelected("")
+                        expanded = false
+                    }
+                )
+                options.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option) },
+                        onClick = {
+                            onSelected(option)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatisticsGroup(title: String, counts: List<ActionDimensionCount>) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(
+            Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            if (counts.isEmpty()) {
+                Text("暂无统计数据", style = MaterialTheme.typography.bodyMedium)
+            } else {
+                counts.forEach { entry ->
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(entry.name.ifBlank { "未分类" })
+                        Text(entry.count.toString(), fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -1085,14 +1266,14 @@ private fun PhotosScreen(
                 EmptyState("相册中暂无照片")
             } else {
                 LazyVerticalGrid(
-                    columns = GridCells.Adaptive(120.dp),
+                    columns = GridCells.Fixed(2),
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     items(photos, key = { it.id }) { photo ->
                         Card(onClick = { onOpenPhoto(selectedAlbum!!, photo) },
-                            modifier = Modifier.size(120.dp)) {
+                            modifier = Modifier.fillMaxWidth().aspectRatio(1f)) {
                             AsyncImage(
                                 model = vm.photoThumbnailUrl(photo.id),
                                 contentDescription = photo.fileName,
@@ -1148,16 +1329,14 @@ private fun PhotoBackupScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var albums by remember { mutableStateOf<List<PhotoAlbum>>(emptyList()) }
-    val initialConfig = remember { vm.photoBackupConfig() }
-    var sourceUri by remember { mutableStateOf(initialConfig.sourceUri) }
-    var albumId by remember { mutableStateOf(initialConfig.albumId) }
-    var wifiOnly by remember { mutableStateOf(initialConfig.wifiOnly) }
-    var autoEnabled by remember { mutableStateOf(initialConfig.autoEnabled) }
+    var configs by remember { mutableStateOf(vm.photoBackupConfigs()) }
+    var config by remember { mutableStateOf(configs.first()) }
     var logs by remember { mutableStateOf<List<String>>(emptyList()) }
     var status by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var albumMenu by remember { mutableStateOf(false) }
+    var configMenu by remember { mutableStateOf(false) }
 
     fun appendLog(message: String) {
         val entry = "${java.time.LocalDateTime.now()}: $message"
@@ -1172,24 +1351,19 @@ private fun PhotoBackupScreen(
             try {
                 context.contentResolver.takePersistableUriPermission(uri, flags)
             } catch (_: Exception) {}
-            sourceUri = uri.toString()
+            config = config.copy(sourceUri = uri.toString())
         }
     }
 
     LaunchedEffect(Unit) {
         try { albums = vm.photoAlbums() } catch (e: Exception) { error = e.message }
-        if (albumId.isBlank()) albumId = albums.firstOrNull()?.id.orEmpty()
+        if (config.albumId.isBlank()) config = config.copy(albumId = albums.firstOrNull()?.id.orEmpty())
     }
 
     fun saveConfig() {
-        vm.savePhotoBackupConfig(
-            PhotoBackupConfig(
-                sourceUri = sourceUri,
-                albumId = albumId,
-                wifiOnly = wifiOnly,
-                autoEnabled = autoEnabled
-            )
-        )
+        val updated = configs.filterNot { it.id == config.id } + config
+        configs = updated
+        vm.savePhotoBackupConfigs(updated)
     }
 
     fun isWifiConnected(): Boolean {
@@ -1222,42 +1396,97 @@ private fun PhotoBackupScreen(
     ) {
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("备份配置", fontWeight = FontWeight.SemiBold)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.weight(1f)) {
+                        OutlinedButton(onClick = { configMenu = true }, modifier = Modifier.fillMaxWidth()) {
+                            Text(config.name.ifBlank { "备份配置" }, maxLines = 1)
+                        }
+                        DropdownMenu(expanded = configMenu, onDismissRequest = { configMenu = false }) {
+                            configs.forEach { item ->
+                                DropdownMenuItem(
+                                    text = { Text(item.name.ifBlank { "备份配置" }) },
+                                    onClick = {
+                                        saveConfig()
+                                        config = item
+                                        configMenu = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    TextButton(onClick = {
+                        saveConfig()
+                        var nextIndex = configs.size + 1
+                        while (configs.any { it.name == "备份配置 $nextIndex" }) nextIndex++
+                        val next = PhotoBackupConfig(
+                            name = "备份配置 $nextIndex",
+                            albumId = albums.firstOrNull()?.id.orEmpty()
+                        )
+                        configs = configs + next
+                        vm.savePhotoBackupConfigs(configs)
+                        config = next
+                    }) { Text("新增") }
+                    IconButton(
+                        enabled = configs.size > 1,
+                        onClick = {
+                            val updated = configs.filterNot { it.id == config.id }
+                            configs = updated
+                            vm.savePhotoBackupConfigs(updated)
+                            config = updated.first()
+                        }
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = "删除备份配置")
+                    }
+                }
+                OutlinedTextField(
+                    value = config.name,
+                    onValueChange = { config = config.copy(name = it) },
+                    label = { Text("配置名称") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
                 OutlinedButton(onClick = { sourcePicker.launch(null) }, modifier = Modifier.fillMaxWidth()) {
-                    Text(if (sourceUri.isBlank()) "选择照片目录" else "已选择：$sourceUri")
+                    Text(if (config.sourceUri.isBlank()) "选择照片目录" else "已选择：${config.sourceUri}")
                 }
                 Box {
                     OutlinedButton(onClick = { albumMenu = true }, modifier = Modifier.fillMaxWidth()) {
-                        Text(albums.firstOrNull { it.id == albumId }?.name ?: "选择目标相册")
+                        Text(albums.firstOrNull { it.id == config.albumId }?.name ?: "选择目标相册")
                     }
                     DropdownMenu(expanded = albumMenu, onDismissRequest = { albumMenu = false }) {
                         albums.forEach { album ->
                             DropdownMenuItem(
                                 text = { Text(album.name) },
-                                onClick = { albumId = album.id; albumMenu = false }
+                                onClick = { config = config.copy(albumId = album.id); albumMenu = false }
                             )
                         }
                     }
                 }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text("仅 Wi-Fi 备份", Modifier.weight(1f))
-                    Switch(checked = wifiOnly, onCheckedChange = { wifiOnly = it })
+                    Switch(
+                        checked = config.wifiOnly,
+                        onCheckedChange = { config = config.copy(wifiOnly = it) }
+                    )
                 }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text("启用自动备份", Modifier.weight(1f))
-                    Switch(checked = autoEnabled, onCheckedChange = { autoEnabled = it })
+                    Switch(
+                        checked = config.autoEnabled,
+                        onCheckedChange = { config = config.copy(autoEnabled = it) }
+                    )
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(onClick = { saveConfig(); status = "配置已保存" }) { Text("保存配置") }
                     Button(
                         enabled = !busy,
                         onClick = {
+                            val selectedConfig = config
                             saveConfig()
-                            if (sourceUri.isBlank() || albumId.isBlank()) {
+                            if (selectedConfig.sourceUri.isBlank() || selectedConfig.albumId.isBlank()) {
                                 error = "请选择照片目录和目标相册"
                                 return@Button
                             }
-                            if (wifiOnly && !isWifiConnected()) {
+                            if (selectedConfig.wifiOnly && !isWifiConnected()) {
                                 error = "当前不是 Wi-Fi 网络"
                                 return@Button
                             }
@@ -1265,14 +1494,14 @@ private fun PhotoBackupScreen(
                             status = "正在扫描本地照片..."
                             scope.launch {
                                 try {
-                                    val uri = Uri.parse(sourceUri)
+                                    val uri = Uri.parse(selectedConfig.sourceUri)
                                     val directory = DocumentFile.fromTreeUri(context, uri)
                                         ?: throw IOException("无法读取照片目录")
                                     val files = collectFiles(directory)
                                         .filter { (file, relativePath) ->
                                             vm.photoNeedsIncrementalBackup(
-                                                sourceUri,
-                                                albumId,
+                                                selectedConfig.sourceUri,
+                                                selectedConfig.albumId,
                                                 relativePath,
                                                 file.length(),
                                                 file.lastModified()
@@ -1284,7 +1513,10 @@ private fun PhotoBackupScreen(
                                         appendLog(status)
                                         return@launch
                                     }
-                                    val job = vm.createPhotoBackup(albumId, sourceUri)
+                                    val job = vm.createPhotoBackup(
+                                        selectedConfig.albumId,
+                                        selectedConfig.sourceUri
+                                    )
                                     appendLog("开始备份，任务 ${job.jobId}，共 ${files.size} 张")
                                     for ((index, item) in files.withIndex()) {
                                         val file = item.first
@@ -1293,13 +1525,13 @@ private fun PhotoBackupScreen(
                                         status = "正在备份 ${index + 1}/${files.size}"
                                         vm.uploadPhotoBackupItem(
                                             job.jobId,
-                                            albumId,
+                                            selectedConfig.albumId,
                                             fileUri,
                                             relativePath
                                         )
                                         vm.markPhotoIncrementalBackup(
-                                            sourceUri,
-                                            albumId,
+                                            selectedConfig.sourceUri,
+                                            selectedConfig.albumId,
                                             relativePath,
                                             file.length(),
                                             file.lastModified()

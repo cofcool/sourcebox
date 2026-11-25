@@ -36,6 +36,7 @@ import net.cofcool.sourcebox.data.ActionComment
 import net.cofcool.sourcebox.data.ActionExport
 import net.cofcool.sourcebox.data.ActionExportDatabase
 import net.cofcool.sourcebox.data.ActionRecord
+import net.cofcool.sourcebox.data.ActionStatistics
 import net.cofcool.sourcebox.data.ActionTypeResponse
 import net.cofcool.sourcebox.data.CommandRecord
 import net.cofcool.sourcebox.data.HabitDefinition
@@ -228,6 +229,9 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         message = "已连接，加载 ${tools.size} 个工具"
     }
 
+    suspend fun actionStatistics(year: String, state: String, category: String): ActionStatistics =
+        withContext(Dispatchers.IO) { actionDatabase.actionStatistics(year, state, category) }
+
     suspend fun photoAlbums(): List<PhotoAlbum> =
         withContext(Dispatchers.IO) {
             try {
@@ -259,10 +263,10 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
 
     fun photoContentUrl(photoId: String): String = api.photoContentUrl(photoId)
 
-    fun photoBackupConfig(): PhotoBackupConfig = api.photoBackupConfig()
+    fun photoBackupConfigs(): List<PhotoBackupConfig> = api.photoBackupConfigs()
 
-    fun savePhotoBackupConfig(config: PhotoBackupConfig) {
-        api.savePhotoBackupConfig(config)
+    fun savePhotoBackupConfigs(configs: List<PhotoBackupConfig>) {
+        api.savePhotoBackupConfigs(configs)
     }
 
     suspend fun createPhotoBackup(albumId: String, sourceDirectory: String): PhotoBackupJob =
@@ -305,16 +309,9 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
 
     fun refreshTodayActions() = perform {
         loadTodayActions()
-        if (api.baseUrl().isNotBlank()) {
-            syncRecommendationsFromServer()
-            loadTodayActions()
-        }
     }
 
     fun refreshRecommendations() = perform {
-        if (api.baseUrl().isNotBlank()) {
-            syncRecommendationsFromServer()
-        }
         loadTodayActions()
     }
 
@@ -349,14 +346,6 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
             offline -> "已保存取消推荐，联网后同步"
             recommended -> "已推荐到首页"
             else -> "已取消推荐"
-        }
-    }
-
-    private suspend fun syncRecommendationsFromServer() {
-        val recommendations = api.recommendations()
-        recommendedIds = withContext(Dispatchers.IO) {
-            actionDatabase.replaceRecommendations(recommendations)
-            actionDatabase.recommendations().map { it.dataId }.toSet()
         }
     }
 

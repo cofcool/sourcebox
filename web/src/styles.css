@@ -189,6 +189,19 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .helper-search input:focus { outline: 0; }
 .helper-form { display: grid; gap: 12px; }
 .helper-form input { width: 100%; padding: 11px 12px; }
+.conversion-panel { display: flex; flex-direction: column; gap: 12px; }
+.conversion-panel > label, .conversion-replace-fields label, .conversion-mode { display: grid; gap: 6px; color: #585f69; font-size: 13px; font-weight: 600; }
+.conversion-textarea { width: 100%; min-height: 150px; padding: 12px; border: 1px solid #d9dde3; border-radius: 7px; color: #20242a; font: 14px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; resize: vertical; }
+.conversion-textarea:focus { outline: 2px solid #e0e9e2; border-color: #54705c; }
+.conversion-output { background: #fafbfc; }
+.conversion-operations { display: flex; flex-wrap: wrap; gap: 9px; }
+.conversion-operation { display: inline-flex; align-items: center; gap: 7px; padding: 8px 12px; border: 1px solid #d9dde3; background: white; color: #40454d; font-size: 13px; }
+.conversion-operation:hover { background: #f4f6f8; }
+.conversion-operation.selected { border-color: #20242a; background: #20242a; color: white; }
+.conversion-order { display: inline-grid; width: 19px; height: 19px; place-items: center; border-radius: 50%; background: rgb(255 255 255 / 22%); font-size: 11px; }
+.conversion-replace-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.conversion-replace-fields input, .conversion-mode select { width: 100%; min-width: 0; padding: 10px 12px; border: 1px solid #d9dde3; border-radius: 7px; background: white; color: #20242a; font: inherit; }
+.conversion-mode { width: min(240px, 100%); }
 .helper-table-wrap { overflow: auto; }
 .helper-table { width: 100%; border-collapse: collapse; }
 .helper-table th, .helper-table td { border-bottom: 1px solid #edf0f3; padding: 12px 10px; text-align: left; vertical-align: top; }

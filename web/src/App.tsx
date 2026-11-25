@@ -2721,18 +2721,25 @@ function ConvertersPanel() {
   return <ConvsPanelFromBackend />;
 }
 
-function ConvsOperationList({ selected, onToggle }: { selected: string[]; onToggle: (name: string) => void }) {
+function ConvsOperationList({ selected, onToggle, disabled }: {
+  selected: string[];
+  onToggle: (name: string) => void;
+  disabled: boolean;
+}) {
   const options = ["md5", "now", "hdate", "timesp", "upper", "lower", "replace", "hex", "dataunit", "base64", "urlEncode", "random"];
 
   return (
-    <div className="chip-list">
+    <div className="conversion-operations">
       {options.map((option) => (
         <button
           key={option}
-          className={`chip ${selected.includes(option) ? "selected" : ""}`}
+          className={`conversion-operation${selected.includes(option) ? " selected" : ""}`}
           onClick={() => onToggle(option)}
           type="button"
+          disabled={disabled}
+          aria-pressed={selected.includes(option)}
         >
+          {selected.includes(option) && <span className="conversion-order">{selected.indexOf(option) + 1}</span>}
           {option}
         </button>
       ))}
@@ -2754,8 +2761,9 @@ function ConversionsResult({ text, setText, onConvert }: { text: string; setText
 
 function ConvsPanelFromBackend() {
   const [input, setInput] = useState("");
-  const [output, setOutput] = useState("");
-  const [selected, setSelected] = useState<string[]>(["upper"]);
+  const [output, setOutput] = useState<string>();
+  const [hasOutput, setHasOutput] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
   const [oldText, setOldText] = useState("");
   const [newText, setNewText] = useState("");
   const [mode, setMode] = useState("en");
@@ -2769,19 +2777,21 @@ function ConvsPanelFromBackend() {
   }
 
   async function runConvert() {
-    const first = selected[0];
-    if (!first) {
+    if (selected.length === 0) {
+      setOutput(undefined);
+      setHasOutput(false);
       setError("请选择至少一个转换操作");
       return;
     }
 
+    const operations = selected.map((operation) => operation === "urlEncode" ? "curl" : operation);
     const body: Record<string, string> = {
-      cmd: first,
+      cmd: operations[0],
       in: input,
-      pipeline: selected.slice(1).join(" | "),
+      pipeline: operations.slice(1).join(" | "),
     };
 
-    if (first === "replace" || selected.includes("replace")) {
+    if (selected.includes("replace")) {
       body.old = oldText;
       body.new = newText;
     }
@@ -2791,13 +2801,20 @@ function ConvsPanelFromBackend() {
     if (selected.includes("base64")) {
       body.btype = mode;
     }
+    if (selected.includes("hex")) {
+      body.radix = "10";
+      body.nradix = "2";
+    }
 
     setLoading(true);
     setError(undefined);
+    setOutput(undefined);
+    setHasOutput(false);
 
     try {
       const res = await api.convert(body);
       setOutput(res);
+      setHasOutput(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -2816,34 +2833,59 @@ function ConvsPanelFromBackend() {
 
       {error && <div className="error">{error}</div>}
 
-      <section className="panel">
-        <ConvsOperationList selected={selected} onToggle={toggleOperation} />
+      <section className="panel conversion-panel">
+        <label htmlFor="converts-input">输入文本</label>
+        <textarea
+          id="converts-input"
+          className="conversion-textarea"
+          value={input}
+          onChange={(event) => setInput(event.target.value)}
+          rows={7}
+          placeholder="请输入要转换的内容"
+        />
       </section>
 
-      <section className="panel helper-panel">
-        <div className="helper-form">
-          {(selected.includes("replace") || selected[0] === "replace") && (
-            <div className="two-column-grid">
-              <input value={oldText} onChange={(event) => setOldText(event.target.value)} placeholder="old" />
-              <input value={newText} onChange={(event) => setNewText(event.target.value)} placeholder="new" />
-            </div>
-          )}
-          {(selected.includes("urlEncode") || selected.includes("base64")) && (
-            <select value={mode} onChange={(event) => setMode(event.target.value)}>
-              <option value="en">en</option>
-              <option value="de">de</option>
-            </select>
-          )}
-          <textarea value={input} onChange={(event) => setInput(event.target.value)} rows={6} placeholder="输入待处理文本" />
-          <div className="action-row compact">
-            <button onClick={() => void runConvert()} disabled={loading}>{loading ? "处理中..." : "Convert"}</button>
+      <section className="panel conversion-panel">
+        <h2>转换操作</h2>
+        <ConvsOperationList selected={selected} onToggle={toggleOperation} disabled={loading} />
+        {(selected.includes("replace")) && (
+          <div className="conversion-replace-fields">
+            <label>
+              查找内容
+              <input value={oldText} onChange={(event) => setOldText(event.target.value)} placeholder="要替换的内容" />
+            </label>
+            <label>
+              替换为
+              <input value={newText} onChange={(event) => setNewText(event.target.value)} placeholder="替换后的内容" />
+            </label>
           </div>
+        )}
+        {(selected.includes("urlEncode") || selected.includes("base64")) && (
+          <label className="conversion-mode">
+            编码模式
+            <select value={mode} onChange={(event) => setMode(event.target.value)}>
+              <option value="en">编码</option>
+              <option value="de">解码</option>
+            </select>
+          </label>
+        )}
+        <div className="action-row compact">
+          <button onClick={() => void runConvert()} disabled={loading}>
+            {loading ? "转换中..." : "开始转换"}
+          </button>
         </div>
       </section>
 
-      <section className="panel">
-        <h2>输出</h2>
-        <pre className="result-box">{output || "暂无输出"}</pre>
+      <section className="panel conversion-panel">
+        <label htmlFor="converts-output">转换结果</label>
+        <textarea
+          id="converts-output"
+          className="conversion-textarea conversion-output"
+          value={output ?? ""}
+          readOnly
+          rows={7}
+          placeholder={hasOutput ? "" : "转换结果将在这里显示"}
+        />
       </section>
     </div>
   );

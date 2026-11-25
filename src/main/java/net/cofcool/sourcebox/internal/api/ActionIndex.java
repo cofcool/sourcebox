@@ -57,7 +57,7 @@ public class ActionIndex {
         router.get("/exportAll").respond(context -> actionService.find());
 
         router.get("/statistics/summary").respond(r -> actionService.findStatistics(
-            r.queryParams().get("date"),
+            r.queryParams().get("year"),
             r.queryParams().get("state"),
             r.queryParams().get("category")
         ));
@@ -113,7 +113,7 @@ public class ActionIndex {
         try {
             int page = parsePageParameter(map.get("page"), ActionService.DEFAULT_PAGE);
             int size = parsePageParameter(map.get("size"), ActionService.DEFAULT_PAGE_SIZE);
-            return actionService.find(condition, page, size, map.get("date"));
+            return actionService.find(condition, page, size, map.get("year"));
         } catch (NumberFormatException e) {
             return Future.failedFuture(e);
         }

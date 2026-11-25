@@ -314,20 +314,20 @@ public class PhotoService {
         return photoRepository.find();
     }
 
-    public Future<List<Photo>> findPhotoPage(String date, String status, String category,
+    public Future<List<Photo>> findPhotoPage(String year, String status, String category,
                                               int page, int size) {
         if (page < 1 || size < 1) {
             return Future.failedFuture("page and size must be positive");
         }
-        LocalDate day;
-        if (StringUtils.isNotBlank(date)) {
+        LocalDate yearStart;
+        if (StringUtils.isNotBlank(year)) {
             try {
-                day = LocalDate.parse(date);
+                yearStart = LocalDate.of(Integer.parseInt(year), 1, 1);
             } catch (Exception e) {
-                return Future.failedFuture("invalid date: " + date);
+                return Future.failedFuture("invalid year: " + year);
             }
         } else {
-            day = null;
+            yearStart = null;
         }
 
         var offset = (long) (page - 1) * size;
@@ -338,8 +338,9 @@ public class PhotoService {
             .orderBy("COALESCE(p.taken_at,p.create_time) DESC")
             .limit(size);
         if (offset > 0) query.offset(offset);
-        if (day != null) {
-            query.and("CAST(COALESCE(p.taken_at,p.create_time) AS DATE)=?", day);
+        if (yearStart != null) {
+            query.and("COALESCE(p.taken_at,p.create_time) >= ? AND COALESCE(p.taken_at,p.create_time) < ?",
+                yearStart.atStartOfDay(), yearStart.plusYears(1).atStartOfDay());
         }
         if (StringUtils.isNotBlank(status)) {
             query.and("p.status=?", status);
@@ -350,22 +351,22 @@ public class PhotoService {
         return photoRepository.find(query);
     }
 
-    public Future<PhotoStatistics> findStatistics(String date, String status, String category) {
-        LocalDate day;
-        if (StringUtils.isNotBlank(date)) {
+    public Future<PhotoStatistics> findStatistics(String year, String status, String category) {
+        LocalDate yearStart;
+        if (StringUtils.isNotBlank(year)) {
             try {
-                day = LocalDate.parse(date);
+                yearStart = LocalDate.of(Integer.parseInt(year), 1, 1);
             } catch (Exception e) {
-                return Future.failedFuture("invalid date: " + date);
+                return Future.failedFuture("invalid year: " + year);
             }
         } else {
-            day = null;
+            yearStart = null;
         }
 
         var totalQuery = photoStatisticsFilter(
             QueryBuilder.builder().count().from("photo p")
                 .leftJoin("photo_album pa ON p.album_id=pa.id"),
-            day, status, category);
+            yearStart, status, category);
         var statusQuery = photoStatisticsFilter(
             QueryBuilder.builder()
                 .select("COALESCE(p.status, '未分类') AS name")
@@ -374,7 +375,7 @@ public class PhotoService {
                 .leftJoin("photo_album pa ON p.album_id=pa.id")
                 .groupBy("COALESCE(p.status, '未分类')")
                 .orderBy("name"),
-            day, status, category);
+            yearStart, status, category);
         var categoryQuery = photoStatisticsFilter(
             QueryBuilder.builder()
                 .select("COALESCE(pa.name, '未分类相册') AS name")
@@ -383,7 +384,7 @@ public class PhotoService {
                 .leftJoin("photo_album pa ON p.album_id=pa.id")
                 .groupBy("COALESCE(pa.name, '未分类相册')")
                 .orderBy("name"),
-            day, status, category);
+            yearStart, status, category);
         var statusOptionsQuery = QueryBuilder.builder()
             .select("DISTINCT status AS name")
             .from("photo")
@@ -416,10 +417,11 @@ public class PhotoService {
         ));
     }
 
-    private QueryBuilder photoStatisticsFilter(QueryBuilder query, LocalDate day,
+    private QueryBuilder photoStatisticsFilter(QueryBuilder query, LocalDate yearStart,
                                                 String status, String category) {
-        if (day != null) {
-            query.and("CAST(COALESCE(p.taken_at,p.create_time) AS DATE)=?", day);
+        if (yearStart != null) {
+            query.and("COALESCE(p.taken_at,p.create_time) >= ? AND COALESCE(p.taken_at,p.create_time) < ?",
+                yearStart.atStartOfDay(), yearStart.plusYears(1).atStartOfDay());
         }
         if (StringUtils.isNotBlank(status)) {
             query.and("p.status=?", status);

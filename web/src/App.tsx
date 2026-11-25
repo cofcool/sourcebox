@@ -485,7 +485,7 @@ function PhotoPage() {
 }
 
 function StatisticsPage() {
-  const [date, setDate] = useState("");
+  const [year, setYear] = useState("");
   const [status, setStatus] = useState("");
   const [category, setCategory] = useState("");
   const [actionStats, setActionStats] = useState<ActionStatistics>();
@@ -502,8 +502,8 @@ function StatisticsPage() {
   useEffect(() => {
     setLoading(true);
     Promise.all([
-      api.actionStatistics(date, status, category),
-      api.photoStatistics(date, status, category),
+      api.actionStatistics(year, status, category),
+      api.photoStatistics(year, status, category),
     ])
       .then(([nextActionStats, nextPhotoStats]) => {
         setActionStats(nextActionStats);
@@ -512,19 +512,19 @@ function StatisticsPage() {
       })
       .catch((e) => setError(e instanceof Error ? e.message : String(e)))
       .finally(() => setLoading(false));
-  }, [date, status, category]);
+  }, [year, status, category]);
 
   useEffect(() => {
-    api.actionPage(actionPageNumber, pageSize, date, status, category)
+    api.actionPage(actionPageNumber, pageSize, year, status, category)
       .then(setActions)
       .catch((e) => setError(e instanceof Error ? e.message : String(e)));
-  }, [actionPageNumber, date, status, category]);
+  }, [actionPageNumber, year, status, category]);
 
   useEffect(() => {
-    api.photoPage(photoPageNumber, pageSize, date, status, category)
+    api.photoPage(photoPageNumber, pageSize, year, status, category)
       .then(setPhotos)
       .catch((e) => setError(e instanceof Error ? e.message : String(e)));
-  }, [photoPageNumber, date, status, category]);
+  }, [photoPageNumber, year, status, category]);
 
   useEffect(() => {
     api.photoAlbums()
@@ -548,7 +548,7 @@ function StatisticsPage() {
   ])).sort();
 
   const resetFilters = () => {
-    setDate("");
+    setYear("");
     setStatus("");
     setCategory("");
     setActionPageNumber(1);
@@ -574,8 +574,14 @@ function StatisticsPage() {
 
       <section className="panel statistics-filter">
         <label>
-          指定日期
-          <input type="date" value={date} onChange={(event) => updateFilter(setDate, event.target.value)} />
+          年份
+          <select value={year} onChange={(event) => updateFilter(setYear, event.target.value)}>
+            <option value="">全部年份</option>
+            {Array.from(
+              {length: Math.max(0, new Date().getFullYear() - 2018)},
+              (_, index) => String(new Date().getFullYear() - index),
+            ).map((value) => <option value={value} key={value}>{value}年</option>)}
+          </select>
         </label>
         <label>
           状态

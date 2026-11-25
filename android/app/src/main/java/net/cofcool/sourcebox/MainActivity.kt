@@ -1797,7 +1797,7 @@ private fun RecordBoardScreen(
     var page by remember { mutableStateOf(1) }
     val keyboardController = LocalSoftwareKeyboardController.current
     val years = remember {
-        (2020..java.time.Year.now().value).map { it.toString() }
+        (2019..java.time.Year.now().value).map { it.toString() }
     }
 
     LaunchedEffect(appliedQuery, appliedCategory, appliedLabel, appliedState, appliedStartYear, appliedEndYear, page) {

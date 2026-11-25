@@ -224,36 +224,36 @@ function normalizeTools(raw: string[]): ToolInfo[] {
 }
 
 export const api = {
-  actionStatistics: async (date = "", state = "", category = ""): Promise<ActionStatistics> => {
+  actionStatistics: async (year = "", state = "", category = ""): Promise<ActionStatistics> => {
     const params = new URLSearchParams();
-    if (date) params.set("date", date);
+    if (year) params.set("year", year);
     if (state) params.set("state", state);
     if (category) params.set("category", category);
     return request<ActionStatistics>(`/action/statistics/summary${params.size ? `?${params}` : ""}`);
   },
-  actionPage: async (page = 1, size = 10, date = "", state = "", category = ""): Promise<ActionRecord[]> => {
+  actionPage: async (page = 1, size = 10, year = "", state = "", category = ""): Promise<ActionRecord[]> => {
     const params = new URLSearchParams({
       page: String(page),
       size: String(size),
     });
-    if (date) params.set("date", date);
+    if (year) params.set("year", year);
     if (state) params.set("state", state);
     if (category) params.set("category", category);
     return request<ActionRecord[]>(`/action?${params}`);
   },
-  photoStatistics: async (date = "", status = "", category = ""): Promise<PhotoStatistics> => {
+  photoStatistics: async (year = "", status = "", category = ""): Promise<PhotoStatistics> => {
     const params = new URLSearchParams();
-    if (date) params.set("date", date);
+    if (year) params.set("year", year);
     if (status) params.set("state", status);
     if (category) params.set("category", category);
     return request<PhotoStatistics>(`/photo/statistics/summary${params.size ? `?${params}` : ""}`);
   },
-  photoPage: async (page = 1, size = 10, date = "", status = "", category = ""): Promise<PhotoRecord[]> => {
+  photoPage: async (page = 1, size = 10, year = "", status = "", category = ""): Promise<PhotoRecord[]> => {
     const params = new URLSearchParams({
       page: String(page),
       size: String(size),
     });
-    if (date) params.set("date", date);
+    if (year) params.set("year", year);
     if (status) params.set("state", status);
     if (category) params.set("category", category);
     return request<PhotoRecord[]>(`/photo/photos?${params}`);

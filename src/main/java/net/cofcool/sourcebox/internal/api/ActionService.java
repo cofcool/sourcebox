@@ -426,7 +426,7 @@ public class ActionService {
         return find(record, page, size, null);
     }
 
-    public Future<List<ActionRecord>> find(ActionRecord record, int page, int size, @Nullable String date) {
+    public Future<List<ActionRecord>> find(ActionRecord record, int page, int size, @Nullable String year) {
         if (page < 1 || size < 1) {
             return Future.failedFuture("page and size must be positive");
         }
@@ -459,36 +459,35 @@ public class ActionService {
         if (StringUtils.isNotBlank(record.refs())) {
             builder.and("refs like ?", "%" + record.refs() + "%");
         }
-        if (StringUtils.isNotBlank(date)) {
+        if (StringUtils.isNotBlank(year)) {
             try {
-                var day = LocalDate.parse(date);
-                var start = day.atStartOfDay();
-                var end = day.plusDays(1).atStartOfDay();
-                builder.and("(start >= ? AND start < ? OR create_time >= ? AND create_time < ?)",
-                    start, end, start, end);
+                var start = LocalDate.of(Integer.parseInt(year), 1, 1).atStartOfDay();
+                var end = start.plusYears(1);
+                builder.and("COALESCE(start, create_time) >= ? AND COALESCE(start, create_time) < ?",
+                    start, end);
             } catch (Exception e) {
-                return Future.failedFuture("invalid date: " + date);
+                return Future.failedFuture("invalid year: " + year);
             }
         }
         return actionRecordSqlRepository.find(builder);
     }
 
-    public Future<ActionStatistics> findStatistics(@Nullable String date,
+    public Future<ActionStatistics> findStatistics(@Nullable String year,
                                                    @Nullable String state,
                                                    @Nullable String category) {
-        LocalDate day;
-        if (StringUtils.isNotBlank(date)) {
+        LocalDate yearStart;
+        if (StringUtils.isNotBlank(year)) {
             try {
-                day = LocalDate.parse(date);
+                yearStart = LocalDate.of(Integer.parseInt(year), 1, 1);
             } catch (Exception e) {
-                return Future.failedFuture("invalid date: " + date);
+                return Future.failedFuture("invalid year: " + year);
             }
         } else {
-            day = null;
+            yearStart = null;
         }
 
         var totalQuery = statisticsFilter(
-            QueryBuilder.builder().count().from(ActionRecord.class), day, state, category);
+            QueryBuilder.builder().count().from(ActionRecord.class), yearStart, state, category);
         var statusQuery = statisticsFilter(
             QueryBuilder.builder()
                 .select("COALESCE(state, '未分类') AS name")
@@ -496,7 +495,7 @@ public class ActionService {
                 .from(ActionRecord.class)
                 .groupBy("COALESCE(state, '未分类')")
                 .orderBy("name"),
-            day, state, category);
+            yearStart, state, category);
         var categoryQuery = statisticsFilter(
             QueryBuilder.builder()
                 .select("COALESCE(category, '未分类') AS name")
@@ -504,7 +503,7 @@ public class ActionService {
                 .from(ActionRecord.class)
                 .groupBy("COALESCE(category, '未分类')")
                 .orderBy("name"),
-            day, state, category);
+            yearStart, state, category);
         var statusOptionsQuery = QueryBuilder.builder()
             .select("DISTINCT state AS name")
             .from(ActionRecord.class)
@@ -531,10 +530,11 @@ public class ActionService {
         ));
     }
 
-    private QueryBuilder statisticsFilter(QueryBuilder query, @Nullable LocalDate day,
+    private QueryBuilder statisticsFilter(QueryBuilder query, @Nullable LocalDate yearStart,
                                           @Nullable String state, @Nullable String category) {
-        if (day != null) {
-            query.and("CAST(COALESCE(start, create_time) AS DATE)=?", day);
+        if (yearStart != null) {
+            query.and("COALESCE(start, create_time) >= ? AND COALESCE(start, create_time) < ?",
+                yearStart, yearStart.plusYears(1));
         }
         if (StringUtils.isNotBlank(state)) {
             query.and("state=?", state);

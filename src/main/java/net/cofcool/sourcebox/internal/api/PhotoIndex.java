@@ -41,12 +41,12 @@ public class PhotoIndex {
                 .put("smartAlbums", result.resultAt(2))));
 
         router.get("/statistics/summary").respond(r -> service.findStatistics(
-            r.queryParam("date").stream().findFirst().orElse(null),
+            r.queryParam("year").stream().findFirst().orElse(null),
             r.queryParam("state").stream().findFirst().orElse(null),
             r.queryParam("category").stream().findFirst().orElse(null)
         ));
         router.get("/photos").respond(r -> service.findPhotoPage(
-            r.queryParam("date").stream().findFirst().orElse(null),
+            r.queryParam("year").stream().findFirst().orElse(null),
             r.queryParam("state").stream().findFirst().orElse(r.queryParam("status").stream().findFirst().orElse(null)),
             r.queryParam("category").stream().findFirst().orElse(null),
             parsePage(r.queryParam("page").stream().findFirst().orElse(null)),

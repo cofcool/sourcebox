@@ -156,6 +156,24 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .habit-history-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid #e3e6e3; border-radius: 6px; background: white; font-size: 13px; }
 .habit-history-item span { color: #737983; }
 .tool-page { display: flex; flex-direction: column; gap: 12px; }
+.json-input-panel { display: grid; gap: 12px; }
+.json-input-panel > label { font-size: 14px; font-weight: 700; }
+.json-input-panel textarea { width: 100%; min-height: 180px; padding: 12px; border: 1px solid #d9dde3; border-radius: 7px; color: inherit; font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; resize: vertical; }
+.json-input-panel textarea:focus { outline: 2px solid #e0e9e2; border-color: #54705c; }
+.json-output-panel h2 { margin-top: 0; }
+.json-tree { overflow: auto; padding: 14px; border: 1px solid #e5e7eb; border-radius: 7px; background: #fafbfc; font: 13px/1.8 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.json-tree-node > summary { cursor: pointer; list-style-position: outside; }
+.json-tree-node > summary::marker { color: #737983; }
+.json-tree-collapsed { display: none; color: #737983; }
+.json-tree-node:not([open]) > summary .json-tree-collapsed { display: inline; }
+.json-tree-children { margin-left: 16px; padding-left: 14px; border-left: 1px solid #e1e5e9; }
+.json-tree-close { padding-left: 1px; }
+.json-tree-key { color: #8b3fb0; }
+.json-tree-bracket { color: #58616d; }
+.json-tree-string { color: #18794e; }
+.json-tree-number { color: #1769aa; }
+.json-tree-boolean { color: #b54708; }
+.json-tree-null { color: #737983; }
 .note-panel textarea, .clipboard-panel textarea { width: 100%; padding: 12px; resize: vertical; }
 .note-list-section .panel-headline { display: flex; align-items: center; gap: 8px; font-weight: 700; margin-bottom: 16px; }
 .note-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }

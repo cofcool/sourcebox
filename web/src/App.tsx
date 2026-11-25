@@ -236,6 +236,8 @@ function ToolPage({ tool }: { tool?: ToolInfo }) {
   }
 
   switch (tool.id) {
+    case "json":
+      return <JsonFormatterPanel />;
     case "photo":
       return <PhotoPage />;
     case "note":
@@ -272,6 +274,130 @@ function ToolPage({ tool }: { tool?: ToolInfo }) {
         </div>
       );
   }
+}
+
+function JsonFormatterPanel() {
+  const [input, setInput] = useState("");
+  const [value, setValue] = useState<unknown>();
+  const [hasOutput, setHasOutput] = useState(false);
+  const [error, setError] = useState<string>();
+
+  function formatJson() {
+    try {
+      setValue(JSON.parse(input));
+      setHasOutput(true);
+      setError(undefined);
+    } catch (e) {
+      setHasOutput(false);
+      setError(`JSON 格式无效：${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  return (
+    <div className="tool-page">
+      <div className="page-heading">
+        <div>
+          <h1>JSON 格式化</h1>
+          <p className="muted">输入 JSON 字符串，格式化后可展开或收起各级节点。</p>
+        </div>
+      </div>
+
+      {error && <div className="error">{error}</div>}
+
+      <section className="panel json-input-panel">
+        <label htmlFor="json-input">JSON 字符串</label>
+        <textarea
+          id="json-input"
+          value={input}
+          onChange={(event) => setInput(event.target.value)}
+          rows={10}
+          placeholder={'例如：{"name":"SourceBox","items":[1,2,3]}'}
+          spellCheck={false}
+        />
+        <div className="action-row compact">
+          <button type="button" onClick={formatJson}>格式化 JSON</button>
+        </div>
+      </section>
+
+      <section className="panel json-output-panel">
+        <h2>格式化结果</h2>
+        {hasOutput ? (
+          <div className="json-tree">
+            <JsonTreeNode value={value} isLast />
+          </div>
+        ) : (
+          <div className="empty-todos"><strong>暂无结果</strong><span>输入 JSON 字符串后点击格式化</span></div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function JsonTreeNode({ label, value, isLast, isArrayItem = false }: {
+  label?: string;
+  value: unknown;
+  isLast: boolean;
+  isArrayItem?: boolean;
+}) {
+  const key = label === undefined
+    ? null
+    : <span className="json-tree-key">{isArrayItem ? label : JSON.stringify(label)}: </span>;
+  const comma = isLast ? "" : ",";
+
+  if (value !== null && typeof value === "object") {
+    const isArray = Array.isArray(value);
+    const entries = isArray
+      ? value.map((item, index) => [String(index), item] as const)
+      : Object.entries(value);
+    const opening = isArray ? "[" : "{";
+    const closing = isArray ? "]" : "}";
+
+    return (
+      <details className="json-tree-node" open>
+        <summary>
+          {key}
+          <span className="json-tree-bracket">{opening}</span>
+          <span className="json-tree-collapsed"> … {entries.length} 项 {closing}{comma}</span>
+        </summary>
+        {entries.length > 0 && (
+          <div className="json-tree-children">
+            {entries.map(([entryKey, entryValue], index) => (
+              <JsonTreeNode
+                key={entryKey}
+                label={entryKey}
+                value={entryValue}
+                isLast={index === entries.length - 1}
+                isArrayItem={isArray}
+              />
+            ))}
+          </div>
+        )}
+        <div className="json-tree-close">{closing}{comma}</div>
+      </details>
+    );
+  }
+
+  let valueClass = "json-tree-number";
+  let displayValue: string;
+  if (typeof value === "string") {
+    valueClass = "json-tree-string";
+    displayValue = JSON.stringify(value);
+  } else if (typeof value === "boolean") {
+    valueClass = "json-tree-boolean";
+    displayValue = String(value);
+  } else if (value === null) {
+    valueClass = "json-tree-null";
+    displayValue = "null";
+  } else {
+    displayValue = String(value);
+  }
+
+  return (
+    <div className="json-tree-leaf">
+      {key}
+      <span className={valueClass}>{displayValue}</span>{comma}
+    </div>
+  );
 }
 
 function PhotoPage() {

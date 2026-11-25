@@ -78,6 +78,32 @@ public class ActionService {
         });
     }
 
+    public Future<List<String>> importActions(List<ActionRecord> records) {
+        List<Future<?>> all = records.stream().map(record -> {
+                String id = record.id();
+
+                if (StringUtils.isBlank(id)) {
+                    return saveAction(record).compose(a -> Future.succeededFuture());
+                }
+
+                var existingQuery = QueryBuilder.builder()
+                    .from(ActionRecord.class)
+                    .and("id=?", id)
+                    .count();
+                return actionRecordSqlRepository.count(existingQuery)
+                    .compose(existing -> {
+                        if (existing > 0) {
+                            return Future.succeededFuture(record.id());
+                        }
+                        return saveAction(record).compose(a -> Future.succeededFuture());
+                    });
+            }).toList();
+
+        return Future.all(all).compose(a ->
+            Future.succeededFuture(a.list().stream().filter(Objects::nonNull).map(Object::toString).toList())
+        );
+    }
+
     public Future<Integer> saveBooks(List<ActionRecord> books) {
         var category = books.getFirst().category();
         if (StringUtils.isBlank(category)) {
@@ -432,12 +458,21 @@ public class ActionService {
         }
 
         long offset = (long) (page - 1) * size;
-        var builder = QueryBuilder.builder().select().from(ActionRecord.class)
-            .orderBy("create_time desc")
+        var builder = findQuery(record, year)
             .limit(size);
         if (offset > 0) {
             builder.offset(offset);
         }
+        return actionRecordSqlRepository.find(builder);
+    }
+
+    public Future<List<ActionRecord>> findAll(ActionRecord record) {
+        return actionRecordSqlRepository.find(findQuery(record, null));
+    }
+
+    private QueryBuilder findQuery(ActionRecord record, @Nullable String year) {
+        var builder = QueryBuilder.builder().select().from(ActionRecord.class)
+            .orderBy("create_time desc");
         if (StringUtils.isNotBlank(record.name())) {
             builder.and("name like ?", "%" + record.name() + "%");
         }
@@ -460,16 +495,12 @@ public class ActionService {
             builder.and("refs like ?", "%" + record.refs() + "%");
         }
         if (StringUtils.isNotBlank(year)) {
-            try {
-                var start = LocalDate.of(Integer.parseInt(year), 1, 1).atStartOfDay();
-                var end = start.plusYears(1);
-                builder.and("COALESCE(start, create_time) >= ? AND COALESCE(start, create_time) < ?",
-                    start, end);
-            } catch (Exception e) {
-                return Future.failedFuture("invalid year: " + year);
-            }
+            var start = LocalDate.of(Integer.parseInt(year), 1, 1).atStartOfDay();
+            var end = start.plusYears(1);
+            builder.and("COALESCE(start, create_time) >= ? AND COALESCE(start, create_time) < ?",
+                start, end);
         }
-        return actionRecordSqlRepository.find(builder);
+        return builder;
     }
 
     public Future<ActionStatistics> findStatistics(@Nullable String year,

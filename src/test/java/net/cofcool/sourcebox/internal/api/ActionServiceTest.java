@@ -222,6 +222,40 @@ class ActionServiceTest extends BaseTest {
     }
 
     @Test
+    void importActionsSkipsExistingRecordsAndFindAllIsUnpaged(Vertx vertx, VertxTestContext testContext) {
+        String category = "record-import-" + java.util.UUID.randomUUID();
+        List<ActionRecord> records = IntStream.range(0, 12)
+            .mapToObj(i -> ActionRecord.builder()
+                .id("import-new-id-" + i)
+                .name("import-" + i)
+                .type(Type.record.name())
+                .category(category)
+                .state(ActionState.todo.name())
+                .start(LocalDateTime.now())
+                .build())
+            .toList();
+        actionService.importActions(records)
+            .compose(imported -> {
+                Assertions.assertTrue(imported.isEmpty());
+                ActionRecord duplicate = records.getFirst().withName("must-not-overwrite");
+                ActionRecord newRecord = ActionRecord.builder()
+                    .id("import-new-id-111")
+                    .name("import-new")
+                    .type(Type.record.name())
+                    .category(category)
+                    .state(ActionState.todo.name())
+                    .start(LocalDateTime.now())
+                    .build();
+                return actionService.importActions(List.of(duplicate, newRecord));
+            })
+            .onComplete(testContext.succeeding(ignore -> testContext.verify(() -> {
+                Assertions.assertEquals(1, ignore.size());
+                Assertions.assertEquals("import-new-id-0", ignore.getFirst());
+                testContext.completeNow();
+            })));
+    }
+
+    @Test
     void saveAllBookSyncDeduplicatesByNameAndCategory(Vertx vertx, VertxTestContext testContext) {
         String category = "book-sync-" + java.util.UUID.randomUUID();
         var existing = ActionRecord.builder()

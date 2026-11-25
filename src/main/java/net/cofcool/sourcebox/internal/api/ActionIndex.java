@@ -31,6 +31,13 @@ public class ActionIndex {
         router.get("/example").respond(r -> actionService.example());
         router.get("/types").respond(this::findType);
 
+        router.get("/all").respond(r -> actionService.findAll(ActionRecord.builder()
+            .type(r.queryParams().get("type"))
+            .build()));
+        router.post("/import").respond(r ->
+            actionService.importActions(JsonUtil.toPojoList(r.body().buffer().getBytes(), ActionRecord.class))
+        );
+
         router.get("/habit/:id").respond(r -> actionService.findHabitRecord(r.pathParam("id")));
         router.post("/habit").respond(r -> actionService.saveHabit(r.body().asPojo(Habit.HabitRecord.class)));
         router.delete("/habit/:actionId").respond(r -> actionService.deleteHabit(r.pathParam("actionId")));

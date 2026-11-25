@@ -1,18 +1,5 @@
 package net.cofcool.sourcebox.internal;
 
-import lombok.CustomLog;
-import lombok.SneakyThrows;
-import net.cofcool.sourcebox.ToolName;
-import net.cofcool.sourcebox.internal.api.entity.ActionRecord;
-import net.cofcool.sourcebox.internal.api.entity.ActionState;
-import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.jline.reader.LineReader;
-import org.jline.reader.LineReaderBuilder;
-import org.jline.terminal.Terminal;
-import org.jline.terminal.TerminalBuilder;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -25,6 +12,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import lombok.CustomLog;
+import lombok.SneakyThrows;
+import net.cofcool.sourcebox.ToolName;
+import net.cofcool.sourcebox.internal.api.entity.ActionRecord;
+import net.cofcool.sourcebox.internal.api.entity.ActionState;
+import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
+import net.cofcool.sourcebox.util.DataSize;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.jline.reader.LineReader;
+import org.jline.reader.LineReaderBuilder;
+import org.jline.terminal.Terminal;
+import org.jline.terminal.TerminalBuilder;
 
 @CustomLog
 public class BookRecord extends BaseRecord {
@@ -116,14 +116,19 @@ public class BookRecord extends BaseRecord {
                 .map(path -> {
                     String name = path.getFileName().toString();
                     String extension = FilenameUtils.getExtension(name);
-                    String relativePath = root.relativize(path).toString().replace(File.separatorChar, '/');
+                    String remark = root.relativize(path).toString().replace(File.separatorChar, '/');
+                    try {
+                        remark = remark + ";" + DataSize.of(String.valueOf(Files.size(path)));
+                    } catch (IOException e) {
+                        log.error("read file size error", e);
+                    }
                     LocalDateTime now = LocalDateTime.now();
                     return ActionRecord.builder()
                         .name(name)
                         .type(Type.book.name())
                         .category(category)
                         .state(ActionState.todo.name())
-                        .remark(relativePath)
+                        .remark(remark)
                         .labels(folders || extension.isBlank() ? null : extension)
                         .start(now)
                         .end(now)

@@ -3,6 +3,9 @@ package net.cofcool.sourcebox.internal;
 import io.vertx.core.Vertx;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
 import net.cofcool.sourcebox.BaseTest;
 import net.cofcool.sourcebox.Tool;
 import net.cofcool.sourcebox.Tool.Args;
@@ -14,10 +17,6 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
 
 @ExtendWith(VertxExtension.class)
 class BookRecordTest extends BaseTest {
@@ -74,7 +73,7 @@ class BookRecordTest extends BaseTest {
         var files = BookRecord.scanBooks(tmpDir, false, "ebook");
         Assertions.assertEquals(1, files.size());
         Assertions.assertEquals("book.epub", files.getFirst().name());
-        Assertions.assertEquals("series/volume-1/book.epub", files.getFirst().remark());
+        Assertions.assertEquals("series/volume-1/book.epub;0.00 KB", files.getFirst().remark());
         Assertions.assertEquals("epub", files.getFirst().labels());
         Assertions.assertEquals("ebook", files.getFirst().category());
         Assertions.assertEquals("book", files.getFirst().type());

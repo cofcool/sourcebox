@@ -19,8 +19,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,10 +38,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -99,8 +101,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
@@ -124,6 +124,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -141,33 +142,34 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
-import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil3.ImageLoader
-import coil3.SingletonImageLoader
-import coil3.compose.AsyncImage
-import coil3.disk.DiskCache
-import coil3.memory.MemoryCache
-import coil3.request.crossfade
+import androidx.documentfile.provider.DocumentFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
+import coil3.ImageLoader
+import coil3.SingletonImageLoader
+import coil3.disk.DiskCache
+import coil3.memory.MemoryCache
+import okio.Path.Companion.toOkioPath
 import net.cofcool.sourcebox.data.ActionCheckList
 import net.cofcool.sourcebox.data.ActionRecord
 import net.cofcool.sourcebox.data.ActionDimensionCount
 import net.cofcool.sourcebox.data.ActionStatistics
 import net.cofcool.sourcebox.data.NoteRecord
 import net.cofcool.sourcebox.data.PhotoAlbum
-import net.cofcool.sourcebox.data.PhotoBackupConfig
 import net.cofcool.sourcebox.data.PhotoRecord
+import net.cofcool.sourcebox.data.PhotoBackupConfig
 import net.cofcool.sourcebox.data.TodoRecord
 import net.cofcool.sourcebox.data.ToolInfo
 import net.cofcool.sourcebox.data.isHabitRequiredOnDate
 import net.cofcool.sourcebox.ui.ToolboxViewModel
-import okio.Path.Companion.toOkioPath
-import java.io.IOException
 import java.time.LocalDate
+import java.io.IOException
 
 @OptIn(coil3.annotation.DelicateCoilApi::class)
 private fun configurePhotoDiskCache(context: android.content.Context) {
@@ -561,7 +563,9 @@ private fun SourceboxApp(
                     PhotoDetailScreen(
                         vm = vm,
                         photo = photo,
+                        albumId = selectedPhotoAlbum?.id.orEmpty(),
                         modifier = Modifier.padding(padding),
+                        onPhotoChange = { selectedPhoto = it },
                         onDeleted = { page = "photos" }
                     )
                 }
@@ -861,7 +865,7 @@ private fun TodayActionCard(action: ActionRecord, isRecommended: Boolean, onClic
                 Text(action.name, Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.width(8.dp))
                 if (isRecommended) {
-                    Icon(Icons.Default.PushPin, contentDescription = "Pin", tint = MaterialTheme.colorScheme.primary)
+                    Icon(Icons.Default.Star, contentDescription = "star", tint = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.width(6.dp))
                 }
                 Text("$typeLabel · $stateLabel", style = MaterialTheme.typography.labelSmall)
@@ -1581,16 +1585,46 @@ private fun PhotoBackupScreen(
 private fun PhotoDetailScreen(
     vm: ToolboxViewModel,
     photo: PhotoRecord,
+    albumId: String,
     modifier: Modifier,
+    onPhotoChange: (PhotoRecord) -> Unit,
     onDeleted: () -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var controlsVisible by remember { mutableStateOf(false) }
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val swipeThreshold = with(density) { 64.dp.toPx() }
+    var albumPhotos by remember(albumId) { mutableStateOf<List<PhotoRecord>>(emptyList()) }
+    var controlsVisible by remember(photo.id) { mutableStateOf(false) }
+
+    LaunchedEffect(albumId) {
+        if (albumId.isNotBlank()) {
+            albumPhotos = vm.photoAlbumPhotos(albumId)
+        }
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black)
+            .pointerInput(albumPhotos, photo.id) {
+                var horizontalDrag = 0f
+                detectHorizontalDragGestures(
+                    onHorizontalDrag = { change, dragAmount ->
+                        change.consume()
+                        horizontalDrag += dragAmount
+                    },
+                    onDragEnd = {
+                        val currentIndex = albumPhotos.indexOfFirst { it.id == photo.id }
+                        if (currentIndex >= 0 && kotlin.math.abs(horizontalDrag) >= swipeThreshold) {
+                            val nextIndex = if (horizontalDrag < 0) currentIndex + 1 else currentIndex - 1
+                            albumPhotos.getOrNull(nextIndex)?.let(onPhotoChange)
+                        }
+                        horizontalDrag = 0f
+                    },
+                    onDragCancel = { horizontalDrag = 0f }
+                )
+            }
             .clickable { controlsVisible = !controlsVisible }
     ) {
         AsyncImage(
@@ -1644,12 +1678,15 @@ private fun TodoDetailsScreen(
     var name by remember(todo.id) { mutableStateOf(todo.name) }
     var remark by remember(todo.id) { mutableStateOf(todo.remark.orEmpty()) }
     var start by remember(todo.id) { mutableStateOf(todo.start.orEmpty()) }
+    var status by remember(todo.id) { mutableStateOf(todo.state) }
+    var statusMenuExpanded by remember(todo.id) { mutableStateOf(false) }
     val initialSchedule = remember(todo.id) { todoScheduleConfig(todo.refs) }
     var repeatCount by remember(todo.id) { mutableStateOf(initialSchedule.first) }
     var repeatUnit by remember(todo.id) { mutableStateOf(initialSchedule.second) }
     var repeatUnitMenuExpanded by remember(todo.id) { mutableStateOf(false) }
     val parsedRepeatCount = repeatCount.toIntOrNull()
     val repeatUnits = listOf("D" to "日", "W" to "周", "M" to "月", "Y" to "年")
+    val todoStates = listOf("todo" to "待办", "doing" to "进行中", "done" to "已完成", "cancel" to "已取消")
 
     Column(
         modifier
@@ -1674,6 +1711,31 @@ private fun TodoDetailsScreen(
             minLines = 3,
             enabled = !busy
         )
+        if (!isNew) {
+            Box {
+                OutlinedButton(
+                    onClick = { statusMenuExpanded = true },
+                    enabled = !busy,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("状态：${todoStates.firstOrNull { it.first == status }?.second ?: status}")
+                }
+                DropdownMenu(
+                    expanded = statusMenuExpanded,
+                    onDismissRequest = { statusMenuExpanded = false }
+                ) {
+                    todoStates.forEach { (value, label) ->
+                        DropdownMenuItem(
+                            text = { Text(label) },
+                            onClick = {
+                                status = value
+                                statusMenuExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -1715,12 +1777,27 @@ private fun TodoDetailsScreen(
             label = "开始日期",
             onValueChange = { start = it }
         )
+        if (!isNew) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    "创建时间：${todo.createTime}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                if (todo.end != null) {
+                    Text(
+                        "完成时间：${todo.end}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+        }
         Button(
             onClick = {
                 val count = parsedRepeatCount ?: return@Button
                 onSave(
                     todo.copy(
                         name = name.trim(),
+                        state = status,
                         remark = remark.trim().ifBlank { null },
                         start = start.ifBlank { null }
                     ).withTodoSchedule(
@@ -3505,13 +3582,36 @@ private fun RecordDetails(
             ) { Text("添加回复") }
             val replyComments = comments.filterNot { it.content.startsWith("sys-") }
             val systemComments = comments.filter { it.content.startsWith("sys-") }
-            TabRow(selectedTabIndex = selectedCommentTab) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))
+            ) {
                 listOf("回复", "系统").forEachIndexed { index, title ->
-                    Tab(
-                        selected = selectedCommentTab == index,
-                        onClick = { selectedCommentTab = index },
-                        text = { Text(title) }
-                    )
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { selectedCommentTab = index }
+                            .background(
+                                if (selectedCommentTab == index) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    Color.Transparent
+                                }
+                            )
+                            .padding(vertical = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            title,
+                            color = if (selectedCommentTab == index) {
+                                MaterialTheme.colorScheme.onSecondaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            }
+                        )
+                    }
                 }
             }
             val visibleComments = if (selectedCommentTab == 0) replyComments else systemComments
@@ -3902,6 +4002,9 @@ private fun TodoCard(
                 CopyableLinkText(todo.name, fontWeight = FontWeight.SemiBold)
                 if (!todo.remark.isNullOrBlank()) {
                     CopyableLinkText(todo.remark, style = MaterialTheme.typography.bodySmall)
+                }
+                todo.createTime?.takeIf(String::isNotBlank)?.let {
+                    Text("$it", style = MaterialTheme.typography.labelSmall)
                 }
             }
         }

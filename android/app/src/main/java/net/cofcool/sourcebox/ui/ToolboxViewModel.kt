@@ -1092,7 +1092,10 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
     fun completeTodo(todo: TodoRecord) = perform {
         val current = withContext(Dispatchers.IO) { actionDatabase.actionDetails(todo.id) }
             ?.record ?: todo.toActionRecord()
-        val updatedLocal = current.copy(state = "done")
+        val updatedLocal = current.copy(
+            state = "done",
+            end = currentRecordDateTime()
+        )
         val (updated, isDirty) = writeWithOfflineFallback(
             server = {
                 api.completeTodo(updatedLocal).also { saved ->
@@ -1112,8 +1115,8 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun saveTodo(todo: TodoRecord, onSaved: () -> Unit = {}) = perform(
-        onSuccess = { (saved, isDirty) ->
-            todos = todos.map { if (it.id == saved.id) saved else it }
+        onSuccess = { (_, isDirty) ->
+            loadTodos(currentTodoQuery, currentTodoPage, currentTodoState)
             loadTodayActions()
             message = if (isDirty) "待办已保存到本地，等待联网同步" else "待办已保存"
             onSaved()
@@ -1124,8 +1127,10 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
             ?.record ?: todo.toActionRecord()
         val updatedLocal = current.copy(
             name = todo.name.trim(),
+            state = todo.state,
             remark = todo.remark?.trim()?.ifBlank { null },
             start = todo.start,
+            end = todo.end,
             category = todo.category,
             refs = todo.refs
         )
@@ -1645,7 +1650,8 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         category = category,
         refs = refs,
         start = start,
-        end = end
+        end = end,
+        createTime = createTime
     )
 
     private fun TodoRecord.toActionRecord() = ActionRecord(
@@ -1657,7 +1663,8 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
         category = category,
         refs = refs,
         start = start,
-        end = end
+        end = end,
+        createTime = createTime
     )
 
     private fun CommandRecord.withStableId() = copy(

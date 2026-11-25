@@ -664,6 +664,9 @@ public class PhotoService {
         var target = Path.of(firstRoot.get()).resolve(
             relativePath == null ? fileName : relativePath);
         Files.createDirectories(target.getParent());
+        if (Files.exists(target)) {
+            target = target.getParent().resolve(UUID.randomUUID() + "_" + fileName);
+        }
         Files.move(tempFile, target, StandardCopyOption.REPLACE_EXISTING);
 
         var digest = sha256 == null || sha256.isBlank() ? sha256(target) : sha256;

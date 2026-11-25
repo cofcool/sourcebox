@@ -1071,7 +1071,7 @@ class ToolboxViewModel(application: Application) : AndroidViewModel(application)
             state = "todo",
             type = "todo",
             start = todo.start ?: now,
-            end = todo.end ?: now,
+            end = todo.end,
             createTime = now
         )
         val (saved, isDirty) = writeWithOfflineFallback(

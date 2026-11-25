@@ -837,8 +837,7 @@ public class ActionService {
 
         @Override
         public ActionRecord apply(ActionRecord record) {
-            if (Objects.equals(record.type(), Type.record.name())
-                && Objects.equals(record.state(), ActionState.done.name())
+            if (Objects.equals(record.state(), ActionState.done.name())
                 && record.end() == null
             ) {
                     record = record.withEnd(LocalDateTime.now());

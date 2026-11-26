@@ -2,4 +2,4 @@
 
 * Photo Manager
 * MyGo Desktop App
-* enhance todo, hisRecord
+* enhance todo, hisRecord, file

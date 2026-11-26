@@ -1,6 +1,5 @@
 package net.cofcool.sourcebox.runner;
 
-import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientRequest;
@@ -17,14 +16,11 @@ import net.cofcool.sourcebox.Tool.Args;
 import net.cofcool.sourcebox.Tool.RunnerType;
 import net.cofcool.sourcebox.ToolName;
 import net.cofcool.sourcebox.internal.JsonFormatterTest;
-import net.cofcool.sourcebox.internal.JsonToPojoTest;
 import net.cofcool.sourcebox.util.VertxUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import java.util.Queue;
 
 @ExtendWith(VertxExtension.class)
 class WebRunnerTest extends BaseTest {
@@ -72,24 +68,6 @@ class WebRunnerTest extends BaseTest {
                 r.body().onSuccess(res -> System.out.println(res.toJsonObject()));
                 testContext.completeNow();
             })));
-    }
-
-    @Test
-    void reqJson2POJO(Vertx vertx, VertxTestContext testContext) {
-        WebClient.create(vertx)
-            .post(Integer.parseInt(getPort()), "127.0.0.1", "/" + ToolName.json2POJO.name())
-            .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
-            .sendJson(JsonObject.of("json", JsonToPojoTest.JSON_STR).toBuffer())
-            .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
-                queryEvents("writeFile").onSuccess(event -> {
-                Assertions.assertEquals(200, r.statusCode());
-                Assertions.assertEquals("application/json", r.getHeader("Content-Type"));
-                Assertions.assertTrue(
-                    vertx.fileSystem().existsBlocking((String) event.source()));
-                testContext.completeNow();
-            })
-                    .onComplete(c ->testContext.completeNow());
-    })));
     }
 
     @Test
@@ -179,21 +157,6 @@ class WebRunnerTest extends BaseTest {
     }
 
     @Test
-    void reqEvent(Vertx vertx, VertxTestContext testContext) {
-        for (int i = 0; i < 10; i++) {
-            WebVerticle.EVENT_QUEUE.offer(new ActionEvent("id:" + i, "", "test"));
-        }
-        WebClient.create(vertx)
-            .get(Integer.parseInt(getPort()), "127.0.0.1", "/event")
-            .send()
-            .onComplete(testContext.succeeding(r -> testContext.verify(() -> {
-                Assertions.assertEquals(200, r.statusCode());
-                Assertions.assertNotNull(r.bodyAsJsonArray());
-                testContext.completeNow();
-            })));
-    }
-
-    @Test
     void reqConfig(Vertx vertx, VertxTestContext testContext) {
         WebClient.create(vertx)
             .get(Integer.parseInt(getPort()), "127.0.0.1", "/config")
@@ -203,27 +166,6 @@ class WebRunnerTest extends BaseTest {
                 Assertions.assertNotNull(r.bodyAsJsonObject());
                 testContext.completeNow();
             })));
-    }
-
-    private Future<ActionEvent> queryEvents(String key) {
-        Queue<ActionEvent> queue = WebVerticle.EVENT_QUEUE;
-        var i = 0;
-        while (i < 10) {
-            i++;
-            var e = queue.poll();
-            if (e == null) {
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException ex) {
-                    throw new RuntimeException(ex);
-                }
-                continue;
-            }
-            if (e.action().equals(key)) {
-                return Future.succeededFuture(e);
-            }
-        }
-        return Future.failedFuture(new IllegalStateException("no events found"));
     }
 
 }

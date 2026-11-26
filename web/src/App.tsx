@@ -1,7 +1,6 @@
 import {useEffect, useMemo, useState} from "react";
 import {NavLink, Route, Routes, useLocation} from "react-router-dom";
 import {
-  Activity,
   BarChart3,
   BookOpen,
   Check,
@@ -19,7 +18,6 @@ import {
   Plus,
   Save,
   Search,
-  Settings,
   Trash2,
   Wrench,
   X,
@@ -116,7 +114,6 @@ function Sidebar({ tools, collapsed, mobile, onNavigate }: {
 
         <NavLink to="/navigation" onClick={onNavigate}><ExternalLink size={17} /><span>网址导航</span></NavLink>
         <NavLink to="/statistics" onClick={onNavigate}><BarChart3 size={17} /><span>数据统计</span></NavLink>
-        <NavLink to="/settings" onClick={onNavigate}><Settings size={17} /><span>设置</span></NavLink>
       </nav>
     </aside>
   );
@@ -125,8 +122,8 @@ function Sidebar({ tools, collapsed, mobile, onNavigate }: {
 function Home({ system, tools }: { system?: SystemInfo; tools: ToolInfo[] }) {
   return (
     <div>
-      <h1>工具箱</h1>
-      <p className="muted">一个基于 Tauri + React + Java 的桌面工具箱。</p>
+      <h1>TheSourceBox</h1>
+      <p className="muted">包含众多小工具，解放双手，隐私有保障</p>
 
       <div className="cards">
         {tools.map((tool) => (
@@ -137,12 +134,6 @@ function Home({ system, tools }: { system?: SystemInfo; tools: ToolInfo[] }) {
           </NavLink>
         ))}
       </div>
-
-      <section className="panel">
-        <h2><Activity size={18} /> 后端状态</h2>
-        <div className="status"><span className="dot" /> Java Backend Connected</div>
-        {system && <div className="muted">Java {system.javaVersion} · Backend {system.version}</div>}
-      </section>
     </div>
   );
 }
@@ -2812,8 +2803,8 @@ function ConvsPanelFromBackend() {
     setHasOutput(false);
 
     try {
-      const res = await api.convert(body);
-      setOutput(res);
+      const ret = await api.convert(body);
+      setOutput(ret.result);
       setHasOutput(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));

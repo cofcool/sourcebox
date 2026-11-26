@@ -155,6 +155,10 @@ export interface SearchResult<T> {
   data: T;
 }
 
+export interface ToolResult {
+  result: string
+}
+
 export interface DimensionCount {
   name: string;
   count: number;
@@ -563,8 +567,8 @@ export const api = {
       body: JSON.stringify(payload),
     });
   },
-  convert: async (payload: Record<string, string>): Promise<string> => {
-    return request<string>("/converts", {
+  convert: async (payload: Record<string, string>): Promise<ToolResult> => {
+    return request<ToolResult>("/converts", {
       method: "POST",
       body: JSON.stringify(payload),
     });

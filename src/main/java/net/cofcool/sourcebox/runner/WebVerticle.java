@@ -25,8 +25,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Map;
 import java.util.function.Function;
 
 import static net.cofcool.sourcebox.ToolRunner.PASSWD_KEY;
@@ -40,8 +39,6 @@ public class WebVerticle extends AbstractVerticle implements VertxDeployer {
         ToolName.bookRecord, ToolName.timer,
         ToolName.habits, ToolName.photo
     );
-
-    static final Queue<ActionEvent> EVENT_QUEUE = new ConcurrentLinkedQueue<>();
 
     private Credentials usernamePasswordCredentials;
     private final RunnerType runnerType = RunnerType.WEB;
@@ -75,11 +72,6 @@ public class WebVerticle extends AbstractVerticle implements VertxDeployer {
                 Integer.parseInt((String) App.getGlobalConfig(ToolRunner.PORT_KEY)),
                 log
             );
-        vertx.setPeriodic(600_000, l -> {
-            if (EVENT_QUEUE.size() > 1000) {
-                EVENT_QUEUE.clear();
-            }
-        });
     }
 
     @Override
@@ -155,16 +147,6 @@ public class WebVerticle extends AbstractVerticle implements VertxDeployer {
                 r.attachment(name).response().sendFile(VertxUtils.resourcePath(name));
             });
 
-        router.get("/event")
-            .handler(c -> {
-                var a = new ArrayList<>();
-                while (!EVENT_QUEUE.isEmpty()) {
-                    a.add(EVENT_QUEUE.poll());
-                }
-
-                c.json(a);
-            });
-
         router.route("/web/*").handler(VertxUtils.webrootHandler());
 
         VertxUtils.uploadRoute(
@@ -205,19 +187,12 @@ public class WebVerticle extends AbstractVerticle implements VertxDeployer {
                         .copyConfigFrom(tool.config())
                         .context(webToolContext);
 
-                    vertx.executeBlocking(() -> {
-                            tool.run(args);
-                            return Future.succeededFuture("success");
-                        })
-                        .onSuccess(a ->
-                            EVENT_QUEUE.offer(new ActionEvent(a.result(), toolName, "finished")))
-                        .onFailure(a -> {
-                            EVENT_QUEUE.offer(
-                                new ActionEvent("fail: " + a.getMessage(), toolName,
-                                    "finished", false));
-                            log.error("run tool error", a);
-                        });
-                    return Future.succeededFuture(webToolContext.toObject());
+                    try {
+                        tool.run(args);
+                        return Future.succeededFuture(webToolContext.toObject());
+                    } catch (Exception e) {
+                        return Future.succeededFuture(Map.of("result", e.getMessage()));
+                    }
                 });
             }
         }

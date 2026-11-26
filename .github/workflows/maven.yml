@@ -2,6 +2,10 @@ name: Maven Build and Release
 
 on:
   push:
+    branches:
+      - master
+    paths:
+      - './build.md'
 
 permissions:
   contents: write

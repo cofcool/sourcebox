@@ -86,8 +86,14 @@ public record ActionRecord(
         this.state = state;
         this.start = start;
         this.end = end;
-        this.duration = (duration == null && start != null && end != null) ? Integer.valueOf(
-            Math.toIntExact(Duration.between(start, end).toSeconds())) : duration;
+        if (duration == null && start != null && end != null) {
+            var d = Integer.valueOf(Math.toIntExact(Duration.between(start, end).toSeconds()));
+            if (d < 0) {
+                d = 0;
+            }
+            duration = d;
+        }
+        this.duration =  duration;
         this.rating = rating;
         this.comments = comments;
         this.labels = labels;

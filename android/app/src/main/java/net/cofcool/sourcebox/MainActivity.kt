@@ -893,14 +893,14 @@ private fun ServerToolsScreen(
                 CircularProgressIndicator()
             }
         } else if (vm.tools.isEmpty()) {
-            EmptyState("连接后端后会在这里显示可用工具。请检查连接设置和服务状态。")
+            EmptyState("请检查连接设置和服务状态。")
         } else {
             Column(
                 Modifier.weight(1f).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 vm.tools.filterNot {
-                    it.id in setOf("todo", "hisRecord", "bookRecord", "timer", "habits")
+                    it.id in setOf("todo", "hisRecord", "bookRecord", "timer", "habits", "photo")
                 }.forEach { tool ->
                     Card(onClick = { onSelectTool(tool) }, modifier = Modifier.fillMaxWidth()) {
                         Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {

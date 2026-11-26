@@ -19,9 +19,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
-import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -38,10 +37,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -57,8 +56,6 @@ import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
@@ -68,9 +65,6 @@ import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.MoreHoriz
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.PushPin
-import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -120,6 +114,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.nativeCanvas
@@ -142,34 +137,33 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.documentfile.provider.DocumentFile
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil3.ImageLoader
+import coil3.SingletonImageLoader
+import coil3.compose.AsyncImage
+import coil3.disk.DiskCache
+import coil3.memory.MemoryCache
+import coil3.request.crossfade
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import coil3.compose.AsyncImage
-import coil3.request.ImageRequest
-import coil3.request.crossfade
-import coil3.ImageLoader
-import coil3.SingletonImageLoader
-import coil3.disk.DiskCache
-import coil3.memory.MemoryCache
-import okio.Path.Companion.toOkioPath
 import net.cofcool.sourcebox.data.ActionCheckList
-import net.cofcool.sourcebox.data.ActionRecord
 import net.cofcool.sourcebox.data.ActionDimensionCount
+import net.cofcool.sourcebox.data.ActionRecord
 import net.cofcool.sourcebox.data.ActionStatistics
 import net.cofcool.sourcebox.data.NoteRecord
 import net.cofcool.sourcebox.data.PhotoAlbum
-import net.cofcool.sourcebox.data.PhotoRecord
 import net.cofcool.sourcebox.data.PhotoBackupConfig
+import net.cofcool.sourcebox.data.PhotoRecord
 import net.cofcool.sourcebox.data.TodoRecord
 import net.cofcool.sourcebox.data.ToolInfo
 import net.cofcool.sourcebox.data.isHabitRequiredOnDate
 import net.cofcool.sourcebox.ui.ToolboxViewModel
-import java.time.LocalDate
+import okio.Path.Companion.toOkioPath
 import java.io.IOException
+import java.time.LocalDate
 
 @OptIn(coil3.annotation.DelicateCoilApi::class)
 private fun configurePhotoDiskCache(context: android.content.Context) {
@@ -498,7 +492,8 @@ private fun SourceboxApp(
                                     category = action.category,
                                     refs = action.refs,
                                     start = action.start,
-                                    end = action.end
+                                    end = action.end,
+                                    createTime = action.createTime
                                 )
                                 page = "todo-detail"
                             }

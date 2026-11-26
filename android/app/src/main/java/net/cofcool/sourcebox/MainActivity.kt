@@ -1783,7 +1783,7 @@ private fun TodoDetailsScreen(
                     "创建时间：${todo.createTime}",
                     style = MaterialTheme.typography.bodySmall
                 )
-                if (todo.end != null) {
+                todo.end?.takeIf(String::isNotBlank)?.let {
                     Text(
                         "完成时间：${todo.end}",
                         style = MaterialTheme.typography.bodySmall
@@ -1809,7 +1809,7 @@ private fun TodoDetailsScreen(
             modifier = Modifier.fillMaxWidth(),
             enabled = !busy && name.isNotBlank() && parsedRepeatCount != null && parsedRepeatCount >= 0
         ) {
-            Text(if (isNew) "添加待办" else "保存")
+            Text(if (isNew) "添加" else "保存")
         }
     }
 }
@@ -2744,7 +2744,7 @@ private fun HabitCreateScreen(
                 modifier = Modifier.weight(1f),
                 enabled = name.isNotBlank() && !vm.busy
             ) {
-                Text("创建习惯")
+                Text("创建")
             }
         }
     }
@@ -2807,7 +2807,7 @@ private fun HabitDetailsScreen(
                         enabled = !busy,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text(if (editing) "收起修改" else "修改习惯")
+                        Text(if (editing) "收起" else "修改")
                     }
                     OutlinedButton(
                         onClick = {
@@ -2822,7 +2822,7 @@ private fun HabitDetailsScreen(
                         enabled = !busy,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text(if (habit.action.state == "cancel") "激活习惯" else "归档习惯")
+                        Text(if (habit.action.state == "cancel") "激活" else "归档")
                     }
                 }
             }
@@ -2946,7 +2946,7 @@ private fun HabitDetailsScreen(
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !busy && name.isNotBlank() && validFrequency && validTarget
                     ) {
-                        Text("保存修改")
+                        Text("保存")
                     }
                 }
             }
@@ -4634,7 +4634,7 @@ private fun SettingsScreen(
                 Text("保存")
             }
         }
-        Text("默认 100 MB，修改后立即应用。", style = MaterialTheme.typography.bodySmall)
+        Text("默认 100 MB", style = MaterialTheme.typography.bodySmall)
         OutlinedButton(
             onClick = { showClearDatabaseConfirmation = true },
             modifier = Modifier.fillMaxWidth()
@@ -4661,7 +4661,7 @@ private fun SettingsScreen(
             onDismissRequest = { showClearDatabaseConfirmation = false },
             title = { Text("清除本地数据库？") },
             text = {
-                Text("将清除本地缓存、同步信息和所有待上传的离线修改。此操作不可撤销，服务器上的数据不会被删除。")
+                Text("将清除本地缓存、同步信息和所有待上传的离线修改，此操作不可撤销")
             },
             confirmButton = {
                 TextButton(onClick = {

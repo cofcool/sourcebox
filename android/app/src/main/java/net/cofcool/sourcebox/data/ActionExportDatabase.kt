@@ -1078,6 +1078,7 @@ class ActionExportDatabase(context: Context) :
                             .joinToString(",", prefix = ",", postfix = ",") { it.lowercase(Locale.ROOT) }
                     )
                     put("action_start", action.start)
+                    put("action_end", action.end)
                     put("action_created", action.createTime)
                     put("action_index", action.index?.trim())
                 }
@@ -1211,6 +1212,7 @@ class ActionExportDatabase(context: Context) :
                 "action_category TEXT",
                 "action_labels TEXT",
                 "action_start TEXT",
+                "action_end TEXT",
                 "action_created TEXT",
                 "action_index TEXT"
             ),
@@ -1250,6 +1252,10 @@ class ActionExportDatabase(context: Context) :
         db.execSQL(
             "CREATE INDEX IF NOT EXISTS idx_actions_start " +
                 "ON $TABLE_ACTIONS(action_start)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS idx_actions_start " +
+                "ON $TABLE_ACTIONS(action_end)"
         )
         db.execSQL(
             "CREATE INDEX IF NOT EXISTS idx_actions_type_index " +

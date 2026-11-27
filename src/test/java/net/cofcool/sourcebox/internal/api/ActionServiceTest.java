@@ -573,6 +573,30 @@ class ActionServiceTest extends BaseTest {
     }
 
     @Test
+    void deleteByType(Vertx vertx, VertxTestContext testContext) {
+        String category = "delete-by-type";
+        List<ActionRecord> records = IntStream.range(0, 3)
+            .mapToObj(i -> ActionRecord.builder()
+                .name("delete-by-type-" + i)
+                .type(Type.record.name())
+                .category(category)
+                .state(ActionState.todo.name())
+                .start(LocalDateTime.now())
+                .build())
+            .toList();
+        actionService.saveAll(records)
+            .compose(ignored -> actionService.deleteByType(Type.record, category))
+            .compose(deletedCount -> {
+                Assertions.assertEquals(3, deletedCount);
+                return actionService.find(ActionRecord.builder().type(Type.record.name()).category(category).build());
+            })
+            .onComplete(testContext.succeeding(foundRecords -> testContext.verify(() -> {
+                Assertions.assertTrue(foundRecords.isEmpty());
+                testContext.completeNow();
+            })));
+    }
+
+    @Test
     void toMarkdown(Vertx vertx, VertxTestContext testContext) {
         actionService
             .export2Md()

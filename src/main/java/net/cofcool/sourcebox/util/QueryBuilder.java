@@ -10,6 +10,7 @@ public final class QueryBuilder {
 
     private final List<String> selectFields = new ArrayList<>();
     private String fromTable;
+    private String deleteTable;
     private final List<String> joinClauses = new ArrayList<>();
     private final List<String> whereClauses = new ArrayList<>();
     @Getter
@@ -33,6 +34,16 @@ public final class QueryBuilder {
 
     public QueryBuilder select() {
         selectFields.add("*");
+        return this;
+    }
+
+    public QueryBuilder delete(String table) {
+        this.deleteTable = table;
+        return this;
+    }
+
+    public QueryBuilder delete(Class<?> table) {
+        this.deleteTable = TableInfoHelper.tableInfo(table).name();
         return this;
     }
 
@@ -109,13 +120,23 @@ public final class QueryBuilder {
     }
 
     public String build() {
-        if (fromTable == null || selectFields.isEmpty()) {
-            throw new IllegalStateException("SELECT and FROM must be specified.");
-        }
-
         StringBuilder sb = new StringBuilder();
-        sb.append("SELECT ").append(String.join(", ", selectFields));
-        sb.append(" FROM ").append(fromTable);
+
+        if (deleteTable != null) {
+            if (fromTable != null) {
+                throw new IllegalStateException("Cannot specify FROM when DELETE is used.");
+            }
+            if (whereClauses.isEmpty()) {
+                throw new IllegalStateException("DELETE must have at least one WHERE clause.");
+            }
+            sb.append("DELETE FROM ").append(deleteTable).append(" ");
+        } else {
+            if (fromTable == null || selectFields.isEmpty()) {
+                throw new IllegalStateException("SELECT and FROM must be specified.");
+            }
+            sb.append("SELECT ").append(String.join(", ", selectFields));
+            sb.append(" FROM ").append(fromTable);
+        }
         if (!joinClauses.isEmpty()) {
             sb.append(" ").append(String.join(" ", joinClauses));
         }

@@ -5,14 +5,17 @@ import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import java.util.List;
 import lombok.CustomLog;
-import net.cofcool.sourcebox.internal.api.entity.*;
+import net.cofcool.sourcebox.internal.api.entity.ActionRecord;
+import net.cofcool.sourcebox.internal.api.entity.ActionType;
 import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
+import net.cofcool.sourcebox.internal.api.entity.CheckList;
+import net.cofcool.sourcebox.internal.api.entity.Comment;
+import net.cofcool.sourcebox.internal.api.entity.Habit;
 import net.cofcool.sourcebox.util.JsonUtil;
 import net.cofcool.sourcebox.util.VertxUtils;
 import org.apache.commons.lang3.ObjectUtils;
-
-import java.util.List;
 
 @CustomLog
 public class ActionIndex {
@@ -91,6 +94,10 @@ public class ActionIndex {
 
         router.post("/syncBooks").respond(r ->
             actionService.saveBooks(JsonUtil.toPojoList(r.body().buffer().getBytes(), ActionRecord.class))
+        );
+
+        router.delete("/allActions").respond(r ->
+            actionService.deleteByType(Type.valueOf(r.queryParams().get("type")), r.queryParams().get("category"))
         );
 
         router.get().respond(r -> finaAction(r, null));

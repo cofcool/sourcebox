@@ -307,11 +307,11 @@ public class ActionService {
     private void saveType(String a, Type label, String error) {
         ActionType actionType = new ActionType(a, label);
         actionTypeSqlRepository
-            .find(actionType.name())
+            .find(actionType.id())
             .onFailure(t ->
                 actionTypeSqlRepository
                     .save(actionType)
-                    .onFailure(new Log(error + " with " + a))
+                    .onFailure(new Log(error + " with " + a + ": {0}"))
             );
     }
 
@@ -663,6 +663,17 @@ public class ActionService {
 
     public Future<List<ActionType>> findType(ActionType type) {
         return actionTypeSqlRepository.find(type);
+    }
+
+    public Future<Integer> deleteByType(Type type, String category) {
+        return actionRecordSqlRepository
+            .execute(
+                QueryBuilder.builder()
+                    .delete(ActionRecord.class)
+                    .and("type=?", type.name())
+                    .and(StringUtils.isNotBlank(category), "category=?", () -> new String[]{ category})
+            )
+            .compose(rows -> Future.succeededFuture(rows.rowCount()));
     }
 
     public Future<Boolean> deleteActions(String id) {

@@ -73,7 +73,7 @@ class BookRecordTest extends BaseTest {
         var files = BookRecord.scanBooks(tmpDir, false, "ebook");
         Assertions.assertEquals(1, files.size());
         Assertions.assertEquals("book.epub", files.getFirst().name());
-        Assertions.assertEquals("series/volume-1/book.epub;0.00 KB", files.getFirst().remark());
+        Assertions.assertEquals("path: series/volume-1/book.epub\nsize: 0.00 KB", files.getFirst().remark());
         Assertions.assertEquals("epub", files.getFirst().labels());
         Assertions.assertEquals("ebook", files.getFirst().category());
         Assertions.assertEquals("book", files.getFirst().type());

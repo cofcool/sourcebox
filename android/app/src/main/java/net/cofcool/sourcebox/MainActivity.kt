@@ -2563,10 +2563,9 @@ private fun BookRecordScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                book.labels?.takeIf(String::isNotBlank)?.let { ".$it" } ?: "无后缀",
+                                book.labels?.takeIf(String::isNotBlank)?.let { "$it" } ?: "无后缀",
                                 style = MaterialTheme.typography.labelSmall
                             )
-                            Text(book.state, style = MaterialTheme.typography.labelSmall)
                         }
                     }
                 }

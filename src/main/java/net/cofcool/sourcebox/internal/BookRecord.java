@@ -20,6 +20,7 @@ import net.cofcool.sourcebox.internal.api.entity.ActionState;
 import net.cofcool.sourcebox.internal.api.entity.ActionType.Type;
 import net.cofcool.sourcebox.util.DataSize;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
@@ -116,12 +117,20 @@ public class BookRecord extends BaseRecord {
                 .map(path -> {
                     String name = path.getFileName().toString();
                     String extension = FilenameUtils.getExtension(name);
-                    String remark = root.relativize(path).toString().replace(File.separatorChar, '/');
+                    String remark = null;
                     try {
-                        remark = remark + ";" + DataSize.of(String.valueOf(Files.size(path)));
+                        if (folders) {
+                            remark = "size: " + PathUtils.countDirectory(path).getFileCounter().getLong();
+                        } else {
+                            remark = "path: " + root.relativize(path).toString()
+                                .replace(File.separatorChar, '/')
+                                + "\n" +
+                                "size: " + DataSize.of(String.valueOf(Files.size(path)));
+                        }
                     } catch (IOException e) {
                         log.error("read file size error", e);
                     }
+
                     LocalDateTime now = LocalDateTime.now();
                     return ActionRecord.builder()
                         .name(name)
@@ -131,7 +140,6 @@ public class BookRecord extends BaseRecord {
                         .remark(remark)
                         .labels(folders || extension.isBlank() ? null : extension)
                         .start(now)
-                        .end(now)
                         .build();
                 })
                 .toList();

@@ -12,8 +12,6 @@ import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.util.Locale
 
-import net.cofcool.sourcebox.data.PhotoExport
-
 data class PendingChange(
     val id: Long,
     val entity: String,
@@ -91,6 +89,10 @@ class ActionExportDatabase(context: Context) :
         }
         if (oldVersion < 7) {
             createTable(db, TABLE_RECOMMENDS)
+        }
+        if (oldVersion < 8) {
+            ensureQuerySchema(db)
+            rebuildQueryColumns(db)
         }
     }
 
@@ -1110,25 +1112,23 @@ class ActionExportDatabase(context: Context) :
         localPayload: String = payload
     ) {
         val db = writableDatabase
-        db.beginTransaction()
-        try {
-            upsert(db, table, entityId, localPayload, dirty = 1)
-            enqueueChange(db, entity, entityId, operation, payload, table, localPayload)
-            db.setTransactionSuccessful()
-        } finally {
-            db.endTransaction()
+        db.transaction {
+            try {
+                upsert(this, table, entityId, localPayload, dirty = 1)
+                enqueueChange(this, entity, entityId, operation, payload, table, localPayload)
+            } finally {
+            }
         }
     }
 
     private fun enqueueDelete(table: String, entity: String, entityId: String) {
         val db = writableDatabase
-        db.beginTransaction()
-        try {
-            db.delete(table, "id = ?", arrayOf(entityId))
-            enqueueChange(db, entity, entityId, "delete", entityId, table, null)
-            db.setTransactionSuccessful()
-        } finally {
-            db.endTransaction()
+        db.transaction {
+            try {
+                delete(table, "id = ?", arrayOf(entityId))
+                enqueueChange(this, entity, entityId, "delete", entityId, table, null)
+            } finally {
+            }
         }
     }
 
@@ -1378,7 +1378,7 @@ class ActionExportDatabase(context: Context) :
 
     companion object {
         private const val DATABASE_NAME = "sourcebox-local.db"
-        private const val DATABASE_VERSION = 7
+        private const val DATABASE_VERSION = 8
         private const val TABLE_ACTIONS = "exported_actions"
         private const val TABLE_RECOMMENDS = "exported_recommendations"
         private const val TABLE_NOTES = "exported_notes"

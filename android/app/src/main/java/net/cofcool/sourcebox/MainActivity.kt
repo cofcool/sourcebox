@@ -2556,16 +2556,13 @@ private fun BookRecordScreen(
                             )
                         }
                         if (!book.remark.isNullOrBlank()) {
-                            Text(book.remark, style = MaterialTheme.typography.bodySmall)
+                            Text(book.remark, style = MaterialTheme.typography.bodySmall, maxLines = 2)
                         }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(
-                                book.labels?.takeIf(String::isNotBlank)?.let { "$it" } ?: "无后缀",
-                                style = MaterialTheme.typography.labelSmall
-                            )
+                            book.labels?.let { Text(it, style = MaterialTheme.typography.labelSmall) }
                         }
                     }
                 }
@@ -3997,8 +3994,8 @@ private fun TodoCard(
                 if (!todo.remark.isNullOrBlank()) {
                     CopyableLinkText(todo.remark, style = MaterialTheme.typography.bodySmall)
                 }
-                todo.createTime?.takeIf(String::isNotBlank)?.let {
-                    Text("$it", style = MaterialTheme.typography.labelSmall)
+                todo.start?.takeIf(String::isNotBlank)?.let {
+                    Text(it, style = MaterialTheme.typography.labelSmall)
                 }
             }
         }

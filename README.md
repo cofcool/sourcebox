@@ -1,6 +1,6 @@
 <div align="center">
   <h1>秘源宝箱</h1>
-  <p><strong>包含众多小工具，解放双手，隐私有保障</strong></p>
+  <p><strong>包含众多小工具，自己的数据自己做主，不再担忧隐私泄露</strong></p>
   <p>
     <img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/cofcool/sourcebox/maven.yml">
     <a href="https://github.com/cofcool/sourcebox/releases/latest"><img src="https://img.shields.io/github/v/release/cofcool/sourcebox" alt="Latest release" /></a>

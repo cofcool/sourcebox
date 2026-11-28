@@ -2555,8 +2555,10 @@ private fun BookRecordScreen(
                                 color = MaterialTheme.colorScheme.primary
                             )
                         }
-                        if (!book.remark.isNullOrBlank()) {
-                            Text(book.remark, style = MaterialTheme.typography.bodySmall, maxLines = 2)
+                        book.remark?.let {
+                            it.split(";").forEach { t ->
+                                Text(t, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                            }
                         }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
